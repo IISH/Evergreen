@@ -84,6 +84,22 @@
 </script>
   <script type="text/javascript">
       // <![CDATA[
+
+              function batch_schedule(newtab) {
+                  params = {'tab_name': 'Batch schedule' };
+                  if(newtab)
+                      xulG.new_tab('oils://remote/opac/extras/schedule/', params, {});
+                  else
+                      xulG.set_tab('oils://remote/opac/extras/schedule/', params, {});
+              }
+
+              function batch_enrich(newtab) {
+                  params = {'tab_name': 'Enrich report' };
+                  if(newtab)
+                      xulG.new_tab('oils://remote/opac/extras/enrich/', params, {});
+                  else
+                      xulG.set_tab('oils://remote/opac/extras/enrich/', params, {});
+              }
         
                 //this function will allow for the "Hello, Staff Member" messages
                 function init() { 
@@ -488,6 +504,24 @@
               <td><img class="newtabimg" src="skin/media/images/portal/newtab2.PNG" alt="&staff.client.portal.open_new_tab.description;"
               title="&staff.client.portal.open_new_tab.description;"
               onclick="try { record_buckets(true); } catch(E) { alert(E); }" /> &staff.client.portal.recordbuckets;</td>
+            </tr>
+
+              <tr class="clickable" onclick="try { batch_schedule(false); } catch(E) { alert(E); }">
+              <td height="50"><img src="skin/media/images/portal/bucket.png" height="48" width="48"
+	      alt="batch schedule" /></td>
+
+              <td><img class="newtabimg" src="skin/media/images/portal/newtab2.PNG" alt="batch schedule"
+              title="batch schedule"
+              onclick="try { batch_schedule(true); } catch(E) { alert(E); }" /> Batch schedule</td>
+            </tr>
+
+              <tr class="clickable" onclick="try { batch_enrich(false); } catch(E) { alert(E); }">
+              <td height="50"><img src="skin/media/images/portal/bucket.png" height="48" width="48"
+	      alt="enrich report" /></td>
+
+              <td><img class="newtabimg" src="skin/media/images/portal/newtab2.PNG" alt="enrich report"
+              title="batch schedule"
+              onclick="try { batch_enrich(true); } catch(E) { alert(E); }" /> Enrich report</td>
             </tr>
           </table><br />
         </div>

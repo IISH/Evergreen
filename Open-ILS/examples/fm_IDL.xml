@@ -74,7 +74,132 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 <IDL xmlns="http://opensrf.org/spec/IDL/base/v1" xmlns:idl="http://opensrf.org/spec/IDL/base/v1" xmlns:oils_persist="http://open-ils.org/spec/opensrf/IDL/persistence/v1" xmlns:oils_obj="http://open-ils.org/spec/opensrf/IDL/objects/v1" xmlns:reporter="http://open-ils.org/spec/opensrf/IDL/reporter/v1" xmlns:permacrud="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
 
 	<!-- Virtual classes -->
-	<class id="mups" controller="open-ils.cstore" oils_obj:fieldmapper="money::user_payment_summary" oils_persist:virtual="true" reporter:label="User Payment Summary">
+	<!-- IISH Additions -->
+    <class id="xslt_biblio" controller="open-ils.cstore" oils_obj:fieldmapper="extend_reporter::xslt"
+           oils_persist:readonly="true" reporter:core="true" reporter:label="XSLT biblio renderings">
+        <oils_persist:source_definition><![CDATA[
+            SELECT id, name, regexp_replace(evergreen.oils_xslt_process(marc, xslt), E'[\\n]+', '', 'g') as marc FROM biblio.record_entry, config.xml_transform
+            ]]>
+        </oils_persist:source_definition>
+        <fields>
+            <field name="id" reporter:datatype="link"  />
+            <field name="name" reporter:datatype="link" />
+            <field name="marc" reporter:datatype="text" />
+        </fields>
+        <links>
+            <link field="id" reltype="has_a" key="id" map="" class="bre"/>
+            <link field="name" reltype="has_a" key="name" map="" class="cxt"/>
+        </links>
+    </class>
+
+    <class id="xslt_serial" controller="open-ils.cstore" oils_obj:fieldmapper="extend_reporter::xslt"
+           oils_persist:readonly="true" reporter:core="true" reporter:label="XSLT serial renderings">
+        <oils_persist:source_definition><![CDATA[
+            SELECT id, record, name, regexp_replace(evergreen.oils_xslt_process(marc, xslt), E'[\\n]+', '', 'g') as marc FROM serial.record_entry, config.xml_transform
+            ]]>
+        </oils_persist:source_definition>
+        <fields>
+            <field name="id" reporter:datatype="link"  />
+            <field name="record" reporter:datatype="link" />
+            <field name="name" reporter:datatype="link" />
+            <field name="marc" reporter:datatype="text" />
+        </fields>
+        <links>
+            <link field="id" reltype="has_a" key="id" map="" class="sre"/>
+            <link field="record" reltype="has_a" key="id" map="" class="bre"/>
+            <link field="name" reltype="has_a" key="name" map="" class="cxt"/>
+        </links>
+    </class>
+
+    <class id="oai_biblio" controller="open-ils.cstore" oils_obj:fieldmapper="oai::biblio"
+           oils_persist:readonly="true" reporter:core="false" reporter:label="OAI2 record list"
+           oils_persist:tablename="oai.biblio">
+        <fields>
+            <field reporter:label="TCN Value\OAI identifier postfix" name="tcn" reporter:datatype="number"/>
+            <field reporter:label="Last edit date\OAI datestamp" name="datestamp" reporter:datatype="timestamp"/>
+            <field reporter:label="Is Deleted?" name="deleted" reporter:datatype="bool"/>
+            <field reporter:label="Setspec" name="set_spec" oils_persist:virtual="true"/>
+        </fields>
+    </class>
+    <class id="oai_authority" controller="open-ils.cstore" oils_obj:fieldmapper="oai::authority"
+           oils_persist:readonly="true" reporter:core="false" reporter:label="OAI2 record list"
+           oils_persist:tablename="oai.authority">
+        <fields>
+            <field reporter:label="TCN Value\OAI identifier postfix" name="tcn" reporter:datatype="number"/>
+            <field reporter:label="Last edit date\OAI datestamp" name="datestamp" reporter:datatype="timestamp"/>
+            <field reporter:label="Is Deleted?" name="deleted" reporter:datatype="bool"/>
+            <field reporter:label="Setspec" name="set_spec" oils_persist:virtual="true"/>
+        </fields>
+    </class>
+
+    <class id="bs" controller="open-ils.cstore open-ils.pcrud" oils_obj:fieldmapper="batch::schedule" oils_persist:tablename="batch.schedule" reporter:label="Batch">
+        <fields oils_persist:primary="id" oils_persist:sequence="batch.schedule_id_seq">
+            <field name="id" reporter:datatype="id" />
+            <field name="title" reporter:datatype="text" />
+            <field name="runner" reporter:datatype="link"/>
+            <field name="start_time" reporter:datatype="timestamp"/>
+            <field name="complete_time" reporter:datatype="timestamp"/>
+            <field name="heartbeat_time" reporter:datatype="timestamp"/>
+            <field name="run_time" reporter:datatype="timestamp"/>
+            <field name="repeat" reporter:datatype="number"/>
+            <field name="email" reporter:datatype="text"/>
+            <field name="report_url" reporter:datatype="text"/>
+            <field name="xslt" reporter:datatype="text"/>
+            <field name="records_changed" reporter:datatype="number"/>
+            <field name="records_unchanged" reporter:datatype="number"/>
+            <field name="records_failed" reporter:datatype="number"/>
+            <field name="records_total" reporter:datatype="number"/>
+            <field name="status" reporter:datatype="number"/>
+            <field name="error_code" reporter:datatype="number"/>
+            <field name="error_text" reporter:datatype="text"/>
+        </fields>
+        <links>
+            <link field="runner" reltype="has_a" key="id" map="" class="au"/>
+        </links>
+    </class>
+
+    <class id="es" controller="open-ils.cstore open-ils.pcrud" oils_obj:fieldmapper="batch::enrich" oils_persist:tablename="batch.enrich" reporter:label="Enrich">
+        <fields oils_persist:primary="id" oils_persist:sequence="batch.enrich_id_seq">
+            <field name="id" reporter:datatype="id" />
+            <field name="title" reporter:datatype="text" />
+            <field name="runner" reporter:datatype="link"/>
+            <field name="start_time" reporter:datatype="timestamp"/>
+            <field name="complete_time" reporter:datatype="timestamp"/>
+            <field name="heartbeat_time" reporter:datatype="timestamp"/>
+            <field name="run_time" reporter:datatype="timestamp"/>
+            <field name="repeat" reporter:datatype="number"/>
+            <field name="email" reporter:datatype="text"/>
+            <field name="report_url" reporter:datatype="text"/>
+            <field name="xslt" reporter:datatype="text"/>
+            <field name="records_changed" reporter:datatype="number"/>
+            <field name="records_unchanged" reporter:datatype="number"/>
+            <field name="records_failed" reporter:datatype="number"/>
+            <field name="records_total" reporter:datatype="number"/>
+            <field name="status" reporter:datatype="number"/>
+            <field name="error_code" reporter:datatype="number"/>
+            <field name="error_text" reporter:datatype="text"/>
+        </fields>
+        <links>
+            <link field="runner" reltype="has_a" key="id" map="" class="au"/>
+        </links>
+    </class>
+
+    <class id="mups" controller="open-ils.cstore" oils_obj:fieldmapper="money::user_payment_summary"
+           oils_persist:virtual="true" reporter:label="User Payment Summary">
+        <fields>
+            <field name="usr" oils_persist:virtual="true"/>
+            <field name="forgive_payment" oils_persist:virtual="true"/>
+            <field name="work_payment" oils_persist:virtual="true"/>
+            <field name="credit_payment" oils_persist:virtual="true"/>
+            <field name="goods_payment" oils_persist:virtual="true"/>
+        </fields>
+        <links>
+            <link field="usr" reltype="has_a" key="id" map="" class="au"/>
+        </links>
+    </class>
+	<!-- IISH Additions end here -->
+
+    <class id="mups" controller="open-ils.cstore" oils_obj:fieldmapper="money::user_payment_summary" oils_persist:virtual="true" reporter:label="User Payment Summary">
 		<fields>
 			<field name="usr" oils_persist:virtual="true" />
 			<field name="forgive_payment" oils_persist:virtual="true" />

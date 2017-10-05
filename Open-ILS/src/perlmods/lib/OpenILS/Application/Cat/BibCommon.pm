@@ -7,8 +7,12 @@ use OpenILS::Utils::Fieldmapper;
 use OpenILS::Const qw/:const/;
 use OpenSRF::AppSession;
 use OpenILS::Event;
+use Data::UUID ;
 my $U = 'OpenILS::Application::AppUtils';
 my $MARC_NAMESPACE = 'http://www.loc.gov/MARC21/slim';
+
+my $ug = new Data::UUID;
+my $handlesystem_naming_authority;
 
 
 # ---------------------------------------------------------------------------
@@ -104,6 +108,14 @@ sub biblio_record_xml_import {
 
     my $marc = $U->strip_marc_fields($e, $marcdoc, $strip_grps);
 
+    my ($add_902a, $pid ) ;
+    $handlesystem_naming_authority = OpenSRF::Utils::SettingsClient->new->config_value('handlesystem_naming_authority') if ( ! $handlesystem_naming_authority ) ;
+    if ( $handlesystem_naming_authority ) {
+        $pid = __get_902a($marc) ||  $handlesystem_naming_authority . '/' . uc($ug->to_string( $ug->create() ) ) ;
+        $add_902a = __add_902a($marc, $pid);
+        $marc = $add_902a if ( $add_902a ne $marc );
+    }
+
     my $record = Fieldmapper::biblio::record_entry->new;
 
     $record->source(bib_source_from_name($source)) if $source;
@@ -137,7 +149,40 @@ sub biblio_record_xml_import {
     }
 
     $logger->info("marc create/import created new record ".$record->id);
+
+    __upsert_pid($record->id, $pid, 0);
+
     return $record;
+}
+
+# If absent, add a 902$a field.
+sub __add_902a {
+    my $xml = shift;
+    my $pid = shift;
+
+    return $xml if ( $xml =~ /tag\=\"902\".+?><subfield\s+?code\=\"a\">.+?</sxi ) ;
+
+    my $marc_902 = '<datafield tag="902" ind1=" " ind2=" "><subfield code="a">' . $pid . '</subfield></datafield>';
+
+    $xml=~s/<\/record>/$marc_902<\/record>/gxi;
+    return $xml;
+}
+
+sub __get_902a {
+    my $xml = shift ;
+
+    return ( $xml =~ /tag\=\"902\".+?><subfield\s+?code\=\"a\">(.+?)</sxi ) ? $1 : undef;
+}
+
+sub __upsert_pid{
+    my $tcn = shift ;
+    my $pid = shift ;
+    my $delete = shift ;
+
+            my $handle_call = OpenSRF::AppSession->create('open-ils.handle') ;
+            $handlesystem_naming_authority = OpenSRF::Utils::SettingsClient->new->config_value('handlesystem_naming_authority') if ( ! $handlesystem_naming_authority ) ;
+            $handle_call->request('open-ils.handle.upsert_pid', $tcn, $handlesystem_naming_authority, $pid, $delete);
+            $handle_call->disconnect ;
 }
 
 sub __make_marc_doc {
@@ -377,6 +422,8 @@ sub delete_rec {
             'hold_request.cancel.expire_no_target', 
             $hold, $hold->pickup_lib);
     }
+
+    __upsert_pid($rec_id, __get_902a($marc), 1);
 
    return undef;
 }

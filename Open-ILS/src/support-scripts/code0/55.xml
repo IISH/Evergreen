@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<marc:record xmlns:marc="http://www.loc.gov/MARC21/slim" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/MARC21/slim http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">
+
+    <marc:leader>00620nkm a22     7i 4500</marc:leader>
+    <marc:controlfield tag="001">55</marc:controlfield>
+    <marc:controlfield tag="003">NL-AMISG</marc:controlfield>
+    <marc:controlfield tag="005">20160125044628.0</marc:controlfield>
+    <marc:controlfield tag="008">110701suuuu    th                  bur d</marc:controlfield>
+    <marc:datafield ind1=" " ind2=" " tag="040">
+        <marc:subfield code="a">NL-AMISG</marc:subfield>
+    </marc:datafield>
+    <marc:datafield ind1=" " ind2=" " tag="041">
+        <marc:subfield code="a">bur</marc:subfield>
+        <marc:subfield code="a">tha</marc:subfield>
+    </marc:datafield>
+    <marc:datafield ind1="1" ind2="0" tag="245">
+        <marc:subfield code="a">Spot wittayu :</marc:subfield>
+        <marc:subfield code="b">Sitthi rangngan oppayop = Radio Spots on migrant rights.</marc:subfield>
+        <marc:subfield code="k">Visual document.</marc:subfield>
+    </marc:datafield>
+    <marc:datafield ind1=" " ind2=" " tag="260">
+        <marc:subfield code="c">n.d.</marc:subfield>
+        <marc:subfield code="e">Bangkok.</marc:subfield>
+        <marc:subfield code="f">Labour Migration Unit. International Organization for Migration. </marc:subfield>
+    </marc:datafield>
+    <marc:datafield ind1=" " ind2=" " tag="300">
+        <marc:subfield code="a">20.40 min.</marc:subfield>
+    </marc:datafield>
+    <marc:datafield ind1=" " ind2=" " tag="500">
+        <marc:subfield code="a">The "Migrant rights capacity building for government officials, employers, Burmese migrants and host communities in Thailand" project. - Radio spots in both Burmese and Thai.</marc:subfield>
+    </marc:datafield>
+    <marc:datafield ind1=" " ind2=" " tag="540">
+        <marc:subfield code="a">Copyright unknown.</marc:subfield>
+    </marc:datafield>
+    <marc:datafield ind1=" " ind2=" " tag="542">
+        <marc:subfield code="m">pictoright</marc:subfield>
+    </marc:datafield>
+    <marc:datafield ind1="4" ind2=" " tag="648">
+        <marc:subfield code="a">2007-2010.</marc:subfield>
+        <marc:subfield code="0">(NL-AMISG)570816</marc:subfield>
+    </marc:datafield>
+    <marc:datafield ind1=" " ind2=" " tag="650">
+        <marc:subfield code="a">Migrant workers.</marc:subfield>
+        <marc:subfield code="0">(NL-AMISG)370813</marc:subfield>
+    </marc:datafield>
+    <marc:datafield ind1=" " ind2=" " tag="651">
+        <marc:subfield code="a">Thailand.</marc:subfield>
+        <marc:subfield code="0">(NL-AMISG)303023</marc:subfield>
+    </marc:datafield>
+    <marc:datafield ind1=" " ind2=" " tag="655">
+        <marc:subfield code="a">CD.</marc:subfield>
+        <marc:subfield code="0">(NL-AMISG)43395</marc:subfield>
+    </marc:datafield>
+    <marc:datafield ind1="0" ind2=" " tag="740">
+        <marc:subfield code="a">Radio spots on migrant rights.</marc:subfield>
+    </marc:datafield>
+    <marc:datafield ind1=" " ind2=" " tag="902">
+        <marc:subfield code="a">10622/F34558A6-C31D-11E5-8A8D-970DC303EE5D</marc:subfield>
+    </marc:datafield>
+    <marc:datafield ind1="4" ind2=" " tag="852">
+        <marc:subfield code="a">IISG</marc:subfield>
+        <marc:subfield code="b">IISG</marc:subfield>
+        <marc:subfield code="c">IISG</marc:subfield>
+        <marc:subfield code="j">in process</marc:subfield>
+        <marc:subfield code="n">Available</marc:subfield>
+        <marc:subfield code="p">53352463643</marc:subfield>
+    </marc:datafield>
+    <marc:datafield ind1=" " ind2=" " tag="901">
+        <marc:subfield code="a">55</marc:subfield>
+        <marc:subfield code="b"/>
+        <marc:subfield code="c">55</marc:subfield>
+        <marc:subfield code="t">biblio</marc:subfield>
+    </marc:datafield>
+</marc:record>

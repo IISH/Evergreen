@@ -252,10 +252,10 @@ if test "x$openils_core" = "xtrue"; then
     [OPENSRF_LIBS=`$OSRF_CONFIG --libdir`])
     AC_SUBST([OPENSRF_LIBS])
 
-    AC_CHECK_PROG([MEMCACHED],memcached,yes,no)
-    if test $MEMCACHED = "no"; then
-        AC_MSG_ERROR([*** memcached not found, aborting])
-    fi
+    #AC_CHECK_PROG([MEMCACHED],memcached,yes,no)
+    #if test $MEMCACHED = "no"; then
+    #    AC_MSG_ERROR([*** memcached not found, aborting])
+    #fi
 
     AC_CHECK_PROG([ASPELL],aspell,yes,no)
     if test $ASPELL = "no"; then

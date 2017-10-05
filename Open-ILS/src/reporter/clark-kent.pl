@@ -450,6 +450,11 @@ sub build_html {
 	my $index = new FileHandle (">$file") or die "Cannot write to '$file'";
 
 	my $tdata = OpenSRF::Utils::JSON->JSON2perl( $r->{report}->{template}->{data} );
+
+	my $url = $base_uri . '/' .
+    		$r->{report}->{template}->{id} . '/' .
+    		$r->{report}->{id} . '/' .
+    		$r->{id} . '/report-data.csv';
 	
 	# index header
 	print $index <<"	HEADER";
@@ -467,7 +472,7 @@ sub build_html {
 	</head>
 	<body>
 		<center>
-		<h2><u>$$r{report}{name}</u></h2>
+		<h2><u>$$r{report}{name}</u> (<a href='/opac/extras/schedule/add?url=$url'>schedule or <a href='/opac/extras/enrich/add?url=$url'>enrich it)</a></h2>
 		$$r{report}{description}<br/>
 	HEADER
 
