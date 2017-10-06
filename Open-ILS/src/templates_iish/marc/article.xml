@@ -1,0 +1,40 @@
+<record xmlns="http://www.loc.gov/MARC21/slim">
+    <leader>00620nab a22     7i 4500</leader>
+<controlfield tag="008">110701s                                d</controlfield>               
+   <datafield tag="040" ind1=" " ind2=" ">
+    <subfield code="a">NL-AmISG</subfield>
+     </datafield>
+<datafield tag="100" ind1="1" ind2=" ">
+    <subfield code="a"></subfield>
+     </datafield>
+    <datafield tag="245" ind1="1" ind2="0">
+    <subfield code="a"></subfield>
+    <subfield code="k"></subfield>
+      </datafield>
+<datafield tag="520" ind1=" " ind2=" ">
+    <subfield code="a"></subfield>
+      </datafield>
+  <datafield tag="540" ind1=" " ind2=" ">
+    <subfield code="b"></subfield>
+      </datafield>
+ <datafield tag="700" ind1="1" ind2=" ">
+    <subfield code="a"></subfield>
+      </datafield>
+<datafield tag="700" ind1="1" ind2=" ">
+    <subfield code="a"></subfield>
+      </datafield>
+<datafield tag="730" ind1="0" ind2=" ">
+    <subfield code="a"></subfield>
+      </datafield>
+     <datafield tag="773" ind1="0" ind2=" ">
+    <subfield code="t"></subfield>
+    <subfield code="g"></subfield>
+      </datafield>
+<datafield tag="845" ind1=" " ind2=" ">
+    <subfield code="a"></subfield>
+      </datafield>
+<datafield tag="856" ind1=" " ind2=" ">
+    <subfield code="u"></subfield>
+    <subfield code="q"></subfield>
+      </datafield>
+</record>

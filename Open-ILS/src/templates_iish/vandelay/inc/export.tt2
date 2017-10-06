@@ -1,5 +1,5 @@
 <h1>[% l('Export Records') %]</h1><br/>
-<form method="POST" enctype="multipart/form-data" action='https://evergreen.iisg.nl/exporter'>
+<form method="POST" enctype="multipart/form-data" action='https://[% ctx.hostname %]/exporter'>
     <table class='form_table'>
         <tr class='export_tr_border'>
             <td>[% l('Use Field Number') %]</td>
