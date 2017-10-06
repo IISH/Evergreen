@@ -5,21 +5,25 @@ use OpenSRF::EX qw(:try);
 use OpenSRF::AppSession;
 use OpenSRF::Utils::SettingsClient;
 use OpenSRF::Utils::Logger qw(:logger);
+use OpenSRF::Utils::Config;
 use OpenILS::Const qw/:const/;
 use OpenILS::Application::AppUtils;
 use DateTime;
 my $U = "OpenILS::Application::AppUtils";
 
 my %scripts;
-my $script_libs;
-my $legacy_script_support = 0;
 my $booking_status;
 my $opac_renewal_use_circ_lib;
 my $desk_renewal_use_circ_lib;
 
 sub determine_booking_status {
     unless (defined $booking_status) {
-        my $ses = create OpenSRF::AppSession("router");
+        my $router_name = OpenSRF::Utils::Config
+            ->current
+            ->bootstrap
+            ->router_name || 'router';
+
+        my $ses = create OpenSRF::AppSession($router_name);
         $booking_status = grep {$_ eq "open-ils.booking"} @{
             $ses->request("opensrf.router.info.class.list")->gather(1)
         };
@@ -36,51 +40,7 @@ my $MK_ENV_FLESH = {
     flesh_fields => {acp => ['call_number','parts','floating'], acn => ['record']}
 };
 
-sub initialize {
-
-    my $self = shift;
-    my $conf = OpenSRF::Utils::SettingsClient->new;
-    my @pfx2 = ( "apps", "open-ils.circ","app_settings" );
-
-    $legacy_script_support = $conf->config_value(@pfx2, 'legacy_script_support');
-    $legacy_script_support = ($legacy_script_support and $legacy_script_support =~ /true/i);
-
-    my $lb  = $conf->config_value(  @pfx2, 'script_path' );
-    $lb = [ $lb ] unless ref($lb);
-    $script_libs = $lb;
-
-    return unless $legacy_script_support;
-
-    my @pfx = ( @pfx2, "scripts" );
-    my $p   = $conf->config_value(  @pfx, 'circ_permit_patron' );
-    my $c   = $conf->config_value(  @pfx, 'circ_permit_copy' );
-    my $d   = $conf->config_value(  @pfx, 'circ_duration' );
-    my $f   = $conf->config_value(  @pfx, 'circ_recurring_fines' );
-    my $m   = $conf->config_value(  @pfx, 'circ_max_fines' );
-    my $pr  = $conf->config_value(  @pfx, 'circ_permit_renew' );
-
-    $logger->error( "Missing circ script(s)" ) 
-        unless( $p and $c and $d and $f and $m and $pr );
-
-    $scripts{circ_permit_patron}   = $p;
-    $scripts{circ_permit_copy}     = $c;
-    $scripts{circ_duration}        = $d;
-    $scripts{circ_recurring_fines} = $f;
-    $scripts{circ_max_fines}       = $m;
-    $scripts{circ_permit_renew}    = $pr;
-
-    $logger->debug(
-        "circulator: Loaded rules scripts for circ: " .
-        "circ permit patron = $p, ".
-        "circ permit copy = $c, ".
-        "circ duration = $d, ".
-        "circ recurring fines = $f, " .
-        "circ max fines = $m, ".
-        "circ renew permit = $pr.  ".
-        "lib paths = @$lb. ".
-        "legacy script support = ". ($legacy_script_support) ? 'yes' : 'no'
-        );
-}
+sub initialize {}
 
 __PACKAGE__->register_method(
     method  => "run_method",
@@ -255,13 +215,6 @@ sub run_method {
             }
         }
     }
-            
-    
-
-    # --------------------------------------------------------------------------
-    # Go ahead and load the script runner to make sure we have all 
-    # of the objects we need
-    # --------------------------------------------------------------------------
 
     if ($circulator->use_booking) {
         $circulator->is_res_checkin($circulator->is_checkin(1))
@@ -278,16 +231,7 @@ sub run_method {
     $circulator->mk_env();
     $circulator->noop(1) if $circulator->claims_never_checked_out;
 
-    if($legacy_script_support and not $circulator->is_checkin) {
-        $circulator->mk_script_runner();
-        $circulator->legacy_script_support(1);
-        $circulator->circ_permit_patron($scripts{circ_permit_patron});
-        $circulator->circ_permit_copy($scripts{circ_permit_copy});      
-        $circulator->circ_duration($scripts{circ_duration});             
-        $circulator->circ_permit_renew($scripts{circ_permit_renew});
-    }
     return circ_events($circulator) if $circulator->bail_out;
-
     
     $circulator->override(1) if $api =~ /override/o;
 
@@ -346,20 +290,20 @@ sub run_method {
 
     } else {
 
-        $circulator->editor->commit;
-
-        if ($circulator->generate_lost_overdue) {
-            # Generating additional overdue billings has to happen after the 
-            # main commit and before the final respond() so the caller can
-            # receive the latest transaction summary.
-            my $evt = $circulator->generate_lost_overdue_fines;
-            $circulator->bail_on_events($evt) if $evt;
+        # checkin and reservation return can result in modifications to
+        # actor.usr.claims_never_checked_out_count without also modifying
+        # actor.last_xact_id.  Perform a no-op update on the patron to
+        # force an update to last_xact_id.
+        if ($circulator->claims_never_checked_out && $circulator->patron) {
+            $circulator->editor->update_actor_user(
+                $circulator->editor->retrieve_actor_user($circulator->patron->id))
+                or return $circulator->editor->die_event;
         }
+
+        $circulator->editor->commit;
     }
     
     $conn->respond_complete(circ_events($circulator));
-
-    $circulator->script_runner->cleanup if $circulator->script_runner;
 
     return undef if $circulator->bail_out;
 
@@ -436,12 +380,12 @@ use OpenILS::Application::Circ::Holds;
 use OpenILS::Application::Circ::Transit;
 use OpenSRF::Utils::Logger qw(:logger);
 use OpenILS::Utils::CStoreEditor qw/:funcs/;
-use OpenILS::Application::Circ::ScriptBuilder;
 use OpenILS::Const qw/:const/;
 use OpenILS::Utils::Penalty;
 use OpenILS::Application::Circ::CircCommon;
 use Time::Local;
 
+my $CC = "OpenILS::Application::Circ::CircCommon";
 my $holdcode    = "OpenILS::Application::Circ::Holds";
 my $transcode   = "OpenILS::Application::Circ::Transit";
 my %user_groups;
@@ -463,7 +407,6 @@ my @AUTOLOAD_FIELDS = qw/
     patron
     patron_id
     patron_barcode
-    script_runner
     volume
     title
     is_renewal
@@ -521,7 +464,6 @@ my @AUTOLOAD_FIELDS = qw/
     matrix_test_result
     circ_matrix_matchpoint
     circ_test_success
-    legacy_script_support
     is_deposit
     is_rental
     deposit_billing
@@ -536,7 +478,6 @@ my @AUTOLOAD_FIELDS = qw/
     skip_deposit_fee
     skip_rental_fee
     use_booking
-    generate_lost_overdue
     clear_expired
     retarget_mode
     hold_as_transit
@@ -545,6 +486,9 @@ my @AUTOLOAD_FIELDS = qw/
     override_args
     checkout_is_for_hold
     manual_float
+    dont_change_lost_zero
+    lost_bill_options
+    needs_lost_bill_handling
 /;
 
 
@@ -820,85 +764,6 @@ sub mk_env {
     }
 }
 
-# --------------------------------------------------------------------------
-# This builds the script runner environment and fetches most of the
-# objects we need
-# --------------------------------------------------------------------------
-sub mk_script_runner {
-    my $self = shift;
-    my $args = {};
-
-
-    my @fields = 
-        qw/copy copy_barcode copy_id patron 
-            patron_id patron_barcode volume title editor/;
-
-    # Translate our objects into the ScriptBuilder args hash
-    $$args{$_} = $self->$_() for @fields;
-
-    $args->{ignore_user_status} = 1 if $self->is_checkin;
-    $$args{fetch_patron_by_circ_copy} = 1;
-    $$args{fetch_patron_circ_info} = 1 unless $self->is_checkin;
-
-    if( my $pco = $self->pending_checkouts ) {
-        $logger->info("circulator: we were given a pending checkouts number of $pco");
-        $$args{patronItemsOut} = $pco;
-    }
-
-    # This fetches most of the objects we need
-    $self->script_runner(
-        OpenILS::Application::Circ::ScriptBuilder->build($args));
-
-    # Now we translate the ScriptBuilder objects back into self
-    $self->$_($$args{$_}) for @fields;
-
-    my @evts = @{$args->{_events}} if $args->{_events};
-
-    $logger->debug("circulator: script builder returned events: @evts") if @evts;
-
-
-    if(@evts) {
-        # Anything besides ASSET_COPY_NOT_FOUND will stop processing
-        if(!$self->is_noncat and 
-            @evts == 1 and 
-            $evts[0]->{textcode} eq 'ASSET_COPY_NOT_FOUND') {
-                $self->is_precat(1);
-
-        } else {
-            my @e = grep { $_->{textcode} ne 'ASSET_COPY_NOT_FOUND' } @evts;
-            return $self->bail_on_events(@e);
-        }
-    }
-
-    if($self->copy) {
-        $self->is_precat(1) if $self->copy->call_number == OILS_PRECAT_CALL_NUMBER;
-        if($self->copy->deposit_amount and $self->copy->deposit_amount > 0) {
-            $self->is_deposit(1) if $U->is_true($self->copy->deposit);
-            $self->is_rental(1) unless $U->is_true($self->copy->deposit);
-        }
-    }
-
-    # We can't renew if there is no copy
-    return $self->bail_on_events(@evts) if 
-        $self->is_renewal and !$self->copy;
-
-    # Set some circ-specific flags in the script environment
-    my $evt = "environment";
-    $self->script_runner->insert("$evt.isRenewal", ($self->is_renewal) ? 1 : undef);
-
-    if( $self->is_noncat ) {
-      $self->script_runner->insert("$evt.isNonCat", 1);
-      $self->script_runner->insert("$evt.nonCatType", $self->noncat_type);
-    }
-
-    if( $self->is_precat ) {
-        $self->script_runner->insert("environment.isPrecat", 1, 1);
-    }
-
-    $self->script_runner->add_path( $_ ) for @$script_libs;
-
-    return 1;
-}
 
 # --------------------------------------------------------------------------
 # Does the circ permit work
@@ -1083,6 +948,10 @@ my $LEGACY_CIRC_EVENT_MAP = {
     'config.circ_matrix_test.max_overdue' =>  'PATRON_EXCEEDS_OVERDUE_COUNT',
     'config.circ_matrix_test.max_fines' => 'PATRON_EXCEEDS_FINES',
     'config.circ_matrix_circ_mod_test' => 'PATRON_EXCEEDS_CHECKOUT_COUNT',
+    'config.circ_matrix_test.total_copy_hold_ratio' => 
+        'TOTAL_HOLD_COPY_RATIO_EXCEEDED',
+    'config.circ_matrix_test.available_copy_hold_ratio' => 
+        'AVAIL_HOLD_COPY_RATIO_EXCEEDED'
 };
 
 
@@ -1092,74 +961,45 @@ my $LEGACY_CIRC_EVENT_MAP = {
 # ---------------------------------------------------------------------
 sub run_patron_permit_scripts {
     my $self        = shift;
-    my $runner      = $self->script_runner;
     my $patronid    = $self->patron->id;
 
     my @allevents; 
 
-    if(!$self->legacy_script_support) {
 
-        my $results = $self->run_indb_circ_test;
-        unless($self->circ_test_success) {
-            my @trimmed_results;
+    my $results = $self->run_indb_circ_test;
+    unless($self->circ_test_success) {
+        my @trimmed_results;
 
-            if ($self->is_noncat) {
-                # no_item result is OK during noncat checkout
-                @trimmed_results = grep { ($_->{fail_part} || '') ne 'no_item' } @$results;
+        if ($self->is_noncat) {
+            # no_item result is OK during noncat checkout
+            @trimmed_results = grep { ($_->{fail_part} || '') ne 'no_item' } @$results;
 
-            } else {
+        } else {
 
-                if ($self->checkout_is_for_hold) {
-                    # if this checkout will fulfill a hold, ignore CIRC blocks
-                    # and rely instead on the (later-checked) FULFILL block
+            if ($self->checkout_is_for_hold) {
+                # if this checkout will fulfill a hold, ignore CIRC blocks
+                # and rely instead on the (later-checked) FULFILL block
 
-                    my @pen_names = grep {$_} map {$_->{fail_part}} @$results;
-                    my $fblock_pens = $self->editor->search_config_standing_penalty(
-                        {name => [@pen_names], block_list => {like => '%CIRC%'}});
+                my @pen_names = grep {$_} map {$_->{fail_part}} @$results;
+                my $fblock_pens = $self->editor->search_config_standing_penalty(
+                    {name => [@pen_names], block_list => {like => '%CIRC%'}});
 
-                    for my $res (@$results) {
-                        my $name = $res->{fail_part} || '';
-                        next if grep {$_->name eq $name} @$fblock_pens;
-                        push(@trimmed_results, $res);
-                    }
-
-                } else { 
-                    # not for hold or noncat
-                    @trimmed_results = @$results;
+                for my $res (@$results) {
+                    my $name = $res->{fail_part} || '';
+                    next if grep {$_->name eq $name} @$fblock_pens;
+                    push(@trimmed_results, $res);
                 }
+
+            } else { 
+                # not for hold or noncat
+                @trimmed_results = @$results;
             }
-
-            # update the final set of test results
-            $self->matrix_test_result(\@trimmed_results); 
-
-            push @allevents, $self->matrix_test_result_events;
         }
 
-    } else {
+        # update the final set of test results
+        $self->matrix_test_result(\@trimmed_results); 
 
-        # --------------------------------------------------------------------- 
-        # # Now run the patron permit script 
-        # ---------------------------------------------------------------------
-        $runner->load($self->circ_permit_patron);
-        my $result = $runner->run or 
-            throw OpenSRF::EX::ERROR ("Circ Permit Patron Script Died: $@");
-
-        my $patron_events = $result->{events};
-
-        OpenILS::Utils::Penalty->calculate_penalties($self->editor, $self->patron->id, $self->circ_lib);
-        my $mask = ($self->is_renewal) ? 'RENEW' : 'CIRC';
-        my $penalties = OpenILS::Utils::Penalty->retrieve_penalties($self->editor, $patronid, $self->circ_lib, $mask);
-        $penalties = $penalties->{fatal_penalties};
-
-        for my $pen (@$penalties) {
-            # CIRC blocks are ignored if this is a FULFILL scenario
-            next if $mask eq 'CIRC' and $self->checkout_is_for_hold;
-            my $event = OpenILS::Event->new($pen->name);
-            $event->{desc} = $pen->label;
-            push(@allevents, $event);
-        }
-
-        push(@allevents, OpenILS::Event->new($_)) for (@$patron_events);
+        push @allevents, $self->matrix_test_result_events;
     }
 
     for (@allevents) {
@@ -1224,7 +1064,9 @@ sub run_indb_circ_test {
             $self->circ_matrix_matchpoint->recurring_fine_rule->grace_period($results->[0]->{grace_period});
         }
         $self->circ_matrix_matchpoint->max_fine_rule($self->editor->retrieve_config_rules_max_fine($results->[0]->{max_fine_rule}));
-        $self->circ_matrix_matchpoint->hard_due_date($self->editor->retrieve_config_hard_due_date($results->[0]->{hard_due_date}));
+        if(defined($results->[0]->{hard_due_date})) {
+            $self->circ_matrix_matchpoint->hard_due_date($self->editor->retrieve_config_hard_due_date($results->[0]->{hard_due_date}));
+        }
         # Grab the *last* response for limit_groups, where it is more likely to be filled
         $self->limit_groups($results->[-1]->{limit_groups});
     }
@@ -1342,37 +1184,20 @@ sub get_max_fine_amount {
 sub run_copy_permit_scripts {
     my $self = shift;
     my $copy = $self->copy || return;
-    my $runner = $self->script_runner;
 
     my @allevents;
 
-    if(!$self->legacy_script_support) {
-        my $results = $self->run_indb_circ_test;
-        push @allevents, $self->matrix_test_result_events
-            unless $self->circ_test_success;
-    } else {
-    
-       # ---------------------------------------------------------------------
-       # Capture all of the copy permit events
-       # ---------------------------------------------------------------------
-       $runner->load($self->circ_permit_copy);
-       my $result = $runner->run or 
-            throw OpenSRF::EX::ERROR ("Circ Permit Copy Script Died: $@");
-       my $copy_events = $result->{events};
-
-       # ---------------------------------------------------------------------
-       # Now collect all of the events together
-       # ---------------------------------------------------------------------
-       push( @allevents, OpenILS::Event->new($_)) for @$copy_events;
-    }
+    my $results = $self->run_indb_circ_test;
+    push @allevents, $self->matrix_test_result_events
+        unless $self->circ_test_success;
 
     # See if this copy has an alert message
     my $ae = $self->check_copy_alert();
     push( @allevents, $ae ) if $ae;
 
-   # uniquify the events
-   my %hash = map { ($_->{ilsevent} => $_) } @allevents;
-   @allevents = values %hash;
+    # uniquify the events
+    my %hash = map { ($_->{ilsevent} => $_) } @allevents;
+    @allevents = values %hash;
 
     $logger->info("circulator: permit_copy script returned events: @allevents") if @allevents;
 
@@ -1675,6 +1500,22 @@ sub bail_on_events {
 sub check_hold_fulfill_blocks {
     my $self = shift;
 
+    # With the addition of ignore_proximity in csp, we need to fetch
+    # the proximity of both the circ_lib and the copy's circ_lib to
+    # the patron's home_ou.
+    my ($ou_prox, $copy_prox);
+    my $home_ou = (ref($self->patron->home_ou)) ? $self->patron->home_ou->id : $self->patron->home_ou;
+    $ou_prox = $U->get_org_unit_proximity($self->editor, $home_ou, $self->circ_lib);
+    $ou_prox = -1 unless (defined($ou_prox));
+    my $copy_ou = (ref($self->copy->circ_lib)) ? $self->copy->circ_lib->id : $self->copy->circ_lib;
+    if ($copy_ou == $self->circ_lib) {
+        # Save us the time of an extra query.
+        $copy_prox = $ou_prox;
+    } else {
+        $copy_prox = $U->get_org_unit_proximity($self->editor, $home_ou, $copy_ou);
+        $copy_prox = -1 unless (defined($copy_prox));
+    }
+
     # See if the user has any penalties applied that prevent hold fulfillment
     my $pens = $self->editor->json_query({
         select => {csp => ['name', 'label']},
@@ -1688,7 +1529,14 @@ sub check_hold_fulfill_blocks {
                     {stop_date => {'>' => 'now'}}
                 ]
             },
-            '+csp' => {block_list => {'like' => '%FULFILL%'}}
+            '+csp' => {
+                block_list => {'like' => '%FULFILL%'},
+                '-or' => [
+                    {ignore_proximity => undef},
+                    {ignore_proximity => {'<' => $ou_prox}},
+                    {ignore_proximity => {'<' => $copy_prox}}
+                ]
+            }
         }
     });
 
@@ -1723,11 +1571,7 @@ sub handle_checkout_holds {
     my $hold = $e->search_action_hold_request({   
         current_copy        => $copy->id , 
         cancel_time         => undef, 
-        fulfillment_time    => undef,
-        '-or' => [
-            {expire_time => undef},
-            {expire_time => {'>' => 'now'}}
-        ]
+        fulfillment_time    => undef
     })->[0];
 
     if($hold and $hold->usr != $patron->id) {
@@ -1768,7 +1612,6 @@ sub handle_checkout_holds {
     return $self->bail_on_events($e->event)
         unless $e->update_action_hold_request($hold);
 
-    $holdcode->delete_hold_copy_maps($e, $hold->id);
     return $self->fulfilled_holds([$hold->id]);
 }
 
@@ -1902,7 +1745,6 @@ sub run_checkout_scripts {
     my $nobail = shift;
 
     my $evt;
-    my $runner = $self->script_runner;
 
     my $duration;
     my $recurring;
@@ -1913,25 +1755,11 @@ sub run_checkout_scripts {
     my $max_fine_name;
     my $hard_due_date_name;
 
-    if(!$self->legacy_script_support) {
-        $self->run_indb_circ_test();
-        $duration = $self->circ_matrix_matchpoint->duration_rule;
-        $recurring = $self->circ_matrix_matchpoint->recurring_fine_rule;
-        $max_fine = $self->circ_matrix_matchpoint->max_fine_rule;
-        $hard_due_date = $self->circ_matrix_matchpoint->hard_due_date;
-
-    } else {
-
-       $runner->load($self->circ_duration);
-
-       my $result = $runner->run or 
-            throw OpenSRF::EX::ERROR ("Circ Duration Script Died: $@");
-
-       $duration_name   = $result->{durationRule};
-       $recurring_name  = $result->{recurringFinesRule};
-       $max_fine_name   = $result->{maxFine};
-       $hard_due_date_name  = $result->{hardDueDate};
-    }
+    $self->run_indb_circ_test();
+    $duration = $self->circ_matrix_matchpoint->duration_rule;
+    $recurring = $self->circ_matrix_matchpoint->recurring_fine_rule;
+    $max_fine = $self->circ_matrix_matchpoint->max_fine_rule;
+    $hard_due_date = $self->circ_matrix_matchpoint->hard_due_date;
 
     $duration_name = $duration->name if $duration;
     if( $duration_name ne OILS_UNLIMITED_CIRC_DURATION ) {
@@ -2044,7 +1872,7 @@ sub build_checkout_circ_object {
 
     # if a patron is renewing, 'requestor' will be the patron
     $circ->circ_staff($self->editor->requestor->id);
-    $circ->due_date( $self->create_due_date($circ->duration, $duration_date_ceiling, $duration_date_ceiling_force) ) if $circ->duration;
+    $circ->due_date( $self->create_due_date($circ->duration, $duration_date_ceiling, $duration_date_ceiling_force, $circ->xact_start) ) if $circ->duration;
 
     $self->circ($circ);
 }
@@ -2115,7 +1943,7 @@ sub do_reservation_return {
         $self->reservation($reservation);
     }
 
-    $self->generate_fines(1);
+    $self->handle_fines(1);
     $self->reservation->return_time('now');
     $self->update_reservation();
     $self->reshelve_copy if $self->copy;
@@ -2157,11 +1985,16 @@ sub booking_adjusted_due_date {
             '0 seconds';
 
         my $booking_ses = OpenSRF::AppSession->create( 'open-ils.booking' );
-        my $bookings = $booking_ses->request(
-            'open-ils.booking.reservations.filtered_id_list', $self->editor->authtoken,
-            { resource => $booking_item->id, search_start => 'now', search_end => $circ->due_date, fields => { cancel_time => undef, return_time => undef}}
-        )->gather(1);
+        my $bookings = $booking_ses->request('open-ils.booking.reservations.filtered_id_list', $self->editor->authtoken, {
+              resource     => $booking_item->id
+            , search_start => 'now'
+            , search_end   => $circ->due_date
+            , fields       => { cancel_time => undef, return_time => undef }
+        })->gather(1);
         $booking_ses->disconnect;
+
+        throw OpenSRF::EX::ERROR ("Improper input arguments") unless defined $bookings;
+        return $self->bail_on_events($bookings) if ref($bookings) eq 'HASH';
         
         my $dt_parser = DateTime::Format::ISO8601->new;
         my $due_date = $dt_parser->parse_datetime( cleanse_ISO8601($circ->due_date) );
@@ -2252,7 +2085,7 @@ sub apply_modified_due_date {
 
 
 sub create_due_date {
-    my( $self, $duration, $date_ceiling, $force_date ) = @_;
+    my( $self, $duration, $date_ceiling, $force_date, $start_time ) = @_;
 
     # if there is a raw time component (e.g. from postgres), 
     # turn it into an interval that interval_to_seconds can parse
@@ -2260,6 +2093,7 @@ sub create_due_date {
 
     # for now, use the server timezone.  TODO: use workstation org timezone
     my $due_date = DateTime->now(time_zone => 'local');
+    $due_date = DateTime::Format::ISO8601->new->parse_datetime(cleanse_ISO8601($start_time)) if $start_time;
 
     # add the circ duration
     $due_date->add(seconds => OpenSRF::Utils->interval_to_seconds($duration));
@@ -2335,10 +2169,6 @@ sub make_precat_copy {
         $self->push_events($self->editor->event);
         return;
     }   
-
-    # this is a little bit of a hack, but we need to 
-    # get the copy into the script runner
-    $self->script_runner->insert("environment.copy", $copy, 1) if $self->script_runner;
 }
 
 
@@ -2407,7 +2237,7 @@ sub check_transit_checkin_interval {
 # Retarget local holds at checkin
 sub checkin_retarget {
     my $self = shift;
-    return unless $self->retarget_mode =~ m/retarget/; # Retargeting?
+    return unless $self->retarget_mode and $self->retarget_mode =~ m/retarget/; # Retargeting?
     return unless $self->is_checkin; # Renewals need not be checked
     return if $self->capture eq 'nocapture'; # Not capturing holds anyway? Move on.
     return if $self->is_precat; # No holds for precats
@@ -2483,7 +2313,11 @@ sub checkin_retarget {
                 next if ($_->{hold_type} eq 'P');
             }
             # So much for easy stuff, attempt a retarget!
-            my $tresult = $U->storagereq('open-ils.storage.action.hold_request.copy_targeter', undef, $_->{id}, $self->copy->id);
+            my $tresult = $U->simplereq(
+                'open-ils.hold-targeter',
+                'open-ils.hold-targeter.target', 
+                {hold => $_->{id}, find_copy => $self->copy->id}
+            );
             if(ref $tresult eq "ARRAY" and scalar @$tresult) {
                 last if(exists $tresult->[0]->{found_copy} and $tresult->[0]->{found_copy});
             }
@@ -2515,8 +2349,31 @@ sub do_checkin {
             " open circs for copy " .$self->copy->id."!!") if @$circs > 1;
     }
 
-    # run the fine generator against this circ, if this circ is there
-    $self->generate_fines_start if $self->circ;
+    my $stat = $U->copy_status($self->copy->status)->id;
+
+    # LOST (and to some extent, LONGOVERDUE) may optionally be handled
+    # differently if they are already paid for.  We need to check for this
+    # early since overdue generation is potentially affected.
+    my $dont_change_lost_zero = 0;
+    if ($stat == OILS_COPY_STATUS_LOST
+        || $stat == OILS_COPY_STATUS_LOST_AND_PAID
+        || $stat == OILS_COPY_STATUS_LONG_OVERDUE) {
+
+        # LOST fine settings are controlled by the copy's circ lib, not the the
+        # circulation's
+        my $copy_circ_lib = (ref $self->copy->circ_lib) ?
+                $self->copy->circ_lib->id : $self->copy->circ_lib;
+        $dont_change_lost_zero = $U->ou_ancestor_setting_value(
+            $copy_circ_lib, 'circ.checkin.lost_zero_balance.do_not_change',
+            $self->editor) || 0;
+
+        if ($dont_change_lost_zero) {
+            my ($obt) = $U->fetch_mbts($self->circ->id, $self->editor);
+            $dont_change_lost_zero = 0 if( $obt and $obt->balance_owed != 0 );
+        }
+
+        $self->dont_change_lost_zero($dont_change_lost_zero);
+    }
 
     if( $self->checkin_check_holds_shelf() ) {
         $self->bail_on_events(OpenILS::Event->new('NO_CHANGE'));
@@ -2556,8 +2413,35 @@ sub do_checkin {
     }
 
     if( $self->circ ) {
-        $self->generate_fines_finish;
-        $self->checkin_handle_circ;
+        $self->checkin_handle_circ_start;
+        return if $self->bail_out;
+
+        if (!$dont_change_lost_zero) {
+            # if this circ is LOST and we are configured to generate overdue
+            # fines for lost items on checkin (to fill the gap between mark
+            # lost time and when the fines would have naturally stopped), then
+            # stop_fines is no longer valid and should be cleared.
+            #
+            # stop_fines will be set again during the handle_fines() stage.
+            # XXX should this setting come from the copy circ lib (like other
+            # LOST settings), instead of the circulation circ lib?
+            if ($stat == OILS_COPY_STATUS_LOST) {
+                $self->circ->clear_stop_fines if
+                    $U->ou_ancestor_setting_value(
+                        $self->circ_lib,
+                        OILS_SETTING_GENERATE_OVERDUE_ON_LOST_RETURN,
+                        $self->editor
+                    );
+            }
+
+            # Set stop_fines when claimed never checked out
+            $self->circ->stop_fines( OILS_STOP_FINES_CLAIMS_NEVERCHECKEDOUT ) if( $self->claims_never_checked_out );
+
+            # handle fines for this circ, including overdue gen if needed
+            $self->handle_fines;
+        }
+
+        $self->checkin_handle_circ_finish;
         return if $self->bail_out;
         $self->checkin_changed(1);
 
@@ -2733,10 +2617,22 @@ sub do_checkin {
             }
         }
     } else { # no-op checkin
-        if ($U->is_true( $self->copy->floating )) { # XXX floating items still stick where they are even with no-op checkin?
-            $self->checkin_changed(1);
-            $self->copy->circ_lib( $self->circ_lib );
-            $self->update_copy;
+        if ($self->copy->floating) { # XXX floating items still stick where they are even with no-op checkin?
+            my $res = $self->editor->json_query(
+                {
+                    from => [
+                        'evergreen.can_float',
+                        $self->copy->floating->id,
+                        $self->copy->circ_lib,
+                        $self->circ_lib
+                    ]
+                }
+            );
+            if ($res && @$res && $U->is_true($res->[0]->{'evergreen.can_float'})) {
+                $self->checkin_changed(1);
+                $self->copy->circ_lib( $self->circ_lib );
+                $self->update_copy;
+            }
         }
     }
 
@@ -2781,16 +2677,13 @@ sub finish_fines_and_voiding {
     my $self = shift;
     return unless $self->circ;
 
-    # gather any updates to the circ after fine generation, if there was a circ
-    $self->generate_fines_finish;
-
     return unless $self->backdate or $self->void_overdues;
 
     # void overdues after fine generation to prevent concurrent DB access to overdue billings
     my $note = 'System: Amnesty Checkin' if $self->void_overdues;
 
-    my $evt = OpenILS::Application::Circ::CircCommon->void_overdues(
-        $self->editor, $self->circ, $self->backdate, $note);
+    my $evt = $CC->void_or_zero_overdues(
+        $self->editor, $self->circ, {backdate => $self->void_overdues ? undef : $self->backdate, note => $note});
 
     return $self->bail_on_events($evt) if $evt;
 
@@ -3197,8 +3090,8 @@ sub do_hold_notify {
 sub retarget_holds {
     my $self = shift;
     $logger->info("circulator: retargeting holds @{$self->retarget} after opportunistic capture");
-    my $ses = OpenSRF::AppSession->create('open-ils.storage');
-    $ses->request('open-ils.storage.action.hold_request.copy_targeter', undef, $self->retarget);
+    my $ses = OpenSRF::AppSession->create('open-ils.hold-targeter');
+    $ses->request('open-ils.hold-targeter.target', {hold => $self->retarget});
     # no reason to wait for the return value
     return;
 }
@@ -3327,65 +3220,76 @@ sub put_hold_on_shelf {
     return undef;
 }
 
-
-
-sub generate_fines {
-   my $self = shift;
-   my $reservation = shift;
-
-   $self->generate_fines_start($reservation);
-   $self->generate_fines_finish($reservation);
-
-   return undef;
-}
-
-sub generate_fines_start {
+sub handle_fines {
    my $self = shift;
    my $reservation = shift;
    my $dt_parser = DateTime::Format::ISO8601->new;
 
    my $obj = $reservation ? $self->reservation : $self->circ;
 
-   # If we have a grace period
-   if($obj->can('grace_period')) {
-      # Parse out the due date
-      my $due_date = $dt_parser->parse_datetime( cleanse_ISO8601($obj->due_date) );
-      # Add the grace period to the due date
-      $due_date->add(seconds => OpenSRF::Utils->interval_to_seconds($obj->grace_period));
-      # Don't generate fines on circs still in grace period
-      return undef if ($due_date > DateTime->now);
-   }
+    my $lost_bill_opts = $self->lost_bill_options;
+    my $circ_lib = $lost_bill_opts->{circ_lib} if $lost_bill_opts;
+    # first, restore any voided overdues for lost, if needed
+    if ($self->needs_lost_bill_handling and !$self->void_overdues) {
+        my $restore_od = $U->ou_ancestor_setting_value(
+            $circ_lib, $lost_bill_opts->{ous_restore_overdue},
+            $self->editor) || 0;
+        $self->checkin_handle_lost_or_lo_now_found_restore_od($circ_lib)
+            if $restore_od;
+    }
 
-   if (!exists($self->{_gen_fines_req})) {
-      $self->{_gen_fines_req} = OpenSRF::AppSession->create('open-ils.storage') 
-          ->request(
-             'open-ils.storage.action.circulation.overdue.generate_fines',
-             $obj->id
-          );
-   }
+    # next, handle normal overdue generation and apply stop_fines
+    # XXX reservations don't have stop_fines
+    # TODO revisit booking_reservation re: stop_fines support
+    if ($reservation or !$obj->stop_fines) {
+        my $skip_for_grace;
+
+        # This is a crude check for whether we are in a grace period. The code
+        # in generate_fines() does a more thorough job, so this exists solely
+        # as a small optimization, and might be better off removed.
+
+        # If we have a grace period
+        if($obj->can('grace_period')) {
+            # Parse out the due date
+            my $due_date = $dt_parser->parse_datetime( cleanse_ISO8601($obj->due_date) );
+            # Add the grace period to the due date
+            $due_date->add(seconds => OpenSRF::Utils->interval_to_seconds($obj->grace_period));
+            # Don't generate fines on circs still in grace period
+            $skip_for_grace = $due_date > DateTime->now;
+        }
+        $CC->generate_fines({circs => [$obj], editor => $self->editor})
+            unless $skip_for_grace;
+
+        if (!$reservation and !$obj->stop_fines) {
+            $obj->stop_fines(OILS_STOP_FINES_CHECKIN);
+            $obj->stop_fines(OILS_STOP_FINES_RENEW) if $self->is_renewal;
+            $obj->stop_fines(OILS_STOP_FINES_CLAIMS_NEVERCHECKEDOUT) if $self->claims_never_checked_out;
+            $obj->stop_fines_time('now');
+            $obj->stop_fines_time($self->backdate) if $self->backdate;
+            $self->editor->update_action_circulation($obj);
+        }
+    }
+
+    # finally, handle voiding of lost item and processing fees
+    if ($self->needs_lost_bill_handling) {
+        my $void_cost = $U->ou_ancestor_setting_value(
+            $circ_lib, $lost_bill_opts->{ous_void_item_cost},
+            $self->editor) || 0;
+        my $void_proc_fee = $U->ou_ancestor_setting_value(
+            $circ_lib, $lost_bill_opts->{ous_void_proc_fee},
+            $self->editor) || 0;
+        $self->checkin_handle_lost_or_lo_now_found(
+            $lost_bill_opts->{void_cost_btype},
+            $lost_bill_opts->{is_longoverdue}) if $void_cost;
+        $self->checkin_handle_lost_or_lo_now_found(
+            $lost_bill_opts->{void_fee_btype},
+            $lost_bill_opts->{is_longoverdue}) if $void_proc_fee;
+    }
 
    return undef;
 }
 
-sub generate_fines_finish {
-   my $self = shift;
-   my $reservation = shift;
-
-   return undef unless $self->{_gen_fines_req};
-
-   my $id = $reservation ? $self->reservation->id : $self->circ->id;
-
-   $self->{_gen_fines_req}->wait_complete;
-   delete($self->{_gen_fines_req});
-
-   # refresh the circ in case the fine generator set the stop_fines field
-   $self->reservation($self->editor->retrieve_booking_reservation($id)) if $reservation;
-   $self->circ($self->editor->retrieve_action_circulation($id)) if !$reservation;
-
-   return undef;
-}
-
-sub checkin_handle_circ {
+sub checkin_handle_circ_start {
    my $self = shift;
    my $circ = $self->circ;
    my $copy = $self->copy;
@@ -3398,14 +3302,6 @@ sub checkin_handle_circ {
    if($self->backdate) {
         my $evt = $self->checkin_handle_backdate;
         return $self->bail_on_events($evt) if $evt;
-   }
-
-   if(!$circ->stop_fines) {
-      $circ->stop_fines(OILS_STOP_FINES_CHECKIN);
-      $circ->stop_fines(OILS_STOP_FINES_RENEW) if $self->is_renewal;
-      $circ->stop_fines(OILS_STOP_FINES_CLAIMS_NEVERCHECKEDOUT) if $self->claims_never_checked_out;
-      $circ->stop_fines_time('now');
-      $circ->stop_fines_time($self->backdate) if $self->backdate;
    }
 
     # Set the checkin vars since we have the item
@@ -3441,15 +3337,39 @@ sub checkin_handle_circ {
         $self->update_copy;
     }
 
+    return undef;
+}
 
-    # see if there are any fines owed on this circ.  if not, close it
-    ($obt) = $U->fetch_mbts($circ->id, $self->editor);
-    $circ->xact_finish('now') if( $obt and $obt->balance_owed == 0 );
+sub checkin_handle_circ_finish {
+    my $self = shift;
+    my $e = $self->editor;
+    my $circ = $self->circ;
 
-    $logger->debug("circulator: ".$obt->balance_owed." is owed on this circulation");
+    # Do one last check before the final circulation update to see 
+    # if the xact_finish value should be set or not.
+    #
+    # The underlying money.billable_xact may have been updated to
+    # reflect a change in xact_finish during checkin bills handling, 
+    # however we can't simply refresh the circulation from the DB,
+    # because other changes may be pending.  Instead, reproduce the
+    # xact_finish check here.  It won't hurt to do it again.
 
-    return $self->bail_on_events($self->editor->event)
-        unless $self->editor->update_action_circulation($circ);
+    my $sum = $e->retrieve_money_billable_transaction_summary($circ->id);
+    if ($sum) { # is this test still needed?
+
+        my $balance = $sum->balance_owed;
+
+        if ($balance == 0) {
+            $circ->xact_finish('now');
+        } else {
+            $circ->clear_xact_finish;
+        }
+
+        $logger->info("circulator: $balance is owed on this circulation");
+    }
+
+    return $self->bail_on_events($e->event)
+        unless $e->update_action_circulation($circ);
 
     return undef;
 }
@@ -3464,16 +3384,20 @@ sub checkin_handle_lost {
     my $max_return = $U->ou_ancestor_setting_value($circ_lib, 
         OILS_SETTING_MAX_ACCEPT_RETURN_OF_LOST, $self->editor) || 0;
 
-    return $self->checkin_handle_lost_or_longoverdue(
+    $self->lost_bill_options({
         circ_lib => $circ_lib,
-        max_return => $max_return,
         ous_void_item_cost => OILS_SETTING_VOID_LOST_ON_CHECKIN,
         ous_void_proc_fee => OILS_SETTING_VOID_LOST_PROCESS_FEE_ON_CHECKIN,
         ous_restore_overdue => OILS_SETTING_RESTORE_OVERDUE_ON_LOST_RETURN,
-        ous_immediately_available => OILS_SETTING_LOST_IMMEDIATELY_AVAILABLE,
-        ous_use_last_activity => undef, # not supported for LOST checkin
         void_cost_btype => 3, 
         void_fee_btype => 4 
+    });
+
+    return $self->checkin_handle_lost_or_longoverdue(
+        circ_lib => $circ_lib,
+        max_return => $max_return,
+        ous_immediately_available => OILS_SETTING_LOST_IMMEDIATELY_AVAILABLE,
+        ous_use_last_activity => undef # not supported for LOST checkin
     );
 }
 
@@ -3492,18 +3416,22 @@ sub checkin_handle_long_overdue {
     my $max_return = $U->ou_ancestor_setting_value($circ_lib, 
         'circ.max_accept_return_of_longoverdue', $self->editor) || 0;
 
+    $self->lost_bill_options({
+        circ_lib => $circ_lib,
+        ous_void_item_cost => 'circ.void_longoverdue_on_checkin',
+        ous_void_proc_fee => 'circ.void_longoverdue_proc_fee_on_checkin',
+        is_longoverdue => 1,
+        ous_restore_overdue => 'circ.restore_overdue_on_longoverdue_return',
+        void_cost_btype => 10,
+        void_fee_btype => 11
+    });
+
     return $self->checkin_handle_lost_or_longoverdue(
         circ_lib => $circ_lib,
         max_return => $max_return,
-        is_longoverdue => 1,
-        ous_void_item_cost => 'circ.void_longoverdue_on_checkin',
-        ous_void_proc_fee => 'circ.void_longoverdue_proc_fee_on_checkin',
-        ous_restore_overdue => 'circ.restore_overdue_on_longoverdue_return',
         ous_immediately_available => 'circ.longoverdue_immediately_available',
         ous_use_last_activity => 
-            'circ.longoverdue.use_last_activity_date_on_return',
-        void_cost_btype => 10,
-        void_fee_btype => 11
+            'circ.longoverdue.use_last_activity_date_on_return'
     )
 }
 
@@ -3569,35 +3497,18 @@ sub checkin_handle_lost_or_longoverdue {
         $logger->info("circulator: check-in of lost/lo item exceeds max ". 
             "return interval.  skipping fine/fee voiding, etc.");
 
+    } elsif ($self->dont_change_lost_zero) { # we leave lost zero balance alone
+
+        $logger->info("circulator: check-in of lost/lo item having a balance ".
+            "of zero, skipping fine/fee voiding and reinstatement.");
+
     } else { # within max-return interval or no interval defined
 
         $logger->info("circulator: check-in of lost/lo item is within the ".
             "max return interval (or no interval is defined).  Proceeding ".
             "with fine/fee voiding, etc.");
 
-        my $void_cost = $U->ou_ancestor_setting_value(
-            $circ_lib, $args{ous_void_item_cost}, $self->editor) || 0;
-        my $void_proc_fee = $U->ou_ancestor_setting_value(
-            $circ_lib, $args{ous_void_proc_fee}, $self->editor) || 0;
-        my $restore_od = $U->ou_ancestor_setting_value(
-            $circ_lib, $args{ous_restore_overdue}, $self->editor) || 0;
-
-        # for reference: generate-overdues-on-long-overdue-checkin is not 
-        # supported because it doesn't make any sense that a circ would be 
-        # marked as long-overdue before it was done being regular-overdue
-        if (!$args{is_longoverdue}) {
-            $self->generate_lost_overdue(1) if 
-                $U->ou_ancestor_setting_value($circ_lib, 
-                    OILS_SETTING_GENERATE_OVERDUE_ON_LOST_RETURN, 
-                    $self->editor);
-        }
-
-        $self->checkin_handle_lost_or_lo_now_found(
-            $args{void_cost_btype}, $args{is_longoverdue}) if $void_cost;
-        $self->checkin_handle_lost_or_lo_now_found(
-            $args{void_fee_btype}, $args{is_longoverdue}) if $void_proc_fee;
-        $self->checkin_handle_lost_or_lo_now_found_restore_od($circ_lib) 
-            if $restore_od && ! $self->void_overdues;
+        $self->needs_lost_bill_handling(1);
     }
 
     if ($circ_lib != $self->circ_lib) {
@@ -3641,12 +3552,14 @@ sub checkin_handle_backdate {
     $new_date->set_minute($original_date->minute());
     if ($new_date >= DateTime->now) {
         # We can't say that the item will be checked in later...so assume someone's clock is wrong instead.
-        $bd = undef;
+        # $self->backdate() autoload handler ignores undef values.  
+        # Clear the backdate manually.
+        $logger->info("circulator: ignoring future backdate: $new_date");
+        delete $self->{backdate};
     } else {
-        $bd = cleanse_ISO8601($new_date->datetime());
+        $self->backdate(cleanse_ISO8601($new_date->datetime()));
     }
 
-    $self->backdate($bd);
     return undef;
 }
 
@@ -3665,6 +3578,7 @@ sub check_checkin_copy_status {
             $status == OILS_COPY_STATUS_IN_TRANSIT  ||
             $status == OILS_COPY_STATUS_CATALOGING  ||
             $status == OILS_COPY_STATUS_ON_RESV_SHELF  ||
+            $status == OILS_COPY_STATUS_CANCELED_TRANSIT ||
             $status == OILS_COPY_STATUS_RESHELVING );
 
    return OpenILS::Event->new('COPY_STATUS_LOST', payload => $copy )
@@ -3767,18 +3681,13 @@ sub do_renew {
     my $self = shift;
     $self->log_me("do_renew()");
 
-    # Make sure there is an open circ to renew that is not
-    # marked as LOST, CLAIMSRETURNED, or LONGOVERDUE
+    # Make sure there is an open circ to renew
     my $usrid = $self->patron->id if $self->patron;
     my $circ = $self->editor->search_action_circulation({
         target_copy => $self->copy->id,
         xact_finish => undef,
         checkin_time => undef,
-        ($usrid ? (usr => $usrid) : ()),
-        '-or' => [
-            {stop_fines => undef},
-            {stop_fines => OILS_STOP_FINES_MAX_FINES}
-        ]
+        ($usrid ? (usr => $usrid) : ())
     })->[0];
 
     return $self->bail_on_events($self->editor->event) unless $circ;
@@ -3827,7 +3736,9 @@ sub do_renew {
     }
 
     # Run the fine generator against the old circ
-    $self->generate_fines_start;
+    # XXX This seems unnecessary, given that handle_fines runs in do_checkin
+    # a few lines down.  Commenting out, for now.
+    #$self->handle_fines;
 
     $self->run_renew_permit;
 
@@ -3866,7 +3777,6 @@ sub have_event {
 }
 
 
-
 sub run_renew_permit {
     my $self = shift;
 
@@ -3877,32 +3787,9 @@ sub run_renew_permit {
         $self->push_events(new OpenILS::Event("COPY_NEEDED_FOR_HOLD")) if $hold;
     }
 
-    if(!$self->legacy_script_support) {
-        my $results = $self->run_indb_circ_test;
-        $self->push_events($self->matrix_test_result_events)
-            unless $self->circ_test_success;
-    } else {
-
-        my $runner = $self->script_runner;
-
-        $runner->load($self->circ_permit_renew);
-        my $result = $runner->run or 
-            throw OpenSRF::EX::ERROR ("Circ Permit Renew Script Died: $@");
-        if ($result->{"events"}) {
-            $self->push_events(
-                map { new OpenILS::Event($_) } @{$result->{"events"}}
-            );
-            $logger->activity(
-                "circulator: circ_permit_renew for user " .
-                $self->patron->id . " returned " .
-                scalar(@{$result->{"events"}}) . " event(s)"
-            );
-        }
-
-        $self->mk_script_runner;
-    }
-
-    $logger->debug("circulator: re-creating script runner to be safe");
+    my $results = $self->run_indb_circ_test;
+    $self->push_events($self->matrix_test_result_events)
+        unless $self->circ_test_success;
 }
 
 
@@ -3984,33 +3871,11 @@ sub make_trigger_events {
 sub checkin_handle_lost_or_lo_now_found {
     my ($self, $bill_type, $is_longoverdue) = @_;
 
-    # ------------------------------------------------------------------
-    # remove charge from patron's account if lost item is returned
-    # ------------------------------------------------------------------
-
-    my $bills = $self->editor->search_money_billing(
-        {
-            xact => $self->circ->id,
-            btype => $bill_type
-        }
-    );
-
     my $tag = $is_longoverdue ? "LONGOVERDUE" : "LOST";
-    
-    $logger->debug("voiding ".scalar(@$bills)." $tag item billings");
-    for my $bill (@$bills) {
-        if( !$U->is_true($bill->voided) ) {
-            $logger->info("$tag item returned - voiding bill ".$bill->id);
-            $bill->voided('t');
-            $bill->void_time('now');
-            $bill->voider($self->editor->requestor->id);
-            my $note = ($bill->note) ? $bill->note . "\n" : '';
-            $bill->note("${note}System: VOIDED FOR $tag ITEM RETURNED");
 
-            $self->bail_on_events($self->editor->event)
-                unless $self->editor->update_money_billing($bill);
-        }
-    }
+    $logger->debug("voiding $tag item billings");
+    my $result = $CC->void_or_zero_bills_of_type($self->editor, $self->circ, $self->copy, $bill_type, "$tag ITEM RETURNED");
+    $self->bail_on_events($self->editor->event) if ($result);
 }
 
 sub checkin_handle_lost_or_lo_now_found_restore_od {
@@ -4023,81 +3888,52 @@ sub checkin_handle_lost_or_lo_now_found_restore_od {
     # restore those overdue charges voided when item was set to lost
     # ------------------------------------------------------------------
 
-    my $ods = $self->editor->search_money_billing(
+    my $ods = $self->editor->search_money_billing([
         {
             xact => $self->circ->id,
             btype => 1
+        },
+        {
+            order_by => {mb => 'billing_ts desc'}
         }
-    );
+    ]);
 
     $logger->debug("returning ".scalar(@$ods)." overdue charges pre-$tag");
-    for my $bill (@$ods) {
-        if( $U->is_true($bill->voided) ) {
-                $logger->info("$tag item returned - restoring overdue ".$bill->id);
-                $bill->voided('f');
-                $bill->clear_void_time;
-                $bill->voider($self->editor->requestor->id);
-                my $note = ($bill->note) ? $bill->note . "\n" : '';
-                $bill->note("${note}System: $tag RETURNED - OVERDUES REINSTATED");
-
-                $self->bail_on_events($self->editor->event)
-                        unless $self->editor->update_money_billing($bill);
+    # Because actual users get up to all kinds of unexpectedness, we
+    # only recreate up to $circ->max_fine in bills.  I know you think
+    # it wouldn't happen that bills could get created, voided, and
+    # recreated more than once, but I guaran-damn-tee you that it will
+    # happen.
+    if ($ods && @$ods) {
+        my $void_amount = 0;
+        my $void_max = $self->circ->max_fine();
+        # search for overdues voided the new way (aka "adjusted")
+        my @billings = map {$_->id()} @$ods;
+        my $voids = $self->editor->search_money_account_adjustment(
+            {
+                billing => \@billings
+            }
+        );
+        if (@$voids) {
+            map {$void_amount += $_->amount()} @$voids;
+        } else {
+            # if no adjustments found, assume they were voided the old way (aka "voided")
+            for my $bill (@$ods) {
+                if( $U->is_true($bill->voided) ) {
+                    $void_amount += $bill->amount();
+                }
+            }
         }
+        $CC->create_bill(
+            $self->editor,
+            ($void_amount < $void_max ? $void_amount : $void_max),
+            $ods->[0]->btype(),
+            $ods->[0]->billing_type(),
+            $self->circ->id(),
+            "System: $tag RETURNED - OVERDUES REINSTATED",
+            $ods->[0]->billing_ts() # date this restoration the same as the last overdue (for possible subsequent fine generation)
+        );
     }
-}
-
-# ------------------------------------------------------------------
-# Lost-then-found item checked in.  This sub generates new overdue
-# fines, beyond the point of any existing and possibly voided 
-# overdue fines, up to the point of final checkin time (or max fine
-# amount).  
-# ------------------------------------------------------------------
-sub generate_lost_overdue_fines {
-    my $self = shift;
-    my $circ = $self->circ;
-    my $e = $self->editor;
-
-    # Re-open the transaction so the fine generator can see it
-    if($circ->xact_finish or $circ->stop_fines) {
-        $e->xact_begin;
-        $circ->clear_xact_finish;
-        $circ->clear_stop_fines;
-        $circ->clear_stop_fines_time;
-        $e->update_action_circulation($circ) or return $e->die_event;
-        $e->xact_commit;
-    }
-
-    $e->xact_begin; # generate_fines expects an in-xact editor
-    $self->generate_fines;
-    $circ = $self->circ; # generate fines re-fetches the circ
-    
-    my $update = 0;
-
-    # Re-close the transaction if no money is owed
-    my ($obt) = $U->fetch_mbts($circ->id, $e);
-    if ($obt and $obt->balance_owed == 0) {
-        $circ->xact_finish('now');
-        $update = 1;
-    }
-
-    # Set stop fines if the fine generator didn't have to
-    unless($circ->stop_fines) {
-        $circ->stop_fines(OILS_STOP_FINES_CHECKIN);
-        $circ->stop_fines_time('now');
-        $update = 1;
-    }
-
-    # update the event data sent to the caller within the transaction
-    $self->checkin_flesh_events;
-
-    if ($update) {
-        $e->update_action_circulation($circ) or return $e->die_event;
-        $e->commit;
-    } else {
-        $e->rollback;
-    }
-
-    return undef;
 }
 
 1;

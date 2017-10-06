@@ -3,6 +3,7 @@ use strict; use warnings;
 use Apache2::Const -compile => qw(OK DECLINED FORBIDDEN HTTP_INTERNAL_SERVER_ERROR REDIRECT HTTP_BAD_REQUEST);
 use File::Spec;
 use Time::HiRes qw/time sleep/;
+use List::MoreUtils qw/uniq/;
 use OpenSRF::Utils::Cache;
 use OpenSRF::Utils::Logger qw/$logger/;
 use OpenILS::Utils::CStoreEditor qw/:funcs/;
@@ -25,20 +26,48 @@ our %cache = ( # cached data
     authority_fields => {en_us => {}}
 );
 
+sub child_init {
+    my $class = shift;
+    my %locales = @_;
+
+    # create a stub object with just enough in place
+    # to call init_ro_object_cache()
+    my $stub = bless({}, ref($class) || $class);
+    my $ctx = {};
+    $stub->ctx($ctx);
+
+    foreach my $locale (sort keys %locales) {
+        OpenSRF::AppSession->default_locale($locales{$locale});
+        $ctx->{locale} = $locale;
+        $stub->init_ro_object_cache();
+
+        # pre-cache various sets of objects
+        # known to be time-consuming to retrieve
+        # the first go around
+        $ro_object_subs->{$locale}->{aou_tree}();
+        $ro_object_subs->{$locale}->{aouct_tree}();
+        $ro_object_subs->{$locale}->{ccvm_list}();
+        $ro_object_subs->{$locale}->{crad_list}();
+        $ro_object_subs->{$locale}->{get_authority_fields}(1);
+    }
+}
+
 sub init_ro_object_cache {
     my $self = shift;
-    my $e = $self->editor;
     my $ctx = $self->ctx;
 
     # reset org unit setting cache on each page load to avoid the
     # requirement of reloading apache with each org-setting change
     $cache{org_settings} = {};
 
-    if($ro_object_subs) {
+    if($ro_object_subs->{$ctx->{locale}}) {
         # subs have been built.  insert into the context then move along.
-        $ctx->{$_} = $ro_object_subs->{$_} for keys %$ro_object_subs;
+        $ctx->{$_} = $ro_object_subs->{$ctx->{locale}}->{$_} for keys %{ $ro_object_subs->{$ctx->{locale}} };
         return;
     }
+
+    my $locale_subs = {};
+    my $locale = $ctx->{locale};
 
     # make all "field_safe" classes accesible by default in the template context
     my @classes = grep {
@@ -59,48 +88,64 @@ sub init_ro_object_cache {
         my $search_key = "search_$hint";
 
         # Retrieve the full set of objects with class $hint
-        $ro_object_subs->{$list_key} = sub {
+        $locale_subs->{$list_key} = sub {
             my $method = "retrieve_all_$eclass";
-            $cache{list}{$ctx->{locale}}{$hint} = $e->$method() unless $cache{list}{$ctx->{locale}}{$hint};
-            return $cache{list}{$ctx->{locale}}{$hint};
+            my $e = new_editor();
+            $cache{list}{$locale}{$hint} = $e->$method() unless $cache{list}{$locale}{$hint};
+            undef $e;
+            return $cache{list}{$locale}{$hint};
         };
 
         # locate object of class $hint with Ident field $id
         $cache{map}{$hint} = {};
-        $ro_object_subs->{$get_key} = sub {
+        $locale_subs->{$get_key} = sub {
             my $id = shift;
-            return $cache{map}{$ctx->{locale}}{$hint}{$id} if $cache{map}{$ctx->{locale}}{$hint}{$id};
-            ($cache{map}{$ctx->{locale}}{$hint}{$id}) = grep { $_->$ident_field eq $id } @{$ro_object_subs->{$list_key}->()};
-            return $cache{map}{$ctx->{locale}}{$hint}{$id};
+            return $cache{map}{$locale}{$hint}{$id} if $cache{map}{$locale}{$hint}{$id};
+            ($cache{map}{$locale}{$hint}{$id}) = grep { $_->$ident_field eq $id } @{$locale_subs->{$list_key}->()};
+            return $cache{map}{$locale}{$hint}{$id};
         };
 
         # search for objects of class $hint where field=value
         $cache{search}{$hint} = {};
-        $ro_object_subs->{$search_key} = sub {
+        $locale_subs->{$search_key} = sub {
             my ($field, $val, $filterfield, $filterval) = @_;
             my $method = "search_$eclass";
             my $cacheval = $val;
+            my $scalar_cacheval = 1;
+
             if (ref $val) {
+                $scalar_cacheval = 0;
                 $val = [sort(@$val)] if ref $val eq 'ARRAY';
                 $cacheval = OpenSRF::Utils::JSON->perl2JSON($val);
                 #$self->apache->log->info("cacheval : $cacheval");
             }
+
             my $search_obj = {$field => $val};
             if($filterfield) {
                 $search_obj->{$filterfield} = $filterval;
                 $cacheval .= ':' . $filterfield . ':' . $filterval;
+            } elsif (
+                $scalar_cacheval
+                and $cache{list}{$locale}{$hint}
+                and !$cache{search}{$locale}{$hint}{$field}{$cacheval}
+            ) {
+                return $cache{search}{$locale}{$hint}{$field}{$cacheval} =
+                    [ grep { $_->$field() eq $val } @{$cache{list}{$locale}{$hint}} ];
             }
-            #$cache{search}{$ctx->{locale}}{$hint}{$field} = {} unless $cache{search}{$ctx->{locale}}{$hint}{$field};
-            $cache{search}{$ctx->{locale}}{$hint}{$field}{$cacheval} = $e->$method($search_obj)
-                unless $cache{search}{$ctx->{locale}}{$hint}{$field}{$cacheval};
-            return $cache{search}{$ctx->{locale}}{$hint}{$field}{$cacheval};
+
+            my $e = new_editor();
+            $cache{search}{$locale}{$hint}{$field}{$cacheval} = $e->$method($search_obj)
+                unless $cache{search}{$locale}{$hint}{$field}{$cacheval};
+            undef $e;
+            return $cache{search}{$locale}{$hint}{$field}{$cacheval};
         };
     }
 
-    $ro_object_subs->{aou_tree} = sub {
+    $locale_subs->{aou_tree} = sub {
 
         # fetch the org unit tree
-        unless($cache{aou_tree}{$ctx->{locale}}) {
+        unless($cache{aou_tree}{$locale}) {
+            my $e = new_editor();
             my $tree = $e->search_actor_org_unit([
                 {   parent_ou => undef},
                 {   flesh            => -1,
@@ -113,47 +158,48 @@ sub init_ro_object_cache {
             # and simultaneously set the id => aou map cache
             sub flesh_aout {
                 my $node = shift;
-                my $ro_object_subs = shift;
-                my $ctx = shift;
-                $node->ou_type( $ro_object_subs->{get_aout}->($node->ou_type) );
-                $cache{map}{$ctx->{locale}}{aou}{$node->id} = $node;
-                flesh_aout($_, $ro_object_subs, $ctx) foreach @{$node->children};
+                my $locale_subs = shift;
+                my $locale = shift;
+                $node->ou_type( $locale_subs->{get_aout}->($node->ou_type) );
+                $cache{map}{$locale}{aou}{$node->id} = $node;
+                flesh_aout($_, $locale_subs, $locale) foreach @{$node->children};
             };
-            flesh_aout($tree, $ro_object_subs, $ctx);
-
-            $cache{aou_tree}{$ctx->{locale}} = $tree;
+            flesh_aout($tree, $locale_subs, $locale);
+            undef $e;
+            $cache{aou_tree}{$locale} = $tree;
         }
 
-        return $cache{aou_tree}{$ctx->{locale}};
+        return $cache{aou_tree}{$locale};
     };
 
     # Add a special handler for the tree-shaped org unit cache
-    $ro_object_subs->{get_aou} = sub {
+    $locale_subs->{get_aou} = sub {
         my $org_id = shift;
         return undef unless defined $org_id;
-        $ro_object_subs->{aou_tree}->(); # force the org tree to load
-        return $cache{map}{$ctx->{locale}}{aou}{$org_id};
+        $locale_subs->{aou_tree}->(); # force the org tree to load
+        return $cache{map}{$locale}{aou}{$org_id};
     };
 
     # Returns a flat list of aou objects.  often easier to manage than a tree.
-    $ro_object_subs->{aou_list} = sub {
-        $ro_object_subs->{aou_tree}->(); # force the org tree to load
-        return [ values %{$cache{map}{$ctx->{locale}}{aou}} ];
+    $locale_subs->{aou_list} = sub {
+        $locale_subs->{aou_tree}->(); # force the org tree to load
+        return [ values %{$cache{map}{$locale}{aou}} ];
     };
 
     # returns the org unit object by shortname
-    $ro_object_subs->{get_aou_by_shortname} = sub {
+    $locale_subs->{get_aou_by_shortname} = sub {
         my $sn = shift or return undef;
-        my $list = $ro_object_subs->{aou_list}->();
+        my $list = $locale_subs->{aou_list}->();
         return (grep {$_->shortname eq $sn} @$list)[0];
     };
 
-    $ro_object_subs->{aouct_tree} = sub {
+    $locale_subs->{aouct_tree} = sub {
 
         # fetch the org unit tree
-        unless(exists $cache{aouct_tree}{$ctx->{locale}}) {
-            $cache{aouct_tree}{$ctx->{locale}} = undef;
+        unless(exists $cache{aouct_tree}{$locale}) {
+            $cache{aouct_tree}{$locale} = undef;
 
+            my $e = new_editor();
             my $tree_id = $e->search_actor_org_unit_custom_tree(
                 {purpose => 'opac', active => 't'},
                 {idlist => 1}
@@ -177,23 +223,27 @@ sub init_ro_object_cache {
                     for my $cnode (@{$node->children}) {
                         my $child_org = $cnode->org_unit;
                         $child_org->parent_ou($aou->id);
-                        $child_org->ou_type( $ro_object_subs->{get_aout}->($child_org->ou_type) );
+                        $child_org->ou_type( $locale_subs->{get_aout}->($child_org->ou_type) );
                         push(@{$aou->children}, $child_org);
                         push(@nodes, $cnode);
                     }
                 }
 
-                $cache{aouct_tree}{$ctx->{locale}} = 
+                $cache{aouct_tree}{$locale} = 
                     $node_tree->org_unit if $node_tree;
             }
+            undef $e;
         }
 
-        return $cache{aouct_tree}{$ctx->{locale}};
+        return $cache{aouct_tree}{$locale};
     };
 
     # turns an ISO date into something TT can understand
-    $ro_object_subs->{parse_datetime} = sub {
+    $locale_subs->{parse_datetime} = sub {
         my $date = shift;
+
+        # Calling parse_datetime() with empty $date will lead to Internal Server Error
+        return '' if (!defined($date) or $date eq '');
 
         # Probably an accidental entry like '0212' instead of '2012',
         # but 1) the leading 0 may get stripped in cstore and
@@ -222,32 +272,40 @@ sub init_ro_object_cache {
     };
 
     # retrieve and cache org unit setting values
-    $ro_object_subs->{get_org_setting} = sub {
+    $locale_subs->{get_org_setting} = sub {
         my($org_id, $setting) = @_;
 
-        $cache{org_settings}{$ctx->{locale}}{$org_id}{$setting} =
+        $cache{org_settings}{$locale}{$org_id}{$setting} =
             $U->ou_ancestor_setting_value($org_id, $setting)
-                unless exists $cache{org_settings}{$ctx->{locale}}{$org_id}{$setting};
+                unless exists $cache{org_settings}{$locale}{$org_id}{$setting};
 
-        return $cache{org_settings}{$ctx->{locale}}{$org_id}{$setting};
+        return $cache{org_settings}{$locale}{$org_id}{$setting};
     };
 
     # retrieve and cache acsaf values
-    $ro_object_subs->{get_authority_fields} = sub {
+    $locale_subs->{get_authority_fields} = sub {
         my ($control_set) = @_;
 
-        if (not exists $cache{authority_fields}{$ctx->{locale}}{$control_set}) {
-            my $acs = $e->search_authority_control_set_authority_field(
-                {control_set => $control_set}
-            ) or return;
-            $cache{authority_fields}{$ctx->{locale}}{$control_set} =
-                +{ map { $_->id => $_ } @$acs };
+        if (not exists $cache{authority_fields}{$locale}{$control_set}) {
+            my $e = new_editor();
+            if (my $acs = $e->search_authority_control_set_authority_field(
+                                    {control_set => $control_set}
+                                )
+            ) {
+                $cache{authority_fields}{$locale}{$control_set} =
+                 +{ map { $_->id => $_ } @$acs };
+                undef $e;
+            } else {
+                undef $e;
+                return;
+            }
         }
 
-        return $cache{authority_fields}{$ctx->{locale}}{$control_set};
+        return $cache{authority_fields}{$locale}{$control_set};
     };
 
-    $ctx->{$_} = $ro_object_subs->{$_} for keys %$ro_object_subs;
+    $ctx->{$_} = $locale_subs->{$_} for keys %$locale_subs;
+    $ro_object_subs->{$locale} = $locale_subs;
 }
 
 sub generic_redirect {
@@ -357,7 +415,7 @@ sub get_records_and_facets {
     $self->timelog("get_records_and_facets(): about to call ".
         "$unapi_type via json_query (rec_ids has " . scalar(@$rec_ids));
 
-    my @loop_recs = @$rec_ids;
+    my @loop_recs = uniq @$rec_ids;
     my %rec_timeout;
 
     while (my $bid = shift @loop_recs) {
@@ -408,20 +466,19 @@ sub get_records_and_facets {
         }
     }
 
-
-    $self->timelog("get_records_and_facets():almost ready to fetch facets");
-    # collect the facet data
-    my $search = OpenSRF::AppSession->create('open-ils.search');
-    my $facet_req = $search->request(
-        'open-ils.search.facet_cache.retrieve', $facet_key
-    ) if $facet_key;
-
     # gather up the unapi recs
     $ses->session_wait(1);
     $self->timelog("get_records_and_facets():past session wait");
 
     my $facets = {};
     if ($facet_key) {
+        $self->timelog("get_records_and_facets():almost ready to fetch facets");
+        # collect the facet data
+        my $search = OpenSRF::AppSession->create('open-ils.search');
+        my $facet_req = $search->request(
+            'open-ils.search.facet_cache.retrieve', $facet_key
+        );
+
         my $tmp_facets = $facet_req->gather(1);
         $self->timelog("get_records_and_facets(): gathered facet data");
         for my $cmf_id (keys %$tmp_facets) {
@@ -445,11 +502,10 @@ sub get_records_and_facets {
             }
         }
         $self->timelog("get_records_and_facets(): gathered/sorted facet data");
+        $search->kill_me;
     } else {
         $facets = undef;
     }
-
-    $search->kill_me;
 
     return ($facets, map { $tmp_data{$_} } @$rec_ids);
 }
@@ -503,6 +559,9 @@ sub _get_search_lib {
     if ($self->apache->headers_in->get('OILS-Search-Lib')) {
         return $self->apache->headers_in->get('OILS-Search-Lib');
     }
+    if ($self->cgi->cookie('eg_search_lib')) {
+        return $self->cgi->cookie('eg_search_lib');
+    }
 
     my $pref_lib = $self->_get_pref_lib();
     return $pref_lib if $pref_lib;
@@ -520,6 +579,9 @@ sub _get_pref_lib {
 
     if ($self->apache->headers_in->get('OILS-Pref-Lib')) {
         return $self->apache->headers_in->get('OILS-Pref-Lib');
+    }
+    if ($self->cgi->cookie('eg_pref_lib')) {
+        return $self->cgi->cookie('eg_pref_lib');
     }
 
     if ($ctx->{user}) {

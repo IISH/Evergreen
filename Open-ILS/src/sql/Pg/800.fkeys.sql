@@ -26,6 +26,24 @@ CREATE RULE protect_bib_rec_delete AS
             WHERE OLD.id = biblio.record_entry.id
     );
 
+CREATE RULE protect_copy_location_delete AS
+    ON DELETE TO asset.copy_location DO INSTEAD (
+        UPDATE asset.copy_location SET deleted = TRUE WHERE OLD.id = asset.copy_location.id;
+        UPDATE acq.lineitem_detail SET location = NULL WHERE location = OLD.id;
+        DELETE FROM asset.copy_location_order WHERE location = OLD.id;
+        DELETE FROM asset.copy_location_group_map WHERE location = OLD.id;
+        DELETE FROM config.circ_limit_set_copy_loc_map WHERE copy_loc = OLD.id;
+    );
+    
+CREATE RULE protect_mono_part_delete AS
+    ON DELETE TO biblio.monograph_part DO INSTEAD (
+        UPDATE biblio.monograph_part
+            SET deleted = TRUE
+            WHERE OLD.id = biblio.monograph_part.id;
+        DELETE FROM asset.copy_part_map
+        WHERE part = OLD.id
+    );
+
 ALTER TABLE actor.usr ADD CONSTRAINT actor_usr_mailing_address_fkey FOREIGN KEY (mailing_address) REFERENCES actor.usr_address (id) DEFERRABLE INITIALLY DEFERRED;
 ALTER TABLE actor.usr ADD CONSTRAINT actor_usr_billing_address_fkey FOREIGN KEY (billing_address) REFERENCES actor.usr_address (id) DEFERRABLE INITIALLY DEFERRED;
 ALTER TABLE actor.usr ADD CONSTRAINT actor_usr_home_ou_fkey FOREIGN KEY (home_ou) REFERENCES actor.org_unit (id) DEFERRABLE INITIALLY DEFERRED;
@@ -153,5 +171,8 @@ ALTER TABLE config.filter_dialog_filter_set
 
 ALTER TABLE asset.copy ADD CONSTRAINT asset_copy_floating_fkey FOREIGN KEY (floating) REFERENCES config.floating_group (id) DEFERRABLE INITIALLY DEFERRED;
 ALTER TABLE asset.copy_template ADD CONSTRAINT asset_copy_template_floating_fkey FOREIGN KEY (floating) REFERENCES config.floating_group (id) DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE config.marc_field ADD CONSTRAINT config_marc_field_owner_fkey FOREIGN KEY (owner) REFERENCES actor.org_unit(id) DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE config.marc_subfield ADD CONSTRAINT config_marc_subfield_owner_fkey FOREIGN KEY (owner) REFERENCES actor.org_unit(id) DEFERRABLE INITIALLY DEFERRED;
 
 COMMIT;

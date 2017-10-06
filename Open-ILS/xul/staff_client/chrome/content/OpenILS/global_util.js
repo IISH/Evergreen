@@ -5,11 +5,28 @@
     function $(id) { return document.getElementById(id); }
 
     function oils_unsaved_data_V() {
+        var tabs = window.parent.parent.document.getElementById('main_tabs');
+
+        if (tabs) {
+            var idx = tabs.selectedIndex;
+            var tab = tabs.childNodes[idx];
+        }
+
         JSAN.use('OpenILS.data'); var data = new OpenILS.data(); data.stash_retrieve();
         data.stash_retrieve();
         if (typeof data.unsaved_data == 'undefined') { data.unsaved_data = 0; }
-        data.unsaved_data++;
-        window.oils_lock++;
+        //If there are tabs, we allow unsaved data to be incremented only a single time from marc edit.
+        //If there are not tabs, then we are in a new window like the Copy Editor (so retain original locking).
+        if (tab) {
+            if (tab.marc_edit_allow_multiple_locks || tab.in_marc_edit == false) {
+                data.unsaved_data++;
+                window.oils_lock++;
+            }
+        } else {
+            data.unsaved_data++;
+            window.oils_lock++;
+        }
+
         data.stash('unsaved_data');
         dump('\n=-=-=-=-=\n');
         dump('oils_unsaved_data_V for ' + location.href + '\n');
@@ -46,10 +63,27 @@
                 return window.oils_lock;
             }
         }
+        var tabs = window.parent.parent.document.getElementById('main_tabs');
+
+        if (tabs) {
+            var idx = tabs.selectedIndex;
+            var tab = tabs.childNodes[idx];
+        }
+
         if (typeof xulG != 'undefined') {
             if (typeof xulG.unlock_tab == 'function') {
                 dump('\twith xulG.lock_tab\n');
                 xulG.lock_tab();
+                //make sure we are not in the marc edit window
+                var marceditRe = /\/marcedit.xul$/;
+                if (marceditRe.exec(window.document.location)) {
+                    //We do not have to check for tab here because
+                    //the MARC editor is explicitly in a tabbed window
+                    if (tab) {
+                        tab.marc_edit_changed = true;
+                        tab.marc_edit_allow_multiple_locks = false;
+                    }
+                }
                 window.oils_lock++; // different window scope than the chrome of xulG.lock_tab
             } else {
                 dump('\twithout xulG.lock_tab\n');
@@ -65,6 +99,7 @@
     function oils_unlock_page(params) {
         dump('\n=-=-=-=-=\n');
         dump('oils_unlock_page for ' + location.href + '\n');
+
         if (typeof xulG != 'undefined') {
             if (typeof xulG.unlock_tab == 'function') {
                 dump('\twith xulG.unlock_tab\n');

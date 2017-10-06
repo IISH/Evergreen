@@ -26,18 +26,33 @@ function addSearchRow() {
         _search_row_template.cloneNode(true),
         $("adv_global_addrow")
     );
+
+    $("adv_global_input_table").rows[$("adv_global_input_table").rows.length - 2].getElementsByTagName("input")[0].value = "";
+}
+
+(function($){
+var _search_row_template, _expert_row_template, t;
+var _el_adv_global_row = $("adv_global_row"), _el_adv_expert_row = $("adv_expert_row");
+if (_el_adv_global_row) {
+    t = _el_adv_global_row.cloneNode(true);
+    t.id = null;
+    _search_row_template = t;
+}
+
+if (_el_adv_expert_row) {
+    t = _el_adv_expert_row.cloneNode(true);
+    t.id = null;
+    _expert_row_template = t;
 }
 function addExpertRow() {
-    if (!_expert_row_template) {
-        t = $("adv_expert_row").cloneNode(true);
-        t.id = null;
-        _expert_row_template = t;
-    }
-
     $("adv_expert_rows_here").appendChild(
         _expert_row_template.cloneNode(true)
     );
 }
+
+window.addSearchRow = addSearchRow;
+window.addExpertRow = addExpertRow;
+})($);
 function killRowIfAtLeast(min, link) {
     var row = link.parentNode.parentNode;
     if (row.parentNode.getElementsByTagName("tr").length > min)
@@ -84,4 +99,23 @@ function search_modifier_onchange(type, checkbox, submitOnChange) {
     if (submitOnChange) {  
         checkbox.form.submit(); 
     }
+}
+
+function exclude_onchange(checkbox) {
+    if (checkbox.form._adv && !checkbox.checked) {
+        var search_box = $('search_box');
+        // Other functions' form submits may create duplicates of this, so /g
+        var reg = /-search_format\(electronic\)/g;
+        search_box.value = search_box.value.replace(reg, "");
+        // Remove from the search form itself
+        var search_format_inputs = document.getElementsByName("fi:-search_format");
+        for (var j = 0; j < search_format_inputs.length; j++) {
+            if (search_format_inputs[j].value == 'electronic') {
+                search_format_inputs[j].parentNode.removeChild(search_format_inputs[j]);
+            }
+        }
+
+    }
+
+    checkbox.form.submit();
 }

@@ -76,4 +76,22 @@ $$ LANGUAGE PLPERLU;
 COMMENT ON FUNCTION evergreen.could_be_serial_holding_code(TEXT) IS
     'Return true if parameter is valid JSON representing an array that at minimum doesn''t make MARC::Field balk and only has subfield labels exactly one character long.  Otherwise false.';
 
+CREATE OR REPLACE FUNCTION evergreen.protect_reserved_rows_from_delete() RETURNS trigger AS $protect_reserved$
+BEGIN
+IF OLD.id < TG_ARGV[0]::INT THEN
+    RAISE EXCEPTION 'Cannot delete row with reserved ID %', OLD.id;
+END IF;
+RETURN OLD;
+END
+$protect_reserved$
+LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION evergreen.unaccent_and_squash ( IN arg text) RETURNS text
+    IMMUTABLE STRICT AS $$
+	BEGIN
+	RETURN evergreen.lowercase(unaccent(regexp_replace(arg, '[\s[:punct:]]','','g')));
+	END;
+$$ LANGUAGE PLPGSQL;
+
+
 COMMIT;

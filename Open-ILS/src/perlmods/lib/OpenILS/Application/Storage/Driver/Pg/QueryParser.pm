@@ -85,15 +85,24 @@ sub quote_phrase_value {
 
     my $left_anchored = '';
     my $right_anchored = '';
+    my $left_wb = 0;
+    my $right_wb = 0;
+
     $left_anchored  = $1 if $value =~ m/^([*\^])/;
     $right_anchored = $1 if $value =~ m/([*\$])$/;
+
+    # We can't use word-boundary bracket expressions if the relevant char
+    # is not actually a "word" characters.
+    $left_wb  = $wb if $value =~ m/^\w+/;
+    $right_wb = $wb if $value =~ m/\w+$/;
+
     $value =~ s/^[*\^]//   if $left_anchored;
     $value =~ s/[*\$]$//  if $right_anchored;
     $value = quotemeta($value);
     $value = '^' . $value if $left_anchored eq '^';
     $value = "$value\$"   if $right_anchored eq '$';
-    $value = '[[:<:]]' . $value if $wb && !$left_anchored;
-    $value .= '[[:>:]]' if $wb && !$right_anchored;
+    $value = '[[:<:]]' . $value if $left_wb && !$left_anchored;
+    $value .= '[[:>:]]' if $right_wb && !$right_anchored;
     return $self->quote_value($value);
 }
 
@@ -115,6 +124,14 @@ sub default_preferred_language_multiplier {
 
     $self->custom_data->{default_preferred_language_multiplier} = $lang if ($lang);
     return $self->custom_data->{default_preferred_language_multiplier};
+}
+
+sub max_popularity_importance_multiplier {
+    my $self = shift;
+    my $max = shift;
+
+    $self->custom_data->{max_popularity_importance_multiplier} = $max if defined($max);
+    return $self->custom_data->{max_popularity_importance_multiplier};
 }
 
 sub simple_plan {
@@ -642,6 +659,8 @@ __PACKAGE__->add_search_filter( 'statuses' );
 __PACKAGE__->add_search_filter( 'locations' );
 __PACKAGE__->add_search_filter( 'location_groups' );
 __PACKAGE__->add_search_filter( 'bib_source' );
+__PACKAGE__->add_search_filter( 'badge_orgs' );
+__PACKAGE__->add_search_filter( 'badges' );
 __PACKAGE__->add_search_filter( 'site' );
 __PACKAGE__->add_search_filter( 'pref_ou' );
 __PACKAGE__->add_search_filter( 'lasso' );
@@ -655,6 +674,7 @@ __PACKAGE__->add_search_filter( 'skip_check' );
 __PACKAGE__->add_search_filter( 'superpage' );
 __PACKAGE__->add_search_filter( 'superpage_size' );
 __PACKAGE__->add_search_filter( 'estimation_strategy' );
+__PACKAGE__->add_search_filter( 'from_metarecord' );
 __PACKAGE__->add_search_modifier( 'available' );
 __PACKAGE__->add_search_modifier( 'staff' );
 __PACKAGE__->add_search_modifier( 'deleted' );
@@ -696,12 +716,30 @@ use OpenILS::Application::AppUtils;
 my $apputils = "OpenILS::Application::AppUtils";
 
 our %_dfilter_controlled_cache = ();
+our %_dfilter_stats_cache = ();
+our $_pg_version = 0;
 
 sub dynamic_filter_compile {
     my ($self, $filter, $params, $negate) = @_;
     my $e = OpenILS::Utils::CStoreEditor->new;
 
     $negate = $negate ? '!' : '';
+
+    if (!$_pg_version) {
+        ($_pg_version = $e->json_query({from => ['version']})->[0]->{version}) =~ s/^.+?(\d\.\d).+$/$1/;
+    }
+
+    my $common = 0;
+    if ($_pg_version >= 9.2) {
+        if (!scalar keys %_dfilter_stats_cache) {
+            my $data = $e->json_query({from => ['evergreen.pg_statistics', 'record_attr_vector_list', 'vlist']});
+            %_dfilter_stats_cache = map {
+                ( $_->{element}, $_->{frequency} )
+            } grep { $_->{frequency} > 5 } @$data; # Pin floor to 5% of the table
+        }
+    } else {
+        $common = 1; # Assume it's expensive
+    }
 
     if (!exists($_dfilter_controlled_cache{$filter})) {
         my $crad = $e->retrieve_config_record_attr_definition($filter);
@@ -718,16 +756,15 @@ sub dynamic_filter_compile {
     my $value_field = $_dfilter_controlled_cache{$filter}{controlled} ?
         'code' : 'value';
 
-    return sprintf('%s(%s)', $negate,
+    my $attr_objects = $e->$method({ $attr_field => $filter, $value_field => $params });
+    $common = scalar(grep { exists($_dfilter_stats_cache{$_->id}) } @$attr_objects) unless $common;
+    
+    return (sprintf('%s(%s)', $negate,
         join(
             '|', 
-            map {
-                $_->id
-            } @{
-                $e->$method({ $attr_field => $filter, $value_field => $params })
-            }
+            map { $_->id } @$attr_objects
         )
-    );
+    ), $common);
 }
 
 sub toSQL {
@@ -782,7 +819,6 @@ sub toSQL {
         $rel = "($rel * COALESCE( NULLIF( FIRST(mrv.vlist \@> ARRAY[lang_with.id]), FALSE )::INT * $plw, 1))";
         $$flat_plan{uses_mrv} = 1;
     }
-    $rel = "1.0/($rel)::NUMERIC";
 
     my $mrv_join = '';
     if ($$flat_plan{uses_mrv}) {
@@ -805,23 +841,119 @@ sub toSQL {
         $bre_join = 'INNER JOIN biblio.record_entry bre ON m.source = bre.id';
     }
     
-    my $rank = $rel;
-
     my $desc = 'ASC';
     $desc = 'DESC' if ($self->find_modifier('descending'));
 
     my $nullpos = 'NULLS LAST';
     $nullpos = 'NULLS FIRST' if ($self->find_modifier('nullsfirst'));
 
+    # Do we have a badges() filter?
+    my $badges = '';
+    my ($badge_filter) = $self->find_filter('badges');
+    if ($badge_filter && @{$badge_filter->args}) {
+        $badges = join (',', grep /^\d+$/, @{$badge_filter->args});
+    }
+
+    # Do we have a badge_orgs() filter? (used for calculating popularity)
+    my $borgs = '';
+    my ($bo_filter) = $self->find_filter('badge_orgs');
+    if ($bo_filter && @{$bo_filter->args}) {
+        $borgs = join (',', grep /^\d+$/, @{$bo_filter->args});
+    }
+
+    # Build the badge-ish WITH query
+    my $pop_with = <<'    WITH';
+        pop_with AS (
+            SELECT  record,
+                    ARRAY_AGG(badge) AS badges,
+                    SUM(s.score::NUMERIC*b.weight::NUMERIC)/SUM(b.weight::NUMERIC) AS total_score
+              FROM  rating.record_badge_score s
+                    JOIN rating.badge b ON (
+                        b.id = s.badge
+    WITH
+
+    $pop_with .= " AND b.id = ANY ('{$badges}')" if ($badges);
+    $pop_with .= " AND b.scope = ANY ('{$borgs}')" if ($borgs);
+    $pop_with .= ') GROUP BY 1)'; 
+
+    my $pop_join = $badges ? # inner join if we are restricting via badges()
+        'INNER JOIN pop_with ON ( m.source = pop_with.record )' : 
+        'LEFT JOIN pop_with ON ( m.source = pop_with.record )';
+
+    $$flat_plan{with} .= ',' if $$flat_plan{with};
+    $$flat_plan{with} .= $pop_with;
+
+
+    my $rank;
+    my $pop_extra_sort = '';
     if (grep {$_ eq $sort_filter} @{$self->QueryParser->dynamic_sorters}) {
         $rank = "FIRST((SELECT value FROM metabib.record_sorter rbr WHERE rbr.source = m.source and attr = '$sort_filter'))"
     } elsif ($sort_filter eq 'create_date') {
         $rank = "FIRST((SELECT create_date FROM biblio.record_entry rbr WHERE rbr.id = m.source))";
     } elsif ($sort_filter eq 'edit_date') {
         $rank = "FIRST((SELECT edit_date FROM biblio.record_entry rbr WHERE rbr.id = m.source))";
+    } elsif ($sort_filter eq 'poprel') {
+        my $max_mult = $self->QueryParser->max_popularity_importance_multiplier() // 2.0;
+        $max_mult = 0.1 if $max_mult < 0.1; # keep it within reasonable bounds,
+                                            # and avoid the division-by-zero error
+                                            # you'd get if you allowed it to be
+                                            # zero
+
+        if ( $max_mult == 1.0 ) { # no adjustment requested by the configuration
+            $rank = "1.0/($rel)::NUMERIC";
+        } else { # calculate adjustment
+
+            # Scale the 0-5 effect of popularity badges by providing a multiplier
+            # for the badge average based on the overall maximum
+            # multiplier.  Two examples, comparing the effect to the default
+            # $max_mult value of 2.0, which causes a $adjusted_scale value
+            # of 0.2:
+            #
+            #  * Given the default $max_mult of 2.0, the value of
+            #    $adjusted_scale will be 0.2 [($max_mult - 1.0) / 5.0].
+            #    For a record whose average badge score is the maximum
+            #    of 5.0, that would make the relevance multiplier be
+            #    2.0:
+            #       1.0 + (5.0 [average score] * 0.2 [ $adjusted_scale ],
+            #    This would have the effect of doubling the effective
+            #    relevance of highly popular items.
+            #
+            #  * Given a $max_mult of 1.1, the value of $adjusted_scale
+            #    will be 0.02, meaning that the average badge value will be
+            #    multiplied by 0.02 rather than 0.2, then added to 1.0 and
+            #    used as a multiplier against the base relevance.  Thus a
+            #    change of at most 10% to the base relevance for a record
+            #    with a 5.0 average badge score. This will allow records
+            #    that are naturally very relevant to avoid being pushed
+            #    below badge-heavy records.
+            #
+            #  * Given a $max_mult of 3.0, the value of $adjusted_scale
+            #    will be 0.4, meaning that the average badge value will be
+            #    multiplied by 0.4 rather than 0.2, then added to 1.0 and
+            #    used as a multiplier against the base relevance. Thus a
+            #    change of as much as 200% to (or three times the size of)
+            #    the base relevance for a record with a 5.0 average badge
+            #    score.  This in turn will cause badges to outweigh
+            #    relevance to a very large degree.
+            #
+            # The maximum badge multiplier can be set to a value less than
+            # 1.0; this would have the effect of making less popular items
+            # show up higher in the results.  While this is not a likely
+            # option for production use, it could be useful for identifying
+            # interesting long-tail hits, particularly in a database
+            # where enough badges are configured so that very few records
+            # have an overage badge score of zero.
+
+            my $adjusted_scale = ( $max_mult - 1.0 ) / 5.0;
+            $rank = "1.0/(( $rel ) * (1.0 + (AVG(COALESCE(pop_with.total_score::NUMERIC,0.0::NUMERIC)) * ${adjusted_scale}::NUMERIC)))::NUMERIC";
+        }
+    } elsif ($sort_filter =~ /^pop/) {
+        $rank = '1.0/(AVG(COALESCE(pop_with.total_score::NUMERIC,0.0::NUMERIC)) + 5.0::NUMERIC)::NUMERIC';
+        my $pop_desc = $desc eq 'ASC' ? 'DESC' : 'ASC';
+        $pop_extra_sort = "3 $pop_desc $nullpos,";
     } else {
         # default to rel ranking
-        $rank = $rel;
+        $rank = "1.0/($rel)::NUMERIC";
     }
 
     my $key = 'm.source';
@@ -849,20 +981,23 @@ sub toSQL {
 $with
 SELECT  $key AS id,
         $agg_records,
-        $rel AS rel,
+        (${rel})::NUMERIC AS rel,
         $rank AS rank, 
-        FIRST(pubdate_t.value) AS tie_break
+        FIRST(pubdate_t.value) AS tie_break,
+        STRING_AGG(ARRAY_TO_STRING(pop_with.badges,','),',') AS badges,
+        AVG(COALESCE(pop_with.total_score::NUMERIC,0.0::NUMERIC))::NUMERIC(2,1) AS popularity
   FROM  metabib.metarecord_source_map m
         $$flat_plan{from}
-        $pubdate_join
         $mra_join
         $mrv_join
         $bre_join
+        $pop_join
+        $pubdate_join
         $lang_join
   WHERE 1=1
         $flat_where
   GROUP BY 1
-  ORDER BY 4 $desc $nullpos, 5 DESC $nullpos, 3 DESC
+  ORDER BY 4 $desc $nullpos, $pop_extra_sort 5 DESC $nullpos, 3 DESC
   LIMIT $core_limit
 SQL
 
@@ -1059,6 +1194,7 @@ sub flatten {
     my $joiner = "\n" . ${spc} x ( $self->plan_level + 5 ) . ($self->joiner eq '&' ? 'AND ' : 'OR ');
 
     my @dlist = ();
+    my $common = 0;
     # for each dynamic filter, build more of the WHERE clause
     for my $filter (@{$self->filters}) {
         my $NOT = $filter->negate ? 'NOT ' : '';
@@ -1070,7 +1206,8 @@ sub flatten {
             warn "flatten(): processing dynamic filter ". $filter->name ."\n"
                 if $self->QueryParser->debug;
 
-            my $vlist_query = $self->dynamic_filter_compile( $fname, $filter->args, $filter->negate );
+            my $vlist_query;
+            ($vlist_query, $common) = $self->dynamic_filter_compile( $fname, $filter->args, $filter->negate );
 
             # bool joiner for intra-plan nodes/filters
             push(@dlist, $self->joiner) if @dlist;
@@ -1223,6 +1360,12 @@ sub flatten {
                            . join(',', map { $self->QueryParser->quote_value($_) } @{ $filter->args })
                            . "), false)";
                 }
+            } elsif ($filter->name eq 'from_metarecord') {
+                if (@{$filter->args} > 0) {
+                    my $key = 'm.metarecord';
+                    $where .= $joiner if $where ne '';
+                    $where .= "$key ${NOT}IN (" . join(',', map { $self->QueryParser->quote_value($_) } @{$filter->args}) . ')';
+                }
             }
         }
     }
@@ -1230,10 +1373,17 @@ sub flatten {
     if (@dlist) {
 
         $where .= $joiner if $where ne '';
-        $where .= sprintf(
-            'mrv.vlist @@ \'%s\'',
-            join('', @dlist)
-        );
+        if ($common) { # Use a function wrapper to inform PG of the non-rareness of one or more filter elements
+            $where .= sprintf(
+                'evergreen.query_int_wrapper(mrv.vlist, \'%s\')',
+                join('', @dlist)
+            );
+        } else {
+            $where .= sprintf(
+                'mrv.vlist @@ \'%s\'',
+                join('', @dlist)
+            );
+        }
     }
 
     warn "flatten(): full filter where => $where\n" if $self->QueryParser->debug;
@@ -1500,7 +1650,7 @@ sub rank {
 
     my $cover_density = 0;
     for my $norm ( keys %$rank_norm_map) {
-        $cover_density += $$rank_norm_map{$norm} if ($self->plan->find_modifier($norm));
+        $cover_density += $$rank_norm_map{$norm} if ($self->plan->QueryParser->parse_tree->find_modifier($norm));
     }
 
     my $weights = join(', ', @{$self->plan->QueryParser->search_class_weights($self->classname)});

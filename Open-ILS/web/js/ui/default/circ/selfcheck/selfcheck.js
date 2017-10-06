@@ -15,8 +15,12 @@ dojo.requireLocalization('openils.circ', 'selfcheck');
 var localeStrings = dojo.i18n.getLocalization('openils.circ', 'selfcheck');
 
 // set patron timeout default
-var patronTimeout = 180000; /* 3 minutes */
+var patronTimeout = 160000; /* 2 minutes, 40 seconds */
 var timerId = null;
+// 20 second inactivity warning; total default timeout is 3 minutes.
+var patronTimeoutWarning = 20000; 
+var selfckWarningSetup = false;
+var selfckWarningTimer;
 
 const SET_BARCODE_REGEX = 'opac.barcode_regex';
 const SET_PATRON_TIMEOUT = 'circ.selfcheck.patron_login_timeout';
@@ -37,7 +41,7 @@ openils.User.default_login_agent = 'selfcheck';
 function selfckStartTimer() {
     timerId = setTimeout(
         function() {
-            SelfCheckManager.prototype.logoutPatron();
+            selfckLogoutWarning();
         },
         patronTimeout
     );
@@ -47,6 +51,41 @@ function selfckStartTimer() {
 function selfckResetTimer() {
     clearTimeout(timerId);
     selfckStartTimer();
+}
+
+function selfckLogoutWarning() {
+
+    // connect the logout warning dialog button handlers if needed
+    if (!selfckWarningSetup) {
+        selfckWarningSetup = true;
+
+        dojo.connect(oilsSelfckLogout, 'onClick', 
+            function() {
+                clearTimeout(selfckWarningTimer);
+                oilsSelfckLogoutDialog.hide();
+                SelfCheckManager.prototype.logoutPatron();
+            }
+        );
+
+        dojo.connect(oilsSelfckContinue, 'onClick', 
+            function() {
+                clearTimeout(selfckWarningTimer);
+                oilsSelfckLogoutDialog.hide();
+                selfckResetTimer();
+            }
+        );
+    }
+
+    // warn the patron of imminent logout
+    oilsSelfckLogoutDialog.show();
+    selfckWarningTimer = setTimeout(
+        function() {
+            // no action was taken, force a logout.
+            oilsSelfckLogoutDialog.hide();
+            SelfCheckManager.prototype.logoutPatron();
+        },
+        patronTimeoutWarning
+    );
 }
 
 function SelfCheckManager() {
@@ -61,6 +100,7 @@ function SelfCheckManager() {
 
     this.checkouts = [];
     this.itemsOut = [];
+    this.holds = []; 
 
     // During renewals, keep track of the ID of the previous circulation. 
     // Previous circ is used for tracking failed renewals (for receipts).
@@ -162,8 +202,7 @@ SelfCheckManager.prototype.init = function() {
             );
         },
         'oils-selfck-nav-home' : function() { self.drawCircPage(); },
-        'oils-selfck-nav-logout' : function() { self.logoutPatron(); },
-        'oils-selfck-nav-logout-print' : function() { self.logoutPatron(true); },
+        'oils-selfck-nav-logout' : function() { self.logoutPatron(true); },
         'oils-selfck-items-out-details-link' : function() { self.drawItemsOutPage(); },
         'oils-selfck-print-list-link' : function() { self.printList(); }
     }
@@ -292,11 +331,20 @@ SelfCheckManager.prototype.loadOrgSettings = function() {
             this.orgSettings[k] = settings[k].value;
     }
 
-    if(settings[SET_BARCODE_REGEX]) 
+    if(settings[SET_BARCODE_REGEX]) {
         this.patronBarcodeRegex = new RegExp(settings[SET_BARCODE_REGEX].value);
+    } else {
+        this.patronBarcodeRegex = new RegExp(/^\d/); 
+        // this assumes barcodes start with digits
+    }
 
-    if(settings[SET_PATRON_TIMEOUT])
-        patronTimeout = parseInt(settings[SET_PATRON_TIMEOUT].value) * 1000;
+    // Subtract the timeout warning interval from the configured timeout 
+    // so that when taken together they add up to the configured amount.
+    if(settings[SET_PATRON_TIMEOUT]) {
+        patronTimeout = 
+            (parseInt(settings[SET_PATRON_TIMEOUT].value) * 1000) 
+            - patronTimeoutWarning;
+    }
 }
 
 SelfCheckManager.prototype.drawLoginPage = function() {
@@ -421,10 +469,28 @@ SelfCheckManager.prototype.fetchPatron = function(barcode, usrname) {
         this.handleAlert('', false, 'login-success');
         dojo.byId('oils-selfck-user-banner').innerHTML = 
             dojo.string.substitute(localeStrings.WELCOME_BANNER, [this.patron.first_given_name()]);
+
+        if (this.patron.email() && // they have an email address set and ...
+            this.patron.email().match(/.*@.*/).length > 0 // it sorta looks like an email address
+        ) {
+            openils.Util.removeCSSClass( dojo.byId('oils-selfck-receipt-email').parentNode, 'hidden' );
+            if (user_setting_value(this.patron, 'circ.send_email_checkout_receipts') == 'true') // their selected default
+                dojo.byId('oils-selfck-receipt-email').checked = true;
+        }
+
         this.drawCircPage();
     }
 }
 
+function user_setting_value (user, setting) {
+    if (user) {
+        var list = user.settings().filter(function(s){
+            return s.name() == setting;
+        });
+
+        if (list.length) return list[0].value();
+    }
+}
 
 SelfCheckManager.prototype.handleAlert = function(message, shouldPopup, sound) {
 
@@ -496,6 +562,7 @@ SelfCheckManager.prototype.updateScanBox = function(args) {
  */
 SelfCheckManager.prototype.drawCircPage = function() {
 
+    openils.Util.show('oils-selfck-bottom-div');
     openils.Util.show('oils-selfck-circ-tbody', 'table-row-group');
     this.goToTab('checkout');
 
@@ -763,6 +830,10 @@ SelfCheckManager.prototype.drawHoldsPage = function() {
 }
 
 SelfCheckManager.prototype.insertHold = function(data) {
+
+    // store hold data to pass along to receipt printing function
+    this.holds.push(data);
+
     var row = this.holdTemplate.cloneNode(true);
 
     if(data.mvr.isbn()) {
@@ -940,6 +1011,9 @@ SelfCheckManager.prototype.checkin = function(barcode, abortTransit) {
  * out to the patron, redirect to renew()
  */
 SelfCheckManager.prototype.checkout = function(barcode, override) {
+
+    // reset timeout
+    selfckResetTimer();
 
     this.prevCirc = null;
 
@@ -1258,6 +1332,40 @@ SelfCheckManager.prototype.initPrinter = function() {
 }
 
 /**
+ * Email a receipt for this session's checkouts
+ */
+SelfCheckManager.prototype.emailSessionReceipt = function(callback) {
+
+    var circIds = [];
+
+    // collect the circs and failure info
+    dojo.forEach(
+        this.checkouts, 
+        function(blob) {
+            circIds.push(blob.circ);
+        }
+    );
+
+    var params = [
+        this.authtoken, 
+        this.patron.id(),
+        circIds
+    ];
+
+    var self = this;
+    fieldmapper.standardRequest(
+        ['open-ils.circ', 'open-ils.circ.checkout.batch_notify.session.atomic'],
+        {   
+            async : true,
+            params : params,
+            oncomplete : function() {
+                if (callback) callback(); // fire and forget
+            }
+        }
+    );
+}
+
+/**
  * Print a receipt for this session's checkouts
  */
 SelfCheckManager.prototype.printSessionReceipt = function(callback) {
@@ -1335,6 +1443,7 @@ SelfCheckManager.prototype.printData = function(data, numItems, callback) {
 }
 
 
+
 /**
  * Print a receipt for this user's items out
  */
@@ -1379,7 +1488,7 @@ SelfCheckManager.prototype.printItemsOutReceipt = function(callback) {
 }
 
 /**
- * Print a receipt for this user's items out
+ * Print a receipt for this user's holds
  */
 SelfCheckManager.prototype.printHoldsReceipt = function(callback) {
 
@@ -1393,12 +1502,24 @@ SelfCheckManager.prototype.printHoldsReceipt = function(callback) {
     dojo.forEach(this.holds,
         function(data) {
             holdIds.push(data.hold.id());
+
+            //get pickup library info
+            var pu = fieldmapper.standardRequest(['open-ils.actor','open-ils.actor.org_unit.retrieve'],[null,data.hold.pickup_lib()]);
+            
             if(data.status == 4) {
-                holdData.push({ready : true});
+                holdData.push({
+                    ready : true,
+                    item_title : data.mvr.title(),
+                    item_author : data.mvr.author(),
+                    pickup_lib : pu.name()
+                });
             } else {
                 holdData.push({
                     queue_position : data.queue_position, 
-                    potential_copies : data.potential_copies
+                    potential_copies : data.potential_copies,
+                    item_title : data.mvr.title(),
+                    item_author : data.mvr.author(),
+                    pickup_lib : pu.name()
                 });
             }
         }
@@ -1470,10 +1591,11 @@ SelfCheckManager.prototype.printPaymentReceipt = function(response, callback) {
 }
 
 /**
- * Print a receipt for this user's items out
+ * Print a receipt for this user's fines
  */
 SelfCheckManager.prototype.printFinesReceipt = function(callback) {
 
+    if(!this.creditPayableBalance.length) return;
     progressDialog.show(true);
 
     var params = [
@@ -1519,11 +1641,22 @@ SelfCheckManager.prototype.printFinesReceipt = function(callback) {
 SelfCheckManager.prototype.logoutPatron = function(print) {
     progressDialog.show(true); // prevent patron from clicking logout link twice
     if(print && this.checkouts.length) {
-        this.printSessionReceipt(
-            function() {
-                location.href = location.href;
-            }
-        );
+        if (dojo.byId('oils-selfck-receipt-print').checked) {
+            this.printSessionReceipt(
+                function() {
+                    location.href = location.href;
+                }
+            );
+        } else if (dojo.byId('oils-selfck-receipt-email').checked) {
+            this.emailSessionReceipt(
+                function() {
+                    location.href = location.href;
+                }
+            );
+        } else {
+            // user elected to get no receipt
+            location.href = location.href;
+        }
     } else {
         location.href = location.href;
     }

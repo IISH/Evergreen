@@ -1,21 +1,21 @@
 # English (United Kingdom) translation for evergreen
-# Copyright (c) 2009 Rosetta Contributors and Canonical Ltd 2009
+# Copyright (c) 2017 Rosetta Contributors and Canonical Ltd 2017
 # This file is distributed under the same license as the evergreen package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2009.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: evergreen\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: 2014-09-11 02:13-0400\n"
-"PO-Revision-Date: 2014-02-25 14:51+0000\n"
-"Last-Translator: Andi Chandler <Unknown>\n"
+"POT-Creation-Date: 2017-08-25 14:20-0500\n"
+"PO-Revision-Date: 2017-04-09 07:00+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: English (United Kingdom) <en_GB@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-09-12 06:24+0000\n"
-"X-Generator: Launchpad (build 17196)\n"
+"X-Launchpad-Export-Date: 2017-08-28 05:42+0000\n"
+"X-Generator: Launchpad (build 18446)\n"
 
 #. Common Entities
 #: reports.common.logged_in_as
@@ -272,7 +272,7 @@ msgstr "Template Creator:"
 
 #: reports.oils_rpt_editor.doc_url
 msgid "Template Documentation URL:"
-msgstr ""
+msgstr "Template Documentation URL:"
 
 #: reports.oils_rpt_editor.template_description
 msgid "Template Description:"
@@ -383,26 +383,28 @@ msgstr "Save Report"
 
 #: reports.oils_rpt_editor.apply_changes
 msgid "Apply Changes"
-msgstr ""
+msgstr "Apply Changes"
 
 #: reports.oils_rpt_editor.save_report_new
 msgid "Save As New"
-msgstr ""
+msgstr "Save As New"
 
 #: reports.oils_rpt_editor.confirm_sched
 msgid ""
 "Changes will be applied to pending reports that have not yet run. Do you "
 "want to continue with modifying those pending reports?"
 msgstr ""
+"Changes will be applied to pending reports that have not yet run. Do you "
+"want to continue with modifying those pending reports?"
 
 #: reports.oils_rpt_editor.cancel
 msgctxt "reports.oils_rpt_editor.cancel"
 msgid "Cancel"
-msgstr ""
+msgstr "Cancel"
 
 #: reports.oils_rpt_editor.exit_report
 msgid "Return"
-msgstr ""
+msgstr "Return"
 
 #: reports.oils_rpt_editor.empty_parameter
 msgid ""
@@ -525,11 +527,11 @@ msgstr "Schedule report"
 
 #: reports.oils_rpt_folder_window.view_report
 msgid "View"
-msgstr ""
+msgstr "View"
 
 #: reports.oils_rpt_folder_window.edit_report
 msgid "Edit"
-msgstr ""
+msgstr "Edit"
 
 #: reports.oils_rpt_folder_window.delete_reports
 msgid "Delete selected report(s)"
@@ -596,7 +598,7 @@ msgstr "Select Folder"
 #: reports.oils_rpt_folder_window.cancel
 msgctxt "reports.oils_rpt_folder_window.cancel"
 msgid "Cancel"
-msgstr ""
+msgstr "Cancel"
 
 #: reports.oils_rpt_folder_window.confirm_delete
 msgid "Are you sure you wish to delete the selected item(s)?"
@@ -770,7 +772,7 @@ msgstr "Description:"
 
 #: reports.xul.template_builder.doc_url.label
 msgid "Documentation URL:"
-msgstr ""
+msgstr "Documentation URL:"
 
 #: reports.xul.template_builder.save.label
 msgid "Save"
@@ -841,7 +843,7 @@ msgstr "Change value"
 
 #: reports.xul.template_builder.change_field_doc.label
 msgid "Change Field Hint"
-msgstr ""
+msgstr "Change Field Hint"
 
 #: reports.xul.template_builder.remove_value.label
 msgid "Remove value"
@@ -865,21 +867,4 @@ msgstr "Relationship"
 
 #: reports.xul.template_builder.field_doc.label
 msgid "Field Hint"
-msgstr ""
-
-#~ msgid "Cancel"
-#~ msgstr "Cancel"
-
-#~ msgid ""
-#~ "One or more of The selected reports could not be deleted because there are "
-#~ "outputs that depend on them."
-#~ msgstr ""
-#~ "One or more of The selected reports could not be deleted because there are "
-#~ "outputs that depend on them."
-
-#~ msgid ""
-#~ "One or more of the selected templates could not be deleted because there are "
-#~ "reports that depend on them."
-#~ msgstr ""
-#~ "One or more of the selected templates could not be deleted because there are "
-#~ "reports that depend on them."
+msgstr "Field Hint"

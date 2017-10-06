@@ -4,14 +4,15 @@
 
 angular.module('egPatronApp').controller('PatronCheckoutCtrl',
 
-       ['$scope','$q','$modal','$routeParams','egCore','egUser','patronSvc',
-        'egGridDataProvider','$location','$timeout','egCirc',
+       ['$scope','$q','$routeParams','egCore','egUser','patronSvc',
+        'egGridDataProvider','$location','$timeout','egCirc','ngToast',
 
-function($scope , $q , $modal , $routeParams , egCore , egUser , patronSvc , 
-         egGridDataProvider , $location , $timeout , egCirc) {
+function($scope , $q , $routeParams , egCore , egUser , patronSvc , 
+         egGridDataProvider , $location , $timeout , egCirc , ngToast) {
 
-    $scope.initTab('checkout', $routeParams.id);
-    $scope.focusMe = true;
+    $scope.initTab('checkout', $routeParams.id).finally(function(){
+        $scope.focusMe = true;
+    });
     $scope.checkouts = patronSvc.checkouts;
     $scope.checkoutArgs = {
         noncat_type : 'barcode',
@@ -29,11 +30,43 @@ function($scope , $q , $modal , $routeParams , egCore , egUser , patronSvc ,
             !patronSvc.current ||
             patronSvc.current.active() == 'f' ||
             patronSvc.current.deleted() == 't' ||
-            patronSvc.current.card().active() == 'f'
+            patronSvc.current.card().active() == 'f' ||
+            patronSvc.fetchedWithInactiveCard()
         );
     }
 
-    $scope.using_hatch = egCore.hatch.usingHatch();
+    function setting_value (user, setting) {
+        if (user) {
+            var list = user.settings().filter(function(s){
+                return s.name() == setting;
+            });
+
+            if (list.length) return list[0].value();
+        }
+    }
+
+    $scope.has_email_address = function() {
+        return (
+            patronSvc.current &&
+            patronSvc.current.email() &&
+            patronSvc.current.email().match(/.*@.*/).length
+        );
+    }
+
+    $scope.may_email_receipt = function() {
+        return (
+            $scope.has_email_address() &&
+            setting_value(
+                patronSvc.current,
+                'circ.send_email_checkout_receipts'
+            ) == 'true'
+        );
+    }
+
+    $scope.using_hatch_printer = egCore.hatch.usePrinting();
+
+    egCore.hatch.getItem('circ.checkout.strict_barcode')
+        .then(function(sb){ $scope.strict_barcode = sb });
 
     // avoid multiple, in-flight attempts on the same barcode
     var pending_barcodes = {};
@@ -43,7 +76,9 @@ function($scope , $q , $modal , $routeParams , egCore , egUser , patronSvc ,
         'circ.staff_client.do_not_auto_attempt_print'
     ]).then(function(settings) { 
         printOnComplete = !Boolean(
-            settings['circ.staff_client.do_not_auto_attempt_print']);
+            angular.isArray(settings['circ.staff_client.do_not_auto_attempt_print']) &&
+            (settings['circ.staff_client.do_not_auto_attempt_print'].indexOf('Checkout') > -1)
+        );
     });
 
     egCirc.get_noncat_types().then(function(list) {
@@ -90,7 +125,7 @@ function($scope , $q , $modal , $routeParams , egCore , egUser , patronSvc ,
             });
         }
 
-        $scope.focusMe; // return focus to barcode input
+        $scope.focusMe = true; // return focus to barcode input
     }
 
     function send_checkout(params) {
@@ -109,14 +144,20 @@ function($scope , $q , $modal , $routeParams , egCore , egUser , patronSvc ,
         $scope.checkouts.unshift(row_item);
         $scope.gridDataProvider.refresh();
 
+        egCore.hatch.setItem('circ.checkout.strict_barcode', $scope.strict_barcode);
         var options = {check_barcode : $scope.strict_barcode};
 
         egCirc.checkout(params, options).then(
             function(co_resp) {
                 // update stats locally so we don't have to fetch them w/
                 // each checkout.
-                patronSvc.patron_stats.checkouts.out++;
-                patronSvc.patron_stats.checkouts.total_out++;
+
+                // Avoid updating checkout counts when a checkout turns
+                // into a renewal via auto_renew.
+                if (!co_resp.auto_renew && !params.noncat) {
+                    patronSvc.patron_stats.checkouts.out++;
+                    patronSvc.patron_stats.checkouts.total_out++;
+                }
 
                 // copy the response event into the original grid row item
                 // note: angular.copy clobbers the destination
@@ -139,12 +180,14 @@ function($scope , $q , $modal , $routeParams , egCore , egUser , patronSvc ,
                 $scope.gridDataProvider.refresh();
             }
 
-        )['finally'](function() {
+        ).finally(function() {
 
             // regardless of the outcome of the circ, remove the 
             // barcode from the pending list.
             if (params.copy_barcode)
                 delete pending_barcodes[params.copy_barcode];
+
+            $scope.focusMe = true; // return focus to barcode input
         });
     }
 
@@ -155,7 +198,10 @@ function($scope , $q , $modal , $routeParams , egCore , egUser , patronSvc ,
             row_item.title = egCore.env.cnct.map[params.noncat_type].name();
             row_item.noncat_count = params.noncat_count;
             row_item.circ = new egCore.idl.circ();
-            row_item.circ.due_date(co_resp.evt.payload.noncat_circ.duedate());
+            row_item.circ.due_date(co_resp.evt[0].payload.noncat_circ.duedate());
+            // Non-cat circs don't return the full list of circs.
+            // Refresh the list of non-cat circs from the server.
+            patronSvc.getUserNonCats(patronSvc.current.id());
         }
     }
 
@@ -184,18 +230,63 @@ function($scope , $q , $modal , $routeParams , egCore , egUser , patronSvc ,
         });
     }
 
-    // Redirect the user to the barcode entry page to load a new patron.
-    // If configured to do so, print the receipt first
-    $scope.done = function() {
-        if (printOnComplete) {
-
-            $scope.print_receipt().then(function() {
-                $location.path('/circ/patron/bcsearch');
+    $scope.email_receipt = function() {
+        if ($scope.has_email_address() && $scope.checkouts.length) {
+            return egCore.net.request(
+                'open-ils.circ',
+                'open-ils.circ.checkout.batch_notify.session.atomic',
+                egCore.auth.token(),
+                patronSvc.current.id(),
+                $scope.checkouts.map(function (c) { return c.circ.id() })
+            ).then(function() {
+                ngToast.create(egCore.strings.EMAILED_CHECKOUT_RECEIPT);
+                return $q.when();
             });
-
-        } else {
-            $location.path('/circ/patron/bcsearch');
         }
+        return $q.when();
+    }
+
+    $scope.print_or_email_receipt = function() {
+        if ($scope.may_email_receipt()) return $scope.email_receipt();
+        $scope.print_receipt();
+    }
+
+    // set of functions to issue a receipt (if desired), then
+    // redirect
+    $scope.done_auto_receipt = function() {
+        if ($scope.may_email_receipt()) {
+            $scope.email_receipt().then(function() {
+                $scope.done_redirect();
+            });
+        } else {
+            if (printOnComplete) {
+
+                $scope.print_receipt().then(function() {
+                    $scope.done_redirect();
+                });
+
+            } else {
+                $scope.done_redirect();
+            }
+        }
+    }
+    $scope.done_print_receipt = function() {
+        $scope.print_receipt().then( function () {
+            $scope.done_redirect();
+        });
+    }
+    $scope.done_email_receipt = function() {
+        $scope.email_receipt().then( function () {
+            $scope.done_redirect();
+        });
+    }
+    $scope.done_no_receipt = function() {
+        $scope.done_redirect();
+    }
+
+    // Redirect the user to the barcode entry page to load a new patron.
+    $scope.done_redirect = function() {
+        $location.path('/circ/patron/bcsearch');
     }
 }])
 

@@ -26,21 +26,23 @@
             ng-model="searchArgs.second_given_name" placeholder="[% l('Middle Name') %]"/>
         </div>
 
-        <div class="col-md-2">
-          <input type="submit" class="btn btn-default" value="[% l('Search') %]"/>
+        <div class="col-md-2" ng-mouseover="setLastFormElement()">
+          <input type="submit" class="btn btn-primary" value="[% l('Search') %]"/>
         </div>
 
-        <div class="col-md-2">
-          <input type="reset" class="btn btn-default" ng-click="searchArgs={}" 
+        <div class="col-md-2" ng-mouseover="setLastFormElement()">
+          <input type="reset" class="btn btn-primary" ng-click="clearForm()" 
             value="[% l('Clear Form') %]"/>
         </div>
 
         <div class="col-md-2">
           <button class="btn btn-default" ng-click="applyShowExtras($event, true)" 
+            ng-mouseover="setLastFormElement()"
             title="[% l('Show More Fields') %]" ng-show="!showExtras">
             <span class="glyphicon glyphicon-circle-arrow-down"></span>
           </button>
           <button class="btn btn-default" ng-click="applyShowExtras($event, false)" 
+            ng-mouseover="setLastFormElement()"
             title="[% l('Show Fewer Fields') %]" ng-show="showExtras">
             <span class="glyphicon glyphicon-circle-arrow-up"></span>
           </button>
@@ -113,14 +115,14 @@
             typeahead-editable="false" />
             -->
 
-            <div class="btn-group patron-search-selector" dropdown>
-              <button type="button" class="btn btn-default dropdown-toggle">
+            <div class="btn-group patron-search-selector" uib-dropdown>
+              <button type="button" class="btn btn-default" uib-dropdown-toggle>
                 <span style="padding-right: 5px;">{{searchArgs.profile.name() || "[% l('Profile Group') %]"}}</span>
                 <span class="caret"></span>
               </button>
-              <ul class="dropdown-menu">
+              <ul uib-dropdown-menu>
                 <li ng-repeat="grp in profiles">
-                  <a href dropdown-toggle
+                  <a href
                     style="padding-left: {{pgt_depth(grp) * 10 + 5}}px"
                     ng-click="searchArgs.profile = grp">{{grp.name()}}</a>
                 </li>
@@ -130,7 +132,7 @@
 
         <div class="col-md-2">
           <eg-org-selector label="[% l('Home Library') %]" 
-            selected="searchArgs.home_ou">
+            selected="searchArgs.home_ou" sticky-setting="eg.circ.patron.search.ou">
           </eg-org-selector>
         </div>
 

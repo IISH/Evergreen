@@ -72,7 +72,7 @@ sub create_active_events_for_object {
     for my $def ( @$defs ) {
         next if ($granularity && $def->granularity ne $granularity );
 
-        if ($def->usr_field && $def->opt_in_setting) {
+        if (!$self->{ignore_opt_in} && $def->usr_field && $def->opt_in_setting) {
             my $ufield = $def->usr_field;
             my $uid = $target->$ufield;
             $uid = $uid->id if (ref $uid); # fleshed user object, unflesh it
@@ -123,6 +123,14 @@ __PACKAGE__->register_method(
     api_level=> 1,
     stream   => 1,
     argc     => 3
+);
+__PACKAGE__->register_method(
+    api_name      => 'open-ils.trigger.event.autocreate.ignore_opt_in',
+    method        => 'create_active_events_for_object',
+    api_level     => 1,
+    stream        => 1,
+    argc          => 3,
+    ignore_opt_in => 1
 );
 
 sub create_event_for_object_and_def {
@@ -749,6 +757,7 @@ sub grouped_events {
         $client->status( new OpenSRF::DomainObject::oilsContinueStatus );
     }
 
+    my @invalid; # sync for events with a null grouping field
     for my  $e (@fleshed_events) {
         if (my $group = $e->event->event_def->group_field) {
 
@@ -763,12 +772,19 @@ sub grouped_events {
             };
 
             unless($node) { # should not get here, but to be safe..
-                $e->update_state('invalid');
+                push @invalid, $e;
                 next;
             }
 
             # get the grouping value for the grouping object on this event
             my $ident_value = $node->$group_field();
+
+            # could by false-y, so check definedness
+            if (!defined($ident_value)) {
+                push @invalid, $e;
+                next;
+            }
+
             if(ref $ident_value) {
                 my $ident_field = $ident_value->Identity; 
                 $ident_value = $ident_value->$ident_field()
@@ -783,6 +799,7 @@ sub grouped_events {
         }
     }
 
+    OpenILS::Application::Trigger::Event->invalidate(@invalid) if @invalid;
 
     return \%groups;
 }

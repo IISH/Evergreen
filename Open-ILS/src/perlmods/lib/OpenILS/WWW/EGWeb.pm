@@ -5,7 +5,7 @@ use XML::Simple;
 use XML::LibXML;
 use File::stat;
 use Encode;
-use Apache2::Const -compile => qw(OK DECLINED HTTP_INTERNAL_SERVER_ERROR);
+use Apache2::Const -compile => qw(OK DECLINED HTTP_INTERNAL_SERVER_ERROR HTTP_NOT_FOUND HTTP_GONE);
 use Apache2::Log;
 use OpenSRF::EX qw(:try);
 use OpenSRF::AppSession;
@@ -18,6 +18,36 @@ use constant OILS_HTTP_COOKIE_LOCALE => 'eg_locale';
 
 # cache string bundles
 my %registered_locales;
+
+# cache template path -r tests
+my %vhost_path_cache;
+
+# cache template processors by vhost
+my %vhost_processor_cache;
+
+my $bootstrap_config;
+my @context_loaders_to_preinit = ();
+my %locales_to_preinit = ();
+
+sub import {
+    my ($self, $bootstrap_config, $loaders, $locales) = @_;
+    @context_loaders_to_preinit = split /\s+/, $loaders, -1 if defined($loaders);
+    %locales_to_preinit = map { $_ => parse_eg_locale($_) }
+                          split /\s+/, $locales, -1 if defined($locales);
+}
+
+sub child_init {
+    OpenSRF::System->bootstrap_client(config_file => $bootstrap_config);
+    my $idl = OpenSRF::Utils::SettingsClient->new->config_value("IDL");
+    Fieldmapper->import(IDL => $idl);
+    foreach my $loader (@context_loaders_to_preinit) {
+        eval {
+            $loader->use;
+            $loader->child_init(%locales_to_preinit);
+        };
+    }
+    return Apache2::Const::OK;
+}
 
 sub handler {
     my $r = shift;
@@ -41,16 +71,41 @@ sub handler_guts {
 
     my $stat = run_context_loader($r, $ctx);
 
+    # Handle deleted or never existing records a little more gracefully.
+    # For these two special cases, we set the status so that the request
+    # header will contain the appropriate HTTP status code, but reset the
+    # status so that Apache will continue to process the request and provide
+    # more than just the raw HTTP error page.
+    if ($stat == Apache2::Const::HTTP_GONE || $stat == Apache2::Const::HTTP_NOT_FOUND) {
+        $r->status($stat);
+        $stat = Apache2::Const::OK;
+    }   
     return $stat unless $stat == Apache2::Const::OK;
     return Apache2::Const::DECLINED unless $template;
 
     my $text_handler = set_text_handler($ctx, $r);
 
-    my $tt = Template->new({
+    my $processor_key = $as_xml ? 'xml:' : 'text:';                 # separate by XML strictness
+    $processor_key .= $r->hostname.':';                         # ... and vhost
+    $processor_key .= $r->dir_config('OILSWebContextLoader').':';   # ... and context loader
+    $processor_key .= $ctx->{locale};                               # ... and locale
+    # NOTE: context loader and vhost together imply template path and debug template values
+
+    my $tt = $vhost_processor_cache{$processor_key} || Template->new({
         ENCODING => 'utf-8',
         OUTPUT => ($as_xml) ?  sub { parse_as_xml($r, $ctx, @_); } : $r,
         INCLUDE_PATH => $ctx->{template_paths},
         DEBUG => $ctx->{debug_template},
+        (
+            $r->dir_config('OILSWebCompiledTemplateCache') ?
+                (COMPILE_DIR => $r->dir_config('OILSWebCompiledTemplateCache')) :
+                ()
+        ),
+        (
+            ($r->dir_config('OILSWebTemplateStatTTL') =~ /^\d+$/) ?
+                (STAT_TTL => $r->dir_config('OILSWebTemplateStatTTL')) :
+                ()
+        ),
         PLUGINS => {
             EGI18N => 'OpenILS::WWW::EGWeb::I18NFilter',
             CGI_utf8 => 'OpenILS::WWW::EGWeb::CGI_utf8'
@@ -71,9 +126,10 @@ sub handler_guts {
         return Apache2::Const::HTTP_INTERNAL_SERVER_ERROR;
     }   
 
+    $vhost_processor_cache{$processor_key} = $tt;
     $ctx->{encode_utf8} = sub {return encode_utf8(shift())};
 
-    unless($tt->process($template, {ctx => $ctx, ENV => \%ENV, l => $text_handler})) {
+    unless($tt->process($template, {ctx => $ctx, ENV => \%ENV, l => $text_handler}, $r)) {
         $r->log->warn('egweb: template error: ' . $tt->error);
         return Apache2::Const::HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -151,9 +207,9 @@ sub load_context {
 
     $ctx->{base_path} = $r->dir_config('OILSWebBasePath');
     $ctx->{web_dir} = $r->dir_config('OILSWebWebDir');
-    $ctx->{debug_template} = ($r->dir_config('OILSWebDebugTemplate') =~ /true/io);
-    $ctx->{media_prefix} = $r->dir_config('OILSWebMediaPrefix');
+    $ctx->{debug_template} = ($r->dir_config('OILSWebDebugTemplate') =~ /true/io) ? 1 : 0;
     $ctx->{hostname} = $r->hostname;
+    $ctx->{media_prefix} = $r->dir_config('OILSWebMediaPrefix') || $ctx->{hostname};
     $ctx->{base_url} = $cgi->url(-base => 1);
     $ctx->{skin} = $cgi->cookie(OILS_HTTP_COOKIE_SKIN) || 'default';
     $ctx->{theme} = $cgi->cookie(OILS_HTTP_COOKIE_THEME) || 'default';
@@ -241,6 +297,9 @@ sub find_template {
     my $ext = $r->dir_config('OILSWebDefaultTemplateExtension');
     my $at_index = $r->dir_config('OILSWebStopAtIndex');
 
+    $vhost_path_cache{$r->hostname} ||= {};
+    my $path_cache = $vhost_path_cache{$r->hostname};
+
     my @parts = split('/', $path);
     my $localpath = $path;
 
@@ -249,18 +308,24 @@ sub find_template {
     } else {
         $r->content_type('text/html; encoding=utf8');
     }
+
     my @args;
     while(@parts) {
         last unless $localpath;
         for my $tpath (@{$ctx->{template_paths}}) {
             my $fpath = "$tpath/$localpath.$ext";
             $r->log->debug("egweb: looking at possible template $fpath");
-            if(-r $fpath) {
-                $template = "$localpath.$ext";
+            if ($template = $path_cache->{$fpath}) { # we've checked with -r before...
+                next if ($template eq '0E0'); # ... and found nothing
                 last;
-            } 
+            } elsif (-r $fpath) { # or, we haven't checked, and if we find a file...
+                $path_cache->{$fpath} = $template = "$localpath.$ext"; # ... note it
+                last;
+            } else { # Nothing there...
+                $path_cache->{$fpath} = '0E0'; # ... note that fact
+            }
         }
-        last if $template;
+        last if $template and $template ne '0E0';
 
         if ($at_index) {
             # no matching template was found in the current directory.
@@ -275,13 +340,18 @@ sub find_template {
                 }
                 my $fpath = "$tpath/$localpath.$ext";
                 $r->log->debug("egweb: looking at possible template $fpath");
-                if (-r $fpath) {
-                    $template = "$localpath.$ext";
+                if ($template = $path_cache->{$fpath}) { # See above block
+                    next if ($template eq '0E0');
                     last;
-                }
+                } elsif (-r $fpath) {
+                    $path_cache->{$fpath} = $template = "$localpath.$ext";
+                    last;
+                } else {
+                    $path_cache->{$fpath} = '0E0';
+                } 
             }
         }
-        last if $template;
+        last if $template and $template ne '0E0';
 
         push(@args, pop @parts);
         $localpath = join('/', @parts);
@@ -290,7 +360,7 @@ sub find_template {
     $page_args = [@args];
 
     # no template configured or found
-    unless($template) {
+    if(!$template or $template eq '0E0') {
         $r->log->debug("egweb: No template configured for path $path");
         return ();
     }

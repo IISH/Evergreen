@@ -41,8 +41,24 @@ RETURNS INTEGER AS $$
     );
 $$ LANGUAGE SQL STABLE;
 
-CREATE OR REPLACE FUNCTION evergreen.rank_cp_status(status INT)
+-- this version exists mainly to accommodate JSON query transform limitations
+-- (the transform argument must be an IDL field, not an entire row/object)
+-- XXX is there another way?
+CREATE OR REPLACE FUNCTION evergreen.rank_cp(copy_id BIGINT)
 RETURNS INTEGER AS $$
+DECLARE
+    copy asset.copy%ROWTYPE;
+BEGIN
+    SELECT * INTO copy FROM asset.copy WHERE id = copy_id;
+    RETURN evergreen.rank_cp(copy);
+END;
+$$ LANGUAGE PLPGSQL STABLE;
+
+CREATE OR REPLACE FUNCTION evergreen.rank_cp(copy asset.copy)
+RETURNS INTEGER AS $$
+DECLARE
+    rank INT;
+BEGIN
     WITH totally_available AS (
         SELECT id, 0 AS avail_rank
         FROM config.copy_status
@@ -58,11 +74,17 @@ RETURNS INTEGER AS $$
             OR id = 1 -- "Checked out"
     )
     SELECT COALESCE(
-        (SELECT avail_rank FROM totally_available WHERE $1 IN (id)),
-        (SELECT avail_rank FROM almost_available WHERE $1 IN (id)),
+        CASE WHEN NOT copy.opac_visible THEN 100 END,
+        (SELECT avail_rank FROM totally_available WHERE copy.status IN (id)),
+        CASE WHEN copy.holdable THEN
+            (SELECT avail_rank FROM almost_available WHERE copy.status IN (id))
+        END,
         100
-    );
-$$ LANGUAGE SQL STABLE;
+    ) INTO rank;
+
+    RETURN rank;
+END;
+$$ LANGUAGE PLPGSQL STABLE;
 
 CREATE OR REPLACE FUNCTION evergreen.ranked_volumes(
     bibid BIGINT[], 
@@ -118,11 +140,13 @@ CREATE OR REPLACE FUNCTION evergreen.ranked_volumes(
     )
 
     SELECT ua.id, ua.name, ua.label_sortkey, MIN(ua.rank) AS rank FROM (
-        SELECT acn.id, aou.name, acn.label_sortkey,
+        SELECT acn.id, owning_lib.name, acn.label_sortkey,
+            evergreen.rank_cp(acp),
             RANK() OVER w
         FROM asset.call_number acn
             JOIN asset.copy acp ON (acn.id = acp.call_number)
             JOIN descendants AS aou ON (acp.circ_lib = aou.id)
+            JOIN actor.org_unit AS owning_lib ON (acn.owning_lib = owning_lib.id)
         WHERE acn.record = ANY ($1)
             AND acn.deleted IS FALSE
             AND acp.deleted IS FALSE
@@ -132,7 +156,7 @@ CREATE OR REPLACE FUNCTION evergreen.ranked_volumes(
                     FROM asset.opac_visible_copies 
                     WHERE copy_id = acp.id AND record = acn.record
                 ) ELSE TRUE END
-        GROUP BY acn.id, acp.status, aou.name, acn.label_sortkey, aou.id
+        GROUP BY acn.id, evergreen.rank_cp(acp), owning_lib.name, acn.label_sortkey, aou.id
         WINDOW w AS (
             ORDER BY 
                 COALESCE(
@@ -145,7 +169,7 @@ CREATE OR REPLACE FUNCTION evergreen.ranked_volumes(
                     (SELECT e.distance FROM actor.org_unit_descendants_distance($2) as e WHERE e.id = aou.id),
                     1000
                 ),
-                evergreen.rank_cp_status(acp.status)
+                evergreen.rank_cp(acp)
         )
     ) AS ua
     GROUP BY ua.id, ua.name, ua.label_sortkey
@@ -406,6 +430,7 @@ DECLARE
     output  XML;
     hxml    XML;
     axml    XML;
+    source  XML;
 BEGIN
 
     IF org = '-' OR org IS NULL THEN
@@ -432,6 +457,13 @@ BEGIN
     SELECT * INTO xfrm FROM config.xml_transform WHERE name = layout.transform;
 
     SELECT * INTO me FROM biblio.record_entry WHERE id = obj_id;
+
+    -- grab bib_source, if any
+    IF ('cbs' = ANY (includes) AND me.source IS NOT NULL) THEN
+        source := unapi.cbs(me.source,NULL,NULL,NULL,NULL);
+    ELSE
+        source := NULL::XML;
+    END IF;
 
     -- grab SVF if we need them
     IF ('mra' = ANY (includes)) THEN 
@@ -462,6 +494,10 @@ BEGIN
 
     top_el := REGEXP_REPLACE(tmp_xml, E'^.*?<((?:\\S+:)?' || layout.holdings_element || ').*$', E'\\1');
 
+    IF source IS NOT NULL THEN
+        tmp_xml := REGEXP_REPLACE(tmp_xml, '</' || top_el || '>(.*?)$', source || '</' || top_el || E'>\\1');
+    END IF;
+
     IF axml IS NOT NULL THEN 
         tmp_xml := REGEXP_REPLACE(tmp_xml, '</' || top_el || '>(.*?)$', axml || '</' || top_el || E'>\\1');
     END IF;
@@ -480,6 +516,33 @@ BEGIN
                     'http://www.w3.org/1999/xhtml' AS xmlns,
                     'unapi-id' AS class,
                     'tag:open-ils.org:U2@bre/' || obj_id || '/' || org AS title
+                )
+            )::TEXT || '</' || top_el || E'>\\1'
+        );
+    ELSE
+        output := tmp_xml;
+    END IF;
+
+    IF ('bre.extern' = ANY (includes)) THEN 
+        output := REGEXP_REPLACE(
+            tmp_xml,
+            '</' || top_el || '>(.*?)',
+            XMLELEMENT(
+                name extern,
+                XMLATTRIBUTES(
+                    'http://open-ils.org/spec/biblio/v1' AS xmlns,
+                    me.creator AS creator,
+                    me.editor AS editor,
+                    me.create_date AS create_date,
+                    me.edit_date AS edit_date,
+                    me.quality AS quality,
+                    me.fingerprint AS fingerprint,
+                    me.tcn_source AS tcn_source,
+                    me.tcn_value AS tcn_value,
+                    me.owner AS owner,
+                    me.share_depth AS share_depth,
+                    me.active AS active,
+                    me.deleted AS deleted
                 )
             )::TEXT || '</' || top_el || E'>\\1'
         );
@@ -541,7 +604,7 @@ RETURNS XML AS $F$
                             (SELECT XMLAGG(bmp) FROM (
                                 SELECT  unapi.bmp( id, 'xml', 'monograph_part', evergreen.array_remove_item_by_value( evergreen.array_remove_item_by_value($5,'bre'), 'holdings_xml'), $3, $4, $6, $7, FALSE)
                                   FROM  biblio.monograph_part
-                                  WHERE record = $1
+                                  WHERE NOT deleted AND record = $1
                             )x)
                         )
                      ELSE NULL
@@ -922,7 +985,7 @@ CREATE OR REPLACE FUNCTION unapi.bmp ( obj_id BIGINT, format TEXT,  ename TEXT, 
                     CASE WHEN ('bre' = ANY ($4)) THEN unapi.bre( record, 'marcxml', 'record', evergreen.array_remove_item_by_value($4,'bmp'), $5, $6, $7, $8, FALSE) ELSE NULL END
                 )
           FROM  biblio.monograph_part
-          WHERE id = $1
+          WHERE NOT deleted AND id = $1
           GROUP BY id, label, label_sortkey, record;
 $F$ LANGUAGE SQL STABLE;
 
@@ -1110,7 +1173,7 @@ CREATE OR REPLACE FUNCTION unapi.acn ( obj_id BIGINT, format TEXT,  ename TEXT, 
                                 XMLELEMENT( name copies,
                                     (SELECT XMLAGG(acp ORDER BY rank_avail) FROM (
                                         SELECT  unapi.acp( cp.id, 'xml', 'copy', evergreen.array_remove_item_by_value($4,'acn'), $5, $6, $7, $8, FALSE),
-                                            evergreen.rank_cp_status(cp.status) AS rank_avail
+                                            evergreen.rank_cp(cp) AS rank_avail
                                           FROM  asset.copy cp
                                                 JOIN actor.org_unit_descendants( (SELECT id FROM actor.org_unit WHERE shortname = $5), $6) aoud ON (cp.circ_lib = aoud.id)
                                           WHERE cp.call_number = acn.id
@@ -1124,7 +1187,7 @@ CREATE OR REPLACE FUNCTION unapi.acn ( obj_id BIGINT, format TEXT,  ename TEXT, 
                                 XMLELEMENT( name copies,
                                     (SELECT XMLAGG(acp ORDER BY rank_avail) FROM (
                                         SELECT  unapi.acp( cp.id, 'xml', 'copy', evergreen.array_remove_item_by_value($4,'acn'), $5, $6, $7, $8, FALSE),
-                                            evergreen.rank_cp_status(cp.status) AS rank_avail
+                                            evergreen.rank_cp(cp) AS rank_avail
                                           FROM  asset.copy cp
                                                 JOIN actor.org_unit_descendants( (SELECT id FROM actor.org_unit WHERE shortname = $5) ) aoud ON (cp.circ_lib = aoud.id)
                                           WHERE cp.call_number = acn.id
@@ -1205,6 +1268,22 @@ CREATE OR REPLACE FUNCTION unapi.auri ( obj_id BIGINT, format TEXT,  ename TEXT,
           GROUP BY uri.id, use_restriction, href, label;
 $F$ LANGUAGE SQL STABLE;
 
+CREATE OR REPLACE FUNCTION unapi.cbs ( obj_id BIGINT, format TEXT,  ename TEXT, includes TEXT[], org TEXT, depth INT DEFAULT NULL, slimit HSTORE DEFAULT NULL, soffset HSTORE DEFAULT NULL, include_xmlns BOOL DEFAULT TRUE ) RETURNS XML AS $F$
+    SELECT  XMLELEMENT(
+                name bib_source,
+                XMLATTRIBUTES(
+                    NULL AS xmlns, -- TODO needs equivalent to http://open-ils.org/spec/holdings/v1
+                    id AS ident,
+                    quality,
+                    transcendant,
+                    can_have_copies
+                ),
+                source
+            )
+      FROM  config.bib_source
+      WHERE id = $1;
+$F$ LANGUAGE SQL STABLE;
+
 CREATE OR REPLACE FUNCTION unapi.mra (
     obj_id BIGINT,
     format TEXT,
@@ -1283,20 +1362,21 @@ CREATE OR REPLACE FUNCTION unapi.mmr_mra (
         ),
         (SELECT XMLAGG(foo.y)
           FROM (
-            WITH sourcelist AS ( 
-                WITH aou AS (SELECT COALESCE(id, (evergreen.org_top()).id) AS id  
+            WITH sourcelist AS (
+                WITH aou AS (SELECT COALESCE(id, (evergreen.org_top()).id) AS id
                     FROM actor.org_unit WHERE shortname = $5 LIMIT 1)
-                SELECT source 
-                FROM metabib.metarecord_source_map, aou 
+                SELECT source
+                FROM metabib.metarecord_source_map mmsm, aou
                 WHERE metarecord = $1 AND (
                     EXISTS (
-                        SELECT 1 FROM asset.opac_visible_copies 
+                        SELECT 1 FROM asset.opac_visible_copies
                         WHERE record = source AND circ_lib IN (
                             SELECT id FROM actor.org_unit_descendants(aou.id, $6))
                         LIMIT 1
-                    )   
+                    )
                     OR EXISTS (SELECT 1 FROM located_uris(source, aou.id, $10) LIMIT 1)
-                )   
+                    OR EXISTS (SELECT 1 FROM biblio.record_entry b JOIN config.bib_source src ON (b.source = src.id) WHERE src.transcendant AND b.id = mmsm.source LIMIT 1)
+                )
             )
             SELECT  cmra.aid,
                     XMLELEMENT(
@@ -1308,20 +1388,25 @@ CREATE OR REPLACE FUNCTION unapi.mmr_mra (
                             rad.composite,
                             rad.multi,
                             rad.filter,
-                            rad.sorter
+                            rad.sorter,
+                            cmra.source_list
                         ),
                         cmra.value
                     )
               FROM  (
-                SELECT  v.source AS id,
-                        c.id AS aid,
-                        c.ctype AS attr,
-                        c.code AS value
-                  FROM  metabib.record_attr_vector_list v
-                        JOIN config.coded_value_map c ON ( c.id = ANY( v.vlist ) )
+                SELECT DISTINCT aid, attr, value, STRING_AGG(x.id::TEXT, ',') AS source_list
+                  FROM (
+                    SELECT  v.source AS id,
+                            c.id AS aid,
+                            c.ctype AS attr,
+                            c.code AS value
+                      FROM  metabib.record_attr_vector_list v
+                            JOIN config.coded_value_map c ON ( c.id = ANY( v.vlist ) )
+                    ) AS x
+                    JOIN sourcelist ON (x.id = sourcelist.source)
+                    GROUP BY 1, 2, 3
                 ) AS cmra
-                    JOIN config.record_attr_definition rad ON (cmra.attr = rad.name)
-                    JOIN sourcelist ON (cmra.id = sourcelist.source)
+                JOIN config.record_attr_definition rad ON (cmra.attr = rad.name)
                 UNION ALL
             SELECT  umra.aid,
                     XMLELEMENT(
@@ -1336,15 +1421,18 @@ CREATE OR REPLACE FUNCTION unapi.mmr_mra (
                         umra.value
                     )
               FROM  (
-                SELECT  v.source AS id,
-                        m.id AS aid,
-                        m.attr AS attr,
-                        m.value AS value
-                  FROM  metabib.record_attr_vector_list v
-                        JOIN metabib.uncontrolled_record_attr_value m ON ( m.id = ANY( v.vlist ) )
+                SELECT DISTINCT aid, attr, value
+                  FROM (
+                    SELECT  v.source AS id,
+                            m.id AS aid,
+                            m.attr AS attr,
+                            m.value AS value
+                      FROM  metabib.record_attr_vector_list v
+                            JOIN metabib.uncontrolled_record_attr_value m ON ( m.id = ANY( v.vlist ) )
+                    ) AS x
+                    JOIN sourcelist ON (x.id = sourcelist.source)
                 ) AS umra
-                    JOIN config.record_attr_definition rad ON (umra.attr = rad.name)
-                    JOIN sourcelist ON (umra.id = sourcelist.source)
+                JOIN config.record_attr_definition rad ON (umra.attr = rad.name)
                 ORDER BY 1
 
             )foo(id,y)

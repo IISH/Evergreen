@@ -1,0 +1,51 @@
+[[attributions]]
+[appendix]
+Attributions
+============
+
+Copyright © 2009-2016 Evergreen DIG
+
+Copyright © 2007-2016 Equinox
+
+Copyright © 2007-2016 Dan Scott
+
+Copyright © 2009-2016 BC Libraries Cooperative (SITKA)
+
+Copyright © 2008-2016 King County Library System
+
+Copyright © 2009-2016 Pioneer Library System
+
+Copyright © 2009-2016 PALS
+
+Copyright © 2009-2016 Georgia Public Library Service
+
+Copyright © 2008-2016 Project Conifer
+
+Copyright © 2009-2016 Bibliomation
+
+Copyright © 2008-2016 Evergreen Indiana
+
+Copyright © 2008-2016 SC LENDS
+
+
+
+*Current DIG Members*
+
+* Hilary Caws-Elwitt, Susquehanna County Library
+* Karen Collier, Kent County Public Library
+* George Duimovich, NRCan Library
+* Lynn Floyd, Anderson County Library
+* Sally Fortin, Equinox Software
+* Wolf Halton, Lyrasis 
+* Jennifer Pringle, SITKA
+* June Rayner, eiNetwork
+* Steve Sheppard
+* Ben Shum, Bibliomation
+* Roni Shwaish, eiNetwork
+* Robert Soulliere, Mohawk College
+* Remington Steed, Calvin College
+* Tim Spindler, C/W MARS
+* Jane Sandberg, Linn-Benton Community College
+* Lindsay Stratton, Pioneer Library System
+* Yamil Suarez, Berklee College of Music
+* Jenny Turner, PALS

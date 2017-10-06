@@ -20,6 +20,8 @@ function my_init() {
 
         g.funcs = []; g.bill_map = {}; g.row_map = {}; g.check_map = {};
 
+        g.safe_for_refresh = false;
+
         g.patron_id = xul_param('patron_id');
 
         $('circulating_hint').hidden = true;
@@ -62,6 +64,8 @@ function my_init() {
                 }
             );
         }
+
+        g.funcs.push( function() { g.safe_for_refresh = true; } );
 
     } catch(E) {
         var err_msg = $("commonStrings").getFormattedString('common.exception', ['patron/bill2.xul', E]);
@@ -108,6 +112,12 @@ function event_listeners() {
             false
         );
 
+        window.bill_event_listeners.add($('adjust_to_zero'),
+            'command',
+            handle_adjust_to_zero,
+            false
+        );
+
         window.bill_event_listeners.add($('opac'), 
             'command',
             handle_opac,
@@ -149,6 +159,7 @@ function event_listeners() {
             'keypress',
             function(ev) {
                 if (! (ev.keyCode == 13 /* enter */ || ev.keyCode == 77 /* mac enter */) ) { return; }
+                if (!verify_amount()) { return; }
                 distribute_payment();
                 $('apply_payment_btn').focus();
             },
@@ -207,8 +218,10 @@ function event_listeners() {
             function(ev) {
                 try {
                     $('apply_payment_btn').disabled = true;
-                    apply_payment();
-                    tally_all();
+                    if (verify_amount()) {
+                        apply_payment();
+                        tally_all();
+                    }
                     $('apply_payment_btn').disabled = false;
                 } catch(E) {
                     alert('Error in bill2.js, apply_payment_btn: ' + E);
@@ -366,8 +379,7 @@ function handle_refund() {
     var r = g.error.yns_alert(msg,
         $("patronStrings").getString('staff.patron.bills.handle_refund.title'),
         $("patronStrings").getString('staff.patron.bills.handle_refund.btn_yes'),
-        $("patronStrings").getString('staff.patron.bills.handle_refund.btn_no'),null,
-        $("patronStrings").getString('staff.patron.bills.handle_refund.confirm_message'));
+        $("patronStrings").getString('staff.patron.bills.handle_refund.btn_no'),null);
     if (r == 0) {
         for (var i = 0; i < g.bill_list_selection.length; i++) {
             var bill_id = g.bill_list_selection[i];
@@ -380,6 +392,45 @@ function handle_refund() {
     }
     tally_all();
     distribute_payment();
+}
+
+/**
+ * Calls open-ils.circ.money.billable_xact.adjust_to_zero on selected
+ * transactions to produce a zero-balance transaction.
+ * Successfully cleared transactions will disappear from the billing list.
+ */
+function handle_adjust_to_zero() {
+
+    var msgkey = g.bill_list_selection.length > 1 ?
+        'staff.patron.bills.handle_adjust_to_zero.message_plural' :
+        'staff.patron.bills.handle_adjust_to_zero.message_singular';
+
+    var msg = $("patronStrings").getFormattedString(
+        msgkey, [g.bill_list_selection]);
+
+    var r = g.error.yns_alert(msg,
+        $("patronStrings").getString(
+            'staff.patron.bills.handle_adjust_to_zero.title'),
+        $("patronStrings").getString(
+            'staff.patron.bills.handle_adjust_to_zero.btn_yes'),
+        $("patronStrings").getString(
+            'staff.patron.bills.handle_adjust_to_zero.btn_no'),null);
+    if (r == 0) {
+        var xact_ids = [];
+        for (var i = 0; i < g.bill_list_selection.length; i++) {
+            var bill_id = g.bill_list_selection[i];
+            xact_ids.push(bill_id);
+        }
+
+        var mod_ids = g.network.simple_request(
+            'ADJUST_BILLS_TO_ZERO', [ses(), xact_ids]);
+
+        g.error.sdump('D_DEBUG', 'adjusted to zero transactions ' + mod_ids);
+
+        refresh();
+        tally_all();
+        distribute_payment();
+    }
 }
 
 
@@ -475,11 +526,12 @@ function retrieve_mbts_for_list() {
     } else {
    
         g.mbts_ids.reverse();
- 
+        g.safe_for_refresh = false;
         for (var i = 0; i < g.mbts_ids.length; i++) {
             dump('i = ' + i + ' g.mbts_ids[i] = ' + g.mbts_ids[i] + '\n');
             g.funcs.push( gen_list_append_func(g.mbts_ids[i]) );
         }
+        g.funcs.push( function() { g.safe_for_refresh = true; } );
     }
 }
 
@@ -524,6 +576,7 @@ function init_lists() {
             $('details').setAttribute('disabled', g.bill_list_selection.length == 0);
             $('add').setAttribute('disabled', g.bill_list_selection.length == 0);
             $('voidall').setAttribute('disabled', g.bill_list_selection.length == 0);
+            $('adjust_to_zero').setAttribute('disabled', g.bill_list_selection.length == 0);
             $('refund').setAttribute('disabled', g.bill_list_selection.length == 0);
             $('opac').setAttribute('disabled', g.bill_list_selection.length == 0);
             $('copy_details').setAttribute('disabled', g.bill_list_selection.length == 0);
@@ -669,6 +722,23 @@ function handle_add() {
 }
 
 function handle_void_all() {
+    var prohibit_default = g.data.hash.aous['bill.prohibit_negative_balance_default'];
+    var prohibit_on_overdues = g.data.hash.aous['bill.prohibit_negative_balance_on_overdues'];
+    if (prohibit_on_overdues === undefined) prohibit_on_overdues = prohibit_default;
+    var prohibit_on_lost = g.data.hash.aous['bill.prohibit_negative_balance_on_lost'];
+    if (prohibit_on_lost === undefined) prohibit_on_lost = prohibit_default;
+
+    if (prohibit_on_overdues || prohibit_on_lost) {
+        var choice = g.error.yns_alert_original(
+            $("patronStrings").getString('staff.patron.bills.void_warning.message'),
+            $("patronStrings").getString('staff.patron.bills.void_warning.title'),
+            $('commonStrings').getString('common.yes'),
+            $('commonStrings').getString('common.no'),
+            null,
+            $('commonStrings').getString('common.confirm')
+        );
+        if (choice != 0) return;
+    }
     if(g.bill_list_selection.length > 1) {
         var msg = $("patronStrings").getFormattedString('staff.patron.bill_history.handle_void.message_plural', [g.bill_list_selection]);
     } else {
@@ -795,6 +865,40 @@ function distribute_payment() {
         alert('Error in bill2.js, distribute_payment(): ' + E);
     }
 }
+
+function verify_amount() {
+
+    try {
+        var amt_warn = Number(g.data.hash.aous['ui.circ.billing.amount_warn']) || 1000;
+        var amt_limit = Number(g.data.hash.aous['ui.circ.billing.amount_limit']) || 100000;
+        var box = $('payment');
+        var amt = Number(box.value);
+
+        if (amt <= amt_warn) { return true;}
+
+        if (amt > amt_limit) {
+            alert($("patronStrings").getFormattedString('staff.patron.bills.pay.over_limit', [amt_limit]));
+        } else {
+            var r = g.error.yns_alert(
+                    $('patronStrings').getFormattedString('staff.patron.bills.pay.over_warn_limit', [amt]),
+                    $('patronStrings').getString('staff.patron.bills.pay.over_warn_limit.title'),
+                    $('commonStrings').getString('common.yes'),
+                    $('commonStrings').getString('common.no'),
+                    null
+                );
+            if (r == 0) { return true; }
+        }
+
+        box.value = ''; box.select(); box.focus();
+        distribute_payment();
+        return false;
+
+    } catch (e) {
+      return false;
+    }
+
+}
+
 
 function apply_payment() {
     try {
@@ -1008,14 +1112,16 @@ function pay(payment_blob) {
 
 function refresh(params) {
     try {
-        if (params && params.clear_voided_summary) {
-            g.data.voided_billings = []; g.data.stash('voided_billings');
+        if (g.safe_for_refresh) {
+            if (params && params.clear_voided_summary) {
+                g.data.voided_billings = []; g.data.stash('voided_billings');
+            }
+            refresh_patron();
+            g.bill_list.clear();
+            retrieve_mbts_for_list();
+            tally_voided();
+            distribute_payment();
         }
-        refresh_patron();
-        g.bill_list.clear();
-        retrieve_mbts_for_list();
-        tally_voided();
-        distribute_payment(); 
     } catch(E) {
         alert('Error in bill2.js, refresh(): ' + E);
     }
@@ -1074,6 +1180,42 @@ function refresh_patron() {
         if (typeof au_obj.ilsevent == 'undefined') {
             g.patron = au_obj;
             $('credit_forward').setAttribute('value',util.money.sanitize( g.patron.credit_forward_balance() ));
+            set_patron_based_menu_options();
         }
     });
+}
+
+function set_patron_based_menu_options() {
+    ['voidall', 'adjust_to_zero'].forEach(function (commandname) {
+        show_hide_menu_by_class(commandname + '_command', true);
+    });
+
+    $('voidall').setAttribute('hidden','true');
+    $('adjust_to_zero').setAttribute('hidden','true');
+    if (check_perms_for_patron_ou(['VOID_BILLING'])) {
+        show_hide_menu_by_class('voidall_command', false);
+    }
+    if (check_perms_for_patron_ou(['ADJUST_BILLS'])) {
+        show_hide_menu_by_class('adjust_to_zero_command', false);
+    }
+}
+
+function show_hide_menu_by_class(class_name, hidden) {
+    var nodes = document.getElementsByClassName(class_name);
+    for (var i = 0; i < nodes.length; i++) {
+        nodes[i].setAttribute('hidden', hidden);
+    }
+}
+
+function check_perms_for_patron_ou(perms) {
+    try {
+        var check = g.network.simple_request('PERM_CHECK',[ses(),ses('staff_id'),g.patron.home_ou(),perms]);
+        if (typeof check.ilsevent != 'undefined') {
+            g.error.standard_unexpected_error_alert('check_perms_for_patron_ou()',check);
+            return false;
+        }
+        return check.length == 0 ? true : false;
+    } catch(E) {
+        g.error.standard_unexpected_error_alert('check_perms_for_patron_ou()',E);
+    }
 }

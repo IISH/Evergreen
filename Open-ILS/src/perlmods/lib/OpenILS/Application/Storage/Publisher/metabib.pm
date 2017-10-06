@@ -5,12 +5,15 @@ use OpenSRF::EX qw/:try/;
 use OpenILS::Application::Storage::FTS;
 use OpenILS::Utils::Fieldmapper;
 use OpenSRF::Utils::Logger qw/:level/;
+use OpenILS::Application::AppUtils;
 use OpenSRF::Utils::Cache;
 use OpenSRF::Utils::JSON;
 use Data::Dumper;
 use Digest::MD5 qw/md5_hex/;
 
 use OpenILS::Application::Storage::QueryParser;
+
+my $U = 'OpenILS::Application::AppUtils';
 
 my $log = 'OpenSRF::Utils::Logger';
 
@@ -69,6 +72,16 @@ sub _initialize_parser {
                 { name => { "!=" => undef } }
             )->gather(1),
     );
+
+    my $max_mult;
+    my $cgf = $cstore->request(
+        'open-ils.cstore.direct.config.global_flag.retrieve',
+        'search.max_popularity_importance_multiplier'
+    )->gather(1);
+    $max_mult = $cgf->value if $cgf && $U->is_true($cgf->enabled);
+    $max_mult //= 2.0;
+    $max_mult = 2.0 unless $max_mult =~ /^-?(?:\d+\.?|\.\d)\d*\z/; # just in case
+    $parser->max_popularity_importance_multiplier($max_mult);
 
     $cstore->disconnect;
     die("Cannot initialize $parser!") unless ($parser->initialization_complete);
@@ -137,12 +150,14 @@ sub ordered_records_from_metarecord { # XXX Replace with QP-based search-within-
 }
 __PACKAGE__->register_method(
     api_name    => 'open-ils.storage.ordered.metabib.metarecord.records',
+    no_tz_force => 1,
     method      => 'ordered_records_from_metarecord',
     api_level   => 1,
     cachable    => 1,
 );
 __PACKAGE__->register_method(
     api_name    => 'open-ils.storage.ordered.metabib.metarecord.records.staff',
+    no_tz_force => 1,
     method      => 'ordered_records_from_metarecord',
     api_level   => 1,
     cachable    => 1,
@@ -150,12 +165,14 @@ __PACKAGE__->register_method(
 
 __PACKAGE__->register_method(
     api_name    => 'open-ils.storage.ordered.metabib.metarecord.records.atomic',
+    no_tz_force => 1,
     method      => 'ordered_records_from_metarecord',
     api_level   => 1,
     cachable    => 1,
 );
 __PACKAGE__->register_method(
     api_name    => 'open-ils.storage.ordered.metabib.metarecord.records.staff.atomic',
+    no_tz_force => 1,
     method      => 'ordered_records_from_metarecord',
     api_level   => 1,
     cachable    => 1,
@@ -193,12 +210,14 @@ sub isxn_search {
 }
 __PACKAGE__->register_method(
     api_name    => 'open-ils.storage.id_list.biblio.record_entry.search.isbn',
+    no_tz_force => 1,
     method      => 'isxn_search',
     api_level   => 1,
     stream      => 1,
 );
 __PACKAGE__->register_method(
     api_name    => 'open-ils.storage.id_list.biblio.record_entry.search.issn',
+    no_tz_force => 1,
     method      => 'isxn_search',
     api_level   => 1,
     stream      => 1,
@@ -350,6 +369,7 @@ sub metarecord_copy_count {
 }
 __PACKAGE__->register_method(
     api_name    => 'open-ils.storage.metabib.metarecord.copy_count',
+    no_tz_force => 1,
     method      => 'metarecord_copy_count',
     api_level   => 1,
     stream      => 1,
@@ -357,6 +377,7 @@ __PACKAGE__->register_method(
 );
 __PACKAGE__->register_method(
     api_name    => 'open-ils.storage.metabib.metarecord.copy_count.staff',
+    no_tz_force => 1,
     method      => 'metarecord_copy_count',
     api_level   => 1,
     stream      => 1,
@@ -639,6 +660,7 @@ sub biblio_multi_search_full_rec {
 }
 __PACKAGE__->register_method(
     api_name    => 'open-ils.storage.biblio.full_rec.multi_search',
+    no_tz_force => 1,
     method      => 'biblio_multi_search_full_rec',
     api_level   => 1,
     stream      => 1,
@@ -646,6 +668,7 @@ __PACKAGE__->register_method(
 );
 __PACKAGE__->register_method(
     api_name    => 'open-ils.storage.biblio.full_rec.multi_search.staff',
+    no_tz_force => 1,
     method      => 'biblio_multi_search_full_rec',
     api_level   => 1,
     stream      => 1,
@@ -700,6 +723,7 @@ sub search_full_rec {
 }
 __PACKAGE__->register_method(
     api_name    => 'open-ils.storage.direct.metabib.full_rec.search_fts.value',
+    no_tz_force => 1,
     method      => 'search_full_rec',
     api_level   => 1,
     stream      => 1,
@@ -707,6 +731,7 @@ __PACKAGE__->register_method(
 );
 __PACKAGE__->register_method(
     api_name    => 'open-ils.storage.direct.metabib.full_rec.search_fts.index_vector',
+    no_tz_force => 1,
     method      => 'search_full_rec',
     api_level   => 1,
     stream      => 1,
@@ -866,6 +891,7 @@ sub search_class_fts {
 for my $class ( qw/title author subject keyword series identifier/ ) {
     __PACKAGE__->register_method(
         api_name    => "open-ils.storage.metabib.$class.search_fts.metarecord",
+        no_tz_force => 1,
         method      => 'search_class_fts',
         api_level   => 1,
         stream      => 1,
@@ -874,6 +900,7 @@ for my $class ( qw/title author subject keyword series identifier/ ) {
     );
     __PACKAGE__->register_method(
         api_name    => "open-ils.storage.metabib.$class.search_fts.metarecord.unordered",
+        no_tz_force => 1,
         method      => 'search_class_fts',
         api_level   => 1,
         stream      => 1,
@@ -882,6 +909,7 @@ for my $class ( qw/title author subject keyword series identifier/ ) {
     );
     __PACKAGE__->register_method(
         api_name    => "open-ils.storage.metabib.$class.search_fts.metarecord.staff",
+        no_tz_force => 1,
         method      => 'search_class_fts',
         api_level   => 1,
         stream      => 1,
@@ -890,6 +918,7 @@ for my $class ( qw/title author subject keyword series identifier/ ) {
     );
     __PACKAGE__->register_method(
         api_name    => "open-ils.storage.metabib.$class.search_fts.metarecord.staff.unordered",
+        no_tz_force => 1,
         method      => 'search_class_fts',
         api_level   => 1,
         stream      => 1,
@@ -1014,6 +1043,7 @@ sub search_class_fts_count {
 for my $class ( qw/title author subject keyword series identifier/ ) {
     __PACKAGE__->register_method(
         api_name    => "open-ils.storage.metabib.$class.search_fts.metarecord_count",
+        no_tz_force => 1,
         method      => 'search_class_fts_count',
         api_level   => 1,
         stream      => 1,
@@ -1022,6 +1052,7 @@ for my $class ( qw/title author subject keyword series identifier/ ) {
     );
     __PACKAGE__->register_method(
         api_name    => "open-ils.storage.metabib.$class.search_fts.metarecord_count.staff",
+        no_tz_force => 1,
         method      => 'search_class_fts_count',
         api_level   => 1,
         stream      => 1,
@@ -1387,6 +1418,7 @@ sub postfilter_search_class_fts {
 for my $class ( qw/title author subject keyword series identifier/ ) {
     __PACKAGE__->register_method(
         api_name    => "open-ils.storage.metabib.$class.post_filter.search_fts.metarecord",
+        no_tz_force => 1,
         method      => 'postfilter_search_class_fts',
         api_level   => 1,
         stream      => 1,
@@ -1395,6 +1427,7 @@ for my $class ( qw/title author subject keyword series identifier/ ) {
     );
     __PACKAGE__->register_method(
         api_name    => "open-ils.storage.metabib.$class.post_filter.search_fts.metarecord.staff",
+        no_tz_force => 1,
         method      => 'postfilter_search_class_fts',
         api_level   => 1,
         stream      => 1,
@@ -1878,6 +1911,7 @@ sub postfilter_search_multi_class_fts {
 
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.metabib.post_filter.multiclass.search_fts.metarecord",
+    no_tz_force => 1,
     method      => 'postfilter_search_multi_class_fts',
     api_level   => 1,
     stream      => 1,
@@ -1885,6 +1919,7 @@ __PACKAGE__->register_method(
 );
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.metabib.post_filter.multiclass.search_fts.metarecord.staff",
+    no_tz_force => 1,
     method      => 'postfilter_search_multi_class_fts',
     api_level   => 1,
     stream      => 1,
@@ -1893,6 +1928,7 @@ __PACKAGE__->register_method(
 
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.metabib.multiclass.search_fts",
+    no_tz_force => 1,
     method      => 'postfilter_search_multi_class_fts',
     api_level   => 1,
     stream      => 1,
@@ -1900,6 +1936,7 @@ __PACKAGE__->register_method(
 );
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.metabib.multiclass.search_fts.staff",
+    no_tz_force => 1,
     method      => 'postfilter_search_multi_class_fts',
     api_level   => 1,
     stream      => 1,
@@ -2285,6 +2322,7 @@ sub biblio_search_multi_class_fts {
 
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.biblio.multiclass.search_fts.record",
+    no_tz_force => 1,
     method      => 'biblio_search_multi_class_fts',
     api_level   => 1,
     stream      => 1,
@@ -2292,6 +2330,7 @@ __PACKAGE__->register_method(
 );
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.biblio.multiclass.search_fts.record.staff",
+    no_tz_force => 1,
     method      => 'biblio_search_multi_class_fts',
     api_level   => 1,
     stream      => 1,
@@ -2299,6 +2338,7 @@ __PACKAGE__->register_method(
 );
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.biblio.multiclass.search_fts",
+    no_tz_force => 1,
     method      => 'biblio_search_multi_class_fts',
     api_level   => 1,
     stream      => 1,
@@ -2306,6 +2346,7 @@ __PACKAGE__->register_method(
 );
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.biblio.multiclass.search_fts.staff",
+    no_tz_force => 1,
     method      => 'biblio_search_multi_class_fts',
     api_level   => 1,
     stream      => 1,
@@ -2582,6 +2623,7 @@ sub staged_fts {
 }
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.biblio.multiclass.staged.search_fts",
+    no_tz_force => 1,
     method      => 'staged_fts',
     api_level   => 0,
     stream      => 1,
@@ -2589,6 +2631,7 @@ __PACKAGE__->register_method(
 );
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.biblio.multiclass.staged.search_fts.staff",
+    no_tz_force => 1,
     method      => 'staged_fts',
     api_level   => 0,
     stream      => 1,
@@ -2596,6 +2639,7 @@ __PACKAGE__->register_method(
 );
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.metabib.multiclass.staged.search_fts",
+    no_tz_force => 1,
     method      => 'staged_fts',
     api_level   => 0,
     stream      => 1,
@@ -2603,6 +2647,7 @@ __PACKAGE__->register_method(
 );
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.metabib.multiclass.staged.search_fts.staff",
+    no_tz_force => 1,
     method      => 'staged_fts',
     api_level   => 0,
     stream      => 1,
@@ -2637,6 +2682,7 @@ sub FTS_paging_estimate {
 }
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.fts_paging_estimate",
+    no_tz_force => 1,
     method      => 'FTS_paging_estimate',
     argc        => 5,
     strict      => 1,
@@ -2736,6 +2782,7 @@ sub xref_count {
 }
 __PACKAGE__->register_method(
     api_name  => "open-ils.storage.search.xref",
+    no_tz_force => 1,
     method    => 'xref_count',
     api_level => 1,
 );
@@ -2745,11 +2792,12 @@ __PACKAGE__->register_method(
 sub abstract_query2str {
     my ($self, $conn, $query) = @_;
 
-    return QueryParser::Canonicalize::abstract_query2str_impl($query, 0);
+    return QueryParser::Canonicalize::abstract_query2str_impl($query, 0, $OpenILS::Application::Storage::QParser);
 }
 
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.query_parser.abstract_query.canonicalize",
+    no_tz_force => 1,
     method      => "abstract_query2str",
     api_level   => 1,
     signature   => {
@@ -2791,6 +2839,7 @@ sub str2abstract_query {
 
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.query_parser.abstract_query.from_string",
+    no_tz_force => 1,
     method      => "str2abstract_query",
     api_level   => 1,
     signature   => {
@@ -2804,6 +2853,14 @@ __PACKAGE__->register_method(
         return => { type => "object", desc => "abstract representation of query parser query" }
     }
 );
+
+my @available_statuses_cache;
+sub available_statuses {
+    if (!scalar(@available_statuses_cache)) {
+       @available_statuses_cache = map { $_->id } config::copy_status->search_where({is_available => 't'});
+    }
+    return @available_statuses_cache;
+}
 
 sub query_parser_fts {
     my $self = shift;
@@ -2979,10 +3036,11 @@ sub query_parser_fts {
 
     # gather statuses, and then forget those if we have an #available modifier
     my @statuses;
-    if (my ($filter) = $query->parse_tree->find_filter('statuses')) {
+    if ($query->parse_tree->find_modifier('available')) {
+        @statuses = available_statuses();
+    } elsif (my ($filter) = $query->parse_tree->find_filter('statuses')) {
         @statuses = @{$filter->args} if (@{$filter->args});
     }
-    @statuses = (0,7,12) if ($query->parse_tree->find_modifier('available'));
 
 
     # gather locations
@@ -3067,11 +3125,18 @@ sub query_parser_fts {
     delete $$summary_row{id};
     delete $$summary_row{rel};
     delete $$summary_row{record};
+    delete $$summary_row{badges};
+    delete $$summary_row{popularity};
 
     if (defined($simple_plan)) {
         $$summary_row{complex_query} = $simple_plan ? 0 : 1;
     } else {
         $$summary_row{complex_query} = $query->simple_plan ? 0 : 1;
+    }
+
+    if ($args{return_query}) {
+        $$summary_row{query_struct} = $query->parse_tree->to_abstract_query();
+        $$summary_row{canonicalized_query} = QueryParser::Canonicalize::abstract_query2str_impl($$summary_row{query_struct}, 0, $parser);
     }
 
     $client->respond( $summary_row );
@@ -3092,11 +3157,14 @@ sub query_parser_fts {
 }
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.query_parser_search",
+    no_tz_force => 1,
     method      => 'query_parser_fts',
     api_level   => 1,
     stream      => 1,
     cachable    => 1,
 );
+
+my $top_org;
 
 sub query_parser_fts_wrapper {
     my $self = shift;
@@ -3110,15 +3178,20 @@ sub query_parser_fts_wrapper {
 
     _initialize_parser($parser) unless $parser->initialization_complete;
 
-    if (! scalar( keys %{$args{searches}} )) {
+    $args{searches} ||= {};
+    if (!scalar(keys(%{$args{searches}})) && !$args{query}) {
         die "No search arguments were passed to ".$self->api_name;
     }
 
-    $log->debug("Constructing QueryParser query from staged search hash ...", DEBUG);
-    my $base_query = '';
-    for my $sclass ( keys %{$args{searches}} ) {
-        $log->debug(" --> staged search key: $sclass --> term: $args{searches}{$sclass}{term}", DEBUG);
-        $base_query .= " $sclass: $args{searches}{$sclass}{term}";
+    $top_org ||= actor::org_unit->search( { parent_ou => undef } )->next;
+
+    my $base_query = $args{query} || '';
+    if (scalar(keys(%{$args{searches}}))) {
+        $log->debug("Constructing QueryParser query from staged search hash ...", DEBUG);
+        for my $sclass ( keys %{$args{searches}} ) {
+            $log->debug(" --> staged search key: $sclass --> term: $args{searches}{$sclass}{term}", DEBUG);
+            $base_query .= " $sclass: $args{searches}{$sclass}{term}";
+        }
     }
 
     my $query = $base_query;
@@ -3144,7 +3217,61 @@ sub query_parser_fts_wrapper {
         if ($args{preferred_language_weight} and !$base_plan->parse_tree->find_filter('preferred_language_weight') and !$base_plan->parse_tree->find_filter('preferred_language_multiplier'));
 
 
+    my $borgs = undef;
+    if (!$base_plan->parse_tree->find_filter('badge_orgs')) {
+        # supply a suitable badge_orgs filter unless user has
+        # explicitly supplied one
+        my $site = undef;
+
+        my @lg_id_list = @{$args{location_groups}} if (ref $args{location_groups});
+
+        my ($lg_filter) = $base_plan->parse_tree->find_filter('location_groups');
+        @lg_id_list = @{$lg_filter->args} if ($lg_filter && @{$lg_filter->args});
+
+        if (@lg_id_list) {
+            my @borg_list;
+            for my $lg ( grep { /^\d+$/ } @lg_id_list ) {
+                my $lg_obj = asset::copy_location_group->retrieve($lg);
+                next unless $lg_obj;
+    
+                push(@borg_list, ''.$lg_obj->owner);
+            }
+            $borgs = join(',', @borg_list) if @borg_list;
+        }
+    
+        if (!$borgs) {
+            my ($site_filter) = $base_plan->parse_tree->find_filter('site');
+            if ($site_filter && @{$site_filter->args}) {
+                $site = $top_org if ($site_filter->args->[0] eq '-');
+                $site = $top_org if ($site_filter->args->[0] eq $top_org->shortname);
+                $site = actor::org_unit->search( { shortname => $site_filter->args->[0] })->next unless ($site);
+            } elsif ($args{org_unit}) {
+                $site = $top_org if ($args{org_unit} eq '-');
+                $site = $top_org if ($args{org_unit} eq $top_org->shortname);
+                $site = actor::org_unit->search( { shortname => $args{org_unit} })->next unless ($site);
+            } else {
+                $site = $top_org;
+            }
+
+            if ($site) {
+                $borgs = OpenSRF::AppSession->create( 'open-ils.cstore' )->request(
+                    'open-ils.cstore.json_query.atomic',
+                    { from => [ 'actor.org_unit_ancestors', $site->id ] }
+                )->gather(1);
+
+                if (ref $borgs && @$borgs) {
+                    $borgs = join(',', map { $_->{'id'} } @$borgs);
+                } else {
+                    $borgs = undef;
+                }
+            }
+        }
+    }
+
     $query = "estimation_strategy($args{estimation_strategy}) $query" if ($args{estimation_strategy});
+    $query = "badge_orgs($borgs) $query" if ($borgs);
+
+    # XXX All of the following, down to the 'return' is basically dead code. someone higher up should handle it
     $query = "site($args{org_unit}) $query" if ($args{org_unit});
     $query = "depth($args{depth}) $query" if (defined($args{depth}));
     $query = "sort($args{sort}) $query" if ($args{sort});
@@ -3154,6 +3281,7 @@ sub query_parser_fts_wrapper {
     $query = "superpage($args{superpage}) $query" if ($args{superpage});
     $query = "offset($args{offset}) $query" if ($args{offset});
     $query = "#metarecord $query" if ($self->api_name =~ /metabib/);
+    $query = "from_metarecord($args{from_metarecord}) $query" if ($args{from_metarecord});
     $query = "#available $query" if ($args{available});
     $query = "#descending $query" if ($args{sort_dir} && $args{sort_dir} =~ /^d/i);
     $query = "#staff $query" if ($self->api_name =~ /staff/);
@@ -3173,13 +3301,12 @@ sub query_parser_fts_wrapper {
         $args{item_form} = [ split '', $f ];
     }
 
-    for my $filter ( qw/locations location_groups statuses between audience language lit_form item_form item_type bib_level vr_format/ ) {
+    for my $filter ( qw/locations location_groups statuses audience language lit_form item_form item_type bib_level vr_format badges/ ) {
         if (my $s = $args{$filter}) {
             $s = [$s] if (!ref($s));
 
             my @filter_list = @$s;
 
-            next if ($filter eq 'between' and scalar(@filter_list) != 2);
             next if (@filter_list == 0);
 
             my $filter_string = join ',', @filter_list;
@@ -3189,10 +3316,11 @@ sub query_parser_fts_wrapper {
 
     $log->debug("Full QueryParser query: $query", DEBUG);
 
-    return query_parser_fts($self, $client, query => $query, _simple_plan => $base_plan->simple_plan );
+    return query_parser_fts($self, $client, query => $query, _simple_plan => $base_plan->simple_plan, return_query => $args{return_query} );
 }
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.biblio.multiclass.staged.search_fts",
+    no_tz_force => 1,
     method      => 'query_parser_fts_wrapper',
     api_level   => 1,
     stream      => 1,
@@ -3200,6 +3328,7 @@ __PACKAGE__->register_method(
 );
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.biblio.multiclass.staged.search_fts.staff",
+    no_tz_force => 1,
     method      => 'query_parser_fts_wrapper',
     api_level   => 1,
     stream      => 1,
@@ -3207,6 +3336,7 @@ __PACKAGE__->register_method(
 );
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.metabib.multiclass.staged.search_fts",
+    no_tz_force => 1,
     method      => 'query_parser_fts_wrapper',
     api_level   => 1,
     stream      => 1,
@@ -3214,6 +3344,7 @@ __PACKAGE__->register_method(
 );
 __PACKAGE__->register_method(
     api_name    => "open-ils.storage.metabib.multiclass.staged.search_fts.staff",
+    no_tz_force => 1,
     method      => 'query_parser_fts_wrapper',
     api_level   => 1,
     stream      => 1,

@@ -13,6 +13,11 @@
 #top-navbar.navbar-default .navbar-nav>li>a:hover {
     color: #ddd;
 }
+#top-navbar.navbar-default .navbar-nav > .open > a,
+#top-navbar.navbar-default .navbar-nav > .open > a:focus,
+#top-navbar.navbar-default .navbar-nav > .open > a:hover {
+    background-color: #7a7a7a;
+}
 #top-navbar.navbar-default .navbar-nav>.dropdown>a .caret {
     border-top-color: #fff;
     border-bottom-color: #fff;
@@ -60,6 +65,7 @@
      * narrower than the default Bootstrapp container gutters.
      */
     width: 95%;
+    padding-top: 70px;
 }
 
 
@@ -96,10 +102,23 @@
 .form-validated input.ng-valid.ng-dirty {
   background-color: #78FA89;
 }
+.form-validated textarea.ng-invalid.ng-dirty {
+  background-color: #FA787E;
+}
+.form-validated textarea.ng-valid.ng-dirty {
+  background-color: #78FA89;
+}
 
 /* --------------------------------------------------------------------------
  * Local style
  */
+
+/* no bootstrap way to directly disable a link.  */
+a.disabled {
+  pointer-events: none;
+  cursor: default;
+  color: #888;
+}
 
 #splash-nav .panel-body div {
     padding-bottom: 10px;
@@ -114,7 +133,9 @@ table.list tr.selected td { /* deprecated? */
 .pad-vert {padding : 20px 0px 10px 0px;}
 .pad-left {padding-left: 10px;}
 .pad-right {padding-right: 10px;}
+.pad-right-min {padding-right: 5px;}
 .pad-all-min {padding : 5px; }
+.pad-all-min2 {padding : 2px; }
 .pad-all {padding : 10px; }
 
 #print-div { display: none; }
@@ -129,6 +150,29 @@ table.list tr.selected td { /* deprecated? */
 .btn-pad {
   /* sometimes you don't want buttons scrunched together -- add some margin */
   margin-left: 10px;
+}
+
+/* button styling by Cory LaViska from
+   http://www.abeautifulsite.net/whipping-file-inputs-into-shape-with-bootstrap-3/
+*/
+.btn-file {
+    position: relative;
+    overflow: hidden;
+}
+.btn-file input[type=file] {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 100%;
+    min-height: 100%;
+    font-size: 100px;
+    text-align: right;
+    filter: alpha(opacity=0);
+    opacity: 0;
+    outline: none;
+    background: white;
+    cursor: inherit;
+    display: block;
 }
 
 .strong-text {
@@ -185,6 +229,7 @@ table.list tr.selected td { /* deprecated? */
 .eg-grid-primary-label {
   font-weight: bold;
   font-size: 120%;
+  margin-right: 2em;
 }
 
 /* odd/even row styling */
@@ -395,6 +440,12 @@ table.list tr.selected td { /* deprecated? */
 .flex-2 { /* meh, convience */
   flex: 2;
 }
+.flex-3 { /* meh, convience */
+  flex: 3;
+}
+.flex-4 { /* meh, convience */
+  flex: 4;
+}
 
 /* TODO: match media size to Bootstrap "md" col resizing */
 @media all and (max-width: 800px) {
@@ -406,6 +457,26 @@ table.list tr.selected td { /* deprecated? */
   }
 }
 
+/* optional class to make 'lg' Bootstrap modals even wider */
+@media (min-width: 768px) {
+  .eg-wide-modal .modal-lg {
+    width: 95%;
+  }
+}
+
+@media all and (min-width: 800px) {
+    /* scrollable menus for full-size screens */
+    .scrollable-menu {
+        height: auto;
+        max-height: 200px;
+        overflow-x: hidden;
+    }
+}
+
+.eg-modal-progress progress {
+  width: 100%;
+  height: 25px;
+}
 
 [%# 
 vim: ft=css 

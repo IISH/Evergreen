@@ -48,7 +48,8 @@ sub record_copy_count {
                   WHERE cn.record = ?
                     $visible
                     AND cn.deleted IS FALSE
-                    AND cp.deleted IS FALSE)
+                    AND cp.deleted IS FALSE
+                    AND loc.deleted IS FALSE)
             ) AS count,
             sum(
                 (SELECT count(cp.id)
@@ -61,6 +62,7 @@ sub record_copy_count {
                     $visible
                     AND cn.deleted IS FALSE
                     AND cp.deleted IS FALSE
+                    AND loc.deleted IS FALSE
                     AND cp.status IN (0,7,12))
             ) AS available,
             sum(
@@ -74,7 +76,8 @@ sub record_copy_count {
                     AND loc.opac_visible = TRUE
                     AND cp.opac_visible = TRUE
                     AND cn.deleted IS FALSE
-                    AND cp.deleted IS FALSE)
+                    AND cp.deleted IS FALSE
+                    AND loc.deleted IS FALSE)
             ) AS unshadow,
                         sum(    
                                 (SELECT sum(1)
@@ -181,6 +184,33 @@ __PACKAGE__->register_method(
     argc        => 1,
     api_level   => 1,
 );
+
+
+sub regenerate_badge_list {
+    my $self = shift;
+    my $client = shift;
+
+    my $sth = biblio::record_entry->db_Main->prepare_cached( <<"    SQL" );
+        SELECT  r.id AS badge
+          FROM  rating.badge r
+          WHERE r.last_calc < NOW() - r.recalc_interval
+                OR r.last_calc IS NULL
+          ORDER BY r.last_calc ASC NULLS FIRST -- oldest first
+    SQL
+
+    $sth->execute;
+    while ( my $row = $sth->fetchrow_hashref ) {
+        $client->respond( $row->{badge} );
+    }
+    return undef;
+}
+__PACKAGE__->register_method(
+    api_name    => 'open-ils.storage.biblio.regenerate_badge_list',
+    method      => 'regenerate_badge_list',
+    api_level   => 1,
+    cachable    => 1,
+);
+
 
 sub record_by_barcode {
     my $self = shift;
@@ -411,6 +441,7 @@ sub record_copy_status_count {
             AND cl.opac_visible IS TRUE
             AND cp.opac_visible IS TRUE
             AND cp.deleted IS FALSE
+            AND cl.deleted IS FALSE
             AND cs.opac_visible IS TRUE
           GROUP BY 1,2,3,4,5;
     SQL
@@ -490,6 +521,7 @@ sub record_copy_status_location_count {
             AND cl.opac_visible IS TRUE
             AND cp.opac_visible IS TRUE
             AND cp.deleted IS FALSE
+            AND cl.deleted IS FALSE
             AND cs.opac_visible IS TRUE
           GROUP BY 1,2,3,4,5,6;
     SQL

@@ -8,39 +8,57 @@
 
   <div class="eg-grid-primary-label">{{mainLabel}}</div>
 
-  <div class="btn-group eg-grid-menuiitem" 
-    is-open="gridMenuIsOpen" ng-if="menuLabel" dropdown>
-    <button type="button" class="btn btn-default dropdown-toggle">
+  <div class="btn-group" 
+    is-open="gridMenuIsOpen" ng-if="menuLabel && showMenu" uib-dropdown>
+    <button type="button" class="btn btn-default eg-grid-menu-item" uib-dropdown-toggle>
       {{menuLabel}}<span class="caret"></span>
     </button>
-    <ul class="dropdown-menu">
-      <li ng-repeat="item in menuItems" ng-class="{divider: item.divider}">
-        <a ng-if="!item.divider" href ng-disabled="item.disabled"
+    <ul class="scrollable-menu" uib-dropdown-menu>
+      <li ng-repeat="item in menuItems | filter : { standalone : 'false' }" ng-class="{divider: item.divider}">
+        <a ng-if="!item.divider" href a-disabled="item.disabled()"
           ng-click="item.handler()">{{item.label}}</a>
       </li>
     </ul>
+    <button ng-if="!item.checkbox && !item.hidden()"
+      class="btn btn-default eg-grid-menu-item"
+      ng-disabled="item.disabled()"
+      ng-repeat="item in menuItems | filter : { standalone : 'true' }"
+      ng-click="item.handler()">{{item.label}}</button>
   </div>
 
   <!-- if no menu label is present, present menu-items as a 
        horizontal row of buttons -->
-  <div class="btn-group" ng-if="!menuLabel">
-    <button ng-if="!item.hidden()"
+  <div class="btn-group" ng-if="!menuLabel && showMenu">
+    <button ng-if="!item.checkbox && !item.hidden()"
       class="btn btn-default eg-grid-menu-item"
-      ng-disabled="item.disabled()"
       ng-repeat="item in menuItems"
+      ng-disabled="item.disabled()"
       ng-click="item.handler(item, item.handlerData)">
-      {{item.label}}
+        {{item.label}}
     </button>
+    <div ng-if="item.checkbox"
+      class="btn btn-default eg-grid-menu-item"
+      ng-repeat="item in menuItems">
+        <label for="{{item.checkbox}}">{{item.label}}</label>
+        <input style="padding-left: 5px"
+               type="checkbox"
+               id="{{item.checkbox}}"
+               ng-disabled="item.disabled()"
+               ng-model="item.checked"
+               ng-checked="item.checked"
+               ng-change="item.handler(item)"/>
+    </div>
   </div>
 
   <!-- putting a flex div here forces the remaining content to float right -->
   <div class="flex-cell"></div>
 
   <!-- column picker, pager, etc. -->
-  <div class="btn-group column-picker">
+  <div class="btn-group column-picker" ng-show="showPagination || showActions || showPicker">
 
     <!-- first page -->
     <button type="button" class="btn btn-default" 
+      ng-show="showPagination"
       ng-class="{disabled : onFirstPage()}" 
       ng-click="offset(0);collect()"
       title="[% l('Start') %]">
@@ -49,6 +67,7 @@
 
     <!-- previous page -->
     <button type="button" class="btn btn-default" 
+      ng-show="showPagination"
       ng-class="{disabled : onFirstPage()}"
       ng-click="decrementPage()"
       title="[% l('Previous Page') %]">
@@ -58,6 +77,7 @@
     <!-- next page -->
     <!-- todo: paging needs a total count value to be fully functional -->
     <button type="button" class="btn btn-default" 
+      ng-show="showPagination"
       ng-class="{disabled : !hasNextPage()}"
       ng-click="incrementPage()"
       title="[% l('Next Page') %]">
@@ -65,41 +85,48 @@
     </button>
 
     <!-- actions drop-down menu -->
-    <div class="btn-group" ng-if="actions.length" dropdown>                                                  
-      <button type="button" class="btn btn-default dropdown-toggle"
-        ng-class="{disabled : false}">
+    <div class="btn-group" ng-show="showActions" ng-if="actionGroups.length > 1 || actionGroups[0].actions.length" uib-dropdown>                                                  
+      <button type="button" class="btn btn-default" uib-dropdown-toggle
+        ng-disabled="!hasSelected()">
         [% l('Actions') %] <span class="caret"></span>                       
       </button>                                                              
-      <ul class="dropdown-menu pull-right">                                  
-        <li ng-repeat="action in actions" ng-class="{divider: action.divider}">
-          <a ng-if="!action.divider" href dropdown-toggle
-            ng-click="actionLauncher(action)">{{action.label}}</a>
+      <ul class="pull-right grid-action-dropdown scrollable-menu" uib-dropdown-menu>
+        <li ng-repeat-start="group in actionGroups">
+          <span style="padding-left: 1em;" ng-if="group.label"><strong><u>{{group.label}}</u></strong></span>
         </li>
+        <li ng-repeat="action in group.actions" ng-class="{divider: action.divider, disabled: actionDisable(action)}" ng-hide="actionHide(action)">
+          <a ng-if="!action.divider" href
+            ng-click="!actionDisable(action) && actionLauncher(action)">{{action.label}}</a>
+        </li>
+        <span ng-repeat-end/>
       </ul>
     </div>
 
-    <div class="btn-group" dropdown is-open="gridRowCountIsOpen">
-      <button type="button" title="[% ('Select Row Count') %]"
-        class="btn btn-default dropdown-toggle">
+    <div class="btn-group" uib-dropdown is-open="gridRowCountIsOpen" ng-show="showPagination">
+      <button type="button" title="[% l('Select Row Count') %]"
+        class="btn btn-default" uib-dropdown-toggle>
         [% l('Rows [_1]', '{{limit()}}') %]
         <span class="caret"></span>
       </button>
-      <ul class="dropdown-menu">
+      <ul uib-dropdown-menu>
         <li ng-repeat="t in [5,10,25,50,100]">
           <a href ng-click='offset(0);limit(t);collect()'>
             {{t}}
           </a>
         </li>
+        <li ng-if="allowAll" >
+          <a href ng-click='offset(0);limit(10000);collect()'>[% l('All') %]</a>
+        </li>
       </ul>
     </div>
 
-    <div class="btn-group" dropdown is-open="gridPageSelectIsOpen">
-      <button type="button" title="[% ('Select Page') %]"
-        class="btn btn-default dropdown-toggle">
+    <div class="btn-group" uib-dropdown is-open="gridPageSelectIsOpen" ng-show="showPagination">
+      <button type="button" title="[% l('Select Page') %]"
+        class="btn btn-default" uib-dropdown-toggle>
         [% l('Page [_1]', '{{page()}}') %]
         <span class="caret"></span>
       </button>
-      <ul class="dropdown-menu">
+      <ul uib-dropdown-menu>
         <li>
           <div class="input-group">
             <input type="text" class="form-control"
@@ -120,12 +147,12 @@
       </ul>
     </div>
 
-    <div class="btn-group" dropdown is-open="gridColumnPickerIsOpen">
+    <div class="btn-group" uib-dropdown is-open="gridColumnPickerIsOpen" ng-show="showPicker">
       <button type="button" 
-        class="btn btn-default dropdown-toggle">
+        class="btn btn-default" uib-dropdown-toggle>
         <span class="caret"></span>
       </button>
-      <ul class="dropdown-menu pull-right eg-grid-column-picker">
+      <ul class="pull-right eg-grid-column-picker" uib-dropdown-menu>
         <li><a href ng-click="toggleConfDisplay()">
           <span class="glyphicon glyphicon-wrench"></span>
           [% l('Configure Columns') %]
@@ -134,6 +161,7 @@
           <span class="glyphicon glyphicon-floppy-save"></span>
           [% l('Save Columns') %]
         </a></li>
+<!--
         <li><a href ng-click="showAllColumns()">
           <span class="glyphicon glyphicon-resize-full"></span>
           [% l('Show All Columns') %]
@@ -142,6 +170,7 @@
           <span class="glyphicon glyphicon-resize-small"></span>
           [% l('Hide All Columns') %]
         </a></li>
+-->
         <li><a href ng-click="resetColumns()">
           <span class="glyphicon glyphicon-refresh"></span>
           [% l('Reset Columns') %]
@@ -157,7 +186,7 @@
         </a></li>
         <li role="presentation" class="divider"></li>
         <li ng-repeat="col in columns">
-          <a href ng-click="toggleColumnVisibility(col)">
+          <a href title="{{col.idlclass}}" ng-click="toggleColumnVisibility(col)">
               <span ng-if="col.visible" 
                 class="label label-success">&#x2713;</span>
               <span ng-if="!col.visible" 
@@ -177,10 +206,10 @@
   <div ng-transclude></div>
 
   <div class="eg-grid-row eg-grid-header-row">
-    <div class="eg-grid-cell eg-grid-cell-stock">
+    <div class="eg-grid-cell eg-grid-cell-stock" ng-show="showIndex">
       <div title="[% l('Row Number Column') %]">[% l('#') %]</div>
     </div>
-    <div class="eg-grid-cell eg-grid-cell-stock">
+    <div class="eg-grid-cell eg-grid-cell-stock" ng-show="canMultiSelect">
       <div>
         <input title="[% l('Row Selector Column') %]"
           focus-me="gridControls.focusRowSelector"
@@ -254,7 +283,7 @@
         ng-repeat="item in items"
         ng-show="items.length > 0"
         ng-class="{'eg-grid-row-selected' : selected[indexValue(item)]}">
-      <div class="eg-grid-cell eg-grid-cell-stock"
+      <div class="eg-grid-cell eg-grid-cell-stock" ng-show="showIndex"
         ng-click="handleRowClick($event, item)" title="[% l('Row Index') %]">
         <a href ng-show="gridControls.activateItem" 
           ng-click="gridControls.activateItem(item)" style="font-weight:bold">
@@ -262,11 +291,12 @@
         </a>
         <div ng-hide="gridControls.activateItem">{{$index + offset() + 1}}</div>
       </div>
-      <div class="eg-grid-cell eg-grid-cell-stock">
+      <div class="eg-grid-cell eg-grid-cell-stock" ng-show="canMultiSelect">
         <!-- ng-click=handleRowClick here has unintended 
              consequences and is unnecessary, avoid it -->
         <div>
           <input type='checkbox' title="[% l('Select Row') %]"
+            ng-change="updateSelected()"
             ng-model="selected[indexValue(item)]"/>
         </div>
       </div>
@@ -274,18 +304,18 @@
           ng-click="handleRowClick($event, item)"
           ng-dblclick="gridControls.activateItem(item)"
           ng-repeat="col in columns"
-          style="flex:{{col.flex}}"
+          style="text-align:{{col.align}}; flex:{{col.flex}}"
           ng-show="col.visible">
 
           <!-- if the cell comes with its own template,
                translate that content into HTML and insert it here -->
-          <span ng-if="col.template" 
+          <span ng-if="col.template" style="padding-left:5px; padding-right:10px;"
             ng-bind-html="translateCellTemplate(col, item)">
           </span>
 
           <!-- otherwise, simply display the item value, which may 
                pass through datatype-specific filtering. -->
-          <span ng-if="!col.template">
+          <span ng-if="!col.template" style="padding-left:5px; padding-right:10px;">
             {{itemFieldValue(item, col) | egGridValueFilter:col}}
           </span>
       </div>

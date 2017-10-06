@@ -17,11 +17,26 @@ module.exports = function(grunt) {
           src: [
             'bower_components/angular/angular.min.js',
             'bower_components/angular/angular.min.js.map',
+            'bower_components/angular-animate/angular-animate.min.js',
+            'bower_components/angular-animate/angular-animate.min.js.map',
+            'bower_components/angular-sanitize/angular-sanitize.min.js',
+            'bower_components/angular-sanitize/angular-sanitize.min.js.map',
             'bower_components/angular-route/angular-route.min.js',
             'bower_components/angular-route/angular-route.min.js.map',
             'bower_components/angular-bootstrap/ui-bootstrap.min.js',
             'bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js',
             'bower_components/angular-hotkeys/build/hotkeys.min.js',
+            'bower_components/angular-file-saver/dist/angular-file-saver.bundle.min.js',
+            'bower_components/angular-location-update/angular-location-update.min.js',
+            'bower_components/angular-tree-control/angular-tree-control.js',
+            'bower_components/ngtoast/dist/ngToast.min.js',
+            'bower_components/jquery/dist/jquery.min.js',
+            'bower_components/angular-cookies/angular-cookies.min.js',
+            'bower_components/angular-cookies/angular-cookies.min.js.map',
+            'bower_components/iframe-resizer/js/iframeResizer.min.js',
+            'bower_components/iframe-resizer/js/iframeResizer.map',
+            'bower_components/iframe-resizer/js/iframeResizer.contentWindow.min.js',
+            'bower_components/angular-order-object-by/src/ng-order-object-by.js'
           ]
         }]
       },
@@ -34,7 +49,11 @@ module.exports = function(grunt) {
           expand : true,
           src : [
             'bower_components/angular-hotkeys/build/hotkeys.min.css',
-            'bower_components/bootstrap/dist/css/bootstrap.min.css' 
+            'bower_components/bootstrap/dist/css/bootstrap.min.css', 
+            'bower_components/ngtoast/dist/ngToast.min.css',
+            'bower_components/ngtoast/dist/ngToast-animations.min.css',
+            'bower_components/angular-tree-control/css/tree-control.css',
+            'bower_components/angular-tree-control/css/tree-control-attribute.css',
           ]
         }]
       },
@@ -52,6 +71,27 @@ module.exports = function(grunt) {
             'bower_components/bootstrap/dist/fonts/glyphicons-halflings-regular.woff'
           ]
         }]
+      },
+
+      images : {
+        files : [{
+          dest : 'build/images/',
+          flatten : true,
+          filter : 'isFile',
+          expand : true,
+          src : [
+            'bower_components/angular-tree-control/images/sample.png',
+            'bower_components/angular-tree-control/images/node-opened-2.png',
+            'bower_components/angular-tree-control/images/folder.png',
+            'bower_components/angular-tree-control/images/node-closed.png',
+            'bower_components/angular-tree-control/images/node-closed-light.png',
+            'bower_components/angular-tree-control/images/node-opened.png',
+            'bower_components/angular-tree-control/images/node-opened-light.png',
+            'bower_components/angular-tree-control/images/folder-closed.png',
+            'bower_components/angular-tree-control/images/node-closed-2.png',
+            'bower_components/angular-tree-control/images/file.png'
+          ]
+        }]
       }
     },
 
@@ -62,7 +102,11 @@ module.exports = function(grunt) {
         files: {
           'build/css/evergreen-staff-client-deps.<%= pkg.version %>.min.css' : [
             'build/css/hotkeys.min.css',
-            'build/css/bootstrap.min.css'
+            'build/css/bootstrap.min.css',
+            'build/css/ngToast.min.css',
+            'build/css/ngToast-animations.min.css',
+            'build/css/tree-control.css',
+            'build/css/tree-control-attribute.css',
           ]
         }
       }
@@ -77,11 +121,16 @@ module.exports = function(grunt) {
         src: [
             // These are concatenated in order in the final build file.
             // The order is important.
+            'build/js/jquery.min.js',
             'build/js/angular.min.js',
+            'build/js/angular-animate.min.js',
+            'build/js/angular-sanitize.min.js',
             'build/js/angular-route.min.js',
             'build/js/ui-bootstrap.min.js',
             'build/js/ui-bootstrap-tpls.min.js',
             'build/js/hotkeys.min.js',
+            'build/js/angular-tree-control.js',
+            'build/js/ngToast.min.js',
             // NOTE: OpenSRF must be installed
             '/openils/lib/javascript/JSON_v1.js',
             '/openils/lib/javascript/opensrf.js',
@@ -98,10 +147,13 @@ module.exports = function(grunt) {
             'services/startup.js',
             'services/hatch.js',
             'services/print.js',
+            'services/audio.js',
             'services/coresvc.js',
             'services/navbar.js',
             'services/statusbar.js',
             'services/ui.js',
+            'services/date.js',
+            'services/op_change.js',
         ],
         dest: 'build/js/<%= pkg.name %>.<%= pkg.version %>.min.js'
       }

@@ -13,6 +13,12 @@
 
 angular.module('egCoreMod')
 
+.config(['$locationProvider','$compileProvider',
+ function($locationProvider , $compileProvider) {
+    $locationProvider.html5Mode(true);
+    $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|blob):/);
+}])
+
 .factory('egStartup', 
        ['$q','$rootScope','$location','$window','egIDL','egAuth','egEnv',
 function($q,  $rootScope,  $location,  $window,  egIDL,  egAuth,  egEnv) {

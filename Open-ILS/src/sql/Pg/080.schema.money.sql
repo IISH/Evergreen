@@ -94,16 +94,6 @@ CREATE OR REPLACE VIEW money.transaction_billing_type_summary AS
 	  GROUP BY xact,billing_type
 	  ORDER BY MAX(billing_ts);
 
-CREATE OR REPLACE VIEW money.transaction_billing_summary AS
-	SELECT	xact,
-		LAST(billing_type) AS last_billing_type,
-		LAST(note) AS last_billing_note,
-		MAX(billing_ts) AS last_billing_ts,
-		SUM(COALESCE(amount,0)) AS total_owed
-	  FROM	money.billing
-	  WHERE	voided IS FALSE
-	  GROUP BY xact
-	  ORDER BY MAX(billing_ts);
 
 CREATE OR REPLACE VIEW money.transaction_payment_summary AS
 	SELECT	xact,
@@ -265,6 +255,14 @@ ALTER TABLE money.materialized_billable_xact_summary ADD PRIMARY KEY (id);
 CREATE INDEX money_mat_summary_usr_idx ON money.materialized_billable_xact_summary (usr);
 CREATE INDEX money_mat_summary_xact_start_idx ON money.materialized_billable_xact_summary (xact_start);
 
+CREATE OR REPLACE VIEW money.transaction_billing_summary AS
+    SELECT id as xact,
+        last_billing_type,
+        last_billing_note,
+        last_billing_ts,
+        total_owed
+      FROM money.materialized_billable_xact_summary;
+
 /* AFTER trigger only! */
 CREATE OR REPLACE FUNCTION money.mat_summary_create () RETURNS TRIGGER AS $$
 BEGIN
@@ -387,7 +385,7 @@ BEGIN
 	IF NOT OLD.voided THEN
 		UPDATE	money.materialized_billable_xact_summary
 		  SET	total_owed = total_owed - OLD.amount,
-			balance_owed = balance_owed + OLD.amount
+			balance_owed = balance_owed - OLD.amount
 		  WHERE	id = OLD.xact;
 	END IF;
 
@@ -540,6 +538,20 @@ CREATE TRIGGER mat_summary_add_tgr AFTER INSERT ON money.forgive_payment FOR EAC
 CREATE TRIGGER mat_summary_upd_tgr AFTER UPDATE ON money.forgive_payment FOR EACH ROW EXECUTE PROCEDURE money.materialized_summary_payment_update ('forgive_payment');
 CREATE TRIGGER mat_summary_del_tgr BEFORE DELETE ON money.forgive_payment FOR EACH ROW EXECUTE PROCEDURE money.materialized_summary_payment_del ('forgive_payment');
 
+CREATE TABLE money.account_adjustment (
+    billing BIGINT REFERENCES money.billing (id) ON DELETE SET NULL
+) INHERITS (money.bnm_payment);
+ALTER TABLE money.account_adjustment ADD PRIMARY KEY (id);
+CREATE INDEX money_adjustment_id_idx ON money.account_adjustment (id);
+CREATE INDEX money_account_adjustment_xact_idx ON money.account_adjustment (xact);
+CREATE INDEX money_account_adjustment_bill_idx ON money.account_adjustment (billing);
+CREATE INDEX money_account_adjustment_payment_ts_idx ON money.account_adjustment (payment_ts);
+CREATE INDEX money_account_adjustment_accepting_usr_idx ON money.account_adjustment (accepting_usr);
+
+CREATE TRIGGER mat_summary_add_tgr AFTER INSERT ON money.account_adjustment FOR EACH ROW EXECUTE PROCEDURE money.materialized_summary_payment_add ('account_adjustment');
+CREATE TRIGGER mat_summary_upd_tgr AFTER UPDATE ON money.account_adjustment FOR EACH ROW EXECUTE PROCEDURE money.materialized_summary_payment_update ('account_adjustment');
+CREATE TRIGGER mat_summary_del_tgr BEFORE DELETE ON money.account_adjustment FOR EACH ROW EXECUTE PROCEDURE money.materialized_summary_payment_del ('account_adjustment');
+
 
 CREATE TABLE money.work_payment () INHERITS (money.bnm_payment);
 ALTER TABLE money.work_payment ADD PRIMARY KEY (id);
@@ -626,14 +638,9 @@ CREATE TRIGGER mat_summary_del_tgr BEFORE DELETE ON money.check_payment FOR EACH
 
 
 CREATE TABLE money.credit_card_payment (
-	cc_type		TEXT,
-	cc_number	TEXT,
+    cc_number     TEXT,
     cc_processor TEXT,
-    cc_first_name TEXT,
-    cc_last_name TEXT,
     cc_order_number TEXT,
-	expire_month	INT,
-	expire_year	INT,
 	approval_code	TEXT
 ) INHERITS (money.bnm_desk_payment);
 ALTER TABLE money.credit_card_payment ADD PRIMARY KEY (id);

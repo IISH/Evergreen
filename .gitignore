@@ -69,13 +69,17 @@ Open-ILS/src/python/build/
 Open-ILS/src/python/Evergreen.egg-info/
 Open-ILS/src/python/Makefile
 Open-ILS/src/python/Makefile.in
+Open-ILS/src/support-scripts/action_trigger_runner.pl
+Open-ILS/src/support-scripts/authority_authority_linker.pl
 Open-ILS/src/support-scripts/authority_control_fields.pl
 Open-ILS/src/support-scripts/marc_export
+Open-ILS/src/support-scripts/offline-blocked-list.pl
 Open-ILS/updates/Makefile
 Open-ILS/updates/Makefile.in
 Open-ILS/xul/staff_client/client/
 Open-ILS/xul/staff_client/Makefile
 Open-ILS/xul/staff_client/Makefile.in
+test-driver
 
 # Ignore built or installed locales
 *.html.po
@@ -84,7 +88,7 @@ Open-ILS/xul/staff_client/Makefile.in
 build/i18n/locale/
 build/i18n/po/fm_IDL.xml
 Open-ILS/src/sql/Pg/950.data.seed-values-*.sql
-Open-ILS/web/js/dojo/openils/acq/nls/ar-ar/
+Open-ILS/web/js/dojo/openils/acq/nls/ar-jo/
 Open-ILS/web/js/dojo/openils/acq/nls/cs-cz/
 Open-ILS/web/js/dojo/openils/acq/nls/de-de/
 Open-ILS/web/js/dojo/openils/acq/nls/en-ca/
@@ -100,7 +104,7 @@ Open-ILS/web/js/dojo/openils/acq/nls/pt-br/
 Open-ILS/web/js/dojo/openils/acq/nls/ru-ru/
 Open-ILS/web/js/dojo/openils/acq/nls/sv-se/
 Open-ILS/web/js/dojo/openils/acq/nls/tr-tr/
-Open-ILS/web/js/dojo/openils/actor/nls/ar-ar/
+Open-ILS/web/js/dojo/openils/actor/nls/ar-jo/
 Open-ILS/web/js/dojo/openils/actor/nls/cs-cz/
 Open-ILS/web/js/dojo/openils/actor/nls/de-de/
 Open-ILS/web/js/dojo/openils/actor/nls/en-ca/
@@ -116,7 +120,7 @@ Open-ILS/web/js/dojo/openils/actor/nls/pt-br/
 Open-ILS/web/js/dojo/openils/actor/nls/ru-ru/
 Open-ILS/web/js/dojo/openils/actor/nls/sv-se/
 Open-ILS/web/js/dojo/openils/actor/nls/tr-tr/
-Open-ILS/web/js/dojo/openils/authority/nls/ar-ar/
+Open-ILS/web/js/dojo/openils/authority/nls/ar-jo/
 Open-ILS/web/js/dojo/openils/authority/nls/cs-cz/
 Open-ILS/web/js/dojo/openils/authority/nls/de-de/
 Open-ILS/web/js/dojo/openils/authority/nls/en-ca/
@@ -132,7 +136,7 @@ Open-ILS/web/js/dojo/openils/authority/nls/pt-br/
 Open-ILS/web/js/dojo/openils/authority/nls/ru-ru/
 Open-ILS/web/js/dojo/openils/authority/nls/sv-se/
 Open-ILS/web/js/dojo/openils/authority/nls/tr-tr/
-Open-ILS/web/js/dojo/openils/booking/nls/ar-ar/
+Open-ILS/web/js/dojo/openils/booking/nls/ar-jo/
 Open-ILS/web/js/dojo/openils/booking/nls/cs-cz/
 Open-ILS/web/js/dojo/openils/booking/nls/de-de/
 Open-ILS/web/js/dojo/openils/booking/nls/en-ca/
@@ -148,7 +152,7 @@ Open-ILS/web/js/dojo/openils/booking/nls/pt-br/
 Open-ILS/web/js/dojo/openils/booking/nls/ru-ru/
 Open-ILS/web/js/dojo/openils/booking/nls/sv-se/
 Open-ILS/web/js/dojo/openils/booking/nls/tr-tr/
-Open-ILS/web/js/dojo/openils/circ/nls/ar-ar/
+Open-ILS/web/js/dojo/openils/circ/nls/ar-jo/
 Open-ILS/web/js/dojo/openils/circ/nls/cs-cz/
 Open-ILS/web/js/dojo/openils/circ/nls/de-de/
 Open-ILS/web/js/dojo/openils/circ/nls/en-ca/
@@ -164,7 +168,7 @@ Open-ILS/web/js/dojo/openils/circ/nls/pt-br/
 Open-ILS/web/js/dojo/openils/circ/nls/ru-ru/
 Open-ILS/web/js/dojo/openils/circ/nls/sv-se/
 Open-ILS/web/js/dojo/openils/circ/nls/tr-tr/
-Open-ILS/web/js/dojo/openils/conify/nls/ar-ar/
+Open-ILS/web/js/dojo/openils/conify/nls/ar-jo/
 Open-ILS/web/js/dojo/openils/conify/nls/cs-cz/
 Open-ILS/web/js/dojo/openils/conify/nls/de-de/
 Open-ILS/web/js/dojo/openils/conify/nls/en-ca/
@@ -180,7 +184,7 @@ Open-ILS/web/js/dojo/openils/conify/nls/pt-br/
 Open-ILS/web/js/dojo/openils/conify/nls/ru-ru/
 Open-ILS/web/js/dojo/openils/conify/nls/sv-se/
 Open-ILS/web/js/dojo/openils/conify/nls/tr-tr/
-Open-ILS/web/js/dojo/openils/opac/nls/ar-ar/
+Open-ILS/web/js/dojo/openils/opac/nls/ar-jo/
 Open-ILS/web/js/dojo/openils/opac/nls/cs-cz/
 Open-ILS/web/js/dojo/openils/opac/nls/de-de/
 Open-ILS/web/js/dojo/openils/opac/nls/en-ca/
@@ -196,7 +200,7 @@ Open-ILS/web/js/dojo/openils/opac/nls/pt-br/
 Open-ILS/web/js/dojo/openils/opac/nls/ru-ru/
 Open-ILS/web/js/dojo/openils/opac/nls/sv-se/
 Open-ILS/web/js/dojo/openils/opac/nls/tr-tr/
-Open-ILS/web/js/dojo/openils/reports/nls/ar-ar/
+Open-ILS/web/js/dojo/openils/reports/nls/ar-jo/
 Open-ILS/web/js/dojo/openils/reports/nls/cs-cz/
 Open-ILS/web/js/dojo/openils/reports/nls/de-de/
 Open-ILS/web/js/dojo/openils/reports/nls/en-ca/
@@ -212,7 +216,7 @@ Open-ILS/web/js/dojo/openils/reports/nls/pt-br/
 Open-ILS/web/js/dojo/openils/reports/nls/ru-ru/
 Open-ILS/web/js/dojo/openils/reports/nls/sv-se/
 Open-ILS/web/js/dojo/openils/reports/nls/tr-tr/
-Open-ILS/web/js/dojo/openils/User/nls/ar-ar/
+Open-ILS/web/js/dojo/openils/User/nls/ar-jo/
 Open-ILS/web/js/dojo/openils/User/nls/cs-cz/
 Open-ILS/web/js/dojo/openils/User/nls/de-de/
 Open-ILS/web/js/dojo/openils/User/nls/en-ca/
@@ -228,7 +232,7 @@ Open-ILS/web/js/dojo/openils/User/nls/pt-br/
 Open-ILS/web/js/dojo/openils/User/nls/ru-ru/
 Open-ILS/web/js/dojo/openils/User/nls/sv-se/
 Open-ILS/web/js/dojo/openils/User/nls/tr-tr/
-Open-ILS/web/js/dojo/openils/widget/nls/ar-ar/
+Open-ILS/web/js/dojo/openils/widget/nls/ar-jo/
 Open-ILS/web/js/dojo/openils/widget/nls/cs-cz/
 Open-ILS/web/js/dojo/openils/widget/nls/de-de/
 Open-ILS/web/js/dojo/openils/widget/nls/en-ca/
@@ -246,7 +250,7 @@ Open-ILS/web/js/dojo/openils/widget/nls/sv-se/
 Open-ILS/web/js/dojo/openils/widget/nls/tr-tr/
 Open-ILS/web/Makefile
 Open-ILS/web/Makefile.in
-Open-ILS/web/opac/locale/ar-AR/
+Open-ILS/web/opac/locale/ar-JO/
 Open-ILS/web/opac/locale/cs-CZ/
 Open-ILS/web/opac/locale/de-DE/
 Open-ILS/web/opac/locale/en-CA/
@@ -265,7 +269,7 @@ Open-ILS/web/opac/locale/sv-SE/
 Open-ILS/web/opac/locale/tr-TR/
 Open-ILS/web/reports/fm_IDL.xml
 Open-ILS/xul/staff_client/build/
-Open-ILS/xul/staff_client/chrome/locale/ar-AR/
+Open-ILS/xul/staff_client/chrome/locale/ar-JO/
 Open-ILS/xul/staff_client/chrome/locale/cs-CZ/
 Open-ILS/xul/staff_client/chrome/locale/de-DE/
 Open-ILS/xul/staff_client/chrome/locale/en-CA/
@@ -289,7 +293,6 @@ Open-ILS/xul/staff_client/chrome/content/OpenILS/util/JSON_v1.js
 Open-ILS/xul/staff_client/chrome/content/OpenILS/util/RemoteRequest.js
 Open-ILS/xul/staff_client/chrome/content/OpenILS/util/added_content.js
 Open-ILS/xul/staff_client/chrome/content/OpenILS/util/config.js
-Open-ILS/xul/staff_client/chrome/content/OpenILS/util/dtree.js
 Open-ILS/xul/staff_client/chrome/content/OpenILS/util/fm_table.js
 Open-ILS/xul/staff_client/chrome/content/OpenILS/util/fm_table_conf.js
 Open-ILS/xul/staff_client/chrome/content/OpenILS/util/fmgen.js
@@ -313,7 +316,7 @@ Open-ILS/xul/staff_client/PREV_STAMP_ID
 Open-ILS/xul/staff_client/PREV_VERSION
 Open-ILS/xul/staff_client/STAMP_ID
 Open-ILS/xul/staff_client/VERSION
-Open-ILS/xul/staff_client/server/locale/ar-AR/
+Open-ILS/xul/staff_client/server/locale/ar-JO/
 Open-ILS/xul/staff_client/server/locale/cs-CZ/
 Open-ILS/xul/staff_client/server/locale/de-DE/
 Open-ILS/xul/staff_client/server/locale/en-CA/

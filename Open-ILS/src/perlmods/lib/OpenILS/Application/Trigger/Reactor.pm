@@ -71,9 +71,11 @@ $_TT_helpers = {
     },
 
     # encode email headers in UTF-8, per RFC2231
+    # now a no-op as we automatically encode the headers in the SendEmail
+    # reactor, but we need to leave this here to avoid breaking templates
+    # that might have once used it
     escape_email_header => sub {
         my $str = shift;
-        $str = encode("MIME-Header", $str);
         return $str;
     },
 
@@ -103,6 +105,13 @@ $_TT_helpers = {
         return $org_id if ref $org_id;
         return new_editor()->retrieve_actor_org_unit($org_id);
     },
+
+    get_org_unit_ancestor_at_depth => sub {
+      my $org_id = shift;
+      my $depth = shift;
+      $org_id = $org_id->id if ref $org_id;
+      return new_editor()->retrieve_actor_org_unit($U->org_unit_ancestor_at_depth($org_id, $depth));
+    }, 
 
     # given a copy, returns the title and author in a hash
     get_copy_bib_basics => sub {
@@ -371,7 +380,7 @@ $_TT_helpers = {
         my $sms_carrier = shift;
         my $sms_notify = shift;
 
-        if (! defined $sms_notify || $sms_notify eq '') {
+        if (! defined $sms_notify || $sms_notify eq '' || ! defined $sms_carrier || $sms_carrier eq '') {
             return '';
         }
 
@@ -458,6 +467,27 @@ sub run_TT {
         my $state = (ref $$env{event} eq 'ARRAY') ? $$env{event}->[0]->state : $env->{event}->state;
         my $key = ($error) ? 'error_output' : 'template_output';
         $env->{EventProcessor}->update_state( $state, { $key => $t_o->id } );
+    }
+    
+    return $output;
+}
+
+# processes message templates.  Returns template output on success, undef on error
+sub run_message_TT {
+    my $self = shift;
+    my $env = shift;
+    return undef unless $env->{usr_message}{template};
+
+    my $error;
+    my $output = '';
+    my $tt = Template->new;
+    # my $tt = Template->new(ENCODING => 'utf8');   # ??
+    $env->{helpers} = $_TT_helpers;
+
+    unless( $tt->process(\$env->{usr_message}{template}, $env, \$output) ) {
+        $output = undef;
+        ($error = $tt->error) =~ s/\n/ /og;
+        $logger->error("Error processing Trigger message template: $error");
     }
     
     return $output;

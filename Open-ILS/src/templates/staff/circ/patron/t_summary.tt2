@@ -1,5 +1,5 @@
 
-<div ng-cloak>
+<div ng-cloak class="patron-summary-grid-wrapper">
   <div ng-show="patron()" id="patron-summary-grid">
     <div class="row" 
       ng-class="{'patron-summary-divider' : !$index}"
@@ -13,10 +13,34 @@
         {{penalty.set_date() | date:'shortDate'}}
       </div>
     </div>
+    <div class="row patron-summary-divider">
+      <div
+        class="col-md-9 patron-summary-alert"
+        title="[% l('Patron Alert Message') %]"
+        ng-if="patron().alert_message()">
+        {{patron().alert_message()}}
+      </div>
+    </div>
+    <div ng-if="patron().photo_url()" class="row">
+         <div class="col-md-8 patron_photo_wrap"><img class="img-responsive img-rounded" src="{{patron().photo_url()}}" ></div>
+    </div>
     <div class="row" 
-      ng-class="{'patron-summary-divider' : alert_penalties().length}">
+      ng-class="{'patron-summary-divider' : alert_penalties().length || patron().alert_message()}">
       <div class="col-md-5">[% l('Profile') %]</div>
       <div class="col-md-7">{{patron().profile().name()}}</div>
+    </div>
+    <div class="row" ng-if="show_name()">
+      <div class="col-md-5">[% l('ID') %]</div>
+      <div class="col-md-7">{{patron().id()}}</div>
+    </div>
+    <div class="row" ng-if="show_name()">
+      <div class="col-md-5">[% l('Name') %]</div>
+      <div class="col-md-7">
+                    [% l('[_1], [_2] [_3]',
+                '{{patron().family_name()}}',
+                '{{patron().first_given_name()}}',
+                '{{patron().second_given_name()}}') %]
+      </div>
     </div>
     <div class="row">
       <div class="col-md-5">[% l('Home Library') %]</div>
@@ -25,6 +49,12 @@
     <div class="row">
       <div class="col-md-5">[% l('Net Access') %]</div>
       <div class="col-md-7">{{patron().net_access_level().name()}}</div>
+    </div>
+    <div class="row"
+      ng-class="{'patron-summary-alert' : !patron().dob()}">
+      <a class="col-md-5" ng-if="obscure_dob()" ng-click="show_dob(true)">[% l('Date of Birth') %]</a>
+      <div class="col-md-5" ng-if="!obscure_dob()">[% l('Date of Birth') %]</div>
+      <div class="col-md-7" ng-show="now_show_dob()">{{patron().dob() | date:'shortDate'}}</div>
     </div>
     <div class="row">
       <div class="col-md-5">[% l('Last Activity') %]</div>
@@ -38,7 +68,8 @@
       <div class="col-md-5">[% l('Create Date') %]</div>
       <div class="col-md-7">{{patron().create_date() | date:'shortDate'}}</div>
     </div>
-    <div class="row">
+    <div class="row"
+      ng-class="{'patron-summary-alert' : isPatronExpired()}">
       <div class="col-md-5">[% l('Expire Date') %]</div>
       <div class="col-md-7">{{patron().expire_date() | date:'shortDate'}}</div>
     </div>
@@ -59,7 +90,7 @@
     </div>
     <div class="row">
       <div class="col-md-5">[% l('Items Out') %]</div>
-      <div class="col-md-7">{{patron_stats().checkouts.out}}</div>
+      <div class="col-md-7">{{patron_stats().checkouts.total_out}}</div>
     </div>
     <div class="row" 
       ng-class="{'patron-summary-alert' : patron_stats().checkouts.overdue}">
@@ -82,9 +113,13 @@
       <div class="col-md-7">{{patron_stats().checkouts.lost}}</div>
     </div>
     <div class="row">
+      <div class="col-md-5">[% l('Non-Cataloged') %]</div>
+      <div class="col-md-7">{{patron_stats().checkouts.noncat}}</div>
+    </div>
+    <div class="row">
       <div class="col-md-5">[% l('Holds') %]</div>
       <div class="col-md-7">
-        {{patron_stats().holds.total}} / {{patron_stats().holds.ready}}
+        {{patron_stats().holds.ready}} / {{patron_stats().holds.total}}
       </div>
     </div>
     <div class="row patron-summary-divider">
@@ -129,7 +164,7 @@
     <div class="panel">
       <div class="panel-body">
         <fieldset>
-          <legend>
+          <legend ng-class="{'patron-summary-alert': addr.valid() == 'f'}">
             {{addr.address_type()}} 
             <a href class="pad-horiz patron-summary-act-link" 
               ng-click="print_address(addr)">[% l('(print)') %]</a>

@@ -13,46 +13,6 @@ my $log = 'OpenSRF::Utils::Logger';
 use MARC::Record;
 use MARC::File::XML ( BinaryEncoding => 'UTF-8' );
 
-sub circ_count {
-    my $self = shift;
-    my $client = shift;
-    my $copy = shift;
-    my $granularity = shift;
-
-    my $c_table = action::circulation->table;
-
-    if (lc($granularity) eq 'year') {
-        $granularity = ", to_char(xact_start, 'YYYY') as when";
-    } elsif (lc($granularity) eq 'month') {
-        $granularity = ", to_char(xact_start, 'YYYY-MM') as when";
-    } elsif (lc($granularity) eq 'day') {
-        $granularity = ", to_char(xact_start, 'YYYY-MM-DD') as when";
-    } else {
-        $granularity = ", 'total' as when";
-    }
-
-    my $SQL = <<"    SQL";
-        SELECT  COUNT(*) as count $granularity
-          FROM  $c_table
-          WHERE target_copy = ?
-    SQL
-
-
-    if ($granularity !~ /total/o) {
-        $SQL .= ' GROUP BY 2 ORDER BY 2';
-    }
-
-    $log->debug("Circ count SQL [$SQL]", DEBUG);
-
-    return action::circulation->db_Main->selectall_hashref($SQL, 'when', {}, $copy);
-}
-__PACKAGE__->register_method(
-    method      => 'circ_count',
-    api_name    => 'open-ils.storage.asset.copy.circ_count',
-    argc        => 1,
-);
-
-
 #our $_default_subfield_map = {
 #        call_number     => $cn,
 #        barcode         => $bc,
@@ -449,6 +409,7 @@ sub asset_copy_location_all {
     my $client = shift;
 
     for my $rec ( asset::copy_location->retrieve_all ) {
+        next if $rec->deleted eq "t";
         $client->respond( $rec->to_fieldmapper );
     }
 
@@ -479,6 +440,7 @@ sub ranged_asset_copy_location {
                   FROM  $ctable c
                         JOIN $descendants d
                                 ON (d.id = c.owning_lib)
+                  WHERE deleted IS FALSE
                  ORDER BY name
     SQL
         

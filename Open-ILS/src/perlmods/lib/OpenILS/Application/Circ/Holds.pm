@@ -380,9 +380,9 @@ sub create_hold {
 
     $conn->respond_complete($hold->id);
 
-    $U->storagereq(
-        'open-ils.storage.action.hold_request.copy_targeter',
-        undef, $hold->id ) unless $U->is_true($hold->frozen);
+    $U->simplereq('open-ils.hold-targeter',
+        'open-ils.hold-targeter.target', {hold => $hold->id}
+    ) unless $U->is_true($hold->frozen);
 
     return undef;
 }
@@ -746,7 +746,8 @@ sub uncancel_hold {
     $e->update_action_hold_request($hold) or return $e->die_event;
     $e->commit;
 
-    $U->storagereq('open-ils.storage.action.hold_request.copy_targeter', undef, $hold_id);
+    $U->simplereq('open-ils.hold-targeter',
+        'open-ils.hold-targeter.target', {hold => $hold_id});
 
     return 1;
 }
@@ -826,8 +827,6 @@ sub cancel_hold {
     $e->update_action_hold_request($hold)
         or return $e->die_event;
 
-    delete_hold_copy_maps($self, $e, $hold->id);
-
     $e->commit;
 
     # re-fetch the hold to pick up the real cancel_time (not "now") for A/T
@@ -843,20 +842,6 @@ sub cancel_hold {
 
     return 1;
 }
-
-sub delete_hold_copy_maps {
-    my $class  = shift;
-    my $editor = shift;
-    my $holdid = shift;
-
-    my $maps = $editor->search_action_hold_copy_map({hold=>$holdid});
-    for(@$maps) {
-        $editor->delete_action_hold_copy_map($_)
-            or return $editor->event;
-    }
-    return undef;
-}
-
 
 my $update_hold_desc = 'The login session is the requestor. '       .
    'If the requestor is different from the usr field on the hold, ' .
@@ -1080,15 +1065,16 @@ sub update_hold_impl {
 
     if(!$U->is_true($hold->frozen) && $U->is_true($orig_hold->frozen)) {
         $logger->info("Running targeter on activated hold ".$hold->id);
-        $U->storagereq( 'open-ils.storage.action.hold_request.copy_targeter', undef, $hold->id );
+        $U->simplereq('open-ils.hold-targeter', 
+            'open-ils.hold-targeter.target', {hold => $hold->id});
     }
 
     # a change to mint-condition changes the set of potential copies, so retarget the hold;
     if($U->is_true($hold->mint_condition) and !$U->is_true($orig_hold->mint_condition)) {
         _reset_hold($self, $e->requestor, $hold)
     } elsif($need_retarget && !defined $hold->capture_time()) { # If needed, retarget the hold due to changes
-        $U->storagereq(
-            'open-ils.storage.action.hold_request.copy_targeter', undef, $hold->id );
+        $U->simplereq('open-ils.hold-targeter', 
+            'open-ils.hold-targeter.target', {hold => $hold->id});
     }
 
     return $hold->id;
@@ -1176,7 +1162,8 @@ sub update_hold_if_frozen {
     } else {
         if($U->is_true($orig_hold->frozen)) {
             $logger->info("Running targeter on activated hold ".$hold->id);
-            $U->storagereq( 'open-ils.storage.action.hold_request.copy_targeter', undef, $hold->id );
+            $U->simplereq('open-ils.hold-targeter', 
+                'open-ils.hold-targeter.target', {hold => $hold->id});
         }
     }
 }
@@ -1247,6 +1234,7 @@ Returns event on error or:
  6 for 'canceled'
  7 for 'suspended'
  8 for 'captured, on wrong hold shelf'
+ 9 for 'fulfilled'
 END_OF_DESC
         }
     }
@@ -1279,6 +1267,9 @@ sub _hold_status {
     if ($hold->current_shelf_lib and $hold->current_shelf_lib ne $hold->pickup_lib) {
         return 8;
     }
+    if ($hold->fulfillment_time) {
+        return 9;
+    }
     return 1 unless $hold->current_copy;
     return 2 unless $hold->capture_time;
 
@@ -1299,7 +1290,11 @@ sub _hold_status {
         # the interval is greater than now, consider the hold to be in the virtual
         # "on its way to the holds shelf" status. Return 5.
 
-        my $transit    = $e->search_action_hold_transit_copy({hold => $hold->id})->[0];
+        my $transit    = $e->search_action_hold_transit_copy({
+                            hold           => $hold->id,
+                            target_copy    => $copy->id,
+                            dest_recv_time => {'!=' => undef},
+                         })->[0];
         my $start_time = ($transit) ? $transit->dest_recv_time : $hold->capture_time;
         $start_time    = DateTime::Format::ISO8601->new->parse_datetime(cleanse_ISO8601($start_time));
         my $end_time   = $start_time->add(seconds => OpenSRF::Utils::interval_to_seconds($hs_wait_interval));
@@ -1448,8 +1443,10 @@ sub retrieve_hold_queue_status_impl {
 
     my $user_org = $e->json_query({select => {au => ['home_ou']}, from => 'au', where => {id => $hold->usr}})->[0]->{home_ou};
 
-    my $default_wait = $U->ou_ancestor_setting_value($user_org, OILS_SETTING_HOLD_ESIMATE_WAIT_INTERVAL);
-    my $min_wait = $U->ou_ancestor_setting_value($user_org, 'circ.holds.min_estimated_wait_interval');
+    my $default_wait = $U->ou_ancestor_setting_value(
+        $user_org, OILS_SETTING_HOLD_ESIMATE_WAIT_INTERVAL, $e);
+    my $min_wait = $U->ou_ancestor_setting_value(
+        $user_org, 'circ.holds.min_estimated_wait_interval', $e);
     $min_wait = OpenSRF::Utils::interval_to_seconds($min_wait || '0 seconds');
     $default_wait ||= '0 seconds';
 
@@ -1699,6 +1696,7 @@ sub print_hold_pull_list_stream {
     delete($$params{chunk_size}) unless (int($$params{chunk_size}));
     delete($$params{chunk_size}) if  ($$params{chunk_size} && $$params{chunk_size} > 50); # keep the size reasonable
     $$params{chunk_size} ||= 10;
+    $client->max_chunk_size($$params{chunk_size}) if (!$client->can('max_bundle_size') && $client->can('max_chunk_size'));
 
     $$params{org_id} = (defined $$params{org_id}) ? $$params{org_id}: $e->requestor->ws_ou;
     return $e->die_event unless $e->allowed('VIEW_HOLD', $$params{org_id });
@@ -2000,8 +1998,8 @@ sub _reset_hold {
     $e->update_action_hold_request($hold) or return $e->die_event;
     $e->commit;
 
-    $U->storagereq(
-        'open-ils.storage.action.hold_request.copy_targeter', undef, $hold->id );
+    $U->simplereq('open-ils.hold-targeter', 
+        'open-ils.hold-targeter.target', {hold => $hold->id});
 
     return undef;
 }
@@ -2237,6 +2235,7 @@ sub print_expired_holds_stream {
     delete($$params{chunk_size}) unless (int($$params{chunk_size}));
     delete($$params{chunk_size}) if  ($$params{chunk_size} && $$params{chunk_size} > 50); # keep the size reasonable
     $$params{chunk_size} ||= 10;
+    $client->max_chunk_size($$params{chunk_size}) if (!$client->can('max_bundle_size') && $client->can('max_chunk_size'));
 
     $$params{org_id} = (defined $$params{org_id}) ? $$params{org_id}: $e->requestor->ws_ou;
 
@@ -2589,7 +2588,11 @@ sub _check_title_hold_is_possible {
                         fkey   => 'call_number',
                         filter => { record => $titleid }
                     },
-                    acpl => { field => 'id', filter => { holdable => 't'}, fkey => 'location' },
+                    acpl => {
+                                field => 'id',
+                                filter => { holdable => 't', deleted => 'f' },
+                                fkey => 'location'
+                            },
                     ccs  => { field => 'id', filter => { holdable => 't'}, fkey => 'status'   },
                     acpm => { field => 'target_copy', type => 'left' } # ignore part-linked copies
                 }
@@ -2619,12 +2622,11 @@ sub _check_title_hold_is_possible {
     my $home_org = $patron->home_ou;
     my $req_org = $request_lib->id;
 
-    $logger->info("prox cache $home_org " . $prox_cache{$home_org});
-
     $prox_cache{$home_org} =
         $e->search_actor_org_unit_proximity({from_org => $home_org})
         unless $prox_cache{$home_org};
     my $home_prox = $prox_cache{$home_org};
+    $logger->info("prox cache $home_org " . $prox_cache{$home_org});
 
     my %buckets;
     my %hash = map { ($_->to_org => $_->prox) } @$home_prox;
@@ -2710,7 +2712,11 @@ sub _check_issuance_hold_is_possible {
                         fkey   => 'id',
                         filter => { issuance => $issuanceid }
                     },
-                    acpl => { field => 'id', filter => { holdable => 't'}, fkey => 'location' },
+                    acpl => {
+                        field => 'id',
+                        filter => { holdable => 't', deleted => 'f' },
+                        fkey => 'location'
+                    },
                     ccs  => { field => 'id', filter => { holdable => 't'}, fkey => 'status'   }
                 }
             },
@@ -2748,12 +2754,11 @@ sub _check_issuance_hold_is_possible {
     my $home_org = $patron->home_ou;
     my $req_org = $request_lib->id;
 
-    $logger->info("prox cache $home_org " . $prox_cache{$home_org});
-
     $prox_cache{$home_org} =
         $e->search_actor_org_unit_proximity({from_org => $home_org})
         unless $prox_cache{$home_org};
     my $home_prox = $prox_cache{$home_org};
+    $logger->info("prox cache $home_org " . $prox_cache{$home_org});
 
     my %buckets;
     my %hash = map { ($_->to_org => $_->prox) } @$home_prox;
@@ -2847,7 +2852,11 @@ sub _check_monopart_hold_is_possible {
                         fkey   => 'id',
                         filter => { part => $partid }
                     },
-                    acpl => { field => 'id', filter => { holdable => 't'}, fkey => 'location' },
+                    acpl => {
+                        field => 'id',
+                        filter => { holdable => 't', deleted => 'f' },
+                        fkey => 'location'
+                    },
                     ccs  => { field => 'id', filter => { holdable => 't'}, fkey => 'status'   }
                 }
             },
@@ -2885,12 +2894,11 @@ sub _check_monopart_hold_is_possible {
     my $home_org = $patron->home_ou;
     my $req_org = $request_lib->id;
 
-    $logger->info("prox cache $home_org " . $prox_cache{$home_org});
-
     $prox_cache{$home_org} =
         $e->search_actor_org_unit_proximity({from_org => $home_org})
         unless $prox_cache{$home_org};
     my $home_prox = $prox_cache{$home_org};
+    $logger->info("prox cache $home_org " . $prox_cache{$home_org});
 
     my %buckets;
     my %hash = map { ($_->to_org => $_->prox) } @$home_prox;
@@ -3514,6 +3522,8 @@ sub clear_shelf_cache {
     return $e->die_event unless $e->checkauth and $e->allowed('VIEW_HOLD');
 
     $chunk_size ||= 25;
+    $client->max_chunk_size($chunk_size) if (!$client->can('max_bundle_size') && $client->can('max_chunk_size'));
+
     my $hold_data = OpenSRF::Utils::Cache->new('global')->get_cache($cache_key);
 
     if (!$hold_data) {
@@ -3603,7 +3613,7 @@ __PACKAGE__->register_method(
 );
 
 sub clear_shelf_process {
-    my($self, $client, $auth, $org_id, $match_copy) = @_;
+    my($self, $client, $auth, $org_id, $match_copy, $chunk_size) = @_;
 
     my $e = new_editor(authtoken=>$auth);
     $e->checkauth or return $e->die_event;
@@ -3622,7 +3632,9 @@ sub clear_shelf_process {
 
     my @holds;
     my @canceled_holds; # newly canceled holds
-    my $chunk_size = 25; # chunked status updates
+    $chunk_size ||= 25; # chunked status updates
+    $client->max_chunk_size($chunk_size) if (!$client->can('max_bundle_size') && $client->can('max_chunk_size'));
+
     my $counter = 0;
     for my $hold_id (@hold_ids) {
 
@@ -3639,7 +3651,6 @@ sub clear_shelf_process {
             $hold->cancel_time('now');
             $hold->cancel_cause(2); # Hold Shelf expiration
             $e->update_action_hold_request($hold) or return $e->die_event;
-            delete_hold_copy_maps($self, $e, $hold->id) and return $e->die_event;
             push(@canceled_holds, $hold_id);
         }
 
@@ -3819,7 +3830,11 @@ sub hold_has_copy_at {
         select => {acp => ['id'], acpl => ['name']},
         from   => {
             acp => {
-                acpl => {field => 'id', filter => { holdable => 't'}, fkey => 'location'},
+                acpl => {
+                    field => 'id',
+                    filter => { holdable => 't', deleted => 'f' },
+                    fkey => 'location'
+                },
                 ccs  => {field => 'id', filter => { holdable => 't'}, fkey => 'status'  }
             }
         },
@@ -4022,6 +4037,7 @@ sub change_hold_title {
     my $holds = $e->search_action_hold_request(
         [
             {
+                capture_time     => undef,
                 cancel_time      => undef,
                 fulfillment_time => undef,
                 hold_type        => 'T',
@@ -4058,6 +4074,7 @@ sub change_hold_title_for_specific_holds {
     my $holds = $e->search_action_hold_request(
         [
             {
+                capture_time     => undef,
                 cancel_time      => undef,
                 fulfillment_time => undef,
                 hold_type        => 'T',
@@ -4399,6 +4416,42 @@ sub mr_hold_filter_attrs {
     }
 
     return;
+}
+
+__PACKAGE__->register_method(
+    method        => "copy_has_holds_count",
+    api_name      => "open-ils.circ.copy.has_holds_count",
+    authoritative => 1,
+    signature     => {
+        desc => q/
+            Returns the number of holds a paticular copy has
+        /,
+        params => [
+            { desc => 'Authentication Token', type => 'string'},
+            { desc => 'Copy ID', type => 'number'}
+        ],
+        return => {
+            desc => q/
+                Simple count value
+            /,
+            type => 'number'
+        }
+    }
+);
+
+sub copy_has_holds_count {
+    my( $self, $conn, $auth, $copyid ) = @_;
+    my $e = new_editor(authtoken=>$auth);
+    return $e->event unless $e->checkauth;
+
+    if( $copyid && $copyid > 0 ) {
+        my $meth = 'retrieve_action_has_holds_count';
+        my $data = $e->$meth($copyid);
+        if($data){
+                return $data->count();
+        }
+    }
+    return 0;
 }
 
 1;

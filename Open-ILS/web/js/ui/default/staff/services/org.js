@@ -1,7 +1,19 @@
 /**
  * Core Service - egOrg
  *
- * TODO: more docs
+ * This provides access to the organizational unit tree and
+ * caches it in browser session storage.
+ *
+ * Methods include:
+ *   get()  - retrieve OU based on ID or aou object
+ *   list() - retrieve flattened list of OUs
+ *   tree() - retrieve OU as tree
+ *   root() - get aou object representing root of the OU tree
+ *   ancestors() - get ancestors of supplied OU
+ *   descendants() - get descendants of supplied OU
+ * 
+ * TODO more to document
+ * 
  */
 angular.module('egCoreMod')
 
@@ -29,6 +41,11 @@ function($q,  egEnv,  egAuth,  egNet) {
         return egEnv.aou.tree;
     }
 
+    // get the root OU
+    service.root = function() {
+        return egEnv.aou.list[0];
+    }
+
     // list of org_unit objects or IDs for ancestors + me
     service.ancestors = function(node_or_id, as_id) {
         var node = service.get(node_or_id);
@@ -40,6 +57,22 @@ function($q,  egEnv,  egAuth,  egNet) {
             return nodes.map(function(n){return n.id()});
         return nodes;
     };
+
+    // tests that a node can have users
+    service.CanHaveUsers = function(node_or_id) {
+	return service
+            .get(node_or_id)
+            .ou_type()
+            .can_have_users() == 't';
+    }
+
+    // tests that a node can have volumes
+    service.CanHaveVolumes = function(node_or_id) {
+        return service
+            .get(node_or_id)
+            .ou_type()
+            .can_have_vols() == 't';
+    }
 
     // list of org_unit objects  or IDs for me + descendants
     service.descendants = function(node_or_id, as_id) {

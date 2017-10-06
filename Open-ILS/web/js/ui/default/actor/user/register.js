@@ -302,7 +302,7 @@ function load() {
 
 	dojo.connect(setExpireDate, 'onClick', setExpireDateHandler);
 
-    if(!patron.isnew() && !checkGrpAppPerm(patron.profile()) && patron.id() != openils.User.user.id()) {
+    if(!patron.isnew() && !checkGrpAppPerm(patron.profile()) || patron.id() == openils.User.user.id()) {
         // we are not allowed to edit this user, so disable the save option
         saveButton.attr('disabled', true);
         saveCloneButton.attr('disabled', true);
@@ -974,6 +974,13 @@ function uEditDrawSettingRow(tbody, dividerRow, template, stype) {
             tb.attr('value', userSettings[stype.name()]);
             dojo.connect(tb, 'onChange', function(newVal) { userSettingsToUpdate[stype.name()] = newVal; });
             break;
+        case 'circ.holds_behind_desk':
+            // Skip when hold is behind circ desk is not enabled
+            if(!orgSettings['circ.holds.behind_desk_pickup_supported']) return;
+            var cb = new dijit.form.CheckBox({scrollOnFocus:false}, getByName(row, 'widget'));
+            cb.attr('value', userSettings[stype.name()]);
+            dojo.connect(cb, 'onChange', function(newVal) { userSettingsToUpdate[stype.name()] = newVal; });
+            break;
         default:
             var cb = new dijit.form.CheckBox({scrollOnFocus:false}, getByName(row, 'widget'));
             cb.attr('value', userSettings[stype.name()]);
@@ -1250,6 +1257,9 @@ function fleshFMRow(row, fmcls, args) {
 
     if(fmcls == 'au' && fmfield == 'dob' && !orgSettings['ui.patron.edit.au.dob.calendar'])
         dijitArgs.popupClass = "";
+
+    if(fmcls == 'au' && fmfield == 'ident_type')
+        dijitArgs.fetchProperties = { sort: [{attribute:"name",descending:false}] };
 
     var value = row.getAttribute('wvalue');
     if(value !== null)
@@ -1846,7 +1856,7 @@ function uEditDupeSearch(type, value) {
     fieldmapper.standardRequest(
         ['open-ils.actor', 'open-ils.actor.patron.search.advanced'],
         {   async: true,
-            params: [openils.User.authtoken, search],
+            params: [openils.User.authtoken, search, null, null, 1],
             oncomplete : function(r) {
                 var resp = openils.Util.readResponse(r);
                 resp = resp.filter(function(id) { return (id != patron.id()); });
@@ -1884,6 +1894,7 @@ function uEditDupeSearch(type, value) {
                     openils.Util.show(link);
                     link.onclick = function() {
                         search.search_sort = js2JSON(["penalties", "family_name", "first_given_name"]);
+                        search.include_inactive = "true";
                         if(window.xulG)
                             window.xulG.spawn_search(search);
                         else

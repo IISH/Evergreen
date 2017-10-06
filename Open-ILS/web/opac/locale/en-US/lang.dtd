@@ -819,7 +819,7 @@
 <!ENTITY staff.main.menu.admin.server_admin.conify.circulation_limit_group.label "Circulation Limit Groups">
 <!ENTITY staff.main.menu.admin.server_admin.conify.floating_groups.label "Floating Groups">
 
-<!ENTITY staff.main.menu.admin.server_admin.acq.label "Acquisitions">
+<!ENTITY staff.main.menu.admin.server_admin.acq.label "Acquisitions Administration">
 <!ENTITY staff.main.menu.admin.server_admin.acq.accesskey "A">
 <!ENTITY staff.main.menu.admin.server_admin.acq.lineitem_alert.label "Line Item Alerts">
 <!ENTITY staff.main.menu.admin.server_admin.acq.lineitem_alert.accesskey "L">
@@ -2338,8 +2338,6 @@
 <!ENTITY staff.server.admin.org_settings.circ.selfcheck.patron_login_timeout.desc "Number of seconds of inactivity before the patron is logged out of the selfcheck interface">
 <!ENTITY staff.server.admin.org_settings.circ.selfcheck.alert_on_checkout_event "Selfcheck: Pop-up alert for errors">
 <!ENTITY staff.server.admin.org_settings.circ.selfcheck.alert_on_checkout_event.desc "If true, checkout/renewal errors will cause a pop-up window in addition to the on-screen message">
-<!ENTITY staff.server.admin.org_settings.circ.selfcheck.require_patron_password "Selfcheck: Require patron password">
-<!ENTITY staff.server.admin.org_settings.circ.selfcheck.require_patron_password.desc "If true, patrons will be required to enter their password in addition to their username/barcode to log into the selfcheck interface">
 <!ENTITY staff.server.admin.org_settings.global.juvenile_age_threshold "Juvenile Age Threshold">
 <!ENTITY staff.server.admin.org_settings.global.juvenile_age_threshold.desc 'The age at which a user is no long considered a juvenile.  For example, "18 years".'>
 <!ENTITY staff.server.admin.org_settings.cat.bib.keep_on_empty "Do not automatically delete empty bib records">
@@ -3323,6 +3321,8 @@
 <!ENTITY staff.patron.bill_interface.void_all_billings.accesskey "V">
 <!ENTITY staff.patron.bill_interface.refund.label "Refund">
 <!ENTITY staff.patron.bill_interface.refund.accesskey "R">
+<!ENTITY staff.patron.bill_interface.adjust_to_zero.label "Adjust to Zero">
+<!ENTITY staff.patron.bill_interface.adjust_to_zero.accesskey "Z">
 <!ENTITY staff.patron.bill_interface.full_details.label "Full Details">
 <!ENTITY staff.patron.bill_interface.full_details.accesskey "D">
 <!ENTITY staff.patron.bill_interface.show_in_catalog.label "Show in Catalog">
@@ -3507,6 +3507,8 @@
 <!ENTITY staff.patron.info.notes.accesskey "N">
 <!ENTITY staff.patron.info.triggered_events.label "Triggered Events">
 <!ENTITY staff.patron.info.triggered_events.accesskey "v">
+<!ENTITY staff.patron.message_center.label "Message Center">
+<!ENTITY staff.patron.message_center.accesskey "r">
 <!ENTITY staff.patron.info.stat_cats.label "Statistical Categories">
 <!ENTITY staff.patron.info.stat_cats.accesskey "S">
 <!ENTITY staff.patron.info.surveys.label "Surveys">
@@ -3749,6 +3751,7 @@
 <!ENTITY staff.circ.alternate_copy_summary.Edition.label "Edition">
 <!ENTITY staff.circ.alternate_copy_summary.Floating.label "Floating">
 <!ENTITY staff.circ.alternate_copy_summary.Holdable.label "Holdable">
+<!ENTITY staff.circ.alternate_copy_summary.Age_Protect.label "Age-based Hold Protection">
 <!ENTITY staff.circ.alternate_copy_summary.Hold_Shelf_Location.label "Hold Shelf Location">
 <!ENTITY staff.circ.alternate_copy_summary.Holds_Transit.label "Holds/Transit">
 <!ENTITY staff.circ.alternate_copy_summary.Holds_Transit.accesskey "">
@@ -3761,6 +3764,7 @@
 <!ENTITY staff.circ.alternate_copy_summary.Circ_Library.label "Circ Library">
 <!ENTITY staff.circ.alternate_copy_summary.Patron_Name.label "Patron">
 <!ENTITY staff.circ.alternate_copy_summary.Price.label "Price">
+<!ENTITY staff.circ.alternate_copy_summary.Cost.label "Acquisition Cost">
 <!ENTITY staff.circ.alternate_copy_summary.Previous_Circ_Group.label "Previous Circ Group">
 <!ENTITY staff.circ.alternate_copy_summary.Pub_Date.label "Pub Date">
 <!ENTITY staff.circ.alternate_copy_summary.Publisher.label "Publisher">

@@ -38,6 +38,14 @@ function($scope,  $q,  $routeParams,  egCore,  egUser,  patronSvc,
         provider.refresh();
     }
 
+    $scope.hide_cancel_hold = function(action) { 
+        return $scope.holds_display == 'alt';
+    }
+
+    $scope.hide_uncancel_hold = function(action) {
+        return !$scope.hide_cancel_hold();
+    }
+
     var provider = egGridDataProvider.instance({});
     $scope.gridDataProvider = provider;
 
@@ -129,13 +137,19 @@ function($scope,  $q,  $routeParams,  egCore,  egUser,  patronSvc,
 
 
 .controller('PatronHoldsCreateCtrl',
-       ['$scope','$routeParams','$location','egCore','patronSvc',
-function($scope , $routeParams , $location , egCore , patronSvc) {
+       ['$scope','$routeParams','$location','egCore','egWorkLog','patronSvc',
+function($scope , $routeParams , $location , egCore , egWorkLog , patronSvc) {
 
     $scope.handlers = {
-        opac_hold_placed : function() {
-            // FIXME: this isn't getting called.. not sure why
+        opac_hold_placed : function(hold) {
             patronSvc.fetchUserStats(); // update hold counts
+            egWorkLog.record(
+                egCore.strings.EG_WORK_LOG_REQUESTED_HOLD,{
+                    'action' : 'requested_hold',
+                    'patron_id' : patronSvc.current.id(),
+                    'hold_id' : hold
+                }
+            );
         }
     }
 

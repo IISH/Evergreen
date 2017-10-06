@@ -206,6 +206,7 @@ BEGIN
     UPDATE action.circulation SET usr = dest_usr WHERE usr = src_usr;
     UPDATE action.circulation SET circ_staff = dest_usr WHERE circ_staff = src_usr;
     UPDATE action.circulation SET checkin_staff = dest_usr WHERE checkin_staff = src_usr;
+    UPDATE action.usr_circ_history SET usr = dest_usr WHERE usr = src_usr;
 
     UPDATE action.hold_request SET usr = dest_usr WHERE usr = src_usr;
     UPDATE action.hold_request SET fulfillment_staff = dest_usr WHERE fulfillment_staff = src_usr;
@@ -379,13 +380,6 @@ BEGIN
 		dest_usr := specified_dest_usr;
 	END IF;
 
-	UPDATE actor.usr SET
-		active = FALSE,
-		card = NULL,
-		mailing_address = NULL,
-		billing_address = NULL
-	WHERE id = src_usr;
-
 	-- acq.*
 	UPDATE acq.fund_allocation SET allocator = dest_usr WHERE allocator = src_usr;
 	UPDATE acq.lineitem SET creator = dest_usr WHERE creator = src_usr;
@@ -438,6 +432,7 @@ BEGIN
 	UPDATE action.non_cataloged_circulation SET staff = dest_usr WHERE staff = src_usr;
 	DELETE FROM action.survey_response WHERE usr = src_usr;
 	UPDATE action.fieldset SET owner = dest_usr WHERE owner = src_usr;
+	DELETE FROM action.usr_circ_history WHERE usr = src_usr;
 
 	-- actor.*
 	DELETE FROM actor.card WHERE usr = src_usr;
@@ -683,6 +678,15 @@ BEGIN
 			EXIT;
 		END LOOP;
 	END LOOP;
+
+    -- NULL-ify addresses last so other cleanup (e.g. circ anonymization)
+    -- can access the information before deletion.
+	UPDATE actor.usr SET
+		active = FALSE,
+		card = NULL,
+		mailing_address = NULL,
+		billing_address = NULL
+	WHERE id = src_usr;
 
 END;
 $$ LANGUAGE plpgsql;
@@ -1227,6 +1231,7 @@ CREATE OR REPLACE FUNCTION asset.refresh_opac_visible_copies_mat_view () RETURNS
         JOIN config.copy_status cs ON (cp.status = cs.id)
         JOIN biblio.record_entry b ON (cn.record = b.id)
     WHERE NOT cp.deleted
+        AND NOT cl.deleted
         AND NOT cn.deleted
         AND NOT b.deleted
         AND cs.opac_visible
@@ -1241,6 +1246,7 @@ CREATE OR REPLACE FUNCTION asset.refresh_opac_visible_copies_mat_view () RETURNS
         JOIN asset.copy_location cl ON (cp.location = cl.id)
         JOIN config.copy_status cs ON (cp.status = cs.id)
     WHERE NOT cp.deleted
+        AND NOT cl.deleted
         AND cs.opac_visible
         AND cl.opac_visible
         AND cp.opac_visible
@@ -1270,6 +1276,7 @@ BEGIN
                 JOIN config.copy_status cs ON (cp.status = cs.id)
                 JOIN biblio.record_entry b ON (cn.record = b.id)
           WHERE NOT cp.deleted
+                AND NOT cl.deleted
                 AND NOT cn.deleted
                 AND NOT b.deleted
                 AND cs.opac_visible
@@ -1285,6 +1292,7 @@ BEGIN
                 JOIN asset.copy_location cl ON (cp.location = cl.id)
                 JOIN config.copy_status cs ON (cp.status = cs.id)
           WHERE NOT cp.deleted
+                AND NOT cl.deleted
                 AND cs.opac_visible
                 AND cl.opac_visible
                 AND cp.opac_visible
@@ -1370,7 +1378,7 @@ BEGIN
 
     END IF;
 
-    IF TG_TABLE_NAME IN ('call_number', 'record_entry') THEN -- these have a 'deleted' column
+    IF TG_TABLE_NAME IN ('call_number', 'copy_location', 'record_entry') THEN -- these have a 'deleted' column
  
         IF OLD.deleted AND NEW.deleted THEN -- do nothing
 
@@ -1380,6 +1388,8 @@ BEGIN
  
             IF TG_TABLE_NAME = 'call_number' THEN
                 DELETE FROM asset.opac_visible_copies WHERE copy_id IN (SELECT id FROM asset.copy WHERE call_number = NEW.id);
+            ELSIF TG_TABLE_NAME = 'copy_location' THEN
+                DELETE FROM asset.opac_visible_copies WHERE copy_id IN (SELECT id FROM asset.copy WHERE location = NEW.id);
             ELSIF TG_TABLE_NAME = 'record_entry' THEN
                 DELETE FROM asset.opac_visible_copies WHERE record = NEW.id;
             END IF;
@@ -1390,6 +1400,9 @@ BEGIN
  
             IF TG_TABLE_NAME = 'call_number' THEN
                 add_base_query := add_base_query || ' AND cn.id = ' || NEW.id;
+                EXECUTE add_front || add_base_query || add_back;
+            ELSIF TG_TABLE_NAME = 'copy_location' THEN
+                add_base_query := add_base_query || 'AND cl.id = ' || NEW.id;
                 EXECUTE add_front || add_base_query || add_back;
             ELSIF TG_TABLE_NAME = 'record_entry' THEN
                 add_base_query := add_base_query || ' AND cn.record = ' || NEW.id;
@@ -1471,12 +1484,45 @@ CREATE TRIGGER a_opac_vis_mat_view_tgr AFTER INSERT OR UPDATE ON config.copy_sta
 CREATE TRIGGER a_opac_vis_mat_view_tgr AFTER INSERT OR UPDATE ON actor.org_unit FOR EACH ROW EXECUTE PROCEDURE asset.cache_copy_visibility();
 
 -- Authority ingest routines
-CREATE OR REPLACE FUNCTION authority.propagate_changes (aid BIGINT, bid BIGINT) RETURNS BIGINT AS $func$
-    UPDATE  biblio.record_entry
-      SET   marc = vandelay.merge_record_xml( marc, authority.generate_overlay_template( $1 ) )
-      WHERE id = $2;
-    SELECT $1;
-$func$ LANGUAGE SQL;
+CREATE OR REPLACE FUNCTION authority.propagate_changes 
+    (aid BIGINT, bid BIGINT) RETURNS BIGINT AS $func$
+DECLARE
+    bib_rec biblio.record_entry%ROWTYPE;
+    new_marc TEXT;
+BEGIN
+
+    SELECT INTO bib_rec * FROM biblio.record_entry WHERE id = bid;
+
+    new_marc := vandelay.merge_record_xml(
+        bib_rec.marc, authority.generate_overlay_template(aid));
+
+    IF new_marc = bib_rec.marc THEN
+        -- Authority record change had no impact on this bib record.
+        -- Nothing left to do.
+        RETURN aid;
+    END IF;
+
+    PERFORM 1 FROM config.global_flag 
+        WHERE name = 'ingest.disable_authority_auto_update_bib_meta' 
+            AND enabled;
+
+    IF NOT FOUND THEN 
+        -- update the bib record editor and edit_date
+        bib_rec.editor := (
+            SELECT editor FROM authority.record_entry WHERE id = aid);
+        bib_rec.edit_date = NOW();
+    END IF;
+
+    UPDATE biblio.record_entry SET
+        marc = new_marc,
+        editor = bib_rec.editor,
+        edit_date = bib_rec.edit_date
+    WHERE id = bid;
+
+    RETURN aid;
+
+END;
+$func$ LANGUAGE PLPGSQL;
 
 CREATE OR REPLACE FUNCTION authority.propagate_changes (aid BIGINT) RETURNS SETOF BIGINT AS $func$
     SELECT authority.propagate_changes( authority, bib ) FROM authority.bib_linking WHERE authority = $1;
@@ -1613,9 +1659,13 @@ BEGIN
             RETURN NEW;
         END IF;
 
-        -- Propagate these updates to any linked bib records
-        PERFORM authority.propagate_changes(NEW.id) FROM authority.record_entry WHERE id = NEW.id;
+        -- Unless there's a setting stopping us, propagate these updates to any linked bib records when the heading changes
+        PERFORM * FROM config.internal_flag WHERE name = 'ingest.disable_authority_auto_update' AND enabled;
 
+        IF NOT FOUND AND NEW.heading <> OLD.heading THEN
+            PERFORM authority.propagate_changes(NEW.id);
+        END IF;
+	
         DELETE FROM authority.simple_heading WHERE record = NEW.id;
         DELETE FROM authority.authority_linking WHERE source = NEW.id;
     END IF;
@@ -1627,8 +1677,8 @@ BEGIN
 
     FOR ashs IN SELECT * FROM authority.simple_heading_set(NEW.marc) LOOP
 
-        INSERT INTO authority.simple_heading (record,atag,value,sort_value)
-            VALUES (ashs.record, ashs.atag, ashs.value, ashs.sort_value);
+        INSERT INTO authority.simple_heading (record,atag,value,sort_value,thesaurus)
+            VALUES (ashs.record, ashs.atag, ashs.value, ashs.sort_value, ashs.thesaurus);
             ash_id := CURRVAL('authority.simple_heading_id_seq'::REGCLASS);
 
         SELECT INTO mbe_row * FROM metabib.browse_entry
@@ -1709,12 +1759,14 @@ DECLARE
     pub_note        TEXT;
     priv_note       TEXT;
     internal_id     TEXT;
+    stat_cat_data   TEXT;
+    parts_data      TEXT;
 
     attr_def        RECORD;
     tmp_attr_set    RECORD;
     attr_set        vandelay.import_item%ROWTYPE;
 
-    xpath           TEXT;
+    xpaths          TEXT[];
     tmp_str         TEXT;
 
 BEGIN
@@ -1730,172 +1782,169 @@ BEGIN
         owning_lib :=
             CASE
                 WHEN attr_def.owning_lib IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.owning_lib ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.owning_lib || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.owning_lib
+                WHEN LENGTH( attr_def.owning_lib ) = 1 THEN '*[@code="' || attr_def.owning_lib || '"]'
+                ELSE '*' || attr_def.owning_lib
             END;
 
         circ_lib :=
             CASE
                 WHEN attr_def.circ_lib IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.circ_lib ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.circ_lib || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.circ_lib
+                WHEN LENGTH( attr_def.circ_lib ) = 1 THEN '*[@code="' || attr_def.circ_lib || '"]'
+                ELSE '*' || attr_def.circ_lib
             END;
 
         call_number :=
             CASE
                 WHEN attr_def.call_number IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.call_number ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.call_number || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.call_number
+                WHEN LENGTH( attr_def.call_number ) = 1 THEN '*[@code="' || attr_def.call_number || '"]'
+                ELSE '*' || attr_def.call_number
             END;
 
         copy_number :=
             CASE
                 WHEN attr_def.copy_number IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.copy_number ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.copy_number || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.copy_number
+                WHEN LENGTH( attr_def.copy_number ) = 1 THEN '*[@code="' || attr_def.copy_number || '"]'
+                ELSE '*' || attr_def.copy_number
             END;
 
         status :=
             CASE
                 WHEN attr_def.status IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.status ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.status || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.status
+                WHEN LENGTH( attr_def.status ) = 1 THEN '*[@code="' || attr_def.status || '"]'
+                ELSE '*' || attr_def.status
             END;
 
         location :=
             CASE
                 WHEN attr_def.location IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.location ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.location || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.location
+                WHEN LENGTH( attr_def.location ) = 1 THEN '*[@code="' || attr_def.location || '"]'
+                ELSE '*' || attr_def.location
             END;
 
         circulate :=
             CASE
                 WHEN attr_def.circulate IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.circulate ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.circulate || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.circulate
+                WHEN LENGTH( attr_def.circulate ) = 1 THEN '*[@code="' || attr_def.circulate || '"]'
+                ELSE '*' || attr_def.circulate
             END;
 
         deposit :=
             CASE
                 WHEN attr_def.deposit IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.deposit ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.deposit || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.deposit
+                WHEN LENGTH( attr_def.deposit ) = 1 THEN '*[@code="' || attr_def.deposit || '"]'
+                ELSE '*' || attr_def.deposit
             END;
 
         deposit_amount :=
             CASE
                 WHEN attr_def.deposit_amount IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.deposit_amount ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.deposit_amount || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.deposit_amount
+                WHEN LENGTH( attr_def.deposit_amount ) = 1 THEN '*[@code="' || attr_def.deposit_amount || '"]'
+                ELSE '*' || attr_def.deposit_amount
             END;
 
         ref :=
             CASE
                 WHEN attr_def.ref IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.ref ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.ref || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.ref
+                WHEN LENGTH( attr_def.ref ) = 1 THEN '*[@code="' || attr_def.ref || '"]'
+                ELSE '*' || attr_def.ref
             END;
 
         holdable :=
             CASE
                 WHEN attr_def.holdable IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.holdable ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.holdable || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.holdable
+                WHEN LENGTH( attr_def.holdable ) = 1 THEN '*[@code="' || attr_def.holdable || '"]'
+                ELSE '*' || attr_def.holdable
             END;
 
         price :=
             CASE
                 WHEN attr_def.price IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.price ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.price || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.price
+                WHEN LENGTH( attr_def.price ) = 1 THEN '*[@code="' || attr_def.price || '"]'
+                ELSE '*' || attr_def.price
             END;
 
         barcode :=
             CASE
                 WHEN attr_def.barcode IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.barcode ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.barcode || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.barcode
+                WHEN LENGTH( attr_def.barcode ) = 1 THEN '*[@code="' || attr_def.barcode || '"]'
+                ELSE '*' || attr_def.barcode
             END;
 
         circ_modifier :=
             CASE
                 WHEN attr_def.circ_modifier IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.circ_modifier ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.circ_modifier || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.circ_modifier
+                WHEN LENGTH( attr_def.circ_modifier ) = 1 THEN '*[@code="' || attr_def.circ_modifier || '"]'
+                ELSE '*' || attr_def.circ_modifier
             END;
 
         circ_as_type :=
             CASE
                 WHEN attr_def.circ_as_type IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.circ_as_type ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.circ_as_type || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.circ_as_type
+                WHEN LENGTH( attr_def.circ_as_type ) = 1 THEN '*[@code="' || attr_def.circ_as_type || '"]'
+                ELSE '*' || attr_def.circ_as_type
             END;
 
         alert_message :=
             CASE
                 WHEN attr_def.alert_message IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.alert_message ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.alert_message || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.alert_message
+                WHEN LENGTH( attr_def.alert_message ) = 1 THEN '*[@code="' || attr_def.alert_message || '"]'
+                ELSE '*' || attr_def.alert_message
             END;
 
         opac_visible :=
             CASE
                 WHEN attr_def.opac_visible IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.opac_visible ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.opac_visible || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.opac_visible
+                WHEN LENGTH( attr_def.opac_visible ) = 1 THEN '*[@code="' || attr_def.opac_visible || '"]'
+                ELSE '*' || attr_def.opac_visible
             END;
 
         pub_note :=
             CASE
                 WHEN attr_def.pub_note IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.pub_note ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.pub_note || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.pub_note
+                WHEN LENGTH( attr_def.pub_note ) = 1 THEN '*[@code="' || attr_def.pub_note || '"]'
+                ELSE '*' || attr_def.pub_note
             END;
         priv_note :=
             CASE
                 WHEN attr_def.priv_note IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.priv_note ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.priv_note || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.priv_note
+                WHEN LENGTH( attr_def.priv_note ) = 1 THEN '*[@code="' || attr_def.priv_note || '"]'
+                ELSE '*' || attr_def.priv_note
             END;
 
         internal_id :=
             CASE
                 WHEN attr_def.internal_id IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.internal_id ) = 1 THEN '//*[@tag="' || attr_def.tag || '"]/*[@code="' || attr_def.internal_id || '"]'
-                ELSE '//*[@tag="' || attr_def.tag || '"]/*' || attr_def.internal_id
+                WHEN LENGTH( attr_def.internal_id ) = 1 THEN '*[@code="' || attr_def.internal_id || '"]'
+                ELSE '*' || attr_def.internal_id
+            END;
+
+        stat_cat_data :=
+            CASE
+                WHEN attr_def.stat_cat_data IS NULL THEN 'null()'
+                WHEN LENGTH( attr_def.stat_cat_data ) = 1 THEN '*[@code="' || attr_def.stat_cat_data || '"]'
+                ELSE '*' || attr_def.stat_cat_data
+            END;
+
+        parts_data :=
+            CASE
+                WHEN attr_def.parts_data IS NULL THEN 'null()'
+                WHEN LENGTH( attr_def.parts_data ) = 1 THEN '*[@code="' || attr_def.parts_data || '"]'
+                ELSE '*' || attr_def.parts_data
             END;
 
 
 
-        xpath :=
-            owning_lib      || '|' ||
-            circ_lib        || '|' ||
-            call_number     || '|' ||
-            copy_number     || '|' ||
-            status          || '|' ||
-            location        || '|' ||
-            circulate       || '|' ||
-            deposit         || '|' ||
-            deposit_amount  || '|' ||
-            ref             || '|' ||
-            holdable        || '|' ||
-            price           || '|' ||
-            barcode         || '|' ||
-            circ_modifier   || '|' ||
-            circ_as_type    || '|' ||
-            alert_message   || '|' ||
-            pub_note        || '|' ||
-            priv_note       || '|' ||
-            internal_id     || '|' ||
-            opac_visible;
+        xpaths := ARRAY[owning_lib, circ_lib, call_number, copy_number, status, location, circulate,
+                        deposit, deposit_amount, ref, holdable, price, barcode, circ_modifier, circ_as_type,
+                        alert_message, pub_note, priv_note, internal_id, stat_cat_data, parts_data, opac_visible];
 
         FOR tmp_attr_set IN
                 SELECT  *
-                  FROM  oils_xpath_table( 'id', 'marc', 'vandelay.queued_bib_record', xpath, 'id = ' || import_id )
-                            AS t( id INT, ol TEXT, clib TEXT, cn TEXT, cnum TEXT, cs TEXT, cl TEXT, circ TEXT,
+                  FROM  oils_xpath_tag_to_table( (SELECT marc FROM vandelay.queued_bib_record WHERE id = import_id), attr_def.tag, xpaths)
+                            AS t( ol TEXT, clib TEXT, cn TEXT, cnum TEXT, cs TEXT, cl TEXT, circ TEXT,
                                   dep TEXT, dep_amount TEXT, r TEXT, hold TEXT, pr TEXT, bc TEXT, circ_mod TEXT,
-                                  circ_as TEXT, amessage TEXT, note TEXT, pnote TEXT, internal_id TEXT, opac_vis TEXT )
+                                  circ_as TEXT, amessage TEXT, note TEXT, pnote TEXT, internal_id TEXT,
+                                  stat_cat_data TEXT, parts_data TEXT, opac_vis TEXT )
         LOOP
 
             attr_set.import_error := NULL;
@@ -2011,7 +2060,8 @@ BEGIN
                     );
 
                 -- make sure the value from the org setting is still valid
-                PERFORM 1 FROM asset.copy_location WHERE id = attr_set.location;
+                PERFORM 1 FROM asset.copy_location 
+                    WHERE id = attr_set.location AND NOT deleted;
                 IF NOT FOUND THEN
                     attr_set.import_error := 'import.item.invalid.location';
                     attr_set.error_detail := tmp_attr_set.cs;
@@ -2037,7 +2087,8 @@ BEGIN
                 ) SELECT  cpl.id INTO attr_set.location
                     FROM  anscestor_depth a
                         JOIN asset.copy_location cpl ON (cpl.owning_lib = a.id)
-                    WHERE LOWER(cpl.name) = LOWER(tmp_attr_set.cl)
+                    WHERE LOWER(cpl.name) = LOWER(tmp_attr_set.cl) 
+                        AND NOT cpl.deleted
                     ORDER BY a.depth DESC
                     LIMIT 1; 
 
@@ -2075,6 +2126,8 @@ BEGIN
             attr_set.priv_note      := tmp_attr_set.pnote; -- TEXT,
             attr_set.alert_message  := tmp_attr_set.amessage; -- TEXT,
             attr_set.internal_id    := tmp_attr_set.internal_id::BIGINT;
+            attr_set.stat_cat_data  := tmp_attr_set.stat_cat_data; -- TEXT,
+            attr_set.parts_data     := tmp_attr_set.parts_data; -- TEXT,
 
             RETURN NEXT attr_set;
 
@@ -2126,6 +2179,8 @@ BEGIN
             priv_note,
             internal_id,
             opac_visible,
+            stat_cat_data,
+            parts_data,
             import_error,
             error_detail
         ) VALUES (
@@ -2151,6 +2206,8 @@ BEGIN
             item_data.priv_note,
             item_data.internal_id,
             item_data.opac_visible,
+            item_data.stat_cat_data,
+            item_data.parts_data,
             item_data.import_error,
             item_data.error_detail
         );

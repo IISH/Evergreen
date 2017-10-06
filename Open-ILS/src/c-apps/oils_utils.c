@@ -120,7 +120,7 @@ long oilsFMGetObjectId( const jsonObject* obj ) {
 	return id;
 }
 
-int oilsUtilsTrackUserActivity(long usr, const char* ewho, const char* ewhat, const char* ehow) {
+int oilsUtilsTrackUserActivity(osrfMethodContext* ctx, long usr, const char* ewho, const char* ewhat, const char* ehow) {
     if (!usr && !(ewho || ewhat || ehow)) return 0;
     int rowcount = 0;
 
@@ -164,49 +164,65 @@ int oilsUtilsTrackUserActivity(long usr, const char* ewho, const char* ewhat, co
 }
 
 
+static int rootOrgId = 0; // cache the ID of the root org unit.
+int oilsUtilsGetRootOrgId() {
+
+    // return the cached value if we have it.
+    if (rootOrgId > 0) return rootOrgId;
+
+    jsonObject* where_clause = jsonParse("{\"parent_ou\":null}");
+    jsonObject* org = oilsUtilsQuickReq(
+        "open-ils.cstore",
+        "open-ils.cstore.direct.actor.org_unit.search",
+        where_clause
+    );
+
+    rootOrgId = (int) 
+        jsonObjectGetNumber(oilsFMGetObject(org, "id"));
+
+    jsonObjectFree(where_clause);
+    jsonObjectFree(org);
+
+    return rootOrgId;
+}
 
 oilsEvent* oilsUtilsCheckPerms( int userid, int orgid, char* permissions[], int size ) {
-	if (!permissions) return NULL;
-	int i;
-	oilsEvent* evt = NULL;
+    if (!permissions) return NULL;
+    int i;
 
-	// Find the root org unit, i.e. the one with no parent.
-	// Assumption: there is only one org unit with no parent.
-	if (orgid == -1) {
-		jsonObject* where_clause = jsonParse( "{\"parent_ou\":null}" );
-		jsonObject* org = oilsUtilsQuickReq(
-			"open-ils.cstore",
-			"open-ils.cstore.direct.actor.org_unit.search",
-			where_clause
-		);
-		jsonObjectFree( where_clause );
+    // Check perms against the root org unit if no org unit is provided.
+    if (orgid == -1)
+        orgid = oilsUtilsGetRootOrgId();
 
-		orgid = (int)jsonObjectGetNumber( oilsFMGetObject( org, "id" ) );
+    for( i = 0; i < size && permissions[i]; i++ ) {
+        oilsEvent* evt = NULL;
+        char* perm = permissions[i];
 
-		jsonObjectFree(org);
-	}
+        jsonObject* params = jsonParseFmt(
+            "{\"from\":[\"permission.usr_has_perm\",\"%d\",\"%s\",\"%d\"]}",
+            userid, perm, orgid
+        );
 
-	for( i = 0; i < size && permissions[i]; i++ ) {
+        // Execute the query
+        jsonObject* result = oilsUtilsCStoreReq(
+            "open-ils.cstore.json_query", params);
 
-		char* perm = permissions[i];
-		jsonObject* params = jsonParseFmt("[%d, \"%s\", %d]", userid, perm, orgid);
-		jsonObject* o = oilsUtilsQuickReq( "open-ils.storage",
-			"open-ils.storage.permission.user_has_perm", params );
+        const jsonObject* hasPermStr = 
+            jsonObjectGetKeyConst(result, "permission.usr_has_perm");
 
-		char* r = jsonObjectToSimpleString(o);
+        if (!oilsUtilsIsDBTrue(jsonObjectGetString(hasPermStr))) {
+            evt = oilsNewEvent3(
+                OSRF_LOG_MARK, OILS_EVENT_PERM_FAILURE, perm, orgid);
+        }
 
-		if(r && !strcmp(r, "0"))
-			evt = oilsNewEvent3( OSRF_LOG_MARK, OILS_EVENT_PERM_FAILURE, perm, orgid );
+        jsonObjectFree(params);
+        jsonObjectFree(result);
 
-		jsonObjectFree(params);
-		jsonObjectFree(o);
-		free(r);
+        // return first failed permission check.
+        if (evt) return evt;
+    }
 
-		if(evt)
-			break;
-	}
-
-	return evt;
+    return NULL; // all perm checks succeeded
 }
 
 /**
@@ -231,6 +247,42 @@ jsonObject* oilsUtilsQuickReq( const char* service, const char* method,
 
 	// Open an application session with the service, and send the request
 	osrfAppSession* session = osrfAppSessionClientInit( service );
+	int reqid = osrfAppSessionSendRequest( session, params, method, 1 );
+
+	// Get the response
+	osrfMessage* omsg = osrfAppSessionRequestRecv( session, reqid, 60 );
+	jsonObject* result = jsonObjectClone( osrfMessageGetResult(omsg) );
+
+	// Clean up
+	osrfMessageFree(omsg);
+	osrfAppSessionFree(session);
+	return result;
+}
+
+/**
+	@brief Perform a remote procedure call, propagating session
+        locale and timezone
+	@param service The name of the service to invoke.
+	@param method The name of the method to call.
+	@param params The parameters to be passed to the method, if any.
+	@return A copy of whatever the method returns as a result, or a JSON_NULL if the method
+	doesn't return anything.
+
+	If the @a params parameter points to a JSON_ARRAY, pass each element of the array
+	as a separate parameter.  If it points to any other kind of jsonObject, pass it as a
+	single parameter.  If it is NULL, pass no parameters.
+
+	The calling code is responsible for freeing the returned object by calling jsonObjectFree().
+*/
+jsonObject* oilsUtilsQuickReqCtx( osrfMethodContext* ctx, const char* service,
+                const char* method, const jsonObject* params ) {
+	if(!(service && method && ctx)) return NULL;
+
+	osrfLogDebug(OSRF_LOG_MARK, "oilsUtilsQuickReqCtx(): %s - %s (%s)", service, method, ctx->session->session_tz );
+
+	// Open an application session with the service, and send the request
+	osrfAppSession* session = osrfAppSessionClientInit( service );
+	osrf_app_session_set_tz(session, ctx->session->session_tz);
 	int reqid = osrfAppSessionSendRequest( session, params, method, 1 );
 
 	// Get the response
@@ -277,6 +329,24 @@ jsonObject* oilsUtilsCStoreReq( const char* method, const jsonObject* params ) {
 	return oilsUtilsQuickReq("open-ils.cstore", method, params);
 }
 
+/**
+	@brief Call a method of the open-ils.cstore service, context aware.
+	@param ctx Method context object.
+	@param method Name of the method.
+	@param params Parameters to be passed to the method, if any.
+	@return A copy of whatever the method returns as a result, or a JSON_NULL if the method
+	doesn't return anything.
+
+	If the @a params parameter points to a JSON_ARRAY, pass each element of the array
+	as a separate parameter.  If it points to any other kind of jsonObject, pass it as a
+	single parameter.  If it is NULL, pass no parameters.
+
+	The calling code is responsible for freeing the returned object by calling jsonObjectFree().
+*/
+jsonObject* oilsUtilsCStoreReqCtx( osrfMethodContext* ctx, const char* method, const jsonObject* params ) {
+	return oilsUtilsQuickReqCtx(ctx, "open-ils.cstore", method, params);
+}
+
 
 
 /**
@@ -287,11 +357,11 @@ jsonObject* oilsUtilsCStoreReq( const char* method, const jsonObject* params ) {
 
 	The calling code is responsible for freeing the returned object by calling jsonObjectFree().
 */
-jsonObject* oilsUtilsFetchUserByUsername( const char* name ) {
+jsonObject* oilsUtilsFetchUserByUsername( osrfMethodContext* ctx, const char* name ) {
 	if(!name) return NULL;
 	jsonObject* params = jsonParseFmt("{\"usrname\":\"%s\"}", name);
-	jsonObject* user = oilsUtilsQuickReq(
-		"open-ils.cstore", "open-ils.cstore.direct.actor.user.search", params );
+	jsonObject* user = oilsUtilsQuickReqCtx(
+		ctx, "open-ils.cstore", "open-ils.cstore.direct.actor.user.search", params );
 
 	jsonObjectFree(params);
 	long id = oilsFMGetObjectId(user);
@@ -310,14 +380,14 @@ jsonObject* oilsUtilsFetchUserByUsername( const char* name ) {
 
 	The calling code is responsible for freeing the returned object by calling jsonObjectFree().
 */
-jsonObject* oilsUtilsFetchUserByBarcode(const char* barcode) {
+jsonObject* oilsUtilsFetchUserByBarcode(osrfMethodContext* ctx, const char* barcode) {
 	if(!barcode) return NULL;
 
 	osrfLogInfo(OSRF_LOG_MARK, "Fetching user by barcode %s", barcode);
 
 	jsonObject* params = jsonParseFmt("{\"barcode\":\"%s\"}", barcode);
-	jsonObject* card = oilsUtilsQuickReq(
-		"open-ils.cstore", "open-ils.cstore.direct.actor.card.search", params );
+	jsonObject* card = oilsUtilsQuickReqCtx(
+		ctx, "open-ils.cstore", "open-ils.cstore.direct.actor.card.search", params );
 	jsonObjectFree(params);
 
 	if(!card)
@@ -333,8 +403,8 @@ jsonObject* oilsUtilsFetchUserByBarcode(const char* barcode) {
 
 	// Look up the user in actor.usr
 	params = jsonParseFmt("[%f]", iusr);
-	jsonObject* user = oilsUtilsQuickReq(
-		"open-ils.cstore", "open-ils.cstore.direct.actor.user.retrieve", params);
+	jsonObject* user = oilsUtilsQuickReqCtx(
+		ctx, "open-ils.cstore", "open-ils.cstore.direct.actor.user.retrieve", params);
 
 	jsonObjectFree(params);
 	return user;

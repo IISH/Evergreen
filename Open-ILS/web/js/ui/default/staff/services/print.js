@@ -1,15 +1,23 @@
 /**
  * egPrint : manage print templates, process templates, print content
  *
- * TODO: create configurable links between print template and context.
  */
 angular.module('egCoreMod')
 
 .factory('egPrint',
-       ['$q','$window','$timeout','$http','egHatch','egAuth','egIDL','egOrg',
-function($q , $window , $timeout , $http , egHatch , egAuth , egIDL , egOrg) {
+       ['$q','$window','$timeout','$http','egHatch','egAuth','egIDL','egOrg','egEnv',
+function($q , $window , $timeout , $http , egHatch , egAuth , egIDL , egOrg , egEnv) {
 
-    var service = {};
+    var service = {
+        include_settings : [
+            'circ.staff_client.receipt.alert_text',
+            'circ.staff_client.receipt.event_text',
+            'circ.staff_client.receipt.footer_text',
+            'circ.staff_client.receipt.header_text',
+            'circ.staff_client.receipt.notice_text'
+        ]
+    };
+
 
     service.template_base_path = 'share/print_templates/t_';
 
@@ -33,8 +41,12 @@ function($q , $window , $timeout , $http , egHatch , egAuth , egIDL , egOrg) {
             return service.getPrintTemplate(args.template)
             .then(function(content) {
                 args.content = content;
-                if (!args.content_type) args.content_type = 'html';
-                return service.print_content(args);
+                if (!args.content_type) args.content_type = 'text/html';
+                service.getPrintTemplateContext(args.template)
+                .then(function(context) {
+                    args.context = context;
+                    return service.print_content(args);
+                });
             });
 
         } 
@@ -49,56 +61,144 @@ function($q , $window , $timeout , $http , egHatch , egAuth , egIDL , egOrg) {
         scope.staff = egIDL.toHash(egAuth.user());
         scope.current_location = 
             egIDL.toHash(egOrg.get(egAuth.user().ws_ou()));
+
+        return service.fetch_includes(scope);
     }
+
+    // Retrieve org settings for receipt includes and add them
+    // to the print scope under scope.includes.<name>
+    service.fetch_includes = function(scope) {
+        // org settings for the workstation org are cached
+        // within egOrg.  No need to cache them locally.
+        return egOrg.settings(service.include_settings).then(
+
+            function(settings) {
+                scope.includes = {};
+                angular.forEach(settings, function(val, key) {
+                    // strip the settings prefix so you just have
+                    // e.g. scope.includes.alert_text
+                    scope.includes[key.split(/\./).pop()] = val;
+                });
+            }
+        );
+    }
+
+    service.last_print = {};
 
     // Template has been fetched (or no template needed) 
     // Process the template and send the result off to the printer.
     service.print_content = function(args) {
-        service.fleshPrintScope(args.scope);
+        return service.fleshPrintScope(args.scope).then(function() {
+            var promise = egHatch.usePrinting() ?
+                service.print_via_hatch(args) :
+                service.print_via_browser(args);
 
+            return promise['finally'](
+                function() { service.clear_print_content() });
+        });
+    }
+
+    service.print_via_hatch = function(args) {
         var promise;
-        if (args.content_type == 'text/html') {
 
-            // all HTML content is assumed to require compilation, 
-            // regardless of the print destination
+        if (args.content_type == 'text/html') {
             promise = service.ingest_print_content(
                 args.content_type, args.content, args.scope);
-
         } else {
-            // text content does not require compilation for remote printing
-            promise = $q.when();
+            // text content requires no compilation for remote printing.
+            promise = $q.when(args.content);
         }
 
-        // TODO: link print context to template type
-        var context = args.context || 'default';
-
         return promise.then(function(html) {
+            // For good measure, wrap the compiled HTML in container tags.
+            html = "<html><body>" + html + "</body></html>";
+            service.last_print.content = html;
+            service.last_print.context = args.context || 'default';
+            service.last_print.content_type = args.content_type;
+            service.last_print.show_dialog = args.show_dialog;
 
-            return egHatch.remotePrint(context,
-                args.content_type, html, args.show_dialog)['catch'](
+            egHatch.setItem('eg.print.last_printed', service.last_print);
 
-                function(msg) {
-                    // remote print not available; 
+            return service._remotePrint();
+        });
+    }
 
-                    if (egHatch.hatchRequired()) {
-                        console.error("Unable to print data; "
-                         + "hatchRequired=true, but hatch is not connected");
-                         return $q.reject();
-                    }
+    service._remotePrint = function () {
+        return egHatch.remotePrint(
+            service.last_print.context,
+            service.last_print.content_type,
+            service.last_print.content, 
+            service.last_print.show_dialog
+        );
+    }
 
-                    if (args.content_type != 'text/html') {
-                        // text content does require compilation 
-                        // (absorption) for browser printing
-                        return service.ingest_print_content(
-                            args.content_type, args.content, args.scope
-                        ).then(function() { $window.print() });
-                    } else {
-                        // HTML content is already ingested and accessible
-                        // within the page to the printer.  
-                        $window.print();
-                    }
-                }
+    service.print_via_browser = function(args) {
+        var type = args.content_type;
+        var content = args.content;
+        var printScope = args.scope;
+
+        if (type == 'text/csv' || type == 'text/plain') {
+            // preserve newlines, spaces, etc.
+            content = '<pre>' + content + '</pre>';
+        }
+
+        // Fetch the print CSS required for in-browser printing.
+        return $http.get(egEnv.basePath + 'css/print.css')
+        .then(function(response) {
+
+            // Add the bare CSS to the content
+            return '<style type="text/css" media="print">' +
+                  response.data +
+                  '</style>' +
+                  content;
+
+        }).then(function(content) {
+            service.last_print.content = content;
+            service.last_print.content_type = type;
+            service.last_print.printScope = printScope
+
+            egHatch.setItem('eg.print.last_printed', service.last_print);
+
+            // Ingest the content into the page DOM.
+            return service.ingest_print_content(
+                service.last_print.content_type,
+                service.last_print.content,
+                service.last_print.printScope
             );
+
+        }).then(function() { 
+            $window.print();
+        });
+    }
+
+    service.reprintLast = function () {
+        var deferred = $q.defer();
+        var promise = deferred.promise;
+        promise.finally( function() { service.clear_print_content() });
+
+        egHatch.getItem(
+            'eg.print.last_printed'
+        ).then(function (last) {
+            if (last && last.content) {
+                service.last_print = last;
+
+                if (egHatch.usePrinting()) {
+                    promise.then(function () {
+                        egHatch._remotePrint()
+                    });
+                } else {
+                    promise.then(function () {
+                        service.ingest_print_content(
+                            service.last_print.content_type,
+                            service.last_print.content,
+                            service.last_print.printScope
+                        ).then(function() { $window.print() });
+                    });
+                }
+                return deferred.resolve();
+            } else {
+                return deferred.reject();
+            }
         });
     }
 
@@ -135,6 +235,21 @@ function($q , $window , $timeout , $http , egHatch , egAuth , egIDL , egOrg) {
         return egHatch.setItem('eg.print.template.' + name, html);
     }
 
+    service.getPrintTemplateContext = function(name) {
+        var deferred = $q.defer();
+
+        egHatch.getItem('eg.print.template_context.' + name)
+        .then(
+            function(context) { deferred.resolve(context); },
+            function()        { deferred.resolve('default'); }
+        );
+
+        return deferred.promise;
+    }
+    service.storePrintTemplateContext = function(name, context) {
+        return egHatch.setItem('eg.print.template_context.' + name, context);
+    }
+
     return service;
 }])
 
@@ -145,13 +260,13 @@ function($q , $window , $timeout , $http , egHatch , egAuth , egIDL , egOrg) {
  * The div housing eg-print-container must apply the correct
  * print media CSS to ensure this content (and not the rest
  * of the page) is printed.
+ *
+ * NOTE: There should only ever be 1 egPrintContainer instance per page.
+ * egPrintContainer attaches functions to the egPrint service with
+ * closures around the egPrintContainer instance's $scope (including its
+ * DOM element). Having multiple egPrintContainers could result in chaos.
  */
 
-// FIXME: only apply print CSS when print commands are issued via the 
-// print container, otherwise using the browser's native print page 
-// option will always result in empty pages.  Move the print CSS
-// out of the standalone CSS file and put it into a template file
-// for this directive.
 .directive('egPrintContainer', ['$compile', function($compile) {
     return {
         restrict : 'AE',
@@ -160,16 +275,21 @@ function($q , $window , $timeout , $http , egHatch , egAuth , egIDL , egOrg) {
             scope.elm = element;
         },
         controller : 
-                   ['$scope','$q','$window','$timeout','egHatch','egPrint',
-            function($scope , $q , $window , $timeout , egHatch , egPrint) {
+                   ['$scope','$q','$window','$timeout','egHatch','egPrint','egEnv',
+            function($scope , $q , $window , $timeout , egHatch , egPrint , egEnv) {
 
+                egPrint.clear_print_content = function() {
+                    $scope.elm.html('');
+                    $compile($scope.elm.contents())($scope.$new(true));
+                }
+
+                // Insert the printable content into the DOM.
+                // For remote printing, this lets us exract the compiled HTML
+                // from the DOM.
+                // For local printing, this lets us print directly from the
+                // DOM with print CSS.
+                // Returns a promise reolved with the compiled HTML as a string.
                 egPrint.ingest_print_content = function(type, content, printScope) {
-
-                    if (type == 'text/csv' || type == 'text/plain') {
-                        // preserve newlines, spaces, etc.
-                        content = '<pre>' + content + '</pre>';
-                    }
-
                     $scope.elm.html(content);
 
                     var sub_scope = $scope.$new(true);
@@ -179,15 +299,12 @@ function($q , $window , $timeout , $http , egHatch , egAuth , egIDL , egOrg) {
 
                     var resp = $compile($scope.elm.contents())(sub_scope);
 
+
                     var deferred = $q.defer();
                     $timeout(function(){
-                        // give the $digest a chance to complete then
-                        // resolve with the compiled HTML from our
-                        // print container
-
-                        deferred.resolve(
-                            resp.contents()[0].parentNode.innerHTML
-                        );
+                        // give the $digest a chance to complete then resolve
+                        // with the compiled HTML from our print container
+                        deferred.resolve($scope.elm.html());
                     });
 
                     return deferred.promise;

@@ -388,10 +388,11 @@ sub fleshed_issuance_alter {
     return 1 unless ref $issuances;
     my( $reqr, $evt ) = $U->checkses($auth);
     return $evt if $evt;
-    my $editor = new_editor(requestor => $reqr, xact => 1);
+    my $editor = new_editor(authtoken => $auth, requestor => $reqr, xact => 1);
     my $override = $self->api_name =~ /override/;
 
     my %found_ssub_ids;
+    my %regen_ssub_ids;
     for my $issuance (@$issuances) {
         my $ssub_id = ref $issuance->subscription ? $issuance->subscription->id : $issuance->subscription;
         if (!exists($found_ssub_ids{$ssub_id})) {
@@ -413,6 +414,7 @@ sub fleshed_issuance_alter {
 
         if( $issuance->isdeleted ) {
             $evt = _delete_siss( $editor, $override, $issuance);
+            $regen_ssub_ids{$ssub_id} = 1;
         } elsif( $issuance->isnew ) {
             _cleanse_dates($issuance, ['date_published']);
             $evt = _create_siss( $editor, $issuance );
@@ -420,13 +422,23 @@ sub fleshed_issuance_alter {
             _cleanse_dates($issuance, ['date_published']);
             $evt = _update_siss( $editor, $override, $issuance );
         }
+
+        last if $evt;
     }
 
-    if( $evt ) {
+    if (!$evt) {
+        # if we deleted any issuances, update the summaries
+        # for all dists in those ssubs
+        my @ssub_ids = keys %regen_ssub_ids;
+        $evt = _regenerate_summaries($editor, {'ssub_ids' => \@ssub_ids}) if @ssub_ids;
+    }
+
+    if ( $evt ) {
         $logger->info("fleshed issuance-alter failed with event: ".OpenSRF::Utils::JSON->perl2JSON($evt));
         $editor->rollback;
         return $evt;
     }
+
     $logger->debug("issuance-alter: done updating issuance batch");
     $editor->commit;
     $logger->info("fleshed issuance-alter successfully updated ".scalar(@$issuances)." issuances");
@@ -1560,7 +1572,7 @@ sub _prepare_unit {
 sub _prepare_summaries {
     my ($e, $issuances, $sdist, $type) = @_;
 
-    my ($mfhd, $formatted_parts) = _summarize_contents($e, $issuances, $sdist);
+    my ($mfhd, $formatted_parts) = _summarize_contents($e, $issuances, $sdist, $type);
     return $mfhd if $U->event_code($mfhd);
 
     my $search_method = "search_serial_${type}_summary";
@@ -1577,9 +1589,157 @@ sub _prepare_summaries {
         $cu_method = "create";
     }
 
-    $summary->generated_coverage(OpenSRF::Utils::JSON->perl2JSON($formatted_parts));
+    if (@$formatted_parts) {
+        $summary->generated_coverage(OpenSRF::Utils::JSON->perl2JSON($formatted_parts));
+    } else {
+        # we had no issuances or MFHD data for this type, so clear any
+        # generated data which may have existed before
+        $summary->generated_coverage('');
+    }
     my $method = "${cu_method}_serial_${type}_summary";
     return $e->die_event unless $e->$method($summary);
+}
+
+
+__PACKAGE__->register_method(
+    method    => 'regen_summaries',
+    api_name  => 'open-ils.serial.regenerate_summaries',
+    api_level => 1,
+    argc      => 1,
+    signature => {
+        'desc'   => 'Regenerate all the generated_coverage fields for given distributions or subscriptions (depending on params given). Params are expected to be hash members.',
+        'params' => [ {
+                 name => 'sdist_ids',
+                 desc => 'IDs of the distribution whose coverage you want to regenerate',
+                 type => 'array'
+            },
+            {
+                 name => 'ssub_ids',
+                 desc => 'IDs of the subscriptions whose coverage you want to regenerate',
+                 type => 'array'
+            }
+        ],
+        'return' => {
+            desc => 'Returns undef if successful, event if failed',
+            type => 'mixed'
+        }
+#TODO: best practices for return values
+    }
+);
+
+sub regen_summaries {
+    my ($self, $conn, $auth, $opts) = @_;
+
+    my $e = new_editor("authtoken" => $auth, "xact" => 1);
+    return $e->die_event unless $e->checkauth;
+    # Perm checks not necessary since generated_coverage is akin to
+    # caching of data, not actual editing.  XXX This might need more
+    # consideration.
+    #return $editor->die_event unless $editor->allowed("RECEIVE_SERIAL");
+
+    my $evt = _regenerate_summaries($e, $opts);
+    if ($U->event_code($evt)) {
+        $e->rollback;
+        return $evt;
+    }
+
+    $e->commit;
+
+    return undef;
+}
+
+sub _regenerate_summaries {
+    my ($e, $opts) = @_;
+
+    $logger->debug('_regenerate_summaries with opts: ' . OpenSRF::Utils::JSON->perl2JSON($opts));
+    my @sdist_ids;
+    if ($opts->{'ssub_ids'}) {
+        foreach my $ssub_id (@{$opts->{'ssub_ids'}}) {
+            my $sdist_ids_temp = $e->search_serial_distribution(
+                { 'subscription' => $ssub_id },
+                { 'idlist' => 1 }
+            );
+            push(@sdist_ids, @$sdist_ids_temp);
+        }
+    } elsif ($opts->{'sdist_ids'}) {
+        @sdist_ids = @$opts->{'sdist_ids'};
+    }
+
+    foreach my $sdist_id (@sdist_ids) {
+        # get distribution
+        my $sdist = $e->retrieve_serial_distribution($sdist_id)
+            or return $e->die_event;
+
+# See large comment below
+#        my $has_merged_mfhd;
+        foreach my $type (@MFHD_NAMES) {
+            # get issuances
+            my $issuances = $e->search_serial_issuance([
+                {
+                    "+sdist" => {"id" => $sdist_id},
+                    "+sitem" => {"status" => "Received"},
+                    "+scap" => {"type" => $type}
+                },
+                {
+                    "join" => {
+                        "sitem" => {},
+                        "scap" => {},
+                        "ssub" => {
+                            "join" => {"sdist" =>{}}
+                        }
+                    },
+                    "order_by" => {
+                        "siss" => "date_published"
+                    }
+                }
+            ]) or return $e->die_event;
+
+# This level of nuance doesn't appear to be necessary.
+# At the moment, we pass down an empty issuance list,
+# and the inner methods will "do the right thing" and
+# pull in the MFHD if called for, but in some cases not
+# ultimately generate any coverage.  The code below is
+# broken in cases where we delete the last issuance, since
+# the now empty summary never gets updated.
+#
+# Leaving this code for now (2014/04) in case pushing
+# the logic down ends up being too slow or complicates
+# the inner methods beyond their scope.
+#
+#            if (!@$issuances and !$has_merged_mfhd) {
+#                if (!defined($has_merged_mfhd)) {
+#                    # even without issuances, we can generate a summary
+#                    # from a merged MFHD record, so look for one
+#                    my $mfhd_ids = $e->search_serial_record_entry(
+#                        {
+#                            '+sdist' => {
+#                                'id' => $sdist_id,
+#                                'summary_method' => 'merge_with_sre'
+#                            }
+#                        },
+#                        {
+#                            'join' => { 'sdist' => {} },
+#                            'idlist' => 1
+#                        }
+#                    );
+#                    if ($mfhd_ids and @$mfhd_ids) {
+#                        $has_merged_mfhd = 1;
+#                    } else {
+#                        next;
+#                    }
+#                } else {
+#                    next; # abort to prevent empty summary creation (i.e. '[]')
+#                }
+#            }
+            my $evt = _prepare_summaries($e, $issuances, $sdist, $type);
+            if ($U->event_code($evt)) {
+                $e->rollback;
+                return $evt;
+            }
+        }
+    }
+
+    return undef;
 }
 
 sub _unit_by_iss_and_str {
@@ -1852,6 +2012,7 @@ sub _summarize_contents {
     my $editor = shift;
     my $issuances = shift;
     my $sdist = shift;
+    my $type = shift;
 
     # create or lookup MFHD record
     my $mfhd;
@@ -1925,7 +2086,18 @@ sub _summarize_contents {
     }
 
     my @formatted_parts;
-    my @scap_fields_ordered = $mfhd->field('85[345]');
+    my @scap_fields_ordered;
+    if ($type) {
+        @scap_fields_ordered = $mfhd->field($MFHD_TAGS_BY_NAME{$type});
+    } else {
+        # if they didn't give a type, send back whatever holdings we have.
+        # this is really only sensible right now for summarizing one type,
+        # and is used by the unitize code for this purpose
+        #
+        # TODO: possible future support for binding (unitizing) of multiple
+        # types into a sensible summary string
+        @scap_fields_ordered = $mfhd->field('85[345]');
+    }
 
     foreach my $scap_field (@scap_fields_ordered) { #TODO: use generic MFHD "summarize" method, once available
         my @updated_holdings;

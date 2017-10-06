@@ -17,8 +17,10 @@ package OpenILS::Application::Circ::Money;
 use base qw/OpenILS::Application/;
 use strict; use warnings;
 use OpenILS::Application::AppUtils;
+use OpenILS::Application::Circ::CircCommon;
 my $apputils = "OpenILS::Application::AppUtils";
 my $U = "OpenILS::Application::AppUtils";
+my $CC = "OpenILS::Application::Circ::CircCommon";
 
 use OpenSRF::EX qw(:try);
 use OpenILS::Perm;
@@ -99,7 +101,7 @@ sub process_stripe_or_bop_payment {
     if ($cc_args->{processor} eq 'Stripe') { # Stripe
         my $stripe = Business::Stripe->new(-api_key => $psettings->{secretkey});
         $stripe->charges_create(
-            amount => int($total_paid * 100.0), # Stripe takes amount in pennies
+            amount => ($total_paid * 100), # Stripe takes amount in pennies
             card => $cc_args->{stripe_token},
             description => $cc_args->{note}
         );
@@ -267,7 +269,7 @@ sub make_payments {
 
 
     # unless/until determined by payment processor API
-    my ($approval_code, $cc_processor, $cc_type, $cc_order_number) = (undef,undef,undef, undef);
+    my ($approval_code, $cc_processor, $cc_order_number) = (undef,undef,undef, undef);
 
     my $patron = $e->retrieve_actor_user($user_id) or return $e->die_event;
 
@@ -319,7 +321,8 @@ sub make_payments {
         $amount =~ s/\$//og; # just to be safe
         my $trans = $xacts{$transid};
 
-        $total_paid += $amount;
+        # add amounts as integers
+        $total_paid += (100 * $amount);
 
         my $org_id = $U->xact_org($transid, $e);
 
@@ -380,22 +383,22 @@ sub make_payments {
 
         if ($payobj->has_field('accepting_usr')) { $payobj->accepting_usr($e->requestor->id); }
         if ($payobj->has_field('cash_drawer')) { $payobj->cash_drawer($drawer); }
-        if ($payobj->has_field('cc_type')) { $payobj->cc_type($cc_args->{type}); }
         if ($payobj->has_field('check_number')) { $payobj->check_number($check_number); }
 
         # Store the last 4 digits of the CC number
         if ($payobj->has_field('cc_number')) {
             $payobj->cc_number(substr($cc_args->{number}, -4));
         }
-        if ($payobj->has_field('expire_month')) { $payobj->expire_month($cc_args->{expire_month}); $logger->info("LFW XXX expire_month is $cc_args->{expire_month}"); }
-        if ($payobj->has_field('expire_year')) { $payobj->expire_year($cc_args->{expire_year}); }
-        
+
         # Note: It is important not to set approval_code
         # on the fieldmapper object yet.
 
         push(@payment_objs, $payobj);
 
     } # all payment objects have been created and inserted. 
+
+    # return to decimal format, forcing X.YY format for consistency.
+    $total_paid = sprintf("%.2f", $total_paid / 100);
 
     #### NO WRITES TO THE DB ABOVE THIS LINE -- THEY'LL ONLY BE DISCARDED  ###
     $e->rollback;
@@ -432,7 +435,6 @@ sub make_payments {
 
                 {
                     no warnings 'uninitialized';
-                    $cc_type = $cc_payload->{card_type};
                     $approval_code = $cc_payload->{authorization} ||
                         $cc_payload->{id};
                     $cc_processor = $cc_payload->{processor} ||
@@ -482,7 +484,7 @@ sub make_payments {
             # close if no circulation transaction is present,
             # otherwise we check if the circulation is in a state that
             # allows itself to be closed.
-            if (!$circ || OpenILS::Application::Circ::CircCommon->can_close_circ($e, $circ)) {
+            if (!$circ || $CC->can_close_circ($e, $circ)) {
                 $trans = $e->retrieve_money_billable_transaction($transid);
                 $trans->xact_finish("now");
                 if (!$e->update_money_billable_transaction($trans)) {
@@ -497,7 +499,7 @@ sub make_payments {
                 # check org_unit_settings for the copy owning library
                 # and adjust and possibly adjust copy status to lost
                 # and paid.
-                if ($circ) {
+                if ($circ && ($circ->stop_fines eq 'LOST' || $circ->stop_fines eq 'LONGOVERDUE')) {
                     # We need the copy to check settings and to possibly
                     # change its status.
                     my $copy = $circ->target_copy();
@@ -521,17 +523,12 @@ sub make_payments {
 
         # Urgh, clean up this mega-function one day.
         if ($cc_processor eq 'Stripe' and $approval_code and $cc_payload) {
-            $payment->expire_month($cc_payload->{card}{exp_month});
-            $payment->expire_year($cc_payload->{card}{exp_year});
             $payment->cc_number($cc_payload->{card}{last4});
         }
 
         $payment->approval_code($approval_code) if $approval_code;
         $payment->cc_order_number($cc_order_number) if $cc_order_number;
-        $payment->cc_type($cc_type) if $cc_type;
         $payment->cc_processor($cc_processor) if $cc_processor;
-        $payment->cc_first_name($cc_args->{'billing_first'}) if $cc_args->{'billing_first'};
-        $payment->cc_last_name($cc_args->{'billing_last'}) if $cc_args->{'billing_last'};
         if (!$e->$create_money_method($payment)) {
             return _recording_failure(
                 $e, "$create_money_method failed", $payment, $cc_payload
@@ -904,46 +901,168 @@ __PACKAGE__->register_method(
 );
 sub void_bill {
     my( $s, $c, $authtoken, @billids ) = @_;
+    my $editor = new_editor(authtoken=>$authtoken, xact=>1);
+    return $editor->die_event unless $editor->checkauth;
+    return $editor->die_event unless $editor->allowed('VOID_BILLING');
+    my $rv = $CC->void_bills($editor, \@billids);
+    if (ref($rv) eq 'HASH') {
+        # We got an event.
+        $editor->rollback();
+    } else {
+        # We should have gotten 1.
+        $editor->commit();
+    }
+    return $rv;
+}
 
-    my $e = new_editor( authtoken => $authtoken, xact => 1 );
-    return $e->die_event unless $e->checkauth;
-    return $e->die_event unless $e->allowed('VOID_BILLING');
 
-    my %users;
-    for my $billid (@billids) {
-
-        my $bill = $e->retrieve_money_billing($billid)
-            or return $e->die_event;
-
-        my $xact = $e->retrieve_money_billable_transaction($bill->xact)
-            or return $e->die_event;
-
-        if($U->is_true($bill->voided)) {
-            $e->rollback;
-            return OpenILS::Event->new('BILL_ALREADY_VOIDED', payload => $bill);
+__PACKAGE__->register_method(
+    method => 'adjust_bills_to_zero_manual',
+    api_name => 'open-ils.circ.money.billable_xact.adjust_to_zero',
+    signature => {
+        desc => q/
+            Given a list of billable transactions, manipulate the
+            transaction using account adjustments to result in a
+            balance of $0.
+            /,
+        params => [
+            {desc => 'Authtoken', type => 'string'},
+            {desc => 'Array of transaction IDs', type => 'array'}
+        ],
+        return => {
+            desc => q/Array of IDs for each transaction updated,
+            Event on error./
         }
+    }
+);
 
-        my $org = $U->xact_org($bill->xact, $e);
-        $users{$xact->usr} = {} unless $users{$xact->usr};
-        $users{$xact->usr}->{$org} = 1;
+sub _rebill_xact {
+    my ($e, $xact) = @_;
 
-        $bill->voided('t');
-        $bill->voider($e->requestor->id);
-        $bill->void_time('now');
-    
-        $e->update_money_billing($bill) or return $e->die_event;
-        my $evt = $U->check_open_xact($e, $bill->xact, $xact);
+    my $xact_id = $xact->id;
+    # the plan: rebill voided billings until we get a positive balance
+    #
+    # step 1: get the voided/adjusted billings
+    my $billings = $e->search_money_billing([
+        {
+            xact => $xact_id,
+        },
+        {
+            order_by => {mb => 'amount desc'},
+            flesh => 1,
+            flesh_fields => {mb => ['adjustments']},
+        }
+    ]);
+    my @billings = grep { $U->is_true($_->voided) or @{$_->adjustments} } @$billings;
+
+    my $xact_balance = $xact->balance_owed;
+    $logger->debug("rebilling for xact $xact_id with balance $xact_balance");
+
+    my $rebill_amount = 0;
+    my @rebill_ids;
+    # step 2: generate new bills just like the old ones
+    for my $billing (@billings) {
+        my $amount = 0;
+        if ($U->is_true($billing->voided)) {
+            $amount = $billing->amount;
+        } else { # adjusted billing
+            map { $amount = $U->fpsum($amount, $_->amount) } @{$billing->adjustments};
+        }
+        my $evt = $CC->create_bill(
+            $e,
+            $amount,
+            $billing->btype,
+            $billing->billing_type,
+            $xact_id,
+            "System: MANUAL ADJUSTMENT, BILLING #".$billing->id." REINSTATED\n(PREV: ".$billing->note.")",
+            $billing->billing_ts()
+        );
         return $evt if $evt;
-    }
+        $rebill_amount += $billing->amount;
 
-    # calculate penalties for all user/org combinations
-    for my $user_id (keys %users) {
-        for my $org_id (keys %{$users{$user_id}}) {
-            OpenILS::Utils::Penalty->calculate_penalties($e, $user_id, $org_id);
+        # if we have a postive (or zero) balance now, stop
+        last if ($xact_balance + $rebill_amount >= 0);
+    }
+}
+
+sub _is_fully_adjusted {
+    my ($billing) = @_;
+
+    my $amount_adj = 0;
+    map { $amount_adj = $U->fpsum($amount_adj, $_->amount) } @{$billing->adjustments};
+
+    return $billing->amount == $amount_adj;
+}
+
+sub adjust_bills_to_zero_manual {
+    my ($self, $client, $auth, $xact_ids) = @_;
+
+    my $e = new_editor(xact => 1, authtoken => $auth);
+    return $e->die_event unless $e->checkauth;
+
+    # in case a bare ID is passed
+    $xact_ids = [$xact_ids] unless ref $xact_ids;
+
+    my @modified;
+    for my $xact_id (@$xact_ids) {
+
+        my $xact =
+            $e->retrieve_money_billable_transaction_summary([
+                $xact_id,
+                {flesh => 1, flesh_fields => {mbts => ['usr']}}
+            ]) or return $e->die_event;
+
+        return $e->die_event unless
+            $e->allowed('ADJUST_BILLS', $xact->usr->home_ou);
+
+        if ($xact->balance_owed < 0) {
+            my $evt = _rebill_xact($e, $xact);
+            return $evt if $evt;
+            # refetch xact to get new balance
+            $xact =
+                $e->retrieve_money_billable_transaction_summary([
+                    $xact_id,
+                    {flesh => 1, flesh_fields => {mbts => ['usr']}}
+                ]) or return $e->die_event;
+        }
+
+        my $billings = $e->search_money_billing([
+            {
+                xact => $xact_id,
+            },
+            {
+                order_by => {mb => 'amount desc'},
+                flesh => 1,
+                flesh_fields => {mb => ['adjustments']},
+            }
+        ]);
+
+        if ($xact->balance_owed == 0) {
+            # if was zero, or we rebilled it to zero
+            next;
+        } else {
+            # it's positive and needs to be adjusted
+            my @billings_to_zero = grep { !$U->is_true($_->voided) or !_is_fully_adjusted($_) } @$billings;
+            $CC->adjust_bills_to_zero($e, \@billings_to_zero, "System: MANUAL ADJUSTMENT");
+        }
+
+        push(@modified, $xact->id);
+
+        # now we see if we can close the transaction
+        # same logic as make_payments();
+        my $circ = $e->retrieve_action_circulation($xact_id);
+        if (!$circ or $CC->can_close_circ($e, $circ)) {
+            # we don't check to see if the xact is already closed.  since the
+            # xact had a negative balance, it should not have been closed, so
+            # assume 'now' is the correct close time regardless.
+            my $trans = $e->retrieve_money_billable_transaction($xact_id);
+            $trans->xact_finish("now");
+            $e->update_money_billable_transaction($trans) or return $e->die_event;
         }
     }
+
     $e->commit;
-    return 1;
+    return \@modified;
 }
 
 

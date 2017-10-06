@@ -9,8 +9,8 @@ angular.module('egInHouseUseApp',
 })
 
 .controller('InHouseUseCtrl',
-       ['$scope','egCore','egGridDataProvider','egConfirmDialog',
-function($scope,  egCore,  egGridDataProvider , egConfirmDialog) {
+       ['$scope','egCore','egGridDataProvider','egConfirmDialog', 'egAlertDialog',
+function($scope,  egCore,  egGridDataProvider , egConfirmDialog, egAlertDialog) {
 
     var countCap;
     var countMax;
@@ -31,11 +31,17 @@ function($scope,  egCore,  egGridDataProvider , egConfirmDialog) {
         
         egCore.org.settings([
             'ui.circ.in_house_use.entry_cap',
-            'ui.circ.in_house_use.entry_warn'
+            'ui.circ.in_house_use.entry_warn',
+            'circ.in_house_use.copy_alert',
+            'circ.in_house_use.checkin_alert'
         ]).then(function(set) {
             countWarn = set['ui.circ.in_house_use.entry_warn'] || 20;
             $scope.countMax = countMax = 
                 set['ui.circ.in_house_use.entry_cap'] || 99;
+            $scope.copyAlert = copyAlert =
+                set['circ.in_house_use.copy_alert'] || false;
+            $scope.checkinAlert = checkinAlert =
+                set['circ.in_house_use.checkin_alert'] || false;
         });
     });
 
@@ -79,11 +85,22 @@ function($scope,  egCore,  egGridDataProvider , egConfirmDialog) {
             ).then(function(copy) {
 
                 if (!copy) {
+                    egCore.audio.play('error.in_house.copy_not_found');
                     $scope.copyNotFound = true;
                     return;
                 }
 
                 coArgs.copyid = copy.id();
+
+                // LP1507807: Display the copy alert if the setting is on.
+                if ($scope.copyAlert && copy.alert_message()) {
+                    egAlertDialog.open(copy.alert_message()).result;
+                }
+
+                // LP1507807: Display the location alert if the setting is on.
+                if ($scope.checkinAlert && copy.location().checkin_alert() == 't') {
+                    egAlertDialog.open(egCore.strings.LOCATION_ALERT_MSG, {copy: copy}).result;
+                }
 
                 performCheckout(
                     'open-ils.circ.in_house_use.create',
@@ -98,6 +115,7 @@ function($scope,  egCore,  egGridDataProvider , egConfirmDialog) {
                 coArgs, {title : $scope.selectedNcType()}
             );
         }
+        $scope.args.barcode='';
     }
 
     function performCheckout(method, args, data) {
@@ -107,7 +125,12 @@ function($scope,  egCore,  egGridDataProvider , egConfirmDialog) {
             'open-ils.circ', method, egCore.auth.token(), args
 
         ).then(function(resp) {
-            if (evt = egCore.evt.parse(resp)) return alert(evt);
+            if (evt = egCore.evt.parse(resp)) {
+                egCore.audio.play('error.in_house');
+                return alert(evt);
+            }
+
+            egCore.audio.play('success.in_house');
 
             var item = {num_uses : resp.length};
             item.copy = data.copy;
@@ -117,6 +140,25 @@ function($scope,  egCore,  egGridDataProvider , egConfirmDialog) {
 
             checkouts.unshift(item);
             provider.refresh();
+        });
+    }
+
+    $scope.print_list = function() {
+        var print_data = { in_house_uses : [] };
+
+        if (checkouts.length == 0) return $q.when();
+
+        angular.forEach(checkouts, function(ihu) {
+            print_data.in_house_uses.push({
+                num_uses : ihu.num_uses,
+                copy : egCore.idl.toHash(ihu.copy),
+                title : ihu.title
+            })
+        });
+
+        return egCore.print.print({
+            template : 'in_house_use_list',
+            scope : print_data
         });
     }
 

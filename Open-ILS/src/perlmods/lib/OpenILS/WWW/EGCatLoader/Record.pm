@@ -1,6 +1,6 @@
 package OpenILS::WWW::EGCatLoader;
 use strict; use warnings;
-use Apache2::Const -compile => qw(OK DECLINED FORBIDDEN HTTP_INTERNAL_SERVER_ERROR REDIRECT HTTP_BAD_REQUEST);
+use Apache2::Const -compile => qw(OK DECLINED FORBIDDEN HTTP_GONE HTTP_INTERNAL_SERVER_ERROR REDIRECT HTTP_BAD_REQUEST HTTP_NOT_FOUND);
 use OpenSRF::Utils::Logger qw/$logger/;
 use OpenILS::Utils::CStoreEditor qw/:funcs/;
 use OpenILS::Utils::Fieldmapper;
@@ -65,6 +65,21 @@ sub load_record {
         'open-ils.cstore.json_query.atomic', 
         $self->mk_copy_query($rec_id, $org, $copy_depth, $copy_limit, $copy_offset, $pref_ou)
     );
+
+    if ($self->cgi->param('badges')) {
+        my $badges = $self->cgi->param('badges');
+        $badges = $badges ? [split(',', $badges)] : [];
+        $badges = [grep { /^\d+$/ } @$badges];
+        if (@$badges) {
+            $self->ctx->{badge_scores} = $cstore->request(
+                'open-ils.cstore.direct.rating.record_badge_score.search.atomic',
+                { record => $rec_id, badge => $badges },
+                { flesh => 1, flesh_fields => { rrbs => ['badge'] } }
+            )->gather(1);
+        }
+    } else {
+        $self->ctx->{badge_scores} = [];
+    }
 
     # find foreign copy data
     my $peer_rec = $U->simplereq(
@@ -140,6 +155,19 @@ sub load_record {
 
     $cstore->kill_me;
 
+    # Shortcut and help the machines with a 410 Gone status code
+    if ($self->ctx->{bib_is_dead}) {
+        return Apache2::Const::HTTP_GONE;
+    }
+
+    # Shortcut and help the machines with a 404 Not Found status code
+    if (!$ctx->{bre_id}) {
+        return Apache2::Const::HTTP_NOT_FOUND;
+    }
+
+    $ctx->{mfhd_summaries} =
+        $self->get_mfhd_summaries($rec_id, $org, $copy_depth);
+
     if (
         $ctx->{get_org_setting}->
             ($org, "opac.fully_compressed_serial_holdings")
@@ -148,9 +176,6 @@ sub load_record {
         # *are* going to display something in the "issues" expandy?
         $self->load_serial_holding_summaries($rec_id, $org, $copy_depth);
     } else {
-        $ctx->{mfhd_summaries} =
-            $self->get_mfhd_summaries($rec_id, $org, $copy_depth);
-
         if ($ctx->{mfhd_summaries} && scalar(@{$ctx->{mfhd_summaries}})
         ) {
             $ctx->{have_mfhd_to_show} = 1;
@@ -190,6 +215,26 @@ sub load_record {
 
     $self->timelog("past added content stage 2");
 
+    # Gather up metarecord info for display
+    # Let's start by getting the metarecord ID
+    my $mmr_id = OpenILS::Utils::CStoreEditor->new->json_query({
+        select   => { mmrsm => [ 'metarecord' ] },
+        from     => 'mmrsm',
+        where    => { 'source' => $rec_id }
+    })->[0]->{metarecord};
+    # If this record is apart of a meta group, I want to know more
+    if ( $mmr_id ) {
+        my (undef, @metarecord_data) = $self->get_records_and_facets([$mmr_id], undef, {
+            flesh => '{holdings_xml,mra}',
+            metarecord => 1,
+            site => $org_name,
+            depth => $depth,
+            pref_lib => $pref_ou
+        });
+        my ($rec) = grep { $_->{mmr_id} == $mmr_id } @metarecord_data;
+        $ctx->{mmr_id} = $mmr_id;
+        $ctx->{mmr_data} = $rec;
+    }
     return Apache2::Const::OK;
 }
 
@@ -262,8 +307,8 @@ sub mk_copy_query {
         }
     );
     push(@{$query->{order_by}},
-        { class => "acp", field => 'status',
-          transform => 'evergreen.rank_cp_status'
+        { class => "acp", field => 'id',
+          transform => 'evergreen.rank_cp'
         }
     );
 
@@ -492,10 +537,14 @@ sub added_content_stage1 {
     # This avoids us having to route out of the cluster 
     # and back in to reach the top-level virtualhost.
     my $ac_addr = $ENV{SERVER_ADDR};
+    # Internal connections are HTTP-only (no HTTPS) and assume the
+    # connection port is '80' unless otherwise specified in the Apache
+    # configuration (e.g. for proxy setups)
+    my $ac_port = $self->apache->dir_config('OILSWebInternalHTTPPort') || 80;
     my $ac_host = $self->apache->hostname;
     my $ac_failed = 0;
 
-    $logger->info("tpac: added content connecting to $ac_addr / $ac_host");
+    $logger->info("tpac: added content connecting to $ac_addr:$ac_port / $ac_host");
 
     $ctx->{added_content} = {};
     for my $type (@$ac_types) {
@@ -511,9 +560,10 @@ sub added_content_stage1 {
         # Connecting to oneself should either be very fast (normal) 
         # or very slow (routing problems).
 
-        my $req = Net::HTTP::NB->new(Host => $ac_addr, Timeout => 1);
+        my $req = Net::HTTP::NB->new(
+            Host => $ac_addr, Timeout => 1, PeerPort => $ac_port);
         if (!$req) {
-            $logger->warn("Unable to connect to $ac_addr / $ac_host".
+            $logger->warn("Unable to connect to $ac_addr:$ac_port / $ac_host".
                 " for added content lookup for $rec_id: $@");
             $ac_failed = 1;
             next;
@@ -564,7 +614,10 @@ sub added_content_stage2 {
             }
         }
         # To avoid a lot of hanging connections.
-        $content->{request}->shutdown(2) if ($content->{request});
+        if ($content->{request}) {
+            $content->{request}->shutdown(2);
+            $content->{request}->close();
+        } 
     }
 }
 

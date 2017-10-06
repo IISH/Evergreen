@@ -9,6 +9,12 @@
                     ]
             }
     },
+    "au.expired" : {
+        "context_org":"home_ou",
+        "filter"                :
+                        { "active":"t",
+                        "deleted":"f" }
+        },
     "hold_request.shelf_expires_soon" : {
         "context_org": "pickup_lib",
         "filter": {
@@ -26,6 +32,13 @@
             "frozen": "f",
             "cancel_time": null,
             "capture_time": null
+        }
+    },
+    "au.created" : {
+        "context_org":"home_ou",
+        "filter": {
+            "active":"t",
+            "deleted":"f"
         }
     }
 }

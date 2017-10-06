@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2014-09-11 02:13-0400\n"
+"POT-Creation-Date: 2017-09-20 16:53-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -3235,8 +3235,7 @@ msgstr ""
 
 #: staff.main.menu.admin.server_admin.acq.label
 #: staff.main.menu.admin.server_admin.acq.accesskey
-msgctxt "staff.main.menu.admin.server_admin.acq.label staff.main.menu.admin.server_admin.acq.accesskey"
-msgid "&Acquisitions"
+msgid "&Acquisitions Administration"
 msgstr ""
 
 #: staff.main.menu.admin.server_admin.acq.lineitem_alert.label
@@ -3790,7 +3789,6 @@ msgstr ""
 
 #: staff.main.menu.acq.label
 #: staff.main.menu.acq.accesskey
-msgctxt "staff.main.menu.acq.label staff.main.menu.acq.accesskey"
 msgid "&Acquisitions"
 msgstr ""
 
@@ -9063,16 +9061,6 @@ msgid ""
 "the on-screen message"
 msgstr ""
 
-#: staff.server.admin.org_settings.circ.selfcheck.require_patron_password
-msgid "Selfcheck: Require patron password"
-msgstr ""
-
-#: staff.server.admin.org_settings.circ.selfcheck.require_patron_password.desc
-msgid ""
-"If true, patrons will be required to enter their password in addition to "
-"their username/barcode to log into the selfcheck interface"
-msgstr ""
-
 #: staff.server.admin.org_settings.global.juvenile_age_threshold
 msgid "Juvenile Age Threshold"
 msgstr ""
@@ -12632,6 +12620,11 @@ msgstr ""
 msgid "&Refund"
 msgstr ""
 
+#: staff.patron.bill_interface.adjust_to_zero.label
+#: staff.patron.bill_interface.adjust_to_zero.accesskey
+msgid "Adjust to &Zero"
+msgstr ""
+
 #: staff.patron.bill_interface.full_details.label
 #: staff.patron.bill_interface.full_details.accesskey
 msgctxt "staff.patron.bill_interface.full_details.label staff.patron.bill_interface.full_details.accesskey"
@@ -13267,6 +13260,11 @@ msgstr ""
 #: staff.patron.info.triggered_events.label
 #: staff.patron.info.triggered_events.accesskey
 msgid "Triggered E&vents"
+msgstr ""
+
+#: staff.patron.message_center.label
+#: staff.patron.message_center.accesskey
+msgid "Message Cente&r"
 msgstr ""
 
 #: staff.patron.info.stat_cats.label
@@ -14271,6 +14269,10 @@ msgctxt "staff.circ.alternate_copy_summary.Holdable.label"
 msgid "Holdable"
 msgstr ""
 
+#: staff.circ.alternate_copy_summary.Age_Protect.label
+msgid "Age-based Hold Protection"
+msgstr ""
+
 #: staff.circ.alternate_copy_summary.Hold_Shelf_Location.label
 msgid "Hold Shelf Location"
 msgstr ""
@@ -14325,6 +14327,10 @@ msgstr ""
 #: staff.circ.alternate_copy_summary.Price.label
 msgctxt "staff.circ.alternate_copy_summary.Price.label"
 msgid "Price"
+msgstr ""
+
+#: staff.circ.alternate_copy_summary.Cost.label
+msgid "Acquisition Cost"
 msgstr ""
 
 #: staff.circ.alternate_copy_summary.Previous_Circ_Group.label

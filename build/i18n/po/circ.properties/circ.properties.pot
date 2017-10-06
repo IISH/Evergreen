@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2014-09-25 02:28-0400\n"
+"POT-Creation-Date: 2017-09-20 16:54-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -20,6 +20,14 @@ msgstr ""
 
 #: staff.circ.item_no_circs
 msgid "Item %1$s has never circulated."
+msgstr ""
+
+#: staff.circ.item_no_user
+msgid "Item %1$s circulation is an aged circulation and has no linked user."
+msgstr ""
+
+#: staff.circ.aged_circ
+msgid "<Aged Circulation>"
 msgstr ""
 
 #: staff.circ.invalid_date
@@ -378,6 +386,10 @@ msgstr ""
 msgid "This item is not in transit."
 msgstr ""
 
+#: staff.circ.copy_details.transit_caption
+msgid "In Transit"
+msgstr ""
+
 #: staff.circ.copy_details.desk_renewal
 msgid "Desk"
 msgstr ""
@@ -393,6 +405,10 @@ msgstr ""
 #. # Displays user info: "Family name, First name : Barcode"
 #: staff.circ.copy_details.user_details
 msgid "%1$s, %2$s : %3$s"
+msgstr ""
+
+#: staff.circ.copy_details.hold_caption
+msgid "Captured for Hold"
 msgstr ""
 
 #: staff.circ.copy_details.bad_hold_status
@@ -1063,6 +1079,10 @@ msgstr ""
 msgid "Holdable?"
 msgstr ""
 
+#: staff.circ.utils.age_protect
+msgid "Age-based Hold Protection"
+msgstr ""
+
 #: staff.circ.utils.floating
 msgid "Floating?"
 msgstr ""
@@ -1147,6 +1167,10 @@ msgstr ""
 
 #: staff.circ.utils.create_date
 msgid "Date Created"
+msgstr ""
+
+#: staff.circ.utils.active_date
+msgid "Date Active"
 msgstr ""
 
 #: staff.circ.utils.edit_date
@@ -1801,6 +1825,12 @@ msgid ""
 "menubar select Circulation -> Offline Interface"
 msgstr ""
 
+#: staff.circ.checkin.possible_dupe_scan
+msgid ""
+"Check In May Have Failed.  Possible double-scan of the barcode.  Use Item "
+"Status to confirm Check In and possible Hold capture."
+msgstr ""
+
 #: staff.circ.checkin.renew_failed.error
 msgid "Renew Failed for %1$s"
 msgstr ""
@@ -1986,4 +2016,12 @@ msgstr ""
 
 #: staff.circ.missing_pieces.scan_item.error_alert
 msgid "No item with barcode \"%1$s\""
+msgstr ""
+
+#: staff.circ.utils.transit.copy_status_message.label
+msgid "Transit Copy Status Message"
+msgstr ""
+
+#: staff.circ.utils.transit.copy_status_message
+msgid "This item is in status %1$s, additional staff action may be required."
 msgstr ""

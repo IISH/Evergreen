@@ -5,20 +5,20 @@
     <form ng-submit="checkout(checkoutArgs)" role="form" class="form-inline">
       <div class="input-group">
 
-        <div class="input-group-btn" dropdown>
-          <button type="button" class="btn btn-default dropdown-toggle"
+        <div class="input-group-btn" uib-dropdown>
+          <button type="button" class="btn btn-default" uib-dropdown-toggle
             ng-class="{disabled : disable_checkout()}">
             {{selectedNcType() || "[% l('Barcode') %]"}}
             <span class="caret"></span>
           </button>
-          <ul class="dropdown-menu">
-            <li><a href dropdown-toggle
+          <ul uib-dropdown-menu>
+            <li><a href
               ng-click="checkoutArgs.noncat_type='barcode';focusMe=true">
               [% l('Barcode') %]</a>
             </li>
             <li class="divider"></li>
             <li>
-              <a href ng-repeat='type in nonCatTypes' dropdown-toggle
+              <a href ng-repeat="type in nonCatTypes | orderBy:'name()'"
                ng-click="checkoutArgs.noncat_type=type.id()">{{type.name()}}</a>
             </li>
           </ul>
@@ -50,8 +50,7 @@
       -->
       <!-- FIXME: This needs a time component as well, but type="datetime" 
             is not yet supported by any browsers -->
-      <div><input eg-date-input class="form-control" 
-        ng-model="checkoutArgs.due_date"/>
+      <div><eg-date-input ng-model="checkoutArgs.due_date"></eg-date-input>
       </div>
     </div>
   </div>
@@ -100,7 +99,7 @@
     path='circ.renewal_remaining'></eg-grid-field>
 
   <eg-grid-field label="[% l('Title') %]" path="title">
-    <a target="_self" href="[% ctx.base_path %]/opac/record/{{record.doc_id()}}">
+    <a target="_self" href="[% ctx.base_path %]/staff/cat/catalog/record/{{record.doc_id()}}">
       {{item.title}}
     </a>
   </eg-grid-field>
@@ -124,20 +123,41 @@
       [% l('Strict Barcode') %]
     </label>
   </div>
-  <div class="pad-horiz" ng-if="using_hatch"></div>
-  <div class="checkbox" ng-if="using_hatch">
+  <div class="pad-horiz" ng-if="using_hatch_printer"></div>
+  <div class="checkbox" ng-if="using_hatch_printer">
     <label>
       <input ng-model="show_print_dialog" type="checkbox"/>
       [% l('Show Print Dialog') %]
     </label>
   </div>
   <div class="pad-horiz">
-    <button class="btn btn-default" 
-      ng-click="print_receipt()">[% l('Print Receipt') %]</button>
+    <span ng-show="may_email_receipt()" class="glyphicon glyphicon-envelope" aria-label="[% l('Send Email Receipt') %]"></span>
+    <span ng-show="!may_email_receipt()" class="glyphicon glyphicon-print" aria-label="[% l('Print Receipt') %]"></span>
+    <div class="btn-group" uib-dropdown>
+      <button ng-click="print_or_email_receipt()" id="quick-button" type="button" ng-disabled="checkouts.length == 0" class="btn btn-default">[% l('Quick Receipt') %]</button>
+      <button type="button" ng-disabled="checkouts.length == 0" class="btn btn-default" uib-dropdown-toggle>
+        <span class="caret"></span>
+        <span class="sr-only">[% l('receipt option') %]</span>
+      </button>
+      <ul class="dropdown-menu" uib-dropdown-menu role="menu" aria-labelledby="quick-button">
+        <li role="menuitem" ng-class="{disabled : !has_email_address()}"><a ng-click="email_receipt()" a-disabled="!has_email_address()" href="#">[% l('Email Receipt') %]</a></li>
+        <li role="menuitem"><a ng-click="print_receipt()" href="#">[% l('Print Receipt') %]</a></li>
+      </ul>
+    </div>
   </div>
-  <div>
+  <div class="btn-group" uib-dropdown>
     <button class="btn btn-default" 
-      ng-click="done()">[% l('Done') %]</button>
+      id="done-button" type="button"
+      ng-click="done_auto_receipt()">[% l('Done') %]</button>
+      <button type="button" class="btn btn-default" uib-dropdown-toggle>
+        <span class="caret"></span>
+        <span class="sr-only">[% l('receipt option') %]</span>
+      </button>
+      <ul class="dropdown-menu" uib-dropdown-menu role="menu" aria-labelledby="done-button">
+        <li role="menuitem"><a ng-click="done_no_receipt()" href="#">[% l('No Receipt') %]</a></li>
+        <li role="menuitem" ng-class="{disabled : !has_email_address()}"><a ng-click="done_email_receipt()" a-disabled="!has_email_address()" href="#">[% l('Email Receipt') %]</a></li>
+        <li role="menuitem"><a ng-click="done_print_receipt()" href="#">[% l('Print Receipt') %]</a></li>
+      </ul>
   </div>
 </div>
 

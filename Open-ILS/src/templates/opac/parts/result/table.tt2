@@ -21,8 +21,10 @@
 [% END %]
 <div id="result_table_div">
     <div class="facet_sidebar_hidden" id="facet_sidebar">
+    [%- IF ctx.is_staff %]
     <h3 class="sr-only">[% l('Saved Searches') %]</h3>
     [% INCLUDE "opac/parts/staff_saved_searches.tt2" %]
+    [%-  END %]
     <h3 class="sr-only">[% l('Search Results facets') %]</h3>
     [% INCLUDE 'opac/parts/result/facets.tt2' %]
     <h3 class="sr-only">[% l('Search Results List') %]</h3>
@@ -39,9 +41,14 @@
                     </thead>
                     <tbody id="result_table">
                     [%  FOR rec IN ctx.records;
-                            attrs = {marc_xml => rec.marc_xml};
+                            attrs = {};
+                            attrs.marc_xml = rec.marc_xml;
+                            attrs.mr_constituent_ids = [];
+                            FOREACH mr_constituent_id IN rec.mr_constituent_ids;
+                                attrs.mr_constituent_ids.push(mr_constituent_id);
+                            END;
                             PROCESS get_marc_attrs args=attrs;
-                            IF CGI.param('detail_record_view');
+                            IF show_detail_view;
                                 attrs.title = attrs.title_extended;
                             END;
                             # note: rec.id refers to the record identifier, regardless
@@ -54,11 +61,11 @@
                                 ELSE;
                                     # for MR, bre_id refers to the master and in
                                     # this case, only, record
-                                    record_url = mkurl(ctx.opac_root _ '/record/' _ rec.bre_id);
+                                    record_url = mkurl(ctx.opac_root _ '/record/' _ attrs.mr_constituent_ids.0, { badges => rec.badges.join(',') });
                                 END;
                                 hold_type = 'M';
                             ELSE;
-                                record_url = mkurl(ctx.opac_root _ '/record/' _ rec.bre_id);
+                                record_url = mkurl(ctx.opac_root _ '/record/' _ rec.bre_id, { badges => rec.badges.join(',') });
                                 hold_type = 'T';
                             END;
                     -%]
@@ -115,7 +122,7 @@ END;
                                                                 href="[%- 
                                                                     authorquery = attrs.author | replace('[#"^$\+\-,\.:;&|\[\]()]', ' ');
                                                                     mkurl(ctx.opac_root _ '/results', {qtype => 'author', query => authorquery}, general_search_parms.merge(expert_search_parms, browse_search_parms, facet_search_parms))
-                                                                    -%]">[% attrs.author | html %]</a>
+                                                                    -%]" rel="nofollow" vocab="">[% attrs.author | html %]</a>
 [%-
 FOR entry IN attrs.graphic_authors;
     FOR alt IN entry.graphic;
@@ -142,9 +149,7 @@ END;
                                                             [% format.label | html %]
                                                         [% END %]
                                                     [%- END %]
-                                                    [%- UNLESS CGI.param('detail_record_view')
-                                                            OR (show_more_details.default == 'true'
-                                                            OR show_more_details.default == 'hide');
+                                                    [%- UNLESS show_detail_view;
                                                             IF attrs.pubdate;
                                                                 pubdate_clean = attrs.pubdate | html;
                                                                 l(" ([_1])", pubdate_clean);
@@ -155,22 +160,30 @@ END;
                                                         END
                                                     -%]
                                                     </div>
+                                                    [% IF rec.popularity > 0.0 %]
+                                                      <div>
+                                                        <span><strong>[% l('Popularity:') %]</strong> [% rec.popularity %] / 5.0</span>
+                                                      </div>
+                                                    [% END %]
                                                     <table 
                                                        role="presentation"
                                                        title="[% l('Record Holdings Summary') %]"
                                                        class="table_no_border_space table_no_cell_pad table_no_border results_info_table">
-                                                        [% IF args.holdings.size > 0 %]
+                                                        [% UNLESS rec.mmr_id %]
+                                                           [% IF args.holdings.size > 0 %]
                                                         <tr name='bib_cn_list' class='result_table_title_cell'>
                                                             <td valign='top'>
                                                                 <strong>[% l('Call number:') %]</strong>
                                                             </td>
                                                             <td>[% args.holdings.0.label | html %]</td>
                                                         </tr>
+                                                           [% END %]
                                                         [% END %]
 
-                                                        [% IF CGI.param('detail_record_view') %]
+                                                        [%- IF show_detail_view -%]
                                                         <!-- These fields are visible when viewing the results page in 'detailed' mode -->
-
+                                                        [% UNLESS rec.mmr_id %]
+                                                        <!-- Do not show publication-specific information on a metarecord search results page -->
                                                         [% IF attrs.publisher %]
                                                             <tr name="results_pub_tr">
                                                                 <td valign="top">
@@ -294,9 +307,10 @@ END;
                                                                 <td valign='top'>
                                                                     <strong>[% l('Electronic resource') %]</strong>
                                                                 </td>
-                                                                <td><a href="[% uri.href %]">[% uri.link | html %]</a>[% ' - ' _ uri.note | html IF uri.note %]</td>
+                                                                <td><a href="[% uri.href %]" class="uri_link">[% uri.link | html %]</a>[% ' - ' _ uri.note | html IF uri.note %]</td>
                                                             </tr>
                                                             [% END %]
+                                                         [% END %]
                                                             [%- IF args.holdings.size > 0;
                                                                 FOREACH copy IN args.holdings;
                                                                     IF copy.part_label != '';
@@ -342,6 +356,11 @@ END;
                                                              %]
                                                         [% END %] <!-- END detail_record_view -->
                                                     </table>
+                                                    [% 
+                                                        IF ebook_api.enabled == 'true';
+                                                            INCLUDE "opac/parts/ebook_api/avail.tt2";
+                                                        END;
+                                                    %]
                                                     [% PROCESS "opac/parts/result/copy_counts.tt2" %]
                                                     [% IF rec.user_circulated %]
                                                     <div class="result_item_circulated">
@@ -372,12 +391,15 @@ END;
                                                                     {hold_target => rec.id, hold_type => hold_type, 
                                                                       hold_source_page => mkurl()}, ['query','tag','subfield','term','_special','sort','page']) %]"
                                                                 [% html_text_attr('title', l('Place Hold on [_1]', attrs.title)) %]
-                                                                    class="no-dec"><img
+                                                                    class="no-dec" rel="nofollow" vocab=""><img
                                                                 src="[% ctx.media_prefix %]/images/green_check.png"
                                                                 alt=""/><span class="result_place_hold">[% l('Place Hold') %]</span></a>
                                                         </div>
 [%- END -%]
+
+                                                    [% IF !ctx.is_meta %]
                                                         <div class="results_aux_utils result_util">
+                                                        [% IF !ctx.is_staff %]
                                                             [%  IF ctx.user;
                                                                 INCLUDE "opac/parts/bookbag_actions.tt2";
                                                             %]
@@ -391,12 +413,14 @@ END;
                                                                         {record => rec.id, anchor => 'record_' _ rec.id}, 1);
                                                             %]      
                                                             <a href="[% href %]" class="no-dec" 
-                                                                [% html_text_attr('title', title_label) %]>
+                                                                [% html_text_attr('title', title_label) %] rel="nofollow" vocab="">
                                                                 <img src="[% ctx.media_prefix %]/images/clipboard.png" alt="" />
                                                                 [% label %]
                                                             </a>
                                                             [% END %]
+                                                        [% END %]
                                                         </div>
+                                                    [% END %]
                                                         [% IF ENV.OILS_CONTENT_CAFE_USER %]
                                                         [% ident = attrs.isbn_clean || attrs.upc %]
                                                         <div class="results_aux_utils result_util">
@@ -404,7 +428,7 @@ END;
                                                                [% html_text_attr('title', l('Reviews and More for [_1]', attrs.title)) %]
                                                                 href="[% ctx.ext_proto %]://contentcafe2.btol.com/ContentCafeClient/ContentCafe.aspx?UserID=[%- 
                                                                     ENV.OILS_CONTENT_CAFE_USER %]&amp;Password=[%-
-                                                                    ENV.OILS_CONTENT_CAFE_PASS %]&amp;ItemKey=[% ident | uri %]&amp;Options=Y">
+                                                                    ENV.OILS_CONTENT_CAFE_PASS %]&amp;ItemKey=[% ident | uri %]&amp;Options=Y" rel="nofollow" vocab="">
                                                                 <img src='[% ctx.media_prefix %]/images/starz.png' alt="[% l('Ratings Icon') %]"/> 
                                                                 <span class="results_reviews">[% l('Reviews &amp; More') %]</span>
                                                             </a>

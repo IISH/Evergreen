@@ -35,13 +35,15 @@ lib/OpenILS/Application/Circ/HoldNotify.pm
 lib/OpenILS/Application/Circ/Holds.pm
 lib/OpenILS/Application/Circ/Money.pm
 lib/OpenILS/Application/Circ/NonCat.pm
-lib/OpenILS/Application/Circ/ScriptBuilder.pm
 lib/OpenILS/Application/Circ/StatCat.pm
 lib/OpenILS/Application/Circ/Survey.pm
 lib/OpenILS/Application/Circ/Transit.pm
 lib/OpenILS/Application/Collections.pm
+lib/OpenILS/Application/EbookAPI.pm
+lib/OpenILS/Application/EbookAPI/Test.pm
+lib/OpenILS/Application/EbookAPI/OverDrive.pm
+lib/OpenILS/Application/EbookAPI/OneClickdigital.pm
 lib/OpenILS/Application/Fielder.pm
-lib/OpenILS/Application/Penalty.pm
 lib/OpenILS/Application/PermaCrud.pm
 lib/OpenILS/Application/Proxy.pm
 lib/OpenILS/Application/Reporter.pm
@@ -134,6 +136,7 @@ lib/OpenILS/Utils/Cronscript.pm
 lib/OpenILS/Utils/Cronscript.pm.in
 lib/OpenILS/Utils/CStoreEditor.pm
 lib/OpenILS/Utils/Fieldmapper.pm
+lib/OpenILS/Utils/HTTPClient.pm
 lib/OpenILS/Utils/ISBN.pm
 lib/OpenILS/Utils/Lockfile.pm
 lib/OpenILS/Utils/MFHD.pm
@@ -150,8 +153,6 @@ lib/OpenILS/Utils/OfflineStore.pm
 lib/OpenILS/Utils/Penalty.pm
 lib/OpenILS/Utils/PermitHold.pm
 lib/OpenILS/Utils/RemoteAccount.pm
-lib/OpenILS/Utils/ScriptRunner.pm
-lib/OpenILS/Utils/SpiderMonkey.pm
 lib/OpenILS/Utils/ZClient.pm
 lib/OpenILS/WWW/AddedContent.pm
 lib/OpenILS/WWW/AddedContent/Amazon.pm
@@ -171,4 +172,5 @@ lib/OpenILS/WWW/SuperCat/Feed.pm
 lib/OpenILS/WWW/TemplateBatchBibUpdate.pm
 lib/OpenILS/WWW/Vandelay.pm
 lib/OpenILS/WWW/XMLRPCGateway.pm
+lib/Template/Plugin/CSVFilter.pm
 MANIFEST			This list of files

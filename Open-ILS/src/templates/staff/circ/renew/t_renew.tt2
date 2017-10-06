@@ -33,7 +33,7 @@
       </div>
       <!-- FIXME: This needs a time component as well, but type="datetime" 
             is not yet supported by any browsers -->
-      <div><input eg-date-input class="form-control" ng-model="renewalArgs.due_date"/>
+      <div><eg-date-input ng-model="renewalArgs.due_date"></eg-date-input>
       </div>
     </div>
   </div>
@@ -102,7 +102,7 @@
     path='circ.renewal_remaining'></eg-grid-field>
 
   <eg-grid-field label="[% l('Title') %]" path="title">
-    <a target="_self" href="[% ctx.base_path %]/opac/record/{{record.doc_id()}}">
+    <a target="_self" href="[% ctx.base_path %]/staff/cat/catalog/record/{{record.doc_id()}}">
       {{item.title}}
     </a>
   </eg-grid-field>

@@ -10,6 +10,7 @@
     blimit = CGI.param('blimit') || ctx.opac_hits_per_page || 10;
 
     depart_list = ['blimit', 'bterm', 'bpivot'];
+    ctx.metalinks.push('<meta name="robots" content="noindex,follow">');
 %]
 
     <h2 class="sr-only">[% l('Catalog Browse') %]</h2>
@@ -118,7 +119,7 @@
                                 [% END %]
                             </span>
 
-                            [% auth_headings_ul_added = 0 %];
+                            [% auth_headings_ul_added = 0; %]
                                 [% seenit = {}; # for headings we've rendered
                                    FOR a IN result.sees;
                                     PROCESS authority_notes authority=a;

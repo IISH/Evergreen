@@ -3,8 +3,15 @@
     PROCESS get_marc_attrs args=attrs;
     stop_parms = ['expand','cnoffset','copy_offset','copy_limit'];
     ctx.record_attrs = attrs; # capture for JS
+    ctx.metalinks.push('<meta property="og:type" content="http://schema.org/' _ args.schema.itemtype _ '" />');
 %]
 <div id='canvas_main' class='canvas' vocab="http://schema.org/" typeof='[% args.schema.itemtype %] Product' resource="#schemarecord">
+[%- FOREACH link IN args.links.sameAs; %]
+    <link property="sameAs" href="[% link %]">
+[%- END; %]
+[%- FOREACH link IN args.links.exampleOfWork; %]
+    <link property="exampleOfWork" href="[% link %]">
+[%- END; %]
     [%- INCLUDE "opac/parts/record/navigation.tt2" %]
     [%- IF ctx.bib_is_dead %]
     <div id='rdetail_deleted_exp'>

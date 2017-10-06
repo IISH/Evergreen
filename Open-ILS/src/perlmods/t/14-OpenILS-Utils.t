@@ -1,6 +1,6 @@
 #!perl -T
 
-use Test::More tests => 31;
+use Test::More tests => 30;
 use Test::Warn;
 use utf8;
 
@@ -18,10 +18,9 @@ use_ok( 'OpenILS::Utils::OfflineStore' );
 use_ok( 'OpenILS::Utils::Penalty' );
 use_ok( 'OpenILS::Utils::PermitHold' );
 use_ok( 'OpenILS::Utils::RemoteAccount' );
-use_ok( 'OpenILS::Utils::ScriptRunner' );
-use_ok( 'OpenILS::Utils::SpiderMonkey' );
 use_ok( 'OpenILS::Utils::ZClient' );
 use_ok( 'OpenILS::Utils::EDIReader' );
+use_ok( 'OpenILS::Utils::HTTPClient' );
 
 # LP 800269 - Test MFHD holdings for records that only contain a caption field
 my $co_marc = MARC::Record->new();

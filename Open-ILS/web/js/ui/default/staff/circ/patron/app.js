@@ -5,7 +5,14 @@
  */
 
 angular.module('egPatronApp', ['ngRoute', 'ui.bootstrap', 
-    'egCoreMod', 'egUiMod', 'egGridMod', 'egUserMod'])
+    'egCoreMod', 'egUiMod', 'egGridMod', 'egUserMod', 'ngToast'])
+
+.config(['ngToastProvider', function(ngToastProvider) {
+    ngToastProvider.configure({
+        verticalPosition: 'bottom',
+        animation: 'fade'
+    });
+}])
 
 .config(function($routeProvider, $locationProvider, $compileProvider) {
     $locationProvider.html5Mode(true);
@@ -22,6 +29,9 @@ angular.module('egPatronApp', ['ngRoute', 'ui.bootstrap',
         // specific settings from within their respective controllers
         egCore.env.classLoaders.aous = function() {
             return egCore.org.settings([
+                'ui.staff.require_initials.patron_info_notes',
+                'circ.do_not_tally_claims_returned',
+                'circ.tally_lost',
                 'circ.obscure_dob',
                 'ui.circ.show_billing_tab_on_bills',
                 'circ.patron_expires_soon_warning',
@@ -35,19 +45,7 @@ angular.module('egPatronApp', ['ngRoute', 'ui.bootstrap',
             });
         }
 
-        // local stat cats are displayed in the summary bar on each page.
-        egCore.env.classLoaders.actsc = function() {
-            return egCore.pcrud.search('actsc', 
-                {owner : egCore.org.ancestors(
-                    egCore.auth.user().ws_ou(), true)},
-                {}, {atomic : true}
-            ).then(function(cats) {
-                egCore.env.absorbList(cats, 'actsc');
-            });
-        }
-
         egCore.env.loadClasses.push('aous');
-        egCore.env.loadClasses.push('actsc');
 
         // app-globally modify the default flesh fields for 
         // fleshed user retrieval.
@@ -57,11 +55,23 @@ angular.module('egPatronApp', ['ngRoute', 'ui.bootstrap',
                 'net_access_level',
                 'ident_type',
                 'ident_type2',
-                'cards'
+                'cards',
+                'groups'
             ]);
         }
 
-        return egCore.startup.go()
+        return egCore.startup.go().then(function() {
+
+            // This call requires orgs to be loaded, because it
+            // calls egCore.org.ancestors(), so call it after startup
+            return egCore.pcrud.search('actsc', 
+                {owner : egCore.org.ancestors(
+                    egCore.auth.user().ws_ou(), true)},
+                {}, {atomic : true}
+            ).then(function(cats) {
+                egCore.env.absorbList(cats, 'actsc');
+            });
+        });
     }]};
 
     $routeProvider.when('/circ/patron/search', {
@@ -158,7 +168,7 @@ angular.module('egPatronApp', ['ngRoute', 'ui.bootstrap',
 
     $routeProvider.when('/circ/patron/:id/edit', {
         templateUrl: './circ/patron/t_edit',
-        controller: 'PatronEditCtrl',
+        controller: 'PatronRegCtrl',
         resolve : resolver
     });
 
@@ -180,6 +190,12 @@ angular.module('egPatronApp', ['ngRoute', 'ui.bootstrap',
         resolve : resolver
     });
 
+    $routeProvider.when('/circ/patron/:id/message_center', {
+        templateUrl: './circ/patron/t_message_center',
+        controller: 'PatronMessageCenterCtrl',
+        resolve : resolver
+    });
+
     $routeProvider.when('/circ/patron/:id/edit_perms', {
         templateUrl: './circ/patron/t_edit_perms',
         controller: 'PatronPermsCtrl',
@@ -198,6 +214,12 @@ angular.module('egPatronApp', ['ngRoute', 'ui.bootstrap',
         resolve : resolver
     });
 
+    $routeProvider.when('/circ/patron/:id/surveys', {
+        templateUrl: './circ/patron/t_surveys',
+        controller: 'PatronSurveyCtrl',
+        resolve : resolver
+    });
+
     $routeProvider.otherwise({redirectTo : '/circ/patron/search'});
 })
 
@@ -205,8 +227,8 @@ angular.module('egPatronApp', ['ngRoute', 'ui.bootstrap',
  * Patron service
  */
 .factory('patronSvc',
-       ['$q','$timeout','$location','egCore','egUser','$locale',
-function($q , $timeout , $location , egCore,  egUser , $locale) {
+       ['$q','$timeout','$location','egCore','egUser','egConfirmDialog','$locale',
+function($q , $timeout , $location , egCore,  egUser , egConfirmDialog , $locale) {
 
     var service = {
         // cached patron search results
@@ -221,7 +243,9 @@ function($q , $timeout , $location , egCore,  egUser , $locale) {
         // event types manually overridden, which should always be
         // overridden for checkouts to this patron for this instance of
         // the interface.
-        checkout_overrides : {},
+        checkout_overrides : {},        
+        //holds the searched barcode
+        search_barcode : null,      
     };
 
     // when we change the default patron, we need to clear out any
@@ -234,18 +258,38 @@ function($q , $timeout , $location , egCore,  egUser , $locale) {
         service.hold_ids = [];
         service.checkout_overrides = {};
         service.patron_stats = null;
+        service.noncat_ids = [];
         service.hasAlerts = false;
-        service.alertsShown = false;
         service.patronExpired = false;
         service.patronExpiresSoon = false;
-        service.retrievedWithInactive = false;
+        service.invalidAddresses = false;
     }
     service.resetPatronLists();  // initialize
+
+    // Returns true if the last alerted patron matches the current
+    // patron.  Otherwise, the last alerted patron is set to the 
+    // current patron and false is returned.
+    service.alertsShown = function() {
+        var key = 'eg.circ.last_alerted_patron';
+        var last_id = egCore.hatch.getSessionItem(key);
+        if (last_id && last_id == service.current.id()) return true;
+        egCore.hatch.setSessionItem(key, service.current.id());
+        return false;
+    }
 
     // shortcut to force-reload the current primary
     service.refreshPrimary = function() {
         if (!service.current) return $q.when();
         return service.setPrimary(service.current.id(), null, true);
+    }
+
+    // clear the currently focused user
+    service.clearPrimary = function() {
+        // reset with no patron
+        service.resetPatronLists();
+        service.current = null;
+        service.patron_stats = null;
+        return $q.when();
     }
 
     // sets the primary display user, fetching data as necessary.
@@ -258,7 +302,7 @@ function($q , $timeout , $location , egCore,  egUser , $locale) {
 
         // when loading a new patron, update the last patron setting
         if (!service.current || service.current.id() != user_id)
-            egCore.hatch.setLocalItem('eg.circ.last_patron', user_id);
+            egCore.hatch.setLoginSessionItem('eg.circ.last_patron', user_id);
 
         // avoid running multiple retrievals for the same patron, which
         // can happen during dbl-click by maintaining a single running
@@ -276,6 +320,7 @@ function($q , $timeout , $location , egCore,  egUser , $locale) {
 
         service.getPrimary(id, user, force)
         .then(function() {
+            service.checkAlerts();
             var p = service.primaryUserPromise;
             service.primaryUserId = null;
             // clear before resolution just to be safe.
@@ -299,9 +344,17 @@ function($q , $timeout , $location , egCore,  egUser , $locale) {
             }
 
             service.resetPatronLists();
-            service.current = user;
-            service.localFlesh(user);
-            return service.fetchUserStats();
+
+            return service.checkOptIn(user).then(
+                function() {
+                    service.current = user;
+                    service.localFlesh(user);
+                    return service.fetchUserStats();
+                },
+                function() {
+                    return $q.reject();
+                }
+            );
 
         } else if (id) {
             if (!force && service.current && service.current.id() == id) {
@@ -316,9 +369,16 @@ function($q , $timeout , $location , egCore,  egUser , $locale) {
 
             return egUser.get(id).then(
                 function(user) {
-                    service.current = user;
-                    service.localFlesh(user);
-                    return service.fetchUserStats();
+                    return service.checkOptIn(user).then(
+                        function() {
+                            service.current = user;
+                            service.localFlesh(user);
+                            return service.fetchUserStats();
+                        },
+                        function() {
+                            return $q.reject();
+                        }
+                    );
                 },
                 function(err) {
                     console.error(
@@ -327,11 +387,10 @@ function($q , $timeout , $location , egCore,  egUser , $locale) {
             );
         } else {
 
-            // reset with no patron
-            service.resetPatronLists();
-            service.current = null;
-            service.patron_stats = null;
-            return $q.when();
+            // fetching a null user clears the primary user.
+            // NOTE: this should probably reject() and log an error, 
+            // but calling clear for backwards compat for now.
+            return service.clearPrimary();
         }
     }
 
@@ -383,6 +442,28 @@ function($q , $timeout , $location , egCore,  egUser , $locale) {
         return $q.when(false);
     }
 
+    // resolves to true if the patron account has any invalid addresses.
+    service.testInvalidAddrs = function() {
+
+        if (service.invalidAddresses)
+            return $q.when(true);
+
+        var fail = false;
+
+        angular.forEach(
+            service.current.addresses(), 
+            function(addr) { if (addr.valid() == 'f') fail = true }
+        );
+
+        return $q.when(fail);
+    }
+    //resolves to true if the patron was fetched with an inactive card
+    service.fetchedWithInactiveCard = function() {
+        var bc = service.search_barcode
+        var cards = service.current.cards();
+        var card = cards.filter(function(c) { return c.barcode() == bc })[0];
+        return (card && card.active() == 'f');
+    }   
     // resolves to true if there is any aspect of the patron account
     // which should produce a message in the alerts panel
     service.checkAlerts = function() {
@@ -403,14 +484,8 @@ function($q , $timeout , $location , egCore,  egUser , $locale) {
         }
 
         // see if the user was retrieved with an inactive card
-        if (bc = $location.search().card) {
-            var card = p.cards().filter(
-                function(c) { return c.barcode() == bc })[0];
-
-            if (card && card.active() == 'f') {
-                service.hasAlerts = true;
-                service.retrievedWithInactive = true;
-            }
+        if(service.fetchedWithInactiveCard()){
+            service.hasAlerts = true;
         }
 
         // regardless of whether we know of alerts, we still need 
@@ -418,6 +493,11 @@ function($q , $timeout , $location , egCore,  egUser , $locale) {
         service.testExpire().then(function(bool) {
             if (bool) service.hasAlerts = true;
             deferred.resolve(service.hasAlerts);
+        });
+
+        service.testInvalidAddrs().then(function(bool) {
+            if (bool) service.invalidAddresses = true;
+            deferred.resolve(service.invalidAddresses);
         });
 
         return deferred.promise;
@@ -453,11 +533,32 @@ function($q , $timeout , $location , egCore,  egUser , $locale) {
                 stats.checkouts.out = Number(stats.checkouts.out);
                 stats.checkouts.total_out = 
                     stats.checkouts.out + stats.checkouts.overdue;
+                
+                stats.checkouts.total_out += Number(stats.checkouts.long_overdue);
+
+                if (!egCore.env.aous['circ.do_not_tally_claims_returned'])
+                    stats.checkouts.total_out += stats.checkouts.claims_returned;
+
+                if (egCore.env.aous['circ.tally_lost'])
+                    stats.checkouts.total_out += stats.checkouts.lost
+
                 return stats;
             }
         );
     }
 
+    // Fetches the IDs of any active non-cat checkouts for the current
+    // user.  Also sets the patron_stats non_cat count value to match.
+    service.getUserNonCats = function(id) {
+        return egCore.net.request(
+            'open-ils.circ',
+            'open-ils.circ.open_non_cataloged_circulation.user.authoritative',
+            egCore.auth.token(), id
+        ).then(function(noncat_ids) {
+            service.noncat_ids = noncat_ids;
+            service.patron_stats.checkouts.noncat = noncat_ids.length;
+        });
+    }
 
     // grab additional circ info
     service.fetchUserStats = function() {
@@ -479,8 +580,64 @@ function($q , $timeout , $location , egCore,  egUser , $locale) {
                 }
             );
 
-            return service.fetchGroupFines();
+            // run these two in parallel
+            var p1 = service.getUserNonCats(service.current.id());
+            var p2 = service.fetchGroupFines();
+            return $q.all([p1, p2]);
         });
+    }
+
+    service.createOptIn = function(user_id) {
+        return egCore.net.request(
+            'open-ils.actor',
+            'open-ils.actor.user.org_unit_opt_in.create',
+            egCore.auth.token(), user_id);
+    }
+
+    service.checkOptIn = function(user) {
+        var deferred = $q.defer();
+        egCore.net.request(
+            'open-ils.actor',
+            'open-ils.actor.user.org_unit_opt_in.check',
+            egCore.auth.token(), user.id())
+        .then(function(optInResp) {
+            if (eg_evt = egCore.evt.parse(optInResp)) {
+                deferred.reject();
+                console.log('error on opt-in check: ' + eg_evt);
+            } else if (optInResp == 2) {
+                // opt-in disallowed at this location by patron's home library
+                deferred.reject();
+                alert(egCore.strings.OPT_IN_RESTRICTED);
+            } else if (optInResp == 1) {
+                // opt-in handled or not needed, do nothing
+                deferred.resolve();
+            } else {
+                // opt-in needed, show the opt-in dialog
+                var org = egCore.org.get(user.home_ou());
+                egConfirmDialog.open(
+                    egCore.strings.OPT_IN_DIALOG_TITLE,
+                    egCore.strings.OPT_IN_DIALOG,
+                    {   family_name : user.family_name(),
+                        first_given_name : user.first_given_name(),
+                        org_name : org.name(),
+                        org_shortname : org.shortname(),
+                        ok : function() {
+                            service.createOptIn(user.id())
+                            .then(function(resp) {
+                                if (evt = egCore.evt.parse(resp)) {
+                                    deferred.reject();
+                                    alert(evt);
+                                } else {
+                                    deferred.resolve();
+                                }
+                            });
+                        },
+                        cancel : function() { deferred.reject(); }
+                    }
+                );
+            }
+        });
+        return deferred.promise;
     }
 
     // Avoid using parens [e.g. (1.23)] to indicate negative numbers, 
@@ -503,14 +660,23 @@ function($q , $timeout , $location , egCore,  egUser , $locale) {
        ['$scope','$q','$location','$filter','egCore','egUser','patronSvc',
 function($scope,  $q,  $location , $filter,  egCore,  egUser,  patronSvc) {
 
+    $scope.is_patron_edit = function() {
+        return Boolean($location.path().match(/patron\/\d+\/edit$/));
+    }
+
+    // To support the fixed position patron edit actions bar,
+    // its markup has to live outside the scope of the patron 
+    // edit controller.  Insert a scope blob here that can be
+    // modifed from within the patron edit controller.
+    $scope.edit_passthru = {};
+
     // returns true if a redirect occurs
     function redirectToAlertPanel() {
 
         $scope.alert_penalties = 
             function() {return patronSvc.alert_penalties}
 
-        if (patronSvc.alertsShown) return false;
-        patronSvc.alertsShown = true;
+        if (patronSvc.alertsShown()) return false;
 
         // if the patron has any unshown alerts, show them now
         if (patronSvc.hasAlerts && 
@@ -528,6 +694,7 @@ function($scope,  $q,  $location , $filter,  egCore,  egUser,  patronSvc) {
             && egCore.env.aous['ui.circ.show_billing_tab_on_bills']
             && !$location.path().match(/bills$/)) {
 
+            $scope.tab = 'bills';
             $location
                 .path('/circ/patron/' + patronSvc.current.id() + '/bills')
                 .search('card', null);
@@ -556,9 +723,28 @@ function($scope,  $q,  $location , $filter,  egCore,  egUser,  patronSvc) {
         return $q.when();
     }
 
+    $scope._show_dob = {};
+    $scope.show_dob = function (val) {
+        if ($scope.patron()) {
+            if (typeof val != 'undefined') $scope._show_dob[$scope.patron().id()] = val;
+            return $scope._show_dob[$scope.patron().id()];
+        }
+        return !egCore.env.aous['circ.obscure_dob'];
+    }
+        
+    $scope.obscure_dob = function() { 
+        return egCore.env.aous && egCore.env.aous['circ.obscure_dob'];
+    }
+    $scope.now_show_dob = function() { 
+        return egCore.env.aous && egCore.env.aous['circ.obscure_dob'] ?
+            $scope.show_dob() : true; 
+    }
+
     $scope.patron = function() { return patronSvc.current }
     $scope.patron_stats = function() { return patronSvc.patron_stats }
     $scope.summary_stat_cats = function() { return patronSvc.summary_stat_cats }
+    $scope.hasAlerts = function() { return patronSvc.hasAlerts }
+    $scope.isPatronExpired = function() { return patronSvc.patronExpired }
 
     $scope.print_address = function(addr) {
         egCore.print.print({
@@ -595,13 +781,15 @@ function($scope,  $q,  $location , $filter,  egCore,  egUser,  patronSvc) {
        ['$scope','$location','egCore','egConfirmDialog','egUser','patronSvc',
 function($scope , $location , egCore , egConfirmDialog , egUser , patronSvc) {
     $scope.selectMe = true; // focus text input
-    patronSvc.setPrimary(); // clear the default user
+    patronSvc.clearPrimary(); // clear the default user
 
     // jump to the patron checkout UI
     function loadPatron(user_id) {
+        egCore.audio.play('success.patron.by_barcode');
         $location
         .path('/circ/patron/' + user_id + '/checkout')
         .search('card', $scope.args.barcode);
+        patronSvc.search_barcode = $scope.args.barcode;
     }
 
     // create an opt-in=yes response for the loaded user
@@ -618,8 +806,9 @@ function($scope , $location , egCore , egConfirmDialog , egUser , patronSvc) {
 
     $scope.submitBarcode = function(args) {
         $scope.bcNotFound = null;
+        $scope.optInRestricted = false;
         if (!args.barcode) return;
-
+        args.barcode = args.barcode.replace(/\s/g,'');
         // blur so next time it's set to true it will re-apply select()
         $scope.selectMe = false;
 
@@ -642,6 +831,7 @@ function($scope , $location , egCore , egConfirmDialog , egUser , patronSvc) {
             if (!resp || !resp[0]) {
                 $scope.bcNotFound = args.barcode;
                 $scope.selectMe = true;
+                egCore.audio.play('warning.patron.not_found');
                 return;
             }
 
@@ -658,6 +848,14 @@ function($scope , $location , egCore , egConfirmDialog , egUser , patronSvc) {
                 alert(evt); // FIXME
                 return;
             }
+
+            if (optInResp == 2) {
+                // opt-in disallowed at this location by patron's home library
+                $scope.optInRestricted = true;
+                $scope.selectMe = true;
+                egCore.audio.play('warning.patron.opt_in_restricted');
+                return;
+            }
            
             if (optInResp == 1) {
                 // opt-in handled or not needed
@@ -668,10 +866,14 @@ function($scope , $location , egCore , egConfirmDialog , egUser , patronSvc) {
             egUser.get(user_id, {useFields : []})
 
             .then(function(user) { // retrieve user
+                var org = egCore.org.get(user.home_ou());
                 egConfirmDialog.open(
-                    egCore.strings.OPT_IN_DIALOG, '',
-                    {   org : egCore.org.get(user.home_ou()),
-                        user : user,
+                    egCore.strings.OPT_IN_DIALOG_TITLE,
+                    egCore.strings.OPT_IN_DIALOG,
+                    {   family_name : user.family_name(),
+                        first_given_name : user.first_given_name(),
+                        org_name : org.name(),
+                        org_shortname : org.shortname(),
                         ok : function() { createOptIn(user.id()) },
                         cancel : function() {}
                     }
@@ -687,9 +889,11 @@ function($scope , $location , egCore , egConfirmDialog , egUser , patronSvc) {
  */
 .controller('PatronSearchCtrl',
        ['$scope','$q','$routeParams','$timeout','$window','$location','egCore',
-       '$filter','egUser', 'patronSvc','egGridDataProvider',
+       '$filter','egUser', 'patronSvc','egGridDataProvider','$document',
+       'egPatronMerge','egProgressDialog',
 function($scope,  $q,  $routeParams,  $timeout,  $window,  $location,  egCore,
-        $filter,  egUser,  patronSvc , egGridDataProvider) {
+        $filter,  egUser,  patronSvc , egGridDataProvider , $document,
+        egPatronMerge , egProgressDialog) {
 
     $scope.initTab('search');
     $scope.focusMe = true;
@@ -697,6 +901,9 @@ function($scope,  $q,  $routeParams,  $timeout,  $window,  $location,  egCore,
         // default to searching globally
         home_ou : egCore.org.tree()
     };
+
+    // last used patron search form element
+    var lastFormElement;
 
     $scope.gridControls = {
         activateItem : function(item) {
@@ -707,26 +914,65 @@ function($scope,  $q,  $routeParams,  $timeout,  $window,  $location,  egCore,
 
     // Handle URL-encoded searches
     if ($location.search().search) {
+        console.log('URL search = ' + $location.search().search);
         patronSvc.urlSearch = {search : JSON2js($location.search().search)};
 
         // why the double-JSON encoded sort?
-        patronSvc.urlSearch.sort = 
-            JSON2js(patronSvc.urlSearch.search.search_sort);
+        if (patronSvc.urlSearch.search.search_sort) {
+            patronSvc.urlSearch.sort = 
+                JSON2js(patronSvc.urlSearch.search.search_sort);
+        } else {
+            patronSvc.urlSearch.sort = [];
+        }
         delete patronSvc.urlSearch.search.search_sort;
+
+        // include inactive patrons if "inactive" param
+        if ($location.search().inactive) {
+            patronSvc.urlSearch.inactive = $location.search().inactive;
+        }
     }
 
     var propagate;
+    var propagate_inactive;
     if (patronSvc.lastSearch) {
         propagate = patronSvc.lastSearch.search;
+        // home_ou needs to be treated specially
+        propagate.home_ou = {
+            value : patronSvc.lastSearch.home_ou,
+            group : 0
+        };
     } else if (patronSvc.urlSearch) {
         propagate = patronSvc.urlSearch.search;
+        if (patronSvc.urlSearch.inactive) {
+            propagate_inactive = patronSvc.urlSearch.inactive;
+        }
+    }
+
+    if (egCore.env.pgt) {
+        $scope.profiles = egCore.env.pgt.list;
+    } else {
+        egCore.pcrud.search('pgt', {parent : null}, 
+            {flesh : -1, flesh_fields : {pgt : ['children']}}
+        ).then(
+            function(tree) {
+                egCore.env.absorbTree(tree, 'pgt')
+                $scope.profiles = egCore.env.pgt.list;
+            }
+        );
     }
 
     if (propagate) {
         // populate the search form with our cached / preexisting search info
         angular.forEach(propagate, function(val, key) {
+            if (key == 'profile')
+                val.value = $scope.profiles.filter(function(p) { return p.id() == val.value })[0];
+            if (key == 'home_ou')
+                val.value = egCore.org.get(val.value);
             $scope.searchArgs[key] = val.value;
         });
+        if (propagate_inactive) {
+            $scope.searchArgs.inactive = propagate_inactive;
+        }
     }
 
     var provider = egGridDataProvider.instance({});
@@ -750,7 +996,8 @@ function($scope,  $q,  $routeParams,  $timeout,  $window,  $location,  egCore,
             delete patronSvc.urlSearch;
 
         } else {
-
+            patronSvc.search_barcode = $scope.searchArgs.card;
+            
             var search = compileSearch($scope.searchArgs);
             if (Object.keys(search) == 0) return $q.when();
 
@@ -807,7 +1054,16 @@ function($scope,  $q,  $routeParams,  $timeout,  $window,  $location,  egCore,
             return deferred.promise;
         }
 
+        if (!Object.keys(fullSearch.search).length) {
+            // Empty searches are rejected by the server.  Avoid 
+            // running the the empty search that runs on page load. 
+            return $q.when();
+        }
+
+        egProgressDialog.open(); // Indeterminate
+
         patronSvc.patrons = [];
+        var which_sound = 'success';
         egCore.net.request(
             'open-ils.actor',
             'open-ils.actor.patron.search.advanced.fleshed',
@@ -821,38 +1077,42 @@ function($scope,  $q,  $routeParams,  $timeout,  $window,  $location,  egCore,
             fullSearch.offset
 
         ).then(
-            function() { deferred.resolve() },
-            null, // onerror
+            function() {
+                deferred.resolve();
+            },
+            function() { // onerror
+                which_sound = 'error';
+            },
             function(user) {
+                // hide progress bar as soon as the first result appears.
+                egProgressDialog.close();
                 patronSvc.localFlesh(user); // inline
                 patronSvc.patrons.push(user);
                 deferred.notify(user);
             }
-        );
+        )['finally'](function() { // close on 0-hits or error
+            if (which_sound == 'success' && patronSvc.patrons.length == 0) {
+                which_sound = 'warning';
+            }
+            egCore.audio.play(which_sound + '.patron.by_search');
+            egProgressDialog.close();
+        });
 
         return deferred.promise;
     };
 
     $scope.patronSearchGridProvider = provider;
 
-    if (egCore.env.pgt) {
-        $scope.profiles = egCore.env.pgt.list;
-    } else {
-        egCore.pcrud.search('pgt', {parent : null}, 
-            {flesh : -1, flesh_fields : {pgt : ['children']}}
-        ).then(
-            function(tree) {
-                egCore.env.absorbTree(tree, 'pgt')
-                $scope.profiles = egCore.env.pgt.list;
-            }
-        );
-    }
-
     // determine the tree depth of the profile group
     $scope.pgt_depth = function(grp) {
         var d = 0;
         while (grp = egCore.env.pgt.map[grp.parent()]) d++;
         return d;
+    }
+
+    $scope.clearForm = function () {
+        $scope.searchArgs={};
+        if (lastFormElement) lastFormElement.focus();
     }
 
     $scope.applyShowExtras = function($event, bool) {
@@ -863,10 +1123,11 @@ function($scope,  $q,  $routeParams,  $timeout,  $window,  $location,  egCore,
             $scope.showExtras = false;
             egCore.hatch.removeItem('eg.circ.patron.search.show_extras');
         }
+        if (lastFormElement) lastFormElement.focus();
         $event.preventDefault();
     }
 
-    egCore.hatch.getItem('eg.prefs.circ.patron.search.showExtras')
+    egCore.hatch.getItem('eg.circ.patron.search.show_extras')
     .then(function(val) {$scope.showExtras = val});
 
     // map form arguments into search params
@@ -925,11 +1186,16 @@ function($scope,  $q,  $routeParams,  $timeout,  $window,  $location,  egCore,
         return sort;
     }
 
+    $scope.setLastFormElement = function() {
+        lastFormElement = $document[0].activeElement;
+    }
+
     // search form submit action; tells the results grid to
     // refresh itself.
     $scope.search = function(args) { // args === $scope.searchArgs
         if (args && Object.keys(args).length) 
             $scope.gridControls.refresh();
+        if (lastFormElement) lastFormElement.focus();
     }
 
     // TODO: move this into the (forthcoming) grid row activate action
@@ -941,6 +1207,27 @@ function($scope,  $q,  $routeParams,  $timeout,  $window,  $location,  egCore,
         // force the grid to load the url-based search on page load
         provider.refresh();
     }
+
+    $scope.need_two_selected = function() {
+        var items = $scope.gridControls.selectedItems();
+        return (items.length == 2) ? false : true;
+    }
+    $scope.merge_patrons = function() {
+        var items = $scope.gridControls.selectedItems();
+        if (items.length != 2) return false;
+
+        var patron_ids = [];
+        angular.forEach(items, function(i) {
+            patron_ids.push(i.id());
+        });
+        egPatronMerge.do_merge(patron_ids).then(function() {
+            // ensure that we're not drawing from cached
+            // resuts, as a successful merge just deleted a
+            // record
+            delete patronSvc.lastSearch;
+            $scope.gridControls.refresh();
+        });
+    }
    
 }])
 
@@ -948,8 +1235,8 @@ function($scope,  $q,  $routeParams,  $timeout,  $window,  $location,  egCore,
  * Manages messages
  */
 .controller('PatronMessagesCtrl',
-       ['$scope','$q','$routeParams','egCore','$modal','patronSvc','egCirc',
-function($scope , $q , $routeParams,  egCore , $modal , patronSvc , egCirc) {
+       ['$scope','$q','$routeParams','egCore','$uibModal','patronSvc','egCirc',
+function($scope , $q , $routeParams,  egCore , $uibModal , patronSvc , egCirc) {
     $scope.initTab('messages', $routeParams.id);
     var usr_id = $routeParams.id;
 
@@ -1077,26 +1364,6 @@ function($scope , $q , $routeParams,  egCore , $modal , patronSvc , egCirc) {
 
 
 /**
- * Link to patron edit UI
- */
-.controller('PatronEditCtrl',
-       ['$scope','$routeParams','$location','egCore','patronSvc',
-function($scope,  $routeParams,  $location , egCore , patronSvc) {
-    $scope.initTab('edit', $routeParams.id);
-
-    var url = $location.absUrl().replace(/\/staff.*/, '/actor/user/register');
-    url += '?usr=' + encodeURIComponent($routeParams.id);
-
-    $scope.funcs = {
-        on_save : function() {
-            patronSvc.refreshPrimary();
-        }
-    }
-
-    $scope.patron_edit_url = url;
-}])
-
-/**
  * Credentials tester
  */
 .controller('PatronVerifyCredentialsCtrl',
@@ -1108,10 +1375,14 @@ function($scope,  $routeParams , $location , egCore) {
     // called with a patron, pre-populate the form args
     $scope.initTab('other', $routeParams.id).then(
         function() {
-            if ($scope.patron()) {
+            if ($routeParams.id && $scope.patron()) {
                 $scope.prepop = true;
                 $scope.username = $scope.patron().usrname();
                 $scope.barcode = $scope.patron().card().barcode();
+            } else {
+                $scope.username = '';
+                $scope.barcode = '';
+                $scope.password = '';
             }
         }
     );
@@ -1183,14 +1454,17 @@ function($scope,  $routeParams , $location , egCore , patronSvc) {
     .then(function() {
         $scope.patronExpired = patronSvc.patronExpired;
         $scope.patronExpiresSoon = patronSvc.patronExpiresSoon;
-        $scope.retrievedWithInactive = patronSvc.retrievedWithInactive;
+        $scope.retrievedWithInactive = patronSvc.fetchedWithInactiveCard();
+        $scope.invalidAddresses = patronSvc.invalidAddresses;
     });
 
 }])
 
 .controller('PatronNotesCtrl',
-       ['$scope','$routeParams','$location','egCore','patronSvc','$modal',
-function($scope,  $routeParams , $location , egCore , patronSvc , $modal) {
+       ['$scope','$filter','$routeParams','$location','egCore','patronSvc','$uibModal',
+        'egConfirmDialog',
+function($scope,  $filter , $routeParams , $location , egCore , patronSvc , $uibModal,
+         egConfirmDialog) {
     $scope.initTab('other', $routeParams.id);
     var usr_id = $routeParams.id;
 
@@ -1208,15 +1482,16 @@ function($scope,  $routeParams , $location , egCore , patronSvc , $modal) {
 
     // open the new-note dialog and create the note
     $scope.newNote = function() {
-        $modal.open({
+        $uibModal.open({
             templateUrl: './circ/patron/t_new_note_dialog',
             controller: 
-                ['$scope', '$modalInstance',
-            function($scope, $modalInstance) {
+                ['$scope', '$uibModalInstance',
+            function($scope, $uibModalInstance) {
                 $scope.focusNote = true;
                 $scope.args = {};
-                $scope.ok = function(count) { $modalInstance.close($scope.args) }
-                $scope.cancel = function () { $modalInstance.dismiss() }
+                $scope.require_initials = egCore.env.aous['ui.staff.require_initials.patron_info_notes'];
+                $scope.ok = function(count) { $uibModalInstance.close($scope.args) }
+                $scope.cancel = function () { $uibModalInstance.dismiss() }
             }],
         }).result.then(
             function(args) {
@@ -1227,6 +1502,8 @@ function($scope,  $routeParams , $location , egCore , patronSvc , $modal) {
                 note.value(args.value);
                 note.pub(args.pub ? 't' : 'f');
                 note.creator(egCore.auth.user().id());
+                if (args.initials) 
+                    note.value(note.value() + ' [' + args.initials + ']');
                 egCore.pcrud.create(note).then(function() {refreshPage()});
             }
         );
@@ -1234,7 +1511,14 @@ function($scope,  $routeParams , $location , egCore , patronSvc , $modal) {
 
     // delete the selected note
     $scope.deleteNote = function(note) {
-        egCore.pcrud.remove(note).then(function() {refreshPage()});
+        egConfirmDialog.open(
+            egCore.strings.PATRON_NOTE_DELETE_CONFIRM_TITLE, egCore.strings.PATRON_NOTE_DELETE_CONFIRM,
+            {ok : function() {
+                egCore.pcrud.remove(note).then(function() {refreshPage()});
+            },
+            note_title : note.title(),
+            create_date : note.create_date()
+        });
     }
 
     // print the selected note
@@ -1253,10 +1537,10 @@ function($scope,  $routeParams , $location , egCore , patronSvc , $modal) {
 }])
 
 .controller('PatronGroupCtrl',
-       ['$scope','$routeParams','$q','$window','$location','egCore',
-        'patronSvc','$modal','egPromptDialog','egConfirmDialog',
-function($scope,  $routeParams , $q , $window , $location , egCore ,
-         patronSvc , $modal , egPromptDialog , egConfirmDialog) {
+       ['$scope','$routeParams','$q','$window','$timeout','$location','egCore',
+        'patronSvc','$uibModal','egPromptDialog','egConfirmDialog',
+function($scope,  $routeParams , $q , $window , $timeout,  $location , egCore ,
+         patronSvc , $uibModal , egPromptDialog , egConfirmDialog) {
 
     var usr_id = $routeParams.id;
 
@@ -1351,7 +1635,7 @@ function($scope,  $routeParams , $q , $window , $location , egCore ,
         $q.all(promises).then(function() {grid.refresh()});
     }
 
-    function showMoveToGroupConfirm(barcode, selected) {
+    function showMoveToGroupConfirm(barcode, selected, outbound) {
 
         // find the user
         egCore.pcrud.search('ac', {barcode : barcode})
@@ -1364,21 +1648,22 @@ function($scope,  $routeParams , $q , $window , $location , egCore ,
             egCore.pcrud.retrieve('au', card.usr())
             .then(function(user) {
                 user.card(card);
-                $modal.open({
+                $uibModal.open({
                     templateUrl: './circ/patron/t_move_to_group_dialog',
                     controller: [
-                                '$scope','$modalInstance',
-                        function($scope , $modalInstance) {
+                                '$scope','$uibModalInstance',
+                        function($scope , $uibModalInstance) {
                             $scope.user = user;
-                            $scope.outbound = Boolean(selected);
+                            $scope.selected = selected;
+                            $scope.outbound = outbound;
                             $scope.ok = 
-                                function(count) { $modalInstance.close() }
+                                function(count) { $uibModalInstance.close() }
                             $scope.cancel = 
-                                function () { $modalInstance.dismiss() }
+                                function () { $uibModalInstance.dismiss() }
                         }
                     ]
                 }).result.then(function() {
-                    if (selected) {
+                    if (outbound) {
                         moveUsersToGroup(user, selected);
                     } else {
                         addUserToGroup(user);
@@ -1390,18 +1675,18 @@ function($scope,  $routeParams , $q , $window , $location , egCore ,
 
     // selected == move selected patrons to another patron's group
     // !selected == patron from a different group moves into our group
-    function moveToGroup(selected) {
+    function moveToGroup(selected, outbound) {
         egPromptDialog.open(
             egCore.strings.GROUP_ADD_USER, '',
             {ok : function(value) {
                 if (value) 
-                    showMoveToGroupConfirm(value, selected);
+                    showMoveToGroupConfirm(value, selected, outbound);
             }}
         );
     }
 
-    $scope.moveToGroup = function() { moveToGroup() };
-    $scope.moveToAnotherGroup = function(selected) { moveToGroup(selected) };
+    $scope.moveToGroup = function() { moveToGroup([], false) };
+    $scope.moveToAnotherGroup = function(selected) { moveToGroup(selected, true) };
 
     $scope.cloneUser = function(selected) {
         if (!selected.length) return;
@@ -1413,10 +1698,14 @@ function($scope,  $routeParams , $q , $window , $location , egCore ,
 
     $scope.retrieveSelected = function(selected) {
         if (!selected.length) return;
-        var url = $location.absUrl().replace(
-            /\/patron\/.*/, 
-            '/patron/' + selected[0].id + '/checkout');
-        $window.open(url, '_blank').focus();
+        angular.forEach(selected, function(usr) {
+            $timeout(function() {
+                var url = $location.absUrl().replace(
+                    /\/patron\/.*/,
+                    '/patron/' + usr.id + '/checkout');
+                $window.open(url, '_blank')
+            });
+        });
     }
 
 }])
@@ -1448,11 +1737,38 @@ function($scope,  $routeParams , $q , egCore , patronSvc) {
     });
 }])
 
+.controller('PatronSurveyCtrl',
+       ['$scope','$routeParams','$location','egCore','patronSvc',
+function($scope,  $routeParams , $location , egCore , patronSvc) {
+    $scope.initTab('other', $routeParams.id);
+    var usr_id = $routeParams.id;
+    var org_ids = egCore.org.fullPath(egCore.auth.user().ws_ou(), true);
+    $scope.surveys = [];
+    // fetch the surveys
+    egCore.pcrud.search('asvr',
+        {usr : usr_id},
+        {flesh : 4, flesh_fields : {
+            asvr : ['question', 'survey', 'answer'],
+            asv : ['responses', 'questions'],
+            asvq : ['responses', 'question']
+    }},
+        {authoritative : true})
+    .then(null, null, function(survey) {
+        var sameSurveyId = false;
+        if (survey.survey().id() && $scope.surveys.length > 0) {
+            for (sid = 0; sid < $scope.surveys.length; sid++) {
+                if (survey.survey().id() == $scope.surveys[sid].id()) sameSurveyId = true; 
+            }
+        }
+        if (!sameSurveyId) $scope.surveys.push(survey.survey());
+    });
+}])
+
 .controller('PatronFetchLastCtrl',
        ['$scope','$location','egCore',
 function($scope , $location , egCore) {
 
-    var id = egCore.hatch.getLocalItem('eg.circ.last_patron');
+    var id = egCore.hatch.getLoginSessionItem('eg.circ.last_patron');
     if (id) return $location.path('/circ/patron/' + id + '/checkout');
 
     $scope.no_last = true;
@@ -1467,6 +1783,19 @@ function($scope,  $routeParams,  $location , egCore , patronSvc) {
     url += '?patron_id=' + encodeURIComponent($routeParams.id);
 
     $scope.triggered_events_url = url;
+    $scope.funcs = {};
+}])
+
+.controller('PatronMessageCenterCtrl',
+       ['$scope','$routeParams','$location','egCore','patronSvc',
+function($scope,  $routeParams,  $location , egCore , patronSvc) {
+    $scope.initTab('other', $routeParams.id);
+
+    var url = $location.protocol() + '://' + $location.host()
+        + egCore.env.basePath.replace(/\/staff.*/,  '/actor/user/message');
+    url += '/' + encodeURIComponent($routeParams.id);
+
+    $scope.message_center_url = url;
     $scope.funcs = {};
 }])
 

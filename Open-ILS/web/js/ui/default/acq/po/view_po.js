@@ -300,6 +300,33 @@ function prepareInvoiceFeatures() {
     openils.Util.show("acq-po-invoice-stuff", "table-cell");
 }
 
+function setSummaryAmounts() {
+    dojo.byId("acq-po-view-total-enc").innerHTML = PO.amount_encumbered().toFixed(2);
+    dojo.byId("acq-po-view-total-spent").innerHTML = PO.amount_spent().toFixed(2);
+    dojo.byId("acq-po-view-total-estimated").innerHTML = PO.amount_estimated().toFixed(2);
+}
+
+function refreshPOSummaryAmounts() {
+    fieldmapper.standardRequest(
+        ['open-ils.acq', 
+            'open-ils.acq.purchase_order.retrieve.authoritative'],
+        {   async: true,
+            params: [openils.User.authtoken, poId, {
+                "flesh_price_summary": true
+            }],
+            oncomplete: function(r) {
+                // update the global PO instead of replacing it, since other 
+                // code outside our control may be referencing it.
+                var po = openils.Util.readResponse(r);
+                PO.amount_encumbered(po.amount_encumbered());
+                PO.amount_spent(po.amount_spent());
+                PO.amount_estimated(po.amount_estimated());
+                setSummaryAmounts();
+            }
+        }
+    );
+}
+
 /* renderPo() is the best place to add tests that depend on PO-state
  * (or simple ordered-or-not? checks) to enable/disable UI elements
  * across the whole interface. */
@@ -311,9 +338,9 @@ function renderPo() {
         dojo.byId("acq-po-view-provider"),
         PO.provider()
     );
+
+    setSummaryAmounts();
     dojo.byId("acq-po-view-total-li").innerHTML = PO.lineitem_count();
-    dojo.byId("acq-po-view-total-enc").innerHTML = PO.amount_encumbered().toFixed(2);
-    dojo.byId("acq-po-view-total-spent").innerHTML = PO.amount_spent().toFixed(2);
     dojo.byId("acq-po-view-state").innerHTML = po_state; // TODO i18n
 
     if(PO.order_date()) {
@@ -369,6 +396,7 @@ function renderPo() {
     } else {
         if (PO.order_date()) {
             dojo.byId("acq-po-activate-checking").innerHTML = localeStrings.PO_ALREADY_ACTIVATED;
+            checkCouldBlanketFinalize();
         } else {
             dojo.byId("acq-po-activate-checking").innerHTML = localeStrings.NO;
         }
@@ -449,29 +477,27 @@ function init() {
 
 function init2() {
 
-    var totalEstimated = 0;
-    var zeroLi = true;
     fieldmapper.standardRequest(
         ['open-ils.acq', 'open-ils.acq.lineitem.search'],
         {   async: true,
             params: [
                 openils.User.authtoken, 
                 [{purchase_order:poId}, {"order_by": {"jub": "id ASC"}}], 
-                {flesh_attrs:true, flesh_notes:true, flesh_cancel_reason:true, clear_marc:true}
+                {   flesh_attrs : true,
+                    flesh_notes : true,
+                    flesh_cancel_reason : true,
+                    flesh_order_summary : true,
+                    clear_marc:true
+                }
             ],
             onresponse: function(r) {
-                zeroLi = false;
                 liTable.show('list');
                 var li = openils.Util.readResponse(r);
-                // TODO: Add po_item's to total estimated amount
-                totalEstimated += (Number(li.item_count() || 0) * Number(li.estimated_unit_price() || 0));
                 liTable.addLineitem(li);
             },
 
             oncomplete : function() {
-                dojo.byId("acq-po-view-total-estimated").innerHTML = totalEstimated.toFixed(2);
                 if (liFocus) liTable.drawCopies(liFocus);
-                if(zeroLi) openils.Util.show('acq-po-no-lineitems');
             }
         }
     );
@@ -494,6 +520,30 @@ function init2() {
             }
         }
     );
+}
+
+function checkCouldBlanketFinalize() {
+
+    if (PO.state() == 'received') return;
+
+    var inv_types = [];
+
+    // get the unique set of invoice item type IDs
+    PO.po_items().forEach(function(item) { 
+        if (inv_types.indexOf(item.inv_item_type()) == -1)
+            inv_types.push(item.inv_item_type());
+    });
+
+    if (inv_types.length == 0) return;
+
+    pcrud.search('aiit', 
+        {code : inv_types, blanket : 't'}, {
+        oncomplete : function(r) {
+            r = openils.Util.readResponse(r);
+            if (r.length == 0) return;
+            openils.Util.show(dojo.byId('acq-po-finalize-links'), 'inline');
+        }
+    });
 }
 
 function checkCouldActivatePo() {
@@ -584,6 +634,24 @@ function checkCouldActivatePo() {
     );
 }
 
+function finalizePo() {
+
+    if (!confirm(localeStrings.FINALIZE_PO)) return;
+
+    finalizePoButton.attr('disabled', true);
+
+    fieldmapper.standardRequest(
+        ['open-ils.acq', 'open-ils.acq.purchase_order.blanket.finalize'],
+        {   async : true,
+            params : [openils.User.authtoken, PO.id()],
+            oncomplete : function(r) {
+                if (openils.Util.readResponse(r) == 1) 
+                    location.href = location.href;
+            }
+        }
+    );
+}
+
 function activatePo(noAssets) {
     activatePoButton.attr("disabled", true);
     activatePoNoAssetsButton.attr("disabled", true);
@@ -614,6 +682,7 @@ function activatePoStage2(noAssets) {
 
     var want_refresh = false;
     progressDialog.show(true);
+    progressDialog.attr("title", localeStrings.PO_ACTIVATING);
     fieldmapper.standardRequest(
         ["open-ils.acq", "open-ils.acq.purchase_order.activate"], {
             "async": true,
@@ -627,11 +696,12 @@ function activatePoStage2(noAssets) {
                 }
             ],
             "onresponse": function(r) {
-                progressDialog.hide();
                 activatePoButton.attr("disabled", false);
                 want_refresh = Boolean(openils.Util.readResponse(r));
             },
             "oncomplete": function() {
+                progressDialog.hide();
+                progressDialog.attr("title", "");
                 if (want_refresh)
                     location.href = location.href;
             }
@@ -668,6 +738,63 @@ function splitPo() {
 function updatePoName() {
     var value = prompt('Enter new purchase order name:', PO.name()); // TODO i18n
     if(!value || value == PO.name()) return;
+
+    var orgs = fieldmapper.aou.descendantNodeList(PO.ordering_agency(), true);
+    new openils.PermaCrud().search('acqpo', 
+        {
+            id : {'<>' : PO.id()},
+            name : value, 
+            ordering_agency : orgs
+        },
+        {async : true, oncomplete : function(r) {
+            var po = openils.Util.readResponse(r);
+            openils.Util.hide('acq-dupe-po-name');
+
+            if (po && (po = po[0])) {
+                var link = dojo.byId('acq-dupe-po-link');
+                openils.Util.show('acq-dupe-po-name');
+                var dupe_path = '/acq/po/view/' + po.id();
+
+                if (window.xulG) {
+
+                    if (window.IAMBROWSER) {
+                        // TODO: integration
+
+                    } else {
+                        // XUL client
+                        link.onclick = function() {
+
+                            var loc = xulG.url_prefix('XUL_BROWSER?url=') + 
+                                window.encodeURIComponent( 
+                                xulG.url_prefix('EG_WEB_BASE' + dupe_path)
+                            );
+
+                            xulG.new_tab(loc, 
+                                {tab_name: '', browser:false},
+                                {
+                                    no_xulG : false, 
+                                    show_nav_buttons : true, 
+                                    show_print_button : true, 
+                                }
+                            );
+                        }
+                    }
+
+                } else {
+                    link.onclick = function() {
+                        window.open(oilsBasePath + dupe_path, '_blank').focus();
+                    }
+                }
+
+            } else {
+                updatePoName2(value);
+            }
+       }} 
+    );
+ 
+}
+
+function updatePoName2(value) {
     PO.name(value);
     pcrud.update(PO, {
         oncomplete : function(r, cudResults) {

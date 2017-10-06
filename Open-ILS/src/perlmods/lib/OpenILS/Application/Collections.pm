@@ -295,7 +295,7 @@ sub process_users_of_interest_results {
             id            => $u->id,
             dob        => $u->dob,
             profile    => $u->profile->name,
-            barcode    => $u->card->barcode,
+            barcode    => $u->card ? $u->card->barcode : undef ,
             groups    => [ map { $_->name } @{$u->groups} ],
         };
 
@@ -862,16 +862,19 @@ sub user_balance_summary {
         );
 
         # get the sum owed an all transactions
-        my $balance = $e->json_query({
-            select => {mbts => [
-                {   column => 'balance_owed',
-                    transform => 'sum',
-                    aggregate => 1
-                }
-            ]},
-            from => 'mbts',
-            where => {id => [@$circ_ids, @$groc_ids, @$res_ids]}
-        })->[0];
+        my $balance = undef;
+        if (@{[@$circ_ids, @$groc_ids, @$res_ids]}) {
+            $balance = $e->json_query({
+                select => {mbts => [
+                    {   column => 'balance_owed',
+                        transform => 'sum',
+                        aggregate => 1
+                    }
+                ]},
+                from => 'mbts',
+                where => {id => [@$circ_ids, @$groc_ids, @$res_ids]}
+            })->[0];
+        }
 
         $balance = $balance ? $balance->{balance_owed} : '0';
 

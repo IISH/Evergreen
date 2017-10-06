@@ -22,11 +22,11 @@
             </li>
           </ul>
         </div>
-        <div class="col-md-4 pull-right">
-          <select class="form-control" ng-model="args.penalty">
-            <option ng-selected="args.penalty < 100"></option>
-            <option ng-repeat="penalty in penalties" 
-              value="{{penalty.id()}}">{{penalty.label()}}</option>
+        <div class="col-md-4 pull-right nullable">
+          <select class="form-control"
+                  ng-model="args.custom_penalty"
+                  ng-options="penalty.id() as penalty.label() for penalty in penalties">
+            <option value="">[% l('Penalty Type') %]</option>
           </select>
         </div>
       </div>
@@ -39,7 +39,15 @@
       </div>
     </div>
     <div class="modal-footer">
-      <input type="submit" class="btn btn-primary" value="[% l('OK') %]"/>
-      <button class="btn btn-warning" ng-click="cancel($event)">[% l('Cancel') %]</button>
+      <div class="row">
+        <div class="col-md-2">
+          <input type="text" class="form-control" ng-hide="!require_initials" 
+            ng-model="args.initials" placeholder="[% l('Initials') %]" ng-required="require_initials"/>
+        </div>
+        <div class="col-md-10 pull-right">
+          <input type="submit" class="btn btn-primary" value="[% l('OK') %]"/>
+          <button class="btn btn-warning" ng-click="cancel($event)">[% l('Cancel') %]</button>
+        </div>
+      </div>
     </div>
 </form>

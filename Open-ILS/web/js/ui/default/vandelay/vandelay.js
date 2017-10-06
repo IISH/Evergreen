@@ -74,6 +74,7 @@ var authAttrsFetched = false;
 var attrDefMap = {}; // maps attr def code names to attr def ids
 var currentType;
 var currentQueueId = null;
+var currentQueueName = null;
 var userCache = {};
 var currentMatchedRecords; // set of loaded matched bib records
 var currentOverlayRecordsMap; // map of import record to overlay record
@@ -561,6 +562,32 @@ function exportHandler(type, response) {
     }
 }
 
+/* export all (or just non-imported) queue records */
+function vlExportRecordQueue(opts) {
+    /* conform type to exporter */
+    var type = currentType == 'auth' ? 'auth' : 'biblio';
+    var url = '/exporter?type='+type+'&queueid='+currentQueueId;
+    if (opts.nonimported) {
+        url += '&nonimported=1';
+    }
+
+    var req = new XMLHttpRequest();
+    req.open('GET',url,true);
+    req.send(null);
+    req.onreadystatechange = function () {
+        if (req.readyState == 4) {
+            var file_tag = opts.nonimported ? '_nonimported' : '';
+            openils.XUL.contentToFileSaveDialog(req.responseText, null, {
+                defaultString : currentQueueName + file_tag + '.mrc',
+                defaultExtension : '.mrc',
+                filterName : 'MARC21',
+                filterExtension : '*.mrc',
+                filterAll : true
+            } );
+        }
+    }
+}
+
 function retrieveQueuedRecords(type, queueId, onload, doExport) {
     displayGlobalDiv('vl-generic-progress');
     queuedRecords = [];
@@ -626,8 +653,12 @@ function vlLoadMatchUI(recId) {
     var retrieve = ['open-ils.search', 'open-ils.search.biblio.record_entry.slim.retrieve'];
     var params = [records];
     if(currentType == 'auth') {
-        retrieve = ['open-ils.cat', 'open-ils.cat.authority.record.retrieve'];
-        params = [authtoken, records, {clear_marc:1}];
+        retrieve = ['open-ils.pcrud', 'open-ils.pcrud.search.are.atomic'];
+        // retrieve all authority record fields except 'marc' for lightness
+        var fields = fieldmapper.IDL.fmclasses.are.fields
+            .filter(function(f) {return (!f.virtual && f.name != 'marc')})
+            .map(function(f) {return f.name});
+        params = [authtoken, {id : records}, {select : {are : fields}}]
     }
 
     fieldmapper.standardRequest(
@@ -641,12 +672,30 @@ function vlLoadMatchUI(recId) {
 
                 /* ui mangling */
                 displayGlobalDiv('vl-match-div');
-                resetVlMatchGridLayout();
+                resetVlMatchGridLayout(currentType);
                 currentMatchedRecords = recs;
                 vlMatchGrid.setStructure(vlMatchGridLayout);
 
+                var cls = 'bre';
+                if (currentType == 'auth') {
+                    cls = 'are';
+
+                    // When fetching authority records from matches, we 
+                    // only fetch one instance of each record, even though
+                    // it may be used by multiple matches.  Modify the
+                    // array of records so that each match has a 
+                    // corresponding authority record in the list.
+                    var new_recs = [];
+                    dojo.forEach(matches, function(match) {
+                        var rec = recs.filter(function(r) { 
+                            return r.id() == match.eg_record() })[0];
+                        new_recs.push(rec);
+                    });
+                    recs = new_recs;
+                }
+
                 // build the data store of records with match information
-                var dataStore = bre.toStoreData(recs, null, 
+                var dataStore = fieldmapper[cls].toStoreData(recs, null,
                     {virtualFields:['_id', 'match_score', 'match_quality', 'rec_quality']});
                 dataStore.identifier = '_id';
 
@@ -1148,9 +1197,16 @@ function vlToggleQueueGridSelect() {
 
 var handleRetrieveRecords = function() {
     buildRecordGrid(currentType);
+
+    if (currentType.match(/auth/)) {
+        openils.Util.hide('vl-queue-summary-import-item-summary');
+    } else {
+        openils.Util.show('vl-queue-summary-import-item-summary', 'table-body');
+    }
     vlFetchQueueSummary(currentQueueId, currentType, 
         function(summary) {
-            dojo.byId('vl-queue-summary-name').innerHTML = summary.queue.name();
+            currentQueueName = summary.queue.name();
+            dojo.byId('vl-queue-summary-name').innerHTML = currentQueueName;
             dojo.byId('vl-queue-summary-total-count').innerHTML = summary.total +'';
             dojo.byId('vl-queue-summary-import-count').innerHTML = summary.imported + '';
             dojo.byId('vl-queue-summary-import-item-count').innerHTML = summary.total_items + '';
@@ -1772,6 +1828,10 @@ function onAttrEditorOpen() {
 	dijit.byId('attr-editor-dialog').reset();
 	create_bar.style.display='table-row';
 	update_bar.style.display='none';
+
+        // clear the currently-editing attribute ID, 
+        // since we're creating a new attribute.
+        ATTR_EDIT_ID = null;
     }
 }
 

@@ -1,5 +1,15 @@
+<!-
+Template for printing a list of past bills. Data specific
+to this template includes:
+
+* transasctions - a list of transactions, each of which
+  contains:
+
+  summary - information about the transaction
+
+-->
 Welcome to {{current_location.name}}!<br/>
-You have the following bills:
+You had the following bills:
 <hr/>
 <dl>
   <div ng-repeat="xact in transactions">

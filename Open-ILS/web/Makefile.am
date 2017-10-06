@@ -49,11 +49,9 @@ webcore-install:
 	rm -f $(DESTDIR)$(reportsdir)/fm_IDL.xml
 	cp $(DESTDIR)@sysconfdir@/fm_IDL.xml $(DESTDIR)$(WEBDIR)/reports/
 	cp -r @top_srcdir@/Open-ILS/web/. $(DESTDIR)$(WEBDIR)
+	rm -f $(DESTDIR)$(WEBDIR)/Makefile*
 	cp @top_srcdir@/Open-ILS/xsl/*.xsl $(opacextrasdir)
 	cp @top_srcdir@/Open-ILS/xsl/*.xsl $(DESTDIR)$(XSLDIR)
-	for i in mresult.xml rresult.xml rdetail.xml advanced.xml myopac.xml cnbrowse.xml authbrowse.xml; do \
-		cd $(DESTDIR)$(WEBDIR)/opac/skin/default/xml/ && rm -f $$i && $(LN_S) index.xml $$i; \
-	done
 
 offline-install:
 	@echo "Installing offline CGIs to $(CGIDIR)/offline";

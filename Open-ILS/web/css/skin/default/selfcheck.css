@@ -166,7 +166,6 @@ body {
     font-size: 94%;
     text-shadow: 1px 1px 1px #555555;
     cursor: pointer !important;
-    -moz-border-radius: 12px;
     border-radius: 12px;
     border: 1px solid #007a54;
     background: linear-gradient(#007a54, #00593d);
@@ -217,4 +216,15 @@ A {
    font-size: 16px;
    box-shadow:         inset 0 0 8px #ADADB2;
    border-radius: 12px;
+}
+
+input[type=checkbox]
+{
+  /* Double-sized Checkboxes */
+  -ms-transform: scale(2.3); /* IE */
+  -moz-transform: scale(2.3); /* FF */
+  -webkit-transform: scale(2.3); /* Safari and Chrome */
+  -o-transform: scale(2.3); /* Opera */
+  padding: 10px;
+  transform: scale(1.5);
 }

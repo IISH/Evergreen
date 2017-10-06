@@ -141,6 +141,10 @@ circ.util.show_last_few_circs = function(selection_list) {
             if (typeof my_xulG.retrieve_these_patrons == 'undefined') continue;
             var patrons = my_xulG.retrieve_these_patrons;
             for (var j = 0; j < patrons.length; j++) {
+
+                // combcirc objects may have a null value for user
+                if (!patrons[j]) continue;
+
                 if (typeof window.xulG == 'object' && typeof window.xulG.new_tab == 'function') {
                     try {
                         window.xulG.new_patron_tab( {}, { 'id' : patrons[j] } );
@@ -592,6 +596,17 @@ circ.util.columns = function(modify,params) {
                 }
             }
         },
+	{
+            'id' : 'ahhc',
+            'fm_class' : 'hasholdscount',
+            'label' : 'Holds Count',
+            'flex' : 1,
+            'primary' : false,
+            'hidden' : true,
+            'editable' : false, 'render' : function(my) {
+		return network.simple_request("FM_CIRC_HAS_HOLDS_COUNT_RETRIEVE_VIA_COPY",[ ses(), my.acp.id() ] );
+		}
+        },
         {
             'id' : 'prefix',
             'fm_class' : 'acn',
@@ -911,6 +926,21 @@ circ.util.columns = function(modify,params) {
             }
         },
         {
+            'id' : 'age_protect',
+            'fm_class' : 'acp',
+            'label' : document.getElementById('circStrings').getString('staff.circ.utils.age_protect'),
+            'flex' : 1,
+            'primary' : false,
+            'hidden' : true,
+            'editable' : false, 'render' : function(my) {
+                if (Number(my.acp.age_protect())>=0) {
+                    return data.lookup("crahp", my.acp.age_protect() ).name();
+                } else {
+                    return my.acp.age_protect().name();
+                }
+            }
+        },
+        {
             'id' : 'floating',
             'fm_class' : 'acp',
             'label' : document.getElementById('circStrings').getString('staff.circ.utils.floating'),
@@ -1018,6 +1048,22 @@ circ.util.columns = function(modify,params) {
                     return document.getElementById('circStrings').getString('staff.circ.utils.unset');
                 } else {
                     return util.money.sanitize(my.acp.price());
+                }
+            },
+            'sort_type' : 'money'
+        },
+		{
+            'fm_class' : 'acp',
+            'id' : 'cost',
+            'label' : document.getElementById('commonStrings').getString('staff.acp_label_cost'),
+            'flex' : 1,
+            'primary' : false,
+            'hidden' : true,
+            'editable' : false, 'render' : function(my) {
+                if (my.acp.cost() == null) {
+                    return document.getElementById('circStrings').getString('staff.circ.utils.unset');
+                } else {
+                    return util.money.sanitize(my.acp.cost());
                 }
             },
             'sort_type' : 'money'
@@ -1183,6 +1229,23 @@ circ.util.columns = function(modify,params) {
         },
         {
             'fm_class' : 'acp',
+            'id' : 'acp_active_date',
+            'label' : document.getElementById('circStrings').getString('staff.circ.utils.active_date'),
+            'flex' : 1,
+            'sort_type' : 'date',
+            'primary' : false,
+            'hidden' : true,
+            'editable' : false, 'render' : function(my) { return util.date.formatted_date( my.acp.active_date(), '%{localized}' ); }
+            ,'sort_value' : function(my) {
+                return util.date.db_date2Date(
+                    my.acp
+                    ? my.acp.active_date()
+                    : null
+                ).getTime();
+            }
+        }, 
+        {
+            'fm_class' : 'acp',
             'id' : 'acp_edit_date',
             'label' : document.getElementById('circStrings').getString('staff.circ.utils.edit_date'),
             'flex' : 1,
@@ -1203,13 +1266,26 @@ circ.util.columns = function(modify,params) {
             'id' : 'title',
             'label' : document.getElementById('commonStrings').getString('staff.mvr_label_title'),
             'flex' : 2,
-            'sort_type' : 'title',
+//            'sort_type' : 'title',
             'primary' : false,
             'hidden' : true,
             'editable' : false, 'render' : function(my) {
                 if (my.mvr) {
                     if (my.mvr.doc_id() == -1) {
                         return my.acp.dummy_title();
+                    } else {
+                        return my.mvr.title();
+                    }
+                } else {
+                    return my.acp.dummy_title();
+                }
+            },
+            'sort_value' : function(my) {
+                if (my.mvr) {
+                    if (my.mvr.doc_id() == -1) {
+                        return my.acp.dummy_title();
+                    } else if (my.mvr.titlesort()) {
+                        return my.mvr.titlesort();
                     } else {
                         return my.mvr.title();
                     }
@@ -1608,6 +1684,7 @@ circ.util.transit_columns = function(modify,params) {
 
     JSAN.use('OpenILS.data'); var data = new OpenILS.data(); data.init({'via':'stash'});
 
+    var circStrings = document.getElementById('circStrings');
     var c = [
         {
             'id' : 'transit_item_barcode',
@@ -1626,6 +1703,19 @@ circ.util.transit_columns = function(modify,params) {
             'editable' : false, 'render' : function(my) {
                 try { return my.mvr.title(); }
                 catch(E) { return my.acp.dummy_title(); }
+            },
+            'sort_value' : function(my) {
+                if (my.mvr) {
+                    if (my.mvr.doc_id() == -1) {
+                        return my.acp.dummy_title();
+                    } else if (my.mvr.titlesort()) {
+                        return my.mvr.titlesort();
+                    } else {
+                        return my.mvr.title();
+                    }
+                } else {
+                    return my.acp.dummy_title();
+                }
             }
         },
         {
@@ -1740,6 +1830,23 @@ circ.util.transit_columns = function(modify,params) {
                 return data.hash.ccs[ my.atc.copy_status() ].name();
             }
         },
+        {
+            'persist' : 'hidden width ordinal',
+            'id' : 'transit_copy_status_msg',
+            'label' : circStrings.getString(
+                        'staff.circ.utils.transit.copy_status_message.label'),
+            'flex' : 1,
+            'primary' : false,
+            'hidden' : true,
+            'editable' : false,
+            'render' : function(my) {
+                var stat_obj = data.hash.ccs[my.atc.copy_status()];
+                if (stat_obj.copy_active() == 't') return '';
+                var prop = 'staff.circ.utils.transit.copy_status_message';
+                if (!circStrings.testString(prop)) return ''; // prop not defined
+                return circStrings.getFormattedString(prop, [stat_obj.name()]);
+            }
+        }
     ];
     for (var i = 0; i < c.length; i++) {
         if (modify[ c[i].id ]) {
@@ -2269,12 +2376,23 @@ circ.util.hold_columns = function(modify,params) {
             'id' : 'title',
             'label' : document.getElementById('commonStrings').getString('staff.mvr_label_title'),
             'flex' : 1,
-            'sort_type' : 'title',
+//            'sort_type' : 'title',
             'primary' : false,
             'hidden' : true,
             'editable' : false, 'render' : function(my) {
                 if (my.mvr) {
                     return my.mvr.title();
+                } else {
+                    return document.getElementById('circStrings').getString('staff.circ.utils.title.none');
+                }
+            },
+            'sort_value' : function(my) {
+                if (my.mvr) {
+                    if (my.mvr.titlesort()) {
+                        return my.mvr.titlesort();
+                    } else {
+                        return my.mvr.title();
+                    }
                 } else {
                     return document.getElementById('circStrings').getString('staff.circ.utils.title.none');
                 }
@@ -2629,7 +2747,7 @@ circ.util.checkin_via_barcode = function(session,params,backdate,auto_print,asyn
             JSAN.use('util.error'); var error = new util.error();
             try {
                 var check = req.getResultObject();
-                var r = circ.util.checkin_via_barcode2(session,params,backdate,auto_print,check);
+                var r = circ.util.checkin_via_barcode2(session,params,backdate,auto_print,check,async);
                 try {
                     error.work_log(
                         document.getElementById('circStrings').getFormattedString(
@@ -2735,7 +2853,7 @@ circ.util.checkin_via_barcode = function(session,params,backdate,auto_print,asyn
     }
 };
 
-circ.util.checkin_via_barcode2 = function(session,params,backdate,auto_print,check) {
+circ.util.checkin_via_barcode2 = function(session,params,backdate,auto_print,check,async) {
     try {
         JSAN.use('util.error'); var error = new util.error();
         JSAN.use('util.network'); var network = new util.network();
@@ -3045,7 +3163,7 @@ circ.util.checkin_via_barcode2 = function(session,params,backdate,auto_print,che
                             document.getElementById('circStrings').getString('staff.circ.utils.hold_slip.print.no'),
                             null,
                             document.getElementById('circStrings').getString('staff.circ.confirm.msg'),
-                            '/xul/server/skin/media/images/turtle.gif'
+                            '/xul/server/skin/media/images/holdshelf.png'
                         );
                     } else {
                         if (suppress_popups && !no_print_prompting) {
@@ -3199,7 +3317,7 @@ circ.util.checkin_via_barcode2 = function(session,params,backdate,auto_print,che
                             document.getElementById('circStrings').getString('staff.circ.utils.reservation_slip.print.no'),
                             null,
                             document.getElementById('circStrings').getString('staff.circ.confirm.msg'),
-                            '/xul/server/skin/media/images/turtle.gif'
+                            '/xul/server/skin/media/images/reserve.png'
                         );
                     }
                     if (rv == 0) {
@@ -3311,12 +3429,30 @@ circ.util.checkin_via_barcode2 = function(session,params,backdate,auto_print,che
             print_data.item_author = payload_author;
             msg += print_data.item_author_msg;
             msg += '\n';
+
+            print_data.transit_copy_status_msg = '';
             if (check.payload.transit) {
+                var stat_obj = data.hash.ccs[check.payload.transit.copy_status()];
+
                 // by adding this here, we make the data available to the
-                // receipt printing engine, but since we are not appending it
-                // to the 'msg', it will not display in the pre-print dialog.
-                print_data.transit_copy_status = 
-                    data.hash.ccs[check.payload.transit.copy_status()].name();
+                // receipt printing engine.
+                print_data.transit_copy_status = stat_obj.name();
+
+                // If the copy, once arrived at its destination, will be 
+                // in a non-active state (and a statu message string is 
+                // present) append the message to the alert dialog and apply
+                // the message to the transit_copy_status_msg macro.
+                if (stat_obj.copy_active() == 'f') {
+                    var strings = document.getElementById('circStrings');
+                    var prop = 'staff.circ.utils.transit.copy_status_message';
+
+                    if (strings.testString(prop)) {
+                        var status_msg = strings.getFormattedString(
+                            prop, [stat_obj.name()]);
+                        msg += status_msg + '\n'; // alert dialog
+                        print_data.transit_copy_status_msg = status_msg; // print macro
+                    }
+                }
             }
             JSAN.use('util.date');
             if (check.payload.hold) {
@@ -3456,7 +3592,7 @@ circ.util.checkin_via_barcode2 = function(session,params,backdate,auto_print,che
                     document.getElementById('circStrings').getString('staff.circ.utils.transit_slip.print.no'),
                     null,
                     document.getElementById('circStrings').getString('staff.circ.confirm.msg'),
-                    '/xul/server/skin/media/images/turtle.gif'
+                    '/xul/server/skin/media/images/transit.png'
                 );
             } else {
                 if (suppress_popups && !no_print_prompting) {
@@ -3485,6 +3621,7 @@ circ.util.checkin_via_barcode2 = function(session,params,backdate,auto_print,che
                             'data' : print_data,
                             'context' : data.print_list_templates[ template ].context,
                         };
+
                         if ($('printer_prompt')) {
                             if (! $('printer_prompt').checked) { parms.no_prompt = true; }
                         }
@@ -3569,6 +3706,16 @@ circ.util.checkin_via_barcode2 = function(session,params,backdate,auto_print,che
             check.what_happened = 'error';
             sound.special('checkin.error');
             error.standard_network_error_alert(document.getElementById('circStrings').getString('staff.circ.checkin.suggest_offline'));
+        } else /* UPDATE failed, and async */ if (check.ilsevent == 2001 && async) {
+            check.what_happened = 'error';
+            sound.special('checkin.error');
+            error.yns_alert(
+                document.getElementById('circStrings').getString('staff.circ.checkin.possible_dupe_scan'),
+                document.getElementById('circStrings').getString('staff.circ.alert'),
+                document.getElementById('circStrings').getString('staff.circ.utils.msg.ok'),
+                null, null,
+                document.getElementById('circStrings').getString('staff.circ.confirm.msg')
+            );
         } else {
 
             if (check.ilsevent == null) { return null; /* handled */ }
@@ -3656,7 +3803,11 @@ circ.util.renew_via_barcode = function ( params, async ) {
                         case 7008 /* MAX_RENEWALS_REACHED */ : break;
                         case 7009 /* CIRC_CLAIMS_RETURNED */ : break;
                         case 7010 /* COPY_ALERT_MESSAGE */ : break;
+                        case 7011 /* COPY_STATUS_LOST */ : break;
                         case 7013 /* PATRON_EXCEEDS_FINES */ : break;
+                        case 7025 /* COPY_STATUS_LONG_OVERDUE */ : break;
+                        case 11106 /* TOTAL_HOLD_COPY_RATIO_EXCEEDED */ : break;
+                        case 11107 /* AVAIL_HOLD_COPY_RATIO_EXCEEDED */ : break;
                         default:
                             throw(renew);
                         break;
@@ -3735,7 +3886,11 @@ circ.util.renew_via_barcode = function ( params, async ) {
                     7008 /* MAX_RENEWALS_REACHED */,
                     7009 /* CIRC_CLAIMS_RETURNED */,
                     7010 /* COPY_ALERT_MESSAGE */,
+                    7011 /* COPY_STATUS_LOST */,
                     7013 /* PATRON_EXCEEDS_FINES */,
+                    7025 /* COPY_STATUS_LONG_OVERDUE */,
+                    11106 /* TOTAL_HOLD_COPY_RATIO_EXCEEDED */,
+                    11107 /* AVAIL_HOLD_COPY_RATIO_EXCEEDED */
                 ],
                 'text' : {
                     '1212' : function(r) { return document.getElementById('circStrings').getFormattedString('staff.circ.renew.barcode', [params.barcode]); },
@@ -3763,7 +3918,13 @@ circ.util.renew_via_barcode = function ( params, async ) {
                     '7010' : function(r) {
                         return document.getElementById('circStrings').getFormattedString('staff.circ.renew.barcode.msg', [params.barcode, r.payload]);
                     },
-                    '7013' : function(r) { return document.getElementById('circStrings').getFormattedString('staff.circ.renew.barcode', [params.barcode]); }
+                    '7011' : function(r) {
+                        return document.getElementById('circStrings').getFormattedString('staff.circ.renew.barcode.status', [params.barcode, typeof r.payload.status() == 'object' ? r.payload.status().name() : obj.data.hash.ccs[ r.payload.status() ].name()]);
+                    },
+                    '7013' : function(r) { return document.getElementById('circStrings').getFormattedString('staff.circ.renew.barcode', [params.barcode]); },
+                    '7025' : function(r) {
+                        return document.getElementById('circStrings').getFormattedString('staff.circ.renew.barcode.status', [params.barcode, typeof r.payload.status() == 'object' ? r.payload.status().name() : obj.data.hash.ccs[ r.payload.status() ].name()]);
+                    }
                 }
             }
         );

@@ -1,6 +1,7 @@
 if(!dojo._hasResource['openils.widget.AutoGrid']) {
     dojo.provide('openils.widget.AutoGrid');
     dojo.require('dojox.grid.DataGrid');
+    dojo.require("dojox.encoding.base64");
     dojo.require('dijit.layout.ContentPane');
     dojo.require('openils.widget.AutoWidget');
     dojo.require('openils.widget.AutoFieldWidget');
@@ -9,6 +10,7 @@ if(!dojo._hasResource['openils.widget.AutoGrid']) {
     dojo.require('openils.widget.GridColumnPicker');
     dojo.require('openils.widget._GridHelperColumns');
     dojo.require('openils.Util');
+    dojo.require('openils.CGI');
     dojo.requireLocalization('openils.widget', 'AutoFieldWidget');
 
     dojo.declare(
@@ -36,6 +38,12 @@ if(!dojo._hasResource['openils.widget.AutoGrid']) {
             showLoadFilter : true,
             onItemReceived : null,
             suppressLinkedFields : null, // list of fields whose linked display data should not be fetched from the server
+            urlNavigation : false,
+
+            // When using urlNavigation, this is a stash where the
+            // caller can place arbitrary data to be passed around
+            // between pages.
+            urlUserData : {},
 
             /* by default, don't show auto-generated (sequence) fields */
             showSequenceFields : false, 
@@ -58,6 +66,7 @@ if(!dojo._hasResource['openils.widget.AutoGrid']) {
                 this.overrideEditWidgets = {};
                 this.overrideEditWidgetClass = {};
                 this.overrideWidgetArgs = {};
+                this.extractUrlOps();
 
 		this.nls = dojo.i18n.getLocalization('openils.widget', 'AutoFieldWidget');
 
@@ -83,13 +92,21 @@ if(!dojo._hasResource['openils.widget.AutoGrid']) {
                         }
                     });
 
+                    // TODO: support self.urlNavigation
                     var forw = dojo.create('a', {
                         innerHTML : self.nls.NEXT,
                         style : 'padding-right:6px;',
                         href : 'javascript:void(0);', 
                         onclick : function() { 
                             self.cachedQueryOpts.offset = self.displayOffset += self.displayLimit;
-                            self.refresh();
+                            if (self.urlNavigation) {
+                                self.applyAndExecuteUrlOps(
+                                    self.cachedQueryOpts.offset,
+                                    self.cachedQuerySearch
+                                );
+                            } else {
+                                self.refresh();
+                            }
                         }
                     });
 
@@ -111,13 +128,18 @@ if(!dojo._hasResource['openils.widget.AutoGrid']) {
                                             {fmClass:self.fmClass, suppressFilterFields:self.suppressFilterFields})
 
                                         self.filterDialog.onApply = function(filter) {
-                                            self.cachedQuerySearch = filter;
-                                            self.resetStore();
-                                            self.loadAll(
-                                                dojo.mixin( { offset : 0 }, self.cachedQueryOpts ),
-                                                self.cachedQuerySearch,
-                                                true
-                                            );
+                                            if (self.urlNavigation) {
+                                                self.applyAndExecuteUrlOps(0, filter);
+
+                                            } else {
+                                                self.cachedQuerySearch = filter;
+                                                self.resetStore();
+                                                self.loadAll(
+                                                    dojo.mixin( { offset : 0 }, self.cachedQueryOpts ),
+                                                    self.cachedQuerySearch,
+                                                    true
+                                                );
+                                            }
                                         };
 
                                         self.filterDialog.startup();
@@ -136,6 +158,40 @@ if(!dojo._hasResource['openils.widget.AutoGrid']) {
                     });
                     dojo.place(this.loadProgressIndicator, this.paginator.domNode);
                 }
+            },
+
+            // set URL options then jump to the new URL
+            applyAndExecuteUrlOps : function(offset, filter) {
+                var ops = {
+                    filter : filter, // TODO: load from query cache on offset-only change
+                    offset : offset || 0,
+                    userData : this.urlUserData
+                }
+
+                var encoded = dojox.encoding.base64.encode(
+                    js2JSON(ops)
+                    .split("")
+                    .map(function(c) { return c.charCodeAt(0); })
+                );
+
+                var cgi = new openils.CGI();
+                cgi.param('djgridops', encoded);
+                location.href = cgi.url();
+            },
+
+            // extract options encoded in the URL
+            extractUrlOps : function() {
+                var ops = new openils.CGI().param('djgridops');
+                if (!ops) return;
+
+                ops = JSON2js(
+                    dojox.encoding.base64.decode(ops)
+                    .map(function(b) {return String.fromCharCode(b)})
+                    .join("")
+                );
+
+                this.urlOps = ops;
+                this.urlUserData = ops.userData;
             },
 
             hideLoadProgressIndicator : function() {
@@ -582,6 +638,25 @@ if(!dojo._hasResource['openils.widget.AutoGrid']) {
                 // retain the most recent external loadAll 
                 if (!filter_triggered || !this.preFilterSearch)
                     this.preFilterSearch = dojo.clone( this.cachedQuerySearch );
+
+                if (this.urlNavigation) {
+                    if (!this.urlOpsApplied) {
+                        this.urlOpsApplied = true;
+                        // on the first page load, apply the ops from the URL
+                        if (this.urlOps) {
+                            opts.offset = self.displayOffset = this.urlOps.offset;
+                            search = dojo.mixin(search || {}, this.urlOps.filter);
+                        }
+                    } else {
+                        // subsequent calls to loadAll() suggest changing
+                        // filters / paging / etc, propagate new values
+                        // to the new URL
+                        return this.applyAndExecuteUrlOps(
+                            this.displayOffset,
+                            this.cachedQuerySearch
+                        );
+                    }
+                }
 
                 if(search)
                     new openils.PermaCrud().search(this.fmClass, search, opts);

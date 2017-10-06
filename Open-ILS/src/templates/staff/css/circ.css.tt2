@@ -1,3 +1,10 @@
+
+/* push the patron summary up to compensate for the extra
+ * padding required to support the fixed navigation */
+.patron-summary-grid-wrapper {
+  margin-top: 20px;
+}
+
 /** style to make a grid look like a striped table */
 #patron-summary-grid div.row {padding: 3px; border-right: 2px solid rgb(248, 248, 248);}
 #patron-summary-grid div.row:nth-child(odd) {background-color: rgb(248, 248, 248);}
@@ -5,7 +12,7 @@
 /* there are bootstrap tyles for error, warning, etc., 
 but the ones I'm finding aren't quite cutting it..*/
 .patron-summary-alert {color: red; font-weight:bold}
-.patron-summary-alert-small {color: red}
+.patron-summary-alert-small {color: red; background-color: white;}
 .patron-summary-divider { border-top: 1px solid #CCC}
 .patron-summary-act-link {font-size: .8em;}
 
@@ -16,6 +23,21 @@ but the ones I'm finding aren't quite cutting it..*/
 
 #patron-search-form div.form-group {
   margin-bottom: 5px;
+}
+
+#patron-fixed-tabs {
+    position: fixed;
+    top: 50px;
+    right: 15px;
+    left: 45px;
+    padding-top: 20px;
+    padding-top: 10px;
+    z-index: 3;
+    background-color: rgba(255,255,255,1);
+}
+
+.patron-name-header {
+  margin-top: 20px;
 }
 
 /* let search form elements fill their containers w/ slight padding */
@@ -54,6 +76,97 @@ but the ones I'm finding aren't quite cutting it..*/
   border-bottom: 1px solid #CCC;
 }
 
+/* -- patron registration -- */
+
+/* make all input widgets the same width, i.e. fill their column */
+
+.reg-field-input {font-weight: 700; }
+.reg-field-input input:not([type="checkbox"]) { width: 100%; }
+
+/* selector contents float left to allow depth-based left-padding */
+.reg-field-input .eg-org-selector,
+.reg-field-input .btn-group {
+  width: 100%; 
+  text-align: left;
+}
+
+/* selector button labels float right */
+.reg-field-input .eg-org-selector button,
+.reg-field-input .btn-group > button {
+  width: 100%; 
+  text-align: right;
+}
+
+/* floating div along top-right with field documentation */
+#reg-alert-pane {
+    position: fixed;
+    top:160px;
+    right:20px;
+    /*
+    border:2px dashed #d9e8f9;
+    -moz-border-radius: 10px;
+    */
+    font-weight: bold;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+#reg-dupe-links {
+		margin-bottom: 10px;
+}
+
+
+#reg-field-doc legend {
+    /* otherwise the font size is quite large */
+    font-size: 100%;
+}
+
+.reg-field-row {
+    padding-bottom: 3px; 
+}
+
+.reg-field-row label {
+    font-weight: normal;
+}
+
+.patron-reg-fixed-bar {
+    position: fixed;
+    top:50px;
+    right: 20px;
+    left: 20px;
+    padding-top: 20px;
+    padding-bottom: 10px;
+    z-index: 1;
+    background-color: rgba(255,255,255,1);
+}
+
+.patron-reg-actions-bar {
+  padding: 5px;
+}
+.patron-reg-actions-bar span {
+  font-weight: bold;
+}
+
+.patron-reg-barcodes > .header {
+  font-weight: bold;
+}
+
+/* Bootstrap alert panes are too stylized/padded/etc. in this case,
+ * but consider revisiting. */
+.patron-reg-validation-alert {
+  font-weight: bold;
+  color: red;
+}
+
+/* Angular applies these classes based on the field's 
+ * required and pattern settings */
+#patron-reg-container .ng-invalid,
+#patron-reg-container .ng-invalid-required {
+  background-color: yellow;
+  color: red;
+}
+
+/* -- end patron registration -- */
 
 [%# 
 vim: ft=css 

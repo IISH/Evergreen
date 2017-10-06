@@ -5,11 +5,20 @@
 angular.module('egPatronApp')
 
 .controller('PatronItemsOutCtrl',
-       ['$scope','$q','$routeParams','egCore','egUser','patronSvc',
-        'egGridDataProvider','$modal','egCirc','egConfirmDialog','egBilling',
-function($scope,  $q,  $routeParams,  egCore , egUser,  patronSvc , 
-         egGridDataProvider , $modal , egCirc , egConfirmDialog , egBilling) {
-    $scope.initTab('items_out', $routeParams.id);
+       ['$scope','$q','$routeParams','$timeout','egCore','egUser','patronSvc','$location',
+        'egGridDataProvider','$uibModal','egCirc','egConfirmDialog','egBilling','$window',
+function($scope,  $q,  $routeParams,  $timeout,  egCore , egUser,  patronSvc , $location, 
+         egGridDataProvider , $uibModal , egCirc , egConfirmDialog , egBilling , $window) {
+
+    // list of noncatatloged circulations. Define before initTab to 
+    // avoid any possibility of race condition, since they are loaded
+    // during init, but may be referenced before init completes.
+    $scope.noncat_list = [];
+
+    $scope.initTab('items_out', $routeParams.id).then(function() {
+        // sort inline to support paging
+        $scope.noncat_list = patronSvc.noncat_ids.sort();
+    });
 
     // cache of circ objects for grid display
     patronSvc.items_out = [];
@@ -60,6 +69,13 @@ function($scope,  $q,  $routeParams,  egCore , egUser,  patronSvc ,
         provider.refresh();
     }
 
+    $scope.show_noncat_list = function() {
+        // don't need a full reset_page() to swap tabs
+        $scope.items_out_display = 'noncat';
+        patronSvc.items_out = [];
+        provider.refresh();
+    }
+
     // Reload the user to pick up changes in items out, fines, etc.
     // Reload circs since the contents of the main vs. alt list may
     // have changed.
@@ -81,8 +97,8 @@ function($scope,  $q,  $routeParams,  egCore , egUser,  patronSvc ,
         return egCore.pcrud.search('circ', {id : id_list},
             {   flesh : 4,
                 flesh_fields : {
-                    circ : ['target_copy'],
-                    acp : ['call_number'],
+                    circ : ['target_copy', 'workstation', 'checkin_workstation'],
+                    acp : ['call_number', 'holds_count'],
                     acn : ['record'],
                     bre : ['simple_record']
                 },
@@ -112,6 +128,35 @@ function($scope,  $q,  $routeParams,  egCore , egUser,  patronSvc ,
         });
     }
 
+    function fetch_noncat_circs(id_list, offset, count) {
+        if (!id_list.length) return $q.when();
+
+        return egCore.pcrud.search('ancc', {id : id_list},
+            {   flesh : 1,
+                flesh_fields : {ancc : ['item_type','staff']},
+                limit  : count,
+                offset : offset,
+                // we need an order-by to support paging
+                order_by : {circ : ['circ_time']} 
+
+        }).then(null, null, function(noncat_circ) {
+
+            // calculate the virtual due date from the item type duration
+            var seconds = egCore.date.intervalToSeconds(
+                noncat_circ.item_type().circ_duration());
+            var d = new Date(Date.parse(noncat_circ.circ_time()));
+            d.setSeconds(d.getSeconds() + seconds);
+            noncat_circ.duedate(d.toISOString());
+
+            // local flesh org unit
+            noncat_circ.circ_lib(egCore.org.get(noncat_circ.circ_lib()));
+
+            patronSvc.items_out.push(noncat_circ); // cache it
+            return noncat_circ;
+        });
+    }
+
+
     // decide which list each circ belongs to
     function promote_circs(list, display_code, open) {
         if (open) {                                                    
@@ -137,7 +182,7 @@ function($scope,  $q,  $routeParams,  egCore , egUser,  patronSvc ,
             'open-ils.actor.user.checked_out.authoritative',
             egCore.auth.token(), $scope.patron_id
         ).then(function(outs) {
-            $scope.main_list = outs.out.concat(outs.overdue);
+            $scope.main_list = outs.overdue.concat(outs.out);
             promote_circs(outs.lost, display_lost, true);                            
             promote_circs(outs.long_overdue, display_lo, true);             
             promote_circs(outs.claims_returned, display_cr, true);
@@ -165,6 +210,11 @@ function($scope,  $q,  $routeParams,  egCore , egUser,  patronSvc ,
         if (patronSvc.items_out[offset]) {
             return provider.arrayNotifier(
                 patronSvc.items_out, offset, count);
+        }
+
+        if ($scope.items_out_display == 'noncat') {
+            // if there are any noncat circ IDs, we already have them
+            return fetch_noncat_circs(id_list, offset, count);
         }
 
         // See if we have the circ IDs for this range already loaded.
@@ -204,11 +254,11 @@ function($scope,  $q,  $routeParams,  egCore , egUser,  patronSvc ,
     $scope.edit_due_date = function(items) {
         if (!items.length) return;
 
-        $modal.open({
+        $uibModal.open({
             templateUrl : './circ/patron/t_edit_due_date_dialog',
             controller : [
-                        '$scope','$modalInstance',
-                function($scope , $modalInstance) {
+                        '$scope','$uibModalInstance',
+                function($scope , $uibModalInstance) {
 
                     // if there is only one circ, default to the due date
                     // of that circ.  Otherwise, default to today.
@@ -223,7 +273,13 @@ function($scope,  $q,  $routeParams,  egCore , egUser,  patronSvc ,
                     // Fire off the due-date updater for each circ.
                     // When all is done, close the dialog
                     $scope.ok = function(args) {
-                        var due = args.due_date.toISOString().replace(/T.*/,'');
+                        // toISOString gives us Zulu time, so
+                        // adjust for that before truncating to date
+                        var adjust_date = new Date( $scope.args.due_date );
+                        adjust_date.setMinutes(
+                            $scope.args.due_date.getMinutes() - adjust_date.getTimezoneOffset()
+                        );
+                        var due = adjust_date.toISOString().replace(/T.*/,'');
                         console.debug("applying due date of " + due);
 
                         var promises = [];
@@ -243,12 +299,12 @@ function($scope,  $q,  $routeParams,  egCore , egUser,  patronSvc ,
                         });
 
                         $q.all(promises).then(function() {
-                            $modalInstance.close();
+                            $uibModalInstance.close();
                             provider.refresh();
                         });
                     }
                     $scope.cancel = function($event) {
-                        $modalInstance.dismiss();
+                        $uibModalInstance.dismiss();
                         $event.preventDefault();
                     }
                 }
@@ -293,6 +349,28 @@ function($scope,  $q,  $routeParams,  egCore , egUser,  patronSvc ,
         batch_action_with_barcodes(items, egCirc.mark_claims_never_checked_out);
     }
 
+    $scope.show_recent_circs = function(items) {
+        var focus = items.length == 1;
+        angular.forEach(items, function(item) {
+            var url = egCore.env.basePath +
+                      '/cat/item/' +
+                      item.target_copy().id() +
+                      '/circ_list';
+            $timeout(function() { var x = $window.open(url, '_blank'); if (focus) x.focus() });
+        });
+    }
+
+    $scope.show_triggered_events = function(items) {
+        var focus = items.length == 1;
+        angular.forEach(items, function(item) {
+            var url = egCore.env.basePath +
+                      '/cat/item/' +
+                      item.target_copy().id() +
+                      '/triggered_events';
+            $timeout(function() { var x = $window.open(url, '_blank'); if (focus) x.focus() });
+        });
+    }
+
     $scope.renew = function(items, msg) {
         if (!items.length) return;
         var barcodes = items.map(function(circ) 
@@ -328,17 +406,17 @@ function($scope,  $q,  $routeParams,  egCore , egUser,  patronSvc ,
         var barcodes = items.map(function(circ) 
             { return circ.target_copy().barcode() });
 
-        return $modal.open({
+        return $uibModal.open({
             templateUrl : './circ/patron/t_edit_due_date_dialog',
             templateUrl : './circ/patron/t_renew_with_date_dialog',
             controller : [
-                        '$scope','$modalInstance',
-                function($scope , $modalInstance) {
+                        '$scope','$uibModalInstance',
+                function($scope , $uibModalInstance) {
                     $scope.args = {
                         barcodes : barcodes,
                         date : new Date()
                     }
-                    $scope.cancel = function() {$modalInstance.dismiss()}
+                    $scope.cancel = function() {$uibModalInstance.dismiss()}
 
                     // Fire off the due-date updater for each circ.
                     // When all is done, close the dialog
@@ -351,7 +429,7 @@ function($scope,  $q,  $routeParams,  egCore , egUser,  patronSvc ,
                                 egCirc.renew({copy_barcode : bc, due_date : due})
                                 .finally(do_one);
                             } else {
-                                $modalInstance.close(); 
+                                $uibModalInstance.close(); 
                                 reset_page();
                             }
                         }

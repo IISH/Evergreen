@@ -59,13 +59,17 @@
                                 window.addEventListener(
                                     'load',
                                     function() {
-                                        try {
-                                            if (typeof xulG != 'undefined' && xulG.opac_hold_placed) {
-                                                xulG.opac_hold_placed([% hdata.hold_success %]);
-                                            }
-                                        } catch(E) {
-                                            alert('Error updating Work Log with hold placement: ' + E);
-                                        }
+                                        setTimeout( // we want this to run _after_ other onload handlers (such as from eframe.js)
+                                            function() {
+                                                try {
+                                                    if (typeof xulG != 'undefined' && xulG.opac_hold_placed) {
+                                                        xulG.opac_hold_placed([% hdata.hold_success %]);
+                                                    }
+                                                } catch(E) {
+                                                    alert('Error updating Work Log with hold placement: ' + E);
+                                                }
+                                            }, 0
+                                        );
                                     },
                                     false
                                 );
@@ -88,9 +92,9 @@
                                                 # display:
                                                 (hdata.age_protect ?
                                                     l("All available copies are temporarily unavailable at your pickup library. Placing this hold could result in longer wait times.") :
-                                                    FAIL_PART_MSG_MAP.$fail_part_key ||
                                                     EVENT_MSG_MAP.$event_key ||
-                                                    l(hdata.hold_failed_event.desc) ||
+                                                    FAIL_PART_MSG_MAP.$fail_part_key ||
+                                                    (hdata.hold_failed_event.desc ? l(hdata.hold_failed_event.desc) : '') ||
                                                     hdata.hold_failed_event.payload.fail_part ||
                                                     hdata.hold_failed_event.textcode ||
                                                     (hdata.hold_local_alert ?
@@ -128,7 +132,20 @@
         [% IF any_failures OR ctx.general_hold_error %]
         <a href="[% CGI.param('redirect_to') || CGI.referer | html %]">[% l('Cancel') %]</a>
         [% ELSE %]
-        <a href="[% CGI.param('redirect_to') || CGI.referer | html %]">[% l('Continue') %]</a>
+        <div class='hold_success_links'>
+          <span><a href="[% CGI.param('redirect_to') || CGI.referer | html %]">[% l('Continue') %]</a></span>
+           [% IF ctx.is_staff %]
+             [% IF CGI.param('hold_type') == 'C';
+                  hold_type_label = l('copy');
+                ELSIF CGI.param('hold_type') == 'V';
+                  hold_type_label = l('volume');
+                ELSE;
+                  hold_type_label = l('title');
+              END %]
+               <span><a href="[% mkurl(ctx.opac_root _ '/place_hold', {hold_source_page => CGI.param('hold_source_page'), bre_id => CGI.param('bre_id')}) %]">
+               [% l('Place another hold for this ') %] [% hold_type_label %]</a>
+               </span>
+          [% END %]
         [% END %]
         </span>
     </form>

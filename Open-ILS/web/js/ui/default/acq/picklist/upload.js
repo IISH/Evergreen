@@ -177,7 +177,11 @@ function acqHandlePostUpload(key, plId) {
                                 link.setAttribute('href', url); 
                             } else {
                                 link.setAttribute('href', 'javascript:;'); // for linky-ness
-                                link.onclick = function() { openils.XUL.newTabEasy(url, null, null, true) };
+                                if (window.IAMBROWSER) {
+                                    link.onclick = function() { xulG.relay_url(url) };
+                                } else {
+                                    link.onclick = function() { openils.XUL.newTabEasy(url, null, null, true) };
+                                }
                             }
                         }
                             
@@ -220,7 +224,6 @@ function loadYearSelector() {
                 yearList = yearList.map(function(year){return {year:year+''};}); // dojo wants strings
 
                 var yearStore = {identifier:'year', name:'year', items:yearList};
-                yearStore.items = yearStore.items.sort().reverse();
                 acqUploadYearSelector.store = new dojo.data.ItemFileReadStore({data:yearStore});
 
                 // until an ordering agency is selected, default to the 

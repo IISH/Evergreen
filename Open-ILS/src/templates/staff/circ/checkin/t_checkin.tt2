@@ -7,45 +7,46 @@
 
 <div class="row">
   <div class="col-md-12">
-    <div class="flex-row left-anchored">
-      <div ng-if="is_backdate()" class="alert-danger pad-all-min">
-        [% l('Backdated Check In [_1]', 
-          '{{checkinArgs.backdate | date:"shortDate"}}') %]
+    <div ng-if="is_backdate()" class="alert-danger pad-all-min">
+      [% l('Backdated Check In [_1]', 
+        '{{checkinArgs.backdate | date:"shortDate"}}') %]
+    </div>
+    <div ng-if="modifiers.no_precat_alert" class="alert-danger pad-all-min">
+      [% l('Ignore Pre-Cataloged Items') %]
+    </div>
+    <div ng-if="modifiers.noop" class="alert-danger pad-all-min">
+      [% l('Suppress Holds and Transits') %]
+    </div>
+    <div ng-if="modifiers.void_overdues" class="alert-danger pad-all-min">
+      [% l('Amnesty Mode') %]
+    </div>
+    <div ng-if="modifiers.auto_print_holds_transits" 
+      class="alert-danger pad-all-min">
+      [% l('Auto-Print Hold and Transit Slips') %]
+    </div>
+    <div ng-if="modifiers.clear_expired" class="alert-danger pad-all-min">
+      [% l('Clear Holds Shelf') %]
+    </div>
+    <div ng-if="modifiers.retarget_holds" class="alert-danger pad-all-min">
+      <div ng-if="modifiers.retarget_holds_all">
+        [% l('Always Retarget Local Holds') %]
       </div>
-      <div ng-if="modifiers.no_precat_alert" class="alert-danger pad-all-min">
-        [% l('Ignore Pre-Cataloged Items') %]
+      <div ng-if="!modifiers.retarget_holds_all">
+        [% l('Retarget Local Holds') %]
       </div>
-      <div ng-if="modifiers.noop" class="alert-danger pad-all-min">
-        [% l('Suppress Holds and Transits') %]
-      </div>
-      <div ng-if="modifiers.void_overdues" class="alert-danger pad-all-min">
-        [% l('Amnesty Mode') %]
-      </div>
-      <div ng-if="modifiers.auto_print_holds_transits" 
-        class="alert-danger pad-all-min">
-        [% l('Auto-Print Hold and Transit Slips') %]
-      </div>
-      <div ng-if="modifiers.clear_expired" class="alert-danger pad-all-min">
-        [% l('Clear Holds Shelf') %]
-      </div>
-      <div ng-if="modifiers.retarget_holds" class="alert-danger pad-all-min">
-        <div ng-if="modifiers.retarget_holds_all">
-          [% l('Always Retarget Local Holds') %]
-        </div>
-        <div ng-if="!modifiers.retarget_holds_all">
-          [% l('Retarget Local Holds') %]
-        </div>
-      </div>
-      <div ng-if="modifiers.hold_as_transit" class="alert-danger pad-all-min">
-        [% l('Capture Local Holds As Transits') %]
-      </div>
+    </div>
+    <div ng-if="modifiers.hold_as_transit" class="alert-danger pad-all-min">
+      [% l('Capture Local Holds As Transits') %]
+    </div>
+    <div ng-if="modifiers.manual_float" class="alert-danger pad-all-min">
+      [% l('Manual Floating Active') %]
     </div>
   </div>
 </div>
 
 <!-- checkin form -->
 <div class="row pad-vert">
-  <div class="col-md-4">
+  <div class="col-md-5">
     <form ng-submit="checkin(checkinArgs)" role="form" class="form-inline">
       <div class="input-group">
 
@@ -63,7 +64,7 @@
     </form>
   </div>
 
-  <div class="col-md-4">
+  <div class="col-md-3">
     <div ng-if="alert" class="col-md-12 alert-danger pad-all-min">
       <span ng-if="alert.already_checked_in">
         [% l('[_1] was already checked in.', '{{alert.already_checked_in}}') %]
@@ -79,8 +80,7 @@
       <div class="flex-cell"></div>
       <div class="pad-horiz">[% l('Effective Date') %]</div>
       <!-- date max= not yet supported -->
-      <div><input eg-date-input
-        class="form-control" ng-model="checkinArgs.backdate"/>
+      <div><eg-date-input ng-model="checkinArgs.backdate"></eg-date-input>
       </div>
     </div>
   </div>
@@ -91,7 +91,10 @@
     <span>[% l('Fine Tally:') %]</span>
     <span class="pad-horiz alert alert-danger">{{fine_total | currency}}</span>
     <span ng-if="billable_barcode">
-      <span>[% l('Transaction for [_1] billed:', '{{billable_barcode}}') %]</span>
+      <!-- note: this forces a new tab -->
+      <a href='./circ/patron/{{billable_user_id}}/bills' target='_blank'>
+        <span>[% l('Transaction for [_1] billed:', '{{billable_barcode}}') %]</span>
+      </a>
       <span class="pad-horiz alert alert-danger">{{billable_amount | currency}}</span>
     </span>
   </div>
@@ -109,13 +112,13 @@
         <button class="btn btn-default" 
           ng-click="print_receipt()">[% l('Print Receipt') %]</button>
       </div>
-      <div class="checkbox" ng-if="using_hatch">
+      <div class="checkbox" ng-if="using_hatch_printer">
         <label>
           <input ng-model="show_print_dialog" type="checkbox"/>
           [% l('Show Print Dialog') %]
         </label>
       </div>
-      <div class="pad-horiz" ng-if="using_hatch"></div>
+      <div class="pad-horiz" ng-if="using_hatch_printer"></div>
       <div class="checkbox">
         <label>
           <input ng-model="trim_list" type="checkbox"/>
@@ -132,14 +135,14 @@
     </div><!-- flex row -->
   </div><!-- col -->
   <div class="col-md-2">
-    <div class="input-group-btn" dropdown>
-      <button type="button" class="btn btn-default dropdown-toggle">
+    <div class="input-group-btn" uib-dropdown>
+      <button type="button" class="btn btn-default" uib-dropdown-toggle>
         [% l('Checkin Modifiers') %]
         <span class="caret"></span>
       </button>
-      <ul class="dropdown-menu pull-right">
+      <ul class="pull-right" uib-dropdown-menu>
         <li>
-          <a href dropdown-toggle 
+          <a href
             ng-click="toggle_mod('no_precat_alert')">
             <span ng-if="modifiers.no_precat_alert" 
               class="label label-success">&#x2713;</span>
@@ -149,7 +152,7 @@
           </a>
         </li>
         <li ng-if="!is_capture"><!-- nonsensical for hold capture -->
-          <a href dropdown-toggle 
+          <a href
             ng-click="toggle_mod('noop')">
             <span ng-if="modifiers.noop" 
               class="label label-success">&#x2713;</span>
@@ -159,7 +162,7 @@
           </a>
         </li>
         <li>
-          <a href dropdown-toggle 
+          <a href
             ng-click="toggle_mod('void_overdues')">
             <span ng-if="modifiers.void_overdues" 
               class="label label-success">&#x2713;</span>
@@ -169,7 +172,7 @@
           </a>
         </li>
         <li>
-          <a href dropdown-toggle 
+          <a href
             ng-click="toggle_mod('auto_print_holds_transits')">
             <span ng-if="modifiers.auto_print_holds_transits" 
               class="label label-success">&#x2713;</span>
@@ -179,7 +182,7 @@
           </a>
         </li>
         <li>
-          <a href dropdown-toggle 
+          <a href
             ng-click="toggle_mod('clear_expired')">
             <span ng-if="modifiers.clear_expired" 
               class="label label-success">&#x2713;</span>
@@ -189,7 +192,7 @@
           </a>
         </li>
         <li>
-          <a href dropdown-toggle 
+          <a href
             ng-click="toggle_mod('retarget_holds')">
             <span ng-if="modifiers.retarget_holds" 
               class="label label-success">&#x2713;</span>
@@ -199,7 +202,7 @@
           </a>
         </li>
         <li>
-          <a href dropdown-toggle 
+          <a href
             ng-click="toggle_mod('retarget_holds_all')">
             <span ng-if="modifiers.retarget_holds_all" 
               class="label label-success">&#x2713;</span>
@@ -209,13 +212,23 @@
           </a>
         </li>
         <li>
-          <a href dropdown-toggle 
+          <a href
             ng-click="toggle_mod('hold_as_transit')">
             <span ng-if="modifiers.hold_as_transit" 
               class="label label-success">&#x2713;</span>
             <span ng-if="!modifiers.hold_as_transit"
               class="label label-warning">&#x2717;</span>
             <span>[% l('Capture Local Holds As Transits') %]</span>
+          </a>
+        </li>
+        <li>
+          <a href
+            ng-click="toggle_mod('manual_float')">
+            <span ng-if="modifiers.manual_float"
+              class="label label-success">&#x2713;</span>
+            <span ng-if="!modifiers.manual_float"
+              class="label label-warning">&#x2717;</span>
+            <span>[% l('Manual Floating Active') %]</span>
           </a>
         </li>
       </ul>

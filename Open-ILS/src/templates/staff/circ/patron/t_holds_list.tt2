@@ -11,6 +11,8 @@
 
   <eg-grid-action handler="grid_actions.show_recent_circs"
     label="[% l('Show Last Few Circulations') %]"></eg-grid-action>
+  <eg-grid-action handler="grid_actions.show_holds_for_title"
+    label="[% l('Show Holds for Title') %]"></eg-grid-action>
   <eg-grid-action divider="true"></eg-grid-action>
   <eg-grid-action handler="grid_actions.set_copy_quality"
     label="[% l('Set Desired Copy Quality') %]"></eg-grid-action>
@@ -37,8 +39,10 @@
   <eg-grid-action divider="true"></eg-grid-action>
   <eg-grid-action handler="grid_actions.retarget"
     label="[% l('Find Another Target') %]"></eg-grid-action>
-  <eg-grid-action handler="grid_actions.cancel_hold"
+  <eg-grid-action handler="grid_actions.cancel_hold" hide="hide_cancel_hold"
     label="[% l('Cancel Hold') %]"></eg-grid-action>
+  <eg-grid-action handler="grid_actions.uncancel_hold" hide="hide_uncancel_hold"
+    label="[% l('Uncancel Hold') %]"></eg-grid-action>
 
   <eg-grid-field label="[% l('Hold ID') %]" path='hold.id'></eg-grid-field>
   <eg-grid-field label="[% l('Current Copy') %]" 
@@ -48,6 +52,8 @@
     </a>
   </eg-grid-field>
 
+  <eg-grid-field label="[% l('Patron Barcode') %]" hidden>{{item.patron_barcode}}</eg-grid-field>
+  <eg-grid-field label="[% l('Patron alias') %]" hidden>{{item.patron_alias}}</eg-grid-field>
   <eg-grid-field label="[% l('Request Date') %]" path='hold.request_time'></eg-grid-field>
   <eg-grid-field label="[% l('Capture Date') %]" path='hold.capture_time'></eg-grid-field>
   <eg-grid-field label="[% l('Available Date') %]" path='hold.shelf_time'></eg-grid-field>
@@ -55,7 +61,7 @@
   <eg-grid-field label="[% l('Pickup Library') %]" path='hold.pickup_lib.shortname'></eg-grid-field>
 
   <eg-grid-field label="[% l('Title') %]" path='mvr.title'>
-    <a href="[% ctx.base_path %]/opac/record/{{item.mvr.doc_id()}}">
+    <a target="_self" href="[% ctx.base_path %]/staff/cat/catalog/record/{{item.mvr.doc_id()}}">
       {{item.mvr.title()}}
     </a>
   </eg-grid-field>
@@ -65,8 +71,13 @@
   <eg-grid-field label="[% l('Status') %]" path='status_string'></eg-grid-field>
 
   <eg-grid-field label="[% l('Queue Position') %]" path='queue_position' hidden></eg-grid-field>
-  <eg-grid-field path='hold.*' parent-idl-class="ahr" hidden></eg-grid-field>
+  <eg-grid-field label="[% l('Cancel Cause') %]" path='hold.cancel_cause.label' hidden></eg-grid-field>
+  <eg-grid-field path='hold.*' parent-idl-class="ahr" ignore="current_copy" hidden></eg-grid-field>
   <eg-grid-field path='copy.*' parent-idl-class="acp" hidden></eg-grid-field>
+  <eg-grid-field path='hold.usr.*' parent-idl-class="ahr" hidden></eg-grid-field>
+  <eg-grid-field path='hold.usr.card.*' parent-idl-class="ahr" hidden></eg-grid-field>
+  <eg-grid-field path='hold.requestor.*' parent-idl-class="ahr" hidden></eg-grid-field>
+  <eg-grid-field path='hold.requestor.card.*' parent-idl-class="ahr" hidden></eg-grid-field>
   <eg-grid-field path='volume.*' parent-idl-class="acn" hidden></eg-grid-field>
   <eg-grid-field path='mvr.*' parent-idl-class="mvr" hidden></eg-grid-field>
 </eg-grid>

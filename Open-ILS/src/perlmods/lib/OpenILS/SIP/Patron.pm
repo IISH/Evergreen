@@ -17,6 +17,7 @@ use Digest::MD5 qw(md5_hex);
 use OpenILS::SIP;
 use OpenILS::Application::AppUtils;
 use OpenILS::Application::Actor;
+use OpenILS::Const qw/:const/;
 use OpenSRF::Utils qw/:datetime/;
 use DateTime::Format::ISO8601;
 my $U = 'OpenILS::Application::AppUtils';
@@ -51,6 +52,12 @@ sub new {
     syslog("LOG_DEBUG", "OILS: new OpenILS Patron(%s => %s): searching...", $key, $patron_id);
 
     my $e = OpenILS::SIP->editor();
+    # Pass the authtoken, if any, to the editor so that we can use it
+    # to fake a context org_unit for the csp.ignore_proximity in
+    # flesh_user_penalties, below.
+    unless ($e->authtoken()) {
+        $e->authtoken($args{authtoken}) if ($args{authtoken});
+    }
 
     my $usr_flesh = {
         flesh => 2,
@@ -143,9 +150,22 @@ sub get_act_who {
 sub flesh_user_penalties {
     my ($self, $user, $e) = @_;
 
-    $user->standing_penalties(
+    # Use the ws_ou or home_ou of the authsession user, if any, as a
+    # context org_unit for the penalties and the csp.ignore_proximity.
+    my $here;
+    if ($e->authtoken()) {
+        my $auth_usr = $e->checkauth();
+        if ($auth_usr) {
+            $here = $auth_usr->ws_ou() || $auth_usr->home_ou();
+        }
+    }
+
+    # Get the "raw" list of user's penalties and flesh the
+    # standing_penalty field, so we can filter them based on
+    # csp.ignore_proximity.
+    my $raw_penalties =
         $e->search_actor_user_standing_penalty([
-            {   
+            {
                 usr => $user->id,
                 '-or' => [
 
@@ -158,21 +178,20 @@ sub flesh_user_penalties {
                     in  => {
                         select => {
                             aou => [{
-                                column => 'id', 
-                                transform => 'actor.org_unit_ancestors', 
+                                column => 'id',
+                                transform => 'actor.org_unit_ancestors',
                                 result_field => 'id'
                             }]
                         },
                         from => 'aou',
 
-                        # at this point, there is no concept of "here", so fetch penalties 
-                        # for the patron's home lib plus ancestors
-                        where => {id => $user->home_ou}, 
+                        # Use "here" or user's home_ou.
+                        where => {id => ($here) ? $here : $user->home_ou},
                         distinct => 1
                     }
                 },
 
-                # in addition to fines and excessive overdue penalties, 
+                # in addition to fines and excessive overdue penalties,
                 # we only care about penalties that result in blocks
                 standing_penalty => {
                     in => {
@@ -187,8 +206,28 @@ sub flesh_user_penalties {
                     }
                 }
             },
-        ])
-    );
+            {
+                flesh => 1,
+                flesh_fields => {ausp => ['standing_penalty']}
+            }
+        ]);
+    # We filter the raw penalties that apply into this array.
+    my $applied_penalties = [];
+    if (ref($raw_penalties) eq 'ARRAY' && @$raw_penalties) {
+        my $here_prox = ($here) ? $U->get_org_unit_proximity($e, $here, $user->home_ou())
+            : undef;
+        # Filter out those that do not apply and deflesh the standing_penalty.
+        $applied_penalties = [map
+            { $_->standing_penalty($_->standing_penalty->id()) }
+                grep {
+                    !defined($_->standing_penalty->ignore_proximity())
+                    || ((defined($here_prox))
+                        ? $_->standing_penalty->ignore_proximity() < $here_prox
+                        : $_->standing_penalty->ignore_proximity() <
+                            $U->get_org_unit_proximity($e, $_->org_unit(), $user->home_ou()))
+                } @$raw_penalties];
+    }
+    $user->standing_penalties($applied_penalties);
 }
 
 sub id {
@@ -261,7 +300,7 @@ sub home_phone {
 
 sub sip_birthdate {
     my $self = shift;
-    my $dob = OpenILS::SIP->format_date($self->{user}->dob);
+    my $dob = OpenILS::SIP->format_date($self->{user}->dob, 'dob');
     syslog('LOG_DEBUG', "OILS: Patron DOB = $dob");
     return $dob;
 }
@@ -315,12 +354,46 @@ sub charge_ok {
         $u->card->active eq 't';
 }
 
-
-
-# How much more detail do we need to check here?
 sub renew_ok {
     my $self = shift;
-    return $self->charge_ok;
+    my $u = $self->{user};
+    my $e = $self->{editor};
+    my $renew_block_penalty = 'f';
+
+    # compute expiration date for borrowing privileges
+    my $expire = DateTime::Format::ISO8601->new->parse_datetime(cleanse_ISO8601($u->expire_date));
+
+    # if barred or expired, forget it and save us the CPU
+    return 0 if(($u->barred eq 't') or (CORE::time > $expire->epoch));
+
+    # flesh penalties so we can look close at the block list
+    my $penalty_flesh = {
+        flesh => 2,
+        flesh_fields => {
+            au => [
+                "standing_penalties",
+            ],
+            ausp => [
+                "standing_penalty",
+            ],
+            csp => [
+                "block_list",
+            ],
+        }
+    };
+    my $user = $e->retrieve_actor_user([ $u->id, $penalty_flesh ]);
+    foreach( @{ $user->standing_penalties } )
+    {
+        # archived penalty - ignore
+        next if ( $_->stop_date && ( CORE::time >  DateTime::Format::ISO8601->new->parse_datetime(cleanse_ISO8601($_->stop_date))->epoch ) );
+        # check to see if this penalty blocks renewals
+        $renew_block_penalty = 't' if $_->standing_penalty->block_list =~ /RENEW/;
+    }
+
+    return
+        $u->active eq 't' &&
+        $u->card->active eq 't' &&
+        $renew_block_penalty eq 'f';
 }
 
 sub recall_ok {
@@ -350,13 +423,14 @@ sub check_password {
     my ($self, $pwd) = @_;
     syslog('LOG_DEBUG', 'OILS: Patron->check_password()');
     return 0 unless (defined $pwd and $self->{user});
-    return md5_hex($pwd) eq $self->{user}->passwd;
+    return $U->verify_migrated_user_password(
+        $self->{editor},$self->{user}->id, $pwd);
 }
 
-sub currency {              # not really implemented
+sub currency {
     my $self = shift;
     syslog('LOG_DEBUG', 'OILS: Patron->currency()');
-    return 'USD';
+    return OpenILS::SIP->config()->{implementation_config}->{currency} || 'USD';
 }
 
 sub fee_amount {
@@ -408,7 +482,7 @@ sub too_many_charged {      # not implemented
 sub too_many_overdue { 
     my $self = shift;
     return scalar( # PATRON_EXCEEDS_OVERDUE_COUNT
-        grep { $_->standing_penalty == 2 } @{$self->{user}->standing_penalties}
+        grep { $_ == OILS_PENALTY_PATRON_EXCEEDS_OVERDUE_COUNT } @{$self->{user}->standing_penalties}
     );
 }
 
@@ -433,7 +507,7 @@ sub too_many_lost {
 sub excessive_fines { 
     my $self = shift;
     return scalar( # PATRON_EXCEEDS_FINES
-        grep { $_->standing_penalty == 1 } @{$self->{user}->standing_penalties}
+        grep { $_ == OILS_PENALTY_PATRON_EXCEEDS_FINES } @{$self->{user}->standing_penalties}
     );
 }
 

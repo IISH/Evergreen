@@ -68,6 +68,7 @@
     "INVOICE_CONFIRM_PRORATE" : "Prorate charges?\n\nAny subsequent changes to the invoice that would affect prorated amounts should be resolved manually.",
     "INVOICE_EXTRA_COPIES" : "You are attempting to invoice <b>${0}</b> more copies than originally ordered.  <br/><br/>To add these items to the original order, select a fund and choose 'Add New Items' below.  <br/>After saving the invoice, you may finish editing and importing the new copies from the lineitem details page.",
     "INVOICE_ITEM_PO_DETAILS" : "<b>${0}</b><br/><a href='${1}/acq/po/view/${2}'>PO #${3} ${4}</a><br/>Total Estimated Cost: $${5}",
+    "INVOICE_ITEM_PO_LABEL" : "<a href='${0}/acq/po/view/${1}'>PO #${2} ${3}</a><br/>Total Estimated Cost: $${4}",
     "UNNAMED" : "Unnamed",
     "NO_FIND_INVOICE" : "Could not find that invoice.\nNote that the Invoice # field is case-sensitive.",
     "LI_BATCH_UPDATE": "Line item batch update",
@@ -99,5 +100,18 @@
     "ACQ_SEARCH_CLASS_ABBR_acqinv": "I",
     "ACQ_SEARCH_CLASS_ABBR_acqlid": "LID",
     "ACQ_SEARCH_CLASS_ABBR_acqlia": "LIA",
-    "NO_LI_GENERAL" : "You have not selected any (suitable) line items."
+    "NO_LI_GENERAL" : "You have not selected any (suitable) line items.",
+    "DUPE_PO_NAME_MSG" : "This name is already in use by another PO",
+    "DUPE_PO_NAME_LINK" : "View PO",
+    "PO_NAME_OPTIONAL" : "${0} (optional)",
+    "FINALIZE_PO" : "Finalize this blanket PO?\nThis will disencumber all blanket charges and mark the PO as received",
+    "LI_EXISTING_COPIES" : "There are ${0} existing copies for this bibliographic record at this location",
+    "LI_CREATING_ASSETS" : "Creating bib, call number, and copy records...",
+    "PO_ACTIVATING" : "Activating purchase order...",
+    "ACTIVATE_LI_PROCESSED"             : "Lineitems Processed: ${0}",
+    "ACTIVATE_VQBR_PROCESSED"           : "Vandelay Records Processed: ${0}",
+    "ACTIVATE_BIBS_PROCESSED"           : "Bib Records Merged/Imported: ${0}",
+    "ACTIVATE_LID_PROCESSED"            : "ACQ Copies Processed: ${0}",
+    "ACTIVATE_DEBITS_ACCRUED_PROCESSED" : "Debits Encumbered: ${0}",
+    "ACTIVATE_COPIES_PROCESSED"         : "Real Copies Processed: ${0}"
 }

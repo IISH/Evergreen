@@ -119,6 +119,7 @@ static ClassInfo* add_joined_class( const char* alias, const char* classname );
 static void clear_query_stack( void );
 
 static const jsonObject* verifyUserPCRUD( osrfMethodContext* );
+static const jsonObject* verifyUserPCRUDfull( osrfMethodContext*, int );
 static int verifyObjectPCRUD( osrfMethodContext*, osrfHash*, const jsonObject*, int );
 static const char* org_tree_root( osrfMethodContext* ctx );
 static jsonObject* single_hash( const char* key, const char* value );
@@ -145,6 +146,7 @@ static char* modulename = NULL;
 
 int writeAuditInfo( osrfMethodContext* ctx, const char* user_id, const char* ws_id);
 
+static char* _sanitize_tz_name( const char* tz );
 static char* _sanitize_savepoint_name( const char* sp );
 
 /**
@@ -166,6 +168,7 @@ dbi_conn oilsConnectDB( const char* mod_name ) {
 	char* port   = osrf_settings_host_value( "/apps/%s/app_settings/database/port", mod_name );
 	char* db     = osrf_settings_host_value( "/apps/%s/app_settings/database/db", mod_name );
 	char* pw     = osrf_settings_host_value( "/apps/%s/app_settings/database/pw", mod_name );
+	char* pg_app = osrf_settings_host_value( "/apps/%s/app_settings/database/application_name", mod_name );
 
 	osrfLogDebug( OSRF_LOG_MARK, "Attempting to load the database driver [%s]...", driver );
 	dbi_conn handle = dbi_conn_new( driver );
@@ -179,17 +182,19 @@ dbi_conn oilsConnectDB( const char* mod_name ) {
 	osrfLogInfo(OSRF_LOG_MARK, "%s connecting to database.  host=%s, "
 		"port=%s, user=%s, db=%s", mod_name, host, port, user, db );
 
-	if( host ) dbi_conn_set_option( handle, "host", host );
-	if( port ) dbi_conn_set_option_numeric( handle, "port", atoi( port ));
-	if( user ) dbi_conn_set_option( handle, "username", user );
-	if( pw )   dbi_conn_set_option( handle, "password", pw );
-	if( db )   dbi_conn_set_option( handle, "dbname", db );
+	if( host )   dbi_conn_set_option( handle, "host", host );
+	if( port )   dbi_conn_set_option_numeric( handle, "port", atoi( port ));
+	if( user )   dbi_conn_set_option( handle, "username", user );
+	if( pw )     dbi_conn_set_option( handle, "password", pw );
+	if( db )     dbi_conn_set_option( handle, "dbname", db );
+	if( pg_app ) dbi_conn_set_option( handle, "pgsql_application_name", pg_app );
 
 	free( user );
 	free( host );
 	free( port );
 	free( db );
 	free( pw );
+	free( pg_app );
 
 	if( dbi_conn_connect( handle ) < 0 ) {
 		sleep( 1 );
@@ -823,6 +828,8 @@ int beginTransaction( osrfMethodContext* ctx ) {
 		return -1;
 	}
 
+	const char* tz = _sanitize_tz_name(ctx->session->session_tz);
+
 	if( enforce_pcrud ) {
 		timeout_needs_resetting = 1;
 		const jsonObject* user = verifyUserPCRUD( ctx );
@@ -847,8 +854,38 @@ int beginTransaction( osrfMethodContext* ctx ) {
 		jsonObject* ret = jsonNewObject( getXactId( ctx ) );
 		osrfAppRespondComplete( ctx, ret );
 		jsonObjectFree( ret );
-		return 0;
+
 	}
+
+	if (tz) {
+		setenv("TZ",tz,1);
+		tzset();
+		dbi_result tz_res = dbi_conn_queryf( writehandle, "SET LOCAL timezone TO '%s'; -- cstore", tz );
+		if( !tz_res ) {
+			osrfLogError( OSRF_LOG_MARK, "%s: Error setting timezone %s", modulename, tz);
+			if( !oilsIsDBConnected( writehandle )) {
+				osrfAppSessionPanic( ctx->session );
+				return -1;
+			}
+		} else {
+			dbi_result_free( tz_res );
+		}
+	} else {
+		unsetenv("TZ");
+		tzset();
+		dbi_result res = dbi_conn_queryf( writehandle, "SET timezone TO DEFAULT; -- no tz" );
+		if( !res ) {
+			osrfLogError( OSRF_LOG_MARK, "%s: Error resetting timezone", modulename);
+			if( !oilsIsDBConnected( writehandle )) {
+				osrfAppSessionPanic( ctx->session );
+				return -1;
+			}
+		} else {
+			dbi_result_free( res );
+		}
+	}
+
+	return 0;
 }
 
 /**
@@ -1410,48 +1447,62 @@ static int verifyObjectClass ( osrfMethodContext* ctx, const jsonObject* param )
 	server; otherwise NULL.
 */
 static const jsonObject* verifyUserPCRUD( osrfMethodContext* ctx ) {
+	return verifyUserPCRUDfull( ctx, 0 );
+}
+
+static const jsonObject* verifyUserPCRUDfull( osrfMethodContext* ctx, int anon_ok ) {
 
 	// Get the authkey (the first method parameter)
 	const char* auth = jsonObjectGetString( jsonObjectGetIndex( ctx->params, 0 ) );
 
-	// See if we have the same authkey, and a user object,
-	// locally cached from a previous call
-	const char* cached_authkey = getAuthkey( ctx );
-	if( cached_authkey && !strcmp( cached_authkey, auth ) ) {
-		const jsonObject* cached_user = getUserLogin( ctx );
-		if( cached_user )
-			return cached_user;
-	}
+	jsonObject* user = NULL;
 
-	// We have no matching authentication data in the cache.  Authenticate from scratch.
-	jsonObject* auth_object = jsonNewObject( auth );
+	// If we are /not/ in anonymous mode
+	if( strcmp( "ANONYMOUS", auth ) ) {
+		// See if we have the same authkey, and a user object,
+		// locally cached from a previous call
+		const char* cached_authkey = getAuthkey( ctx );
+		if( cached_authkey && !strcmp( cached_authkey, auth ) ) {
+			const jsonObject* cached_user = getUserLogin( ctx );
+			if( cached_user )
+				return cached_user;
+		}
 
-	// Fetch the user object from the authentication server
-	jsonObject* user = oilsUtilsQuickReq( "open-ils.auth", "open-ils.auth.session.retrieve",
-			auth_object );
-	jsonObjectFree( auth_object );
+		// We have no matching authentication data in the cache.  Authenticate from scratch.
+		jsonObject* auth_object = jsonNewObject( auth );
+	
+		// Fetch the user object from the authentication server
+		user = oilsUtilsQuickReq( "open-ils.auth", "open-ils.auth.session.retrieve", auth_object );
+		jsonObjectFree( auth_object );
+	
+		if( !user->classname || strcmp(user->classname, "au" )) {
+	
+			growing_buffer* msg = buffer_init( 128 );
+			buffer_fadd(
+				msg,
+				"%s: permacrud received a bad auth token: %s",
+				modulename,
+				auth
+			);
+	
+			char* m = buffer_release( msg );
+			osrfAppSessionStatus( ctx->session, OSRF_STATUS_UNAUTHORIZED, "osrfMethodException",
+					ctx->request, m );
+	
+			free( m );
+			jsonObjectFree( user );
+			user = NULL;
+		} else if( writeAuditInfo( ctx, oilsFMGetStringConst( user, "id" ), oilsFMGetStringConst( user, "wsid" ) ) ) {
+			// Failed to set audit information - But note that write_audit_info already set error information.
+			jsonObjectFree( user );
+			user = NULL;
+		}
 
-	if( !user->classname || strcmp(user->classname, "au" )) {
 
-		growing_buffer* msg = buffer_init( 128 );
-		buffer_fadd(
-			msg,
-			"%s: permacrud received a bad auth token: %s",
-			modulename,
-			auth
-		);
-
-		char* m = buffer_release( msg );
-		osrfAppSessionStatus( ctx->session, OSRF_STATUS_UNAUTHORIZED, "osrfMethodException",
-				ctx->request, m );
-
-		free( m );
-		jsonObjectFree( user );
-		user = NULL;
-	} else if( writeAuditInfo( ctx, oilsFMGetStringConst( user, "id" ), oilsFMGetStringConst( user, "wsid" ) ) ) {
-		// Failed to set audit information - But note that write_audit_info already set error information.
-		jsonObjectFree( user );
-		user = NULL;
+	} else if ( anon_ok ) { // we /are/ (attempting to be) anonymous
+		user = jsonNewObjectType(JSON_ARRAY);
+		jsonObjectSetClass( user, "aou" );
+		oilsFMSetString(user, "id", "-1");
 	}
 
 	setUserLogin( ctx, user );
@@ -1507,6 +1558,12 @@ static int verifyObjectPCRUD ( osrfMethodContext* ctx, osrfHash *class, const js
 		fetch = 1; // MUST go to the db for the object for update and delete
 	}
 
+	// In retrieve or search ONLY we allow anon. Later perm checks will fail as they should,
+	// in the face of a fake user but required permissions.
+	int anon_ok = 0;
+	if( *method_type == 'r' )
+		anon_ok = 1;
+
 	// Get the appropriate permacrud entry from the IDL, depending on method type
 	osrfHash* pcrud = osrfHashGet( osrfHashGet( class, "permacrud" ), method_type );
 	if( !pcrud ) {
@@ -1531,9 +1588,9 @@ static int verifyObjectPCRUD ( osrfMethodContext* ctx, osrfHash *class, const js
 	}
 
 	// Get the user id, and make sure the user is logged in
-	const jsonObject* user = verifyUserPCRUD( ctx );
+	const jsonObject* user = verifyUserPCRUDfull( ctx, anon_ok );
 	if( !user )
-		return 0;    // Not logged in?  No access.
+		return 0;    // Not logged in or anon?  No access.
 
 	int userid = atoi( oilsFMGetStringConst( user, "id" ) );
 
@@ -1547,6 +1604,10 @@ static int verifyObjectPCRUD ( osrfMethodContext* ctx, osrfHash *class, const js
 		);
 		return 1;
 	}
+
+	// But, if there are perms and the user is anonymous ... FAIL
+	if ( -1 == userid )
+		return 0;
 
 	// Build a list of org units that own the row.  This is fairly convoluted because there
 	// are several different ways that an org unit may own the row, as defined by the
@@ -1859,15 +1920,15 @@ static int verifyObjectPCRUD ( osrfMethodContext* ctx, osrfHash *class, const js
 	}
 
     // If there is an owning_user attached to the action, we allow that user and users with
-    // object perms on the object. CREATE can't use this. We only do this when there is no
-    // context org for this action, and when we're not ignoring object perms.
+    // object perms on the object. CREATE can't use this. We only do this when we're not
+    // ignoring object perms.
+    char* owning_user_field = osrfHashGet( pcrud, "owning_user" );
     if (
         *method_type != 'c' &&
-        !str_is_true( osrfHashGet(pcrud, "ignore_object_perms") ) && // Always honor
-        context_org_array->size == 0
+        (!str_is_true( osrfHashGet(pcrud, "ignore_object_perms") ) || // Always honor
+        owning_user_field)
     ) {
-        char* owning_user_field = osrfHashGet( pcrud, "owning_user" );
-        if (owning_user_field) {
+        if (owning_user_field) { // see if we can short-cut by comparing the owner to the requestor
 
             if (!param) { // We didn't get it during the context lookup
 			    pkey = osrfHashGet( class, "primarykey" );
@@ -1937,76 +1998,79 @@ static int verifyObjectPCRUD ( osrfMethodContext* ctx, osrfHash *class, const js
                 // Allow the owner to do whatever
                 if (ownerid == userid)
                     OK = 1;
+			}
+		}
 
-                i = 0;
-	            while( !OK && (perm = osrfStringArrayGetString(permission, i++)) ) {
-            		dbi_result result;
+        i = 0;
+        while(	!OK &&
+				(perm = osrfStringArrayGetString(permission, i++)) &&
+				!str_is_true( osrfHashGet(pcrud, "ignore_object_perms"))
+		) {
+    		dbi_result result;
+
+			osrfLogDebug(
+				OSRF_LOG_MARK,
+				"Checking object permission [%s] for user %d "
+						"on object %s (class %s)",
+				perm,
+				userid,
+				pkey_value,
+				osrfHashGet( class, "classname" )
+			);
+
+			result = dbi_conn_queryf(
+				writehandle,
+				"SELECT permission.usr_has_object_perm(%d, '%s', '%s', '%s') AS has_perm;",
+				userid,
+				perm,
+				osrfHashGet( class, "classname" ),
+				pkey_value
+			);
+
+			if( result ) {
+				osrfLogDebug(
+					OSRF_LOG_MARK,
+					"Received a result for object permission [%s] "
+							"for user %d on object %s (class %s)",
+					perm,
+					userid,
+					pkey_value,
+					osrfHashGet( class, "classname" )
+				);
+
+				if( dbi_result_first_row( result )) {
+					jsonObject* return_val = oilsMakeJSONFromResult( result );
+					const char* has_perm = jsonObjectGetString(
+							jsonObjectGetKeyConst( return_val, "has_perm" ));
 
 					osrfLogDebug(
 						OSRF_LOG_MARK,
-						"Checking object permission [%s] for user %d "
-								"on object %s (class %s)",
+						"Status of object permission [%s] for user %d "
+								"on object %s (class %s) is %s",
 						perm,
 						userid,
 						pkey_value,
-						osrfHashGet( class, "classname" )
+						osrfHashGet(class, "classname"),
+						has_perm
 					);
-	
-					result = dbi_conn_queryf(
-						writehandle,
-						"SELECT permission.usr_has_object_perm(%d, '%s', '%s', '%s') AS has_perm;",
-						userid,
-						perm,
-						osrfHashGet( class, "classname" ),
-						pkey_value
-					);
-	
-					if( result ) {
-						osrfLogDebug(
-							OSRF_LOG_MARK,
-							"Received a result for object permission [%s] "
-									"for user %d on object %s (class %s)",
-							perm,
-							userid,
-							pkey_value,
-							osrfHashGet( class, "classname" )
-						);
-	
-						if( dbi_result_first_row( result )) {
-							jsonObject* return_val = oilsMakeJSONFromResult( result );
-							const char* has_perm = jsonObjectGetString(
-									jsonObjectGetKeyConst( return_val, "has_perm" ));
-	
-							osrfLogDebug(
-								OSRF_LOG_MARK,
-								"Status of object permission [%s] for user %d "
-										"on object %s (class %s) is %s",
-								perm,
-								userid,
-								pkey_value,
-								osrfHashGet(class, "classname"),
-								has_perm
-							);
-	
-							if( *has_perm == 't' )
-								OK = 1;
-							jsonObjectFree( return_val );
-						}
-	
-						dbi_result_free( result );
-						if( OK )
-                            break;
-					} else {
-						const char* msg;
-						int errnum = dbi_conn_error( writehandle, &msg );
-						osrfLogWarning( OSRF_LOG_MARK,
-							"Unable to call check object permissions: %d, %s",
-							errnum, msg ? msg : "(No description available)" );
-						if( !oilsIsDBConnected( writehandle ))
-							osrfAppSessionPanic( ctx->session );
-					}
+
+					if( *has_perm == 't' )
+						OK = 1;
+					jsonObjectFree( return_val );
 				}
-            }
+
+				dbi_result_free( result );
+				if( OK )
+                    break;
+			} else {
+				const char* msg;
+				int errnum = dbi_conn_error( writehandle, &msg );
+				osrfLogWarning( OSRF_LOG_MARK,
+					"Unable to call check object permissions: %d, %s",
+					errnum, msg ? msg : "(No description available)" );
+				if( !oilsIsDBConnected( writehandle ))
+					osrfAppSessionPanic( ctx->session );
+			}
         }
     }
 
@@ -5795,6 +5859,8 @@ int doJSONSearch ( osrfMethodContext* ctx ) {
 static jsonObject* doFieldmapperSearch( osrfMethodContext* ctx, osrfHash* class_meta,
 		jsonObject* where_hash, jsonObject* query_hash, int* err ) {
 
+	const char* tz = _sanitize_tz_name(ctx->session->session_tz);
+
 	// XXX for now...
 	dbhandle = writehandle;
 
@@ -5822,7 +5888,42 @@ static jsonObject* doFieldmapperSearch( osrfMethodContext* ctx, osrfHash* class_
 
 	osrfLogDebug( OSRF_LOG_MARK, "%s SQL =  %s", modulename, sql );
 
+	// Setting the timezone if requested and not in a transaction
+	if (!getXactId(ctx)) {
+		if (tz) {
+			setenv("TZ",tz,1);
+			tzset();
+			dbi_result tz_res = dbi_conn_queryf( writehandle, "SET timezone TO '%s'; -- cstore", tz );
+			if( !tz_res ) {
+				osrfLogError( OSRF_LOG_MARK, "%s: Error setting timezone %s", modulename, tz);
+				osrfAppSessionStatus( ctx->session, OSRF_STATUS_INTERNALSERVERERROR,
+					"osrfMethodException", ctx->request, "Error setting timezone" );
+				if( !oilsIsDBConnected( writehandle )) {
+					osrfAppSessionPanic( ctx->session );
+					return -1;
+				}
+			} else {
+				dbi_result_free( tz_res );
+			}
+		} else {
+			unsetenv("TZ");
+			tzset();
+			dbi_result res = dbi_conn_queryf( writehandle, "SET timezone TO DEFAULT; -- cstore" );
+			if( !res ) {
+				osrfLogError( OSRF_LOG_MARK, "%s: Error resetting timezone", modulename);
+				if( !oilsIsDBConnected( writehandle )) {
+					osrfAppSessionPanic( ctx->session );
+					return -1;
+				}
+			} else {
+				dbi_result_free( res );
+			}
+		}
+	}
+
+
 	dbi_result result = dbi_conn_query( dbhandle, sql );
+
 	if( NULL == result ) {
 		const char* msg;
 		int errnum = dbi_conn_error( dbhandle, &msg );
@@ -5844,6 +5945,7 @@ static jsonObject* doFieldmapperSearch( osrfMethodContext* ctx, osrfHash* class_
 
 	} else {
 		osrfLogDebug( OSRF_LOG_MARK, "Query returned with no errors" );
+
 	}
 
 	jsonObject* res_list = jsonNewObjectType( JSON_ARRAY );
@@ -6655,7 +6757,7 @@ static jsonObject* oilsMakeFieldmapperFromResult( dbi_result result, osrfHash* m
 						gmtime_r( &_tmp_dt, &gmdt );
 						strftime( dt_string, sizeof( dt_string ), "%T", &gmdt );
 					} else if( !( attr & DBI_DATETIME_TIME )) {
-						localtime_r( &_tmp_dt, &gmdt );
+						gmtime_r( &_tmp_dt, &gmdt );
 						strftime( dt_string, sizeof( dt_string ), "%04Y-%m-%d", &gmdt );
 					} else {
 						localtime_r( &_tmp_dt, &gmdt );
@@ -6741,7 +6843,7 @@ static jsonObject* oilsMakeJSONFromResult( dbi_result result ) {
 						gmtime_r( &_tmp_dt, &gmdt );
 						strftime( dt_string, sizeof( dt_string ), "%T", &gmdt );
 					} else if( !( attr & DBI_DATETIME_TIME )) {
-						localtime_r( &_tmp_dt, &gmdt );
+						gmtime_r( &_tmp_dt, &gmdt );
 						strftime( dt_string, sizeof( dt_string ), "%04Y-%m-%d", &gmdt );
 					} else {
 						localtime_r( &_tmp_dt, &gmdt );
@@ -7495,6 +7597,48 @@ static char* _sanitize_savepoint_name( const char* sp ) {
 	char* found;
 	for (j = 0; j < len; j++) {
 	found = strchr(safe_chars, sp[j]);
+		if (found) {
+			safeSpName[ i++ ] = found[0];
+		}
+	}
+	safeSpName[ i ] = '\0';
+	return safeSpName;
+}
+
+/**
+	@brief Remove all but safe character from TZ name
+	@param tz User-supplied TZ name
+	@return sanitized TZ name, or NULL
+
+    The caller is expected to free the returned string.  Note that
+    this function exists only because we can't use PQescapeLiteral
+    without either forking libdbi or abandoning it.
+*/
+static char* _sanitize_tz_name( const char* tz ) {
+
+	if (NULL == tz) return NULL;
+
+	const char* safe_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345789_/-+";
+
+	// PostgreSQL uses NAMEDATALEN-1 as a max length for identifiers,
+	// and the default value of NAMEDATALEN is 64; that should be long enough
+	// for our purposes, and it's unlikely that anyone is going to recompile
+	// PostgreSQL to have a smaller value, so cap the identifier name
+	// accordingly to avoid the remote chance that someone manages to pass in a
+	// 12GB savepoint name
+	const int MAX_LITERAL_NAMELEN = 63;
+	int len = 0;
+	len = strlen( tz );
+	if (len > MAX_LITERAL_NAMELEN) {
+		len = MAX_LITERAL_NAMELEN;
+	}
+
+	char* safeSpName = safe_malloc( len + 1 );
+	int i = 0;
+	int j;
+	char* found;
+	for (j = 0; j < len; j++) {
+	found = strchr(safe_chars, tz[j]);
 		if (found) {
 			safeSpName[ i++ ] = found[0];
 		}

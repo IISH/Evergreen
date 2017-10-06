@@ -159,6 +159,7 @@ vim:et:ts=4:sw=4:
                     <db>evergreen</db>
                     <user>postgres</user>
                     <pw>postgres</pw>
+                    <application_name>Clark Kent (reports)</application_name>
                 </database>
                 <state_store>
                     <driver>Pg</driver>
@@ -167,6 +168,7 @@ vim:et:ts=4:sw=4:
                     <db>evergreen</db>
                     <user>postgres</user>
                     <pw>postgres</pw>
+                    <application_name>Clark Kent (state)</application_name>
                 </state_store>
                 <files>
                     <!-- successful report outputs go here -->
@@ -174,6 +176,34 @@ vim:et:ts=4:sw=4:
                     <success_template>LOCALSTATEDIR/data/report-success</success_template>
                     <fail_template>LOCALSTATEDIR/data/report-fail</fail_template>
                 </files>
+                <!-- Number of reports that can be processed simultaneously.  This
+                     value can overriden by the -c/-concurrency command-line switch
+                     of clark-kent.pl.
+                -->
+                <parallel>1</parallel>
+                <!-- Maximum number of rows in the query results allowed before
+                     Clark will refuse to draw a pie, bar, or line chart.  This
+                     value can be overriden by the -max-rows-for-charts command-line
+                     switch of clark-kent.pl.
+                -->
+                <max_rows_for_charts>1000</max_rows_for_charts>
+                <!-- Maximum amount of time (in minutes) that an SQL query initiated
+                     by Clark Kent will be allowed to run before it is terminated.
+                     This value can be overriden by the -statement-timeout
+                     command-line switch of clark-kent.pl.
+                -->
+                <statement_timeout>60</statement_timeout>
+                <!-- Maximum number of results permitted.  If set to a numeric value,
+                     Clark will limit the number of rows returned by report queries
+                     to this value.  Note that it will not be apparent to a user
+                     running a report from the staff interface that their report
+                     has been limited in this fashion.  This setting can be
+                     overriden by the -resultset-limit command-line switch of
+                     clark-kent.pl.
+
+                     A value of 0 means that no limit should be set.
+                -->
+                <resultset_limit>1048575</resultset_limit>
             </setup>
         </reporter>
 
@@ -201,6 +231,39 @@ vim:et:ts=4:sw=4:
         they are now defined in the database. See the Release Notes for
         instructions on mapping the old XML entries to database tables.
         -->
+
+        <http_client>
+            <!--
+            These settings are used by the OpenILS::Utils::HTTPClient module
+            when communicating with external services (e.g. third-party APIs)
+            over HTTP.  Values are passed along to LWP::UserAgent.
+            -->
+
+            <!-- custom useragent for HTTP requests
+            <useragent>Evergreen</useragent>
+            -->
+
+            <!-- default timeout value (in seconds) -->
+            <default_timeout>60</default_timeout>
+
+            <ssl_opts>
+                <!--
+                When using HTTPS, verify that the external server has a valid
+                SSL certificate matching the expected hostname.  (Set to 0 to
+                disable verification, 1 to enable it.)
+                -->
+                <verify_hostname>1</verify_hostname>
+
+                <!--
+                If verify_hostname is enabled, you may need to specify a path
+                for CA certificates installed on your system.  Use ONE of the
+                following settings.  See LWP::UserAgent docs for details.
+                <SSL_ca_path>/etc/ssl/certs</SSL_ca_path>
+                <SSL_ca_file>/etc/ssl/certs/ca-certificates.crt</SSL_ca_file>
+                -->
+            </ssl_opts>
+
+        </http_client>
 
         <added_content>
             <!-- load the OpenLibrary added content module -->
@@ -263,6 +326,24 @@ vim:et:ts=4:sw=4:
                 -->
                 <identifier_order>isbn,upc</identifier_order>
             </ContentCafe>
+
+            <!--
+            Segregating the details for obalkyknih.cz out for easier use.
+            -->
+            <ObalkyKnih>
+                <!-- Covers are there always -->
+
+                <!-- Annotations provided by obalkyknih.cz is mapped to evergreen summary -->
+                <summary>false</summary>
+                
+                <!-- Provider obalkyknih.cz provides TOC as text and as PDF plus thumbnail -->
+                <tocPdf>true</tocPdf>
+                <tocText>false</tocText>
+                
+                <!-- User reviews from obalkyknih.cz -->
+                <reviews>true</reviews>
+
+            </ObalkyKnih>
 
             <!--
  
@@ -396,13 +477,6 @@ vim:et:ts=4:sw=4:
                 </unix_config>
                 <app_settings>
                     <!-- defined app-specific settings here -->
-                    <default_timeout>
-                        <!-- default login timeouts based on login type -->
-                        <opac>420</opac>
-                        <staff>7200</staff>
-                        <temp>300</temp>
-                        <persist>2 weeks</persist>
-                    </default_timeout>
                     <auth_limits>
                         <seed>30</seed> <!-- amount of time a seed request is valid for -->
                         <block_time>90</block_time> <!-- amount of time since last auth or seed request to save failure counts -->
@@ -410,6 +484,33 @@ vim:et:ts=4:sw=4:
                     </auth_limits>
                 </app_settings>
             </open-ils.auth>
+
+            <!-- Internal authentication server -->
+            <open-ils.auth_internal>
+                <keepalive>5</keepalive>
+                <stateless>1</stateless>
+                <language>c</language>
+                <implementation>oils_auth_internal.so</implementation>
+                <unix_config>
+                    <max_requests>1000</max_requests>
+                    <min_children>1</min_children>
+                    <max_children>15</max_children>
+                    <min_spare_children>1</min_spare_children>
+                    <max_spare_children>5</max_spare_children>
+                </unix_config>
+                <app_settings>
+                    <!-- defined app-specific settings here -->
+                    <default_timeout>
+                        <!-- default login timeouts based on login type -->
+                        <opac>420</opac>
+                        <staff>7200</staff>
+                        <temp>300</temp>
+                        <persist>2 weeks</persist>
+                    </default_timeout>
+                </app_settings>
+            </open-ils.auth_internal>
+
+
 
             <!-- Authentication proxy server -->
             <open-ils.auth_proxy>
@@ -447,6 +548,7 @@ vim:et:ts=4:sw=4:
                             <login_types>
                                 <type>staff</type>
                                 <type>opac</type>
+                                <type>persist</type>
                             </login_types>
                             <org_units>
                                 <unit>103</unit>
@@ -756,30 +858,6 @@ vim:et:ts=4:sw=4:
                 </unix_config>
             </opensrf.dbmath>
 
-            <open-ils.penalty>
-                <keepalive>3</keepalive>
-                <stateless>1</stateless>
-                <language>perl</language>
-                <implementation>OpenILS::Application::Penalty</implementation>
-                <max_requests>99</max_requests>
-                <unix_config>
-                    <max_requests>1000</max_requests>
-                    <unix_log>open-ils.penalty_unix.log</unix_log>
-                    <unix_sock>open-ils.penalty_unix.sock</unix_sock>
-                    <unix_pid>open-ils.penalty_unix.pid</unix_pid>
-                    <min_children>1</min_children>
-                    <max_children>15</max_children>
-                    <min_spare_children>1</min_spare_children>
-                    <max_spare_children>5</max_spare_children>
-                </unix_config>
-                <app_settings>
-                    <patron_penalty>penalty/patron_penalty.js</patron_penalty>
-                    <script_path>LIBDIR/javascript</script_path>
-                    <script_path>LOCALSTATEDIR</script_path>
-                    <script_path>LOCALSTATEDIR/catalog</script_path>
-                </app_settings>
-            </open-ils.penalty>
-
             <open-ils.justintime>
                 <keepalive>5</keepalive>
                 <stateless>1</stateless>
@@ -820,22 +898,6 @@ vim:et:ts=4:sw=4:
                     <notify_hold>
                         <email>false</email> <!-- set to false to disable hold notice emails -->
                     </notify_hold>
-
-                    <!-- circulation policy scripts -->
-                    <script_path>LIBDIR/javascript</script_path>
-                    <script_path>LOCALSTATEDIR</script_path>
-                    <script_path>LOCALSTATEDIR/catalog</script_path>
-                    <legacy_script_support>false</legacy_script_support>
-                    <scripts> 
-                        <circ_permit_patron>circ/circ_permit_patron.js</circ_permit_patron>
-                        <circ_permit_copy>circ/circ_permit_copy.js</circ_permit_copy>
-                        <circ_duration>circ/circ_duration.js</circ_duration>
-                        <circ_recurring_fines>circ/circ_recurring_fines.js</circ_recurring_fines>
-                        <circ_max_fines>circ/circ_max_fines.js</circ_max_fines>
-                        <circ_permit_renew>circ/circ_permit_renew.js</circ_permit_renew>
-                        <circ_permit_hold>circ/circ_permit_hold.js</circ_permit_hold>
-                    </scripts>               
-
                 </app_settings>
             </open-ils.circ>
 
@@ -871,6 +933,7 @@ vim:et:ts=4:sw=4:
                             <pw>postgres</pw>
                             <db>evergreen</db>
                             <client_encoding>UTF-8</client_encoding>
+                            <application_name>open-ils.storage</application_name>
                         </database>
                     </databases>
                 </app_settings>
@@ -900,6 +963,7 @@ vim:et:ts=4:sw=4:
                         <pw>postgres</pw>
                         <db>evergreen</db>
                         <client_encoding>UTF-8</client_encoding>
+                        <application_name>open-ils.cstore</application_name>
                     </database>
                 </app_settings>
             </open-ils.cstore>
@@ -934,6 +998,7 @@ vim:et:ts=4:sw=4:
                         <pw>postgres</pw>
                         <db>evergreen</db>
                         <client_encoding>UTF-8</client_encoding>
+                        <application_name>open-ils.pcrud</application_name>
                     </database>
                 </app_settings>
             </open-ils.pcrud>
@@ -961,6 +1026,7 @@ vim:et:ts=4:sw=4:
                         <pw>postgres</pw>
                         <db>evergreen</db>
                         <client_encoding>UTF-8</client_encoding>
+                        <application_name>open-ils.qstore</application_name>
                     </database>
                 </app_settings>
             </open-ils.qstore>
@@ -1046,6 +1112,7 @@ vim:et:ts=4:sw=4:
                         <pw>postgres</pw>
                         <db>evergreen</db>
                         <client_encoding>UTF-8</client_encoding>
+                        <application_name>open-ils.reporter-store</application_name>
                     </database>
                 </app_settings>
             </open-ils.reporter-store>
@@ -1160,6 +1227,47 @@ vim:et:ts=4:sw=4:
                 </app_settings>
             </open-ils.serial>
 
+            <open-ils.hold-targeter>
+                <keepalive>3</keepalive>
+                <stateless>1</stateless>
+                <language>perl</language>
+                <implementation>OpenILS::Application::HoldTargeter</implementation>
+                <max_requests>17</max_requests>
+                <unix_config>
+                    <unix_sock>open-ils.hold-targeter_unix.sock</unix_sock>
+                    <unix_pid>open-ils.hold-targeter_unix.pid</unix_pid>
+                    <max_requests>1000</max_requests>
+                    <unix_log>open-ils.hold-targeter_unix.log</unix_log>
+                    <min_children>1</min_children>
+                    <max_children>15</max_children>
+                    <min_spare_children>1</min_spare_children>
+                    <max_spare_children>5</max_spare_children>
+                </unix_config>
+                <app_settings>
+                </app_settings>
+            </open-ils.hold-targeter>
+
+            <open-ils.ebook_api>
+                <keepalive>5</keepalive>
+                <stateless>1</stateless>
+                <language>perl</language>
+                <implementation>OpenILS::Application::EbookAPI</implementation>
+                <max_requests>100</max_requests>
+                <unix_config>
+                    <unix_sock>ebook_api_unix.sock</unix_sock>
+                    <unix_pid>ebook_api_unix.pid</unix_pid>
+                    <unix_log>ebook_api_unix.log</unix_log>
+                    <max_requests>100</max_requests>
+                    <min_children>1</min_children>
+                    <max_children>15</max_children>
+                    <min_spare_children>1</min_spare_children>
+                    <max_spare_children>5</max_spare_children>
+                </unix_config>
+                <app_settings>
+                  <cache_timeout>300</cache_timeout>
+                  <request_timeout>60</request_timeout>
+                </app_settings>
+            </open-ils.ebook_api>
         </apps>
     </default>
 
@@ -1188,9 +1296,9 @@ vim:et:ts=4:sw=4:
                 <appname>open-ils.circ</appname> 
                 <appname>open-ils.actor</appname> 
                 <appname>open-ils.auth</appname> 
+                <appname>open-ils.auth_internal</appname>
                 <appname>open-ils.auth_proxy</appname> 
                 <appname>open-ils.storage</appname>  
-                <appname>open-ils.penalty</appname>  
                 <appname>open-ils.justintime</appname>  
                 <appname>open-ils.cstore</appname>  
                 <appname>open-ils.collections</appname>  
@@ -1204,6 +1312,8 @@ vim:et:ts=4:sw=4:
                 <appname>open-ils.fielder</appname>  
                 <appname>open-ils.vandelay</appname>  
                 <appname>open-ils.serial</appname>  
+                <appname>open-ils.hold-targeter</appname>  
+                <appname>open-ils.ebook_api</appname>
             </activeapps>
         </localhost>
     </hosts>

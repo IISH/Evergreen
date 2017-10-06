@@ -78,7 +78,7 @@
 		<desc xml:lang="en-US">The provided password is not correct</desc>
 	</event>
 	<event code='1211' textcode='BILL_ALREADY_VOIDED'>
-		<desc xml:lang="en-US">The selecte bill has already been voided</desc>
+		<desc xml:lang="en-US">The bill is already voided</desc>
 	</event>
 	<event code='1212' textcode='PATRON_EXCEEDS_OVERDUE_COUNT'>
 		<desc xml:lang="en-US">The patron has too many overdue items</desc>
@@ -159,13 +159,13 @@
 		<desc xml:lang="en-US">The selected bib record has volumes attached</desc>
 	</event>
 	<event code='1232' textcode='ITEM_DEPOSIT_REQUIRED'>
-		<desc xml:lang="en-US"></desc>
+		<desc xml:lang="en-US">Payment of an item deposit is required.</desc>
 	</event>
 	<event code='1233' textcode='ITEM_RENTAL_FEE_REQUIRED'>
-		<desc xml:lang="en-US"></desc>
+		<desc xml:lang="en-US">Payment of an item rental fee is required.</desc>
 	</event>
 	<event code='1234' textcode='ITEM_DEPOSIT_PAID'>
-		<desc xml:lang="en-US"></desc>
+		<desc xml:lang="en-US">An item deposit was paid.</desc>
 	</event>
 	<event code='1235' textcode='INVALID_USER_XACT_ID'>
         <desc xml:lang="en-US">While you were trying to make payments, this account's transaction history changed.  Please go back and try again.</desc>
@@ -712,6 +712,12 @@
 	<event code='1701' textcode='COPY_LOCATION_EXISTS'>
 		<desc xml:lang="en-US"> The copy location object already exists </desc>
 	</event>
+	<event code='1716' textcode='COPY_LOCATION_NOT_EMPTY'>
+		<desc xml:lang="en-US"> The copy location is not empty </desc>
+	</event>
+	<event code='1717' textcode='COPY_LOCATION_NOT_FOUND'>
+		<desc xml:lang="en-US"> The copy location does not exist </desc>
+	</event>
 	<event code='1702' textcode='OPEN_CIRCULATION_EXISTS'>
 		<desc xml:lang="en-US"> There is an open circulation on the requested item </desc>
 	</event>
@@ -886,7 +892,7 @@
 		<desc xml:lang="en-US">This requested action would result in a negative patron balance</desc>
 	</event>
 	<event code='7016' textcode='ITEM_ON_HOLDS_SHELF'>
-		<desc xml:lang="en-US">This requested item is currently on the holds shelf</desc>
+		<desc xml:lang="en-US">This item is currently on the holds shelf for another patron</desc>
 	</event>
 	<event code='7017' textcode='ROUTE_TO_COPY_LOCATION'>
 		<desc xml:lang="en-US"> 
@@ -920,6 +926,9 @@
 	</event>
 	<event code='7026' textcode='COPY_STATUS_LOST_AND_PAID'>
 	        <desc xml:lang="en-US">Copy is marked as lost and paid</desc>
+	</event>
+	<event code='7028' textcode='PATRON_CIRC_MISMATCH'>
+	        <desc xml:lang="en-US">Potentially notified patron does not own the circulation.</desc>
 	</event>
 
 
@@ -1031,6 +1040,13 @@
             for the selected transaction</desc>
     </event>
 
+    <event code='11106' textcode='TOTAL_HOLD_COPY_RATIO_EXCEEDED'>
+        <desc xml:lang="en-US">Renewal attempt failed because the "hold / total copies" ratio exceeds the configured limit</desc>
+    </event>
+
+    <event code='11107' textcode='AVAIL_HOLD_COPY_RATIO_EXCEEDED'>
+        <desc xml:lang="en-US">Renewal attempt failed because the "hold / available copies" ratio exceeds the configured limit</desc>
+    </event>
 
 </ils_events>
 

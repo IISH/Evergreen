@@ -1,12 +1,23 @@
 <script src="/IDL2js"></script>
+<script src="[% ctx.media_prefix %]/js/dojo/opensrf/md5.js"></script>
 
 [% IF EXPAND_WEB_IMPORTS %]
 
 <!-- angular -->
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/build/js/jquery.min.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/build/js/angular.min.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/build/js/angular-route.min.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/build/js/ui-bootstrap-tpls.min.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/build/js/hotkeys.min.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/build/js/angular-file-saver.bundle.min.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/build/js/angular-location-update.min.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/build/js/angular-animate.min.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/build/js/angular-sanitize.min.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/build/js/angular-cookies.min.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/build/js/ngToast.min.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/build/js/angular-tree-control.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/build/js/iframeResizer.min.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/build/js/ng-order-object-by.js"></script>
 
 <!-- IDL / opensrf (network) -->
 <script src="[% ctx.media_prefix %]/js/dojo/opensrf/JSON_v1.js"></script>
@@ -26,10 +37,14 @@
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/services/startup.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/services/hatch.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/services/print.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/services/audio.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/services/coresvc.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/services/user.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/services/navbar.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/services/statusbar.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/services/ui.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/services/date.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/services/op_change.js"></script>
 
 [% ELSE %]
 
@@ -43,5 +58,38 @@
   // pending api_level thunking in C
   // OpenSRF.api_level = 2;
   OpenSRF.Session.transport = OSRF_TRANSPORT_TYPE_WS;
+
+  // Here lie JS strings that may be used on any/all pages.
+  angular.module('egCoreMod').run(['egStrings', function(s) {
+    s.EG_UNLOAD_CTRL_PROMPT_MSG = 
+      '[% l('This page may have unsaved data.\n\nAre you sure you want to leave this page?') %]';
+    s.EG_UNLOAD_PAGE_PROMPT_MSG = 
+      '[% l('This page may have unsaved data.') %]';
+    s.EG_DATE_INPUT_CLOSE_TEXT = '[% l('Close') %]';
+    s.EG_WORK_LOG_CHECKOUT = '[% l('Check Out') %]';
+    s.EG_WORK_LOG_RENEW = '[% l('Renew') %]';
+    s.EG_WORK_LOG_CHECKIN = '[% l('Check In') %]';
+    s.EG_WORK_LOG_EDITED_PATRON = '[% l('Edited Patron') %]';
+    s.EG_WORK_LOG_REGISTERED_PATRON = '[% l('Registered Patron') %]';
+    s.EG_WORK_LOG_CASH_PAYMENT = '[% l('Cash Payment') %]';
+    s.EG_WORK_LOG_CHECK_PAYMENT = '[% l('Check Payment') %]';
+    s.EG_WORK_LOG_CREDIT_CARD_PAYMENT = '[% l('Credit Card Payment') %]';
+    s.EG_WORK_LOG_CREDIT_PAYMENT = '[% l('Credit Payment') %]';
+    s.EG_WORK_LOG_WORK_PAYMENT = '[% l('Work Payment') %]';
+    s.EG_WORK_LOG_FORGIVE_PAYMENT = '[% l('Forgive Payment') %]';
+    s.EG_WORK_LOG_GOODS_PAYMENT = '[% l('Goods Payment') %]';
+    s.EG_WORK_LOG_REQUESTED_HOLD = '[% l('Hold Request') %]';
+    s.EG_CONFIRM_DELETE_RECORD_TITLE = '[% l('Confirm Record Deletion') %]';
+    s.EG_CONFIRM_DELETE_RECORD_BODY = "[% l('Delete record {{id}}?') %]";
+    s.OP_CHANGE_SUCCESS = "[% l('Operator Change Succeeded') %]";
+    s.OP_CHANGE_FAILURE = "[% l('Operator Change Failed') %]";
+    s.OP_CHANGE_TITLE = "[% l('Operator Change') %]";
+    s.OP_CHANGE_PERM_MESSAGE = "[% l('Another staff member with the above permission may authorize this specific action.  Please notify your library administrator if you need this permission.  If you feel you have received this exception in error, please inform your friendly Evergreen developers or helpdesk staff of the above permission.') %]";
+    s.PERM_OP_CHANGE_SUCCESS = "[% l('Permission Override Login Succeeded') %]";
+    s.PERM_OP_CHANGE_FAILURE = "[% l('Permission Override Login Failed') %]";
+    s.OPT_IN_DIALOG_TITLE = "[% l('Verify Permission to Share Personal Information') %]";
+    s.OPT_IN_DIALOG = "[% l('Does patron [_1], [_2] from [_3] ([_4]) consent to having their personal information shared with your library?', '{{family_name}}', '{{first_given_name}}', '{{org_name}}', '{{org_shortname}}') %]";
+    s.OPT_IN_RESTRICTED = "[% l("This patron's record is not viewable at your library.") %]";
+  }]);
 </script>
 

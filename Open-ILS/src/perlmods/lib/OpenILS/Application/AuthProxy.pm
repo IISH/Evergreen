@@ -185,18 +185,19 @@ sub login {
             {flesh => 1, flesh_fields => {ac => ['usr']}}
         ])->[0];
 
-        $args->{username} = $card->usr->usrname if $card;
+        if ($card) {
+            $args->{username} = $card->usr->usrname;
+        } else { # must have or resolve to a username
+            return OpenILS::Event->new( 'LOGIN_FAILED' );
+        }
     }
 
     # check for possibility of brute-force attack
-    my $fail_count;
-    if ($args->{'username'}) {
-        $fail_count = $cache->get_cache('oils_auth_' . $args->{'username'} . '_count') || 0;
-        if ($fail_count >= $block_count) {
-            $logger->debug("AuthProxy found too many recent failures for '" . $args->{'username'} . "' : $fail_count, forcing failure state.");
-            $cache->put_cache('oils_auth_' . $args->{'username'} . '_count', ++$fail_count, $block_timeout);
-            return OpenILS::Event->new( 'LOGIN_FAILED' );
-        }
+    my $fail_count = $cache->get_cache('oils_auth_' . $args->{'username'} . '_count') || 0;
+    if ($fail_count >= $block_count) {
+        $logger->debug("AuthProxy found too many recent failures for '" . $args->{'username'} . "' : $fail_count, forcing failure state.");
+        $cache->put_cache('oils_auth_' . $args->{'username'} . '_count', ++$fail_count, $block_timeout);
+        return OpenILS::Event->new( 'LOGIN_FAILED' );
     }
 
     my @error_events;
@@ -233,19 +234,65 @@ sub login {
         } elsif (defined $code) { # code is '0', i.e. SUCCESS
             if (exists $event->{'payload'}) { # we have a complete native login
                 return $event;
-            } else { # do a 'forced' login
-                return &_do_login($args, 1);
+            } else { # create an EG session for the successful external login
+                #
+                # before we actually create the session, let's first check if
+                # Evergreen thinks this user is allowed to login
+                #
+                # (we do this *after* authentication to avoid any personal data
+                # leakage)
+
+                # get the user id
+                my $user = $U->cstorereq(
+                    "open-ils.cstore.direct.actor.user.search.atomic",
+                    { usrname => $args->{'username'} }
+                );
+                if (!$user->[0]) {
+                    $logger->debug("Authenticated username '" . $args->{'username'} . "' has no Evergreen account, aborting");
+                    return OpenILS::Event->new( 'LOGIN_FAILED' );
+                } else {
+                    $args->{user_id} = $user->[0]->id;
+                }
+
+                # validate the account
+                my $trimmed_args = {
+                    user_id => $args->{user_id},
+                    login_type => $args->{type},
+                    workstation => $args->{workstation},
+                    org_unit => $args->{org}
+                };
+                $event = &_auth_internal('user.validate', $trimmed_args);
+                if ($U->event_code($event)) { # non-zero = we didn't succeed
+                    # can't recover from invalid user, return right away
+                    return $event;
+                } else { # it's all good
+                    return &_auth_internal('session.create', $trimmed_args);
+                }
             }
         }
     }
 
     # if we got this far, we failed
     # increment the brute force counter if 'native' didn't already
-    if ($args->{'username'} and !exists $authenticators_by_name{'native'}) {
+    if (!exists $authenticators_by_name{'native'}) {
         $cache->put_cache('oils_auth_' . $args->{'username'} . '_count', ++$fail_count, $block_timeout);
     }
     # TODO: send back some form of collected error events
     return OpenILS::Event->new( 'LOGIN_FAILED' );
+}
+
+sub _auth_internal {
+    my ($method, $args) = @_;
+
+    my $response = OpenSRF::AppSession->create("open-ils.auth_internal")->request(
+        'open-ils.auth_internal.'.$method,
+        $args
+    )->gather(1);
+
+    return OpenILS::Event->new( 'LOGIN_FAILED' )
+      unless $response;
+
+    return $response;
 }
 
 sub _do_login {
@@ -261,22 +308,7 @@ sub _do_login {
       unless $seed;
 
     my $real_password = $args->{'password'};
-    # if we have already authenticated, look up the password needed to finish
-    if ($authenticated) {
-        # username is required
-        return OpenILS::Event->new( 'LOGIN_FAILED' ) if !$args->{'username'};
-        my $user = $U->cstorereq(
-            "open-ils.cstore.direct.actor.user.search.atomic",
-            { usrname => $args->{'username'} }
-        );
-        if (!$user->[0]) {
-            $logger->debug("Authenticated username '" . $args->{'username'} . "' has no Evergreen account, aborting");
-            return OpenILS::Event->new( 'LOGIN_FAILED' );
-        }
-        $args->{'password'} = md5_hex( $seed . $user->[0]->passwd );
-    } else {
-        $args->{'password'} = md5_hex( $seed . md5_hex($real_password) );
-    }
+    $args->{'password'} = md5_hex( $seed . md5_hex($real_password) );
     my $response = OpenSRF::AppSession->create("open-ils.auth")->request(
         'open-ils.auth.authenticate.complete',
         $args

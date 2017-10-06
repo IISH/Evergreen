@@ -566,11 +566,18 @@ function setFocusToNextTag (row, direction) {
 
 function set_lock_on_keypress(ev) {
     try {
+        var tabs = window.parent.parent.document.getElementById('main_tabs');
+
+        if (tabs) {
+            var idx = tabs.selectedIndex;
+            var tab = tabs.childNodes[idx];
+        }
         //dump('keypress: isChar = ' + ev.isChar + ' char = ' + ev.char + ' charCode = ' + ev.charCode + ' key = ' + ev.key + ' keyCode = ' + ev.keyCode + '\n');
         if (! /* NOT */(
                 ev.altKey
                 || ev.ctrlKey
                 || ev.metaKey
+                || ev.shiftKey
                 || ev.keyCode == ev.DOM_VK_F1
                 || ev.keyCode == ev.DOM_VK_F2
                 || ev.keyCode == ev.DOM_VK_F3
@@ -596,7 +603,11 @@ function set_lock_on_keypress(ev) {
                 || ev.keyCode == ev.DOM_VK_F23
                 || ev.keyCode == ev.DOM_VK_F24
         )) {
-            oils_lock_page();
+            var params = {};
+            if (tab) {
+                params.allow_multiple_locks = tab.marc_edit_allow_multiple_locks;
+            }
+            oils_lock_page(params);
         }
     } catch(E) {
         alert(E);
@@ -604,7 +615,6 @@ function set_lock_on_keypress(ev) {
 }
 
 function createMARCTextbox (element,attrs) {
-
     var box = createComplexXULElement('textbox', attrs, Array.prototype.slice.apply(arguments, [2]) );
     box.addEventListener(
         'keypress',
@@ -1081,12 +1091,7 @@ function fillFixedFields () {
 }
 
 function updateFixedFields (element) {
-    var grid = document.getElementById('leaderGrid');
-    var recGrid = document.getElementById('recGrid');
     var new_value = element.value;
-    // Don't take focus away/adjust the record on partial changes
-    var length = element.getAttribute('maxlength');
-    if(new_value.length < length) return true;
 
     var marc_rec = new MARC.Record ({ delimiter : '$', marcxml : xml_record.toXMLString() });
     marc_rec.setFixedField(element.getAttribute('name'), new_value);
@@ -1221,13 +1226,23 @@ function fastItemAdd_attempt(doc_id) {
 
 function save_attempt(xml_string) {
     try {
+        var tabs = window.parent.parent.document.getElementById('main_tabs');
+
+        if (tabs) {
+            var idx = tabs.selectedIndex;
+            var tab = tabs.childNodes[idx];
+        }
         var result = window.xulG.save.func( xml_string );
         // I'd prefer to pass on_complete on through to fast_item_add,
         // but with the way these window scopes get destroyed with
         // tab replacement, maybe not a good idea
         var replace_on_complete = false;
         if (result) {
+            if (tab) {
+                tab.marc_edit_changed = false;
+            }
             oils_unlock_page();
+            oils_unlock_page(); /* kludge for LP1491875 */
             if (result.id) {
                 replace_on_complete = fastItemAdd_attempt(result.id);
             }
@@ -1353,6 +1368,17 @@ function marcSubfield (sf) {
 
 function loadRecord() {
     try {
+            var tabs = window.parent.parent.document.getElementById('main_tabs');
+
+            if (tabs) {
+                var idx = tabs.selectedIndex;
+                var tab = tabs.childNodes[idx];
+                if (tab) {
+                    tab.marc_edit_changed = false;
+                    tab.marc_edit_allow_multiple_locks = true;
+                }
+            }
+
             var grid_rows = document.getElementById('recGrid').lastChild;
 
             while (grid_rows.firstChild) grid_rows.removeChild(grid_rows.firstChild);
@@ -1972,12 +1998,27 @@ function searchAuthority (term, tag, sf, limit) {
 function browseAuthority (sf_popup, menu_id, target, sf, limit, page) {
     dojo.require('dojox.xml.parser');
 
+    var target_tag = sf.parent().@tag.toString();
+
+    var found_acs = [];
+    dojo.forEach( acs.controlSetList(), function (acs_id) {
+        if (acs.controlSet(acs_id).control_map[target_tag]) found_acs.push(acs_id);
+    });
+
+    var cmap;
+    if (!found_acs.length) {
+        target.setAttribute('context', 'clipboard');
+        return false;
+    } else {
+        cmap = acs.controlSet(found_acs[0]).control_map;
+    }
+
     // map tag + subfield to the appropriate authority browse axis:
     // currently authority.author, authority.subject, authority.title, authority.topic
     // based on mappings in OpenILS::Application::SuperCat, though Authority Control
     // Sets will change that
 
-    var axis_list = acs.bibFieldBrowseAxes( sf.parent().@tag.toString() );
+    var axis_list = acs.bibFieldBrowseAxes( target_tag );
 
     // No matching tag means no authorities to search - shortcut
     if (axis_list.length == 0) {
@@ -1998,6 +2039,9 @@ function browseAuthority (sf_popup, menu_id, target, sf, limit, page) {
     var sf_string = '';
     var sf_list = sf.parent().subfield;
     for ( var i in sf_list) {
+        if (!cmap[target_tag][sf_list[i].@code.toString()]) {
+            continue; // This is not a controlled subfield, such as $0
+        }
         sf_string += sf_list[i].toString() + ' ';
         if (sf_list[i] === sf) break;
     }

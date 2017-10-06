@@ -1,21 +1,21 @@
 # English (United Kingdom) translation for evergreen
-# Copyright (c) 2009 Rosetta Contributors and Canonical Ltd 2009
+# Copyright (c) 2017 Rosetta Contributors and Canonical Ltd 2017
 # This file is distributed under the same license as the evergreen package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2009.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: evergreen\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: 2014-09-11 02:13-0400\n"
-"PO-Revision-Date: 2014-02-25 14:51+0000\n"
-"Last-Translator: Andi Chandler <Unknown>\n"
+"POT-Creation-Date: 2017-08-25 14:21-0500\n"
+"PO-Revision-Date: 2017-04-09 07:00+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: English (United Kingdom) <en_GB@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-09-12 06:06+0000\n"
-"X-Generator: Launchpad (build 17196)\n"
+"X-Launchpad-Export-Date: 2017-08-28 05:33+0000\n"
+"X-Generator: Launchpad (build 18446)\n"
 
 #: bib.no_marc
 msgid "No MARC Record"
@@ -920,6 +920,10 @@ msgstr "Deposit Amount"
 msgid "Price"
 msgstr "Price"
 
+#: staff.cat.copy_editor.field.cost.label
+msgid "Acquisition Cost"
+msgstr ""
+
 #: staff.cat.copy_editor.field.opac_visible.label
 msgid "OPAC Visible?"
 msgstr "OPAC Visible?"
@@ -1264,8 +1268,8 @@ msgid "Need to mark a record as a Title Hold Transfer Destination first."
 msgstr "Need to mark a record as a Title Hold Transfer Destination first."
 
 #: staff.cat.opac.title_for_hold_transfer.success.label
-msgid "Holds transferred."
-msgstr "Holds transferred."
+msgid "All holds not available for pickup have been transferred."
+msgstr ""
 
 #: staff.cat.opac.title_for_hold_transfer.failure.label
 msgid "Holds not transferred."
@@ -1705,6 +1709,12 @@ msgstr "Check here to confirm this action"
 #: staff.cat.util.mark_item_damaged.item_circulating_to_patron
 msgid "Item %1$s is checked out to patron, %2$s, and is due on %3$s. "
 msgstr "Item %1$s is checked out to patron, %2$s, and is due on %3$s. "
+
+#: staff.cat.util.mark_item_damaged.item_no_linked_patron
+msgid ""
+"Item %1$s is no longer associated with an active circulation.  Please "
+"resolve charges manually."
+msgstr ""
 
 #: staff.cat.util.mark_item_damaged.charge_patron_prompt.message
 msgid ""
@@ -2397,58 +2407,5 @@ msgstr "Items:"
 msgid "%1$s available"
 msgstr "%1$s available"
 
-#~ msgid "Record ID = %1$s"
-#~ msgstr "Record ID = %1$s"
-
-#~ msgid ""
-#~ "You must delete all the copies on the volume before you may delete the "
-#~ "volume itself."
-#~ msgstr ""
-#~ "You must delete all the copies on the volume before you may delete the "
-#~ "volume itself."
-
-#~ msgid "Volumes deleted."
-#~ msgstr "Volumes deleted."
-
-#~ msgid "Record: %1$s"
-#~ msgstr "Record: %1$s"
-
-#~ msgid "Merge these records? (Select the \"lead\" record first)"
-#~ msgstr "Merge these records? (Select the \"lead\" record first)"
-
-#~ msgid "Merge"
-#~ msgstr "Merge"
-
-#~ msgctxt "staff.cat.record_buckets.merge_records.cancel_button.label"
-#~ msgid "Cancel"
-#~ msgstr "Cancel"
-
-#~ msgctxt "staff.cat.record_buckets.merge_records.cancel_button.accesskey"
-#~ msgid "C"
-#~ msgstr "C"
-
-#~ msgid "Lead Record? # %1$s"
-#~ msgstr "Lead Record? # %1$s"
-
-#~ msgid "Lead"
-#~ msgstr "Lead"
-
-#~ msgid "Merge Aborted"
-#~ msgstr "Merge Aborted"
-
-#~ msgid "Records were successfully merged."
-#~ msgstr "Records were successfully merged."
-
-#~ msgid "Call Numbers"
-#~ msgstr "Class Numbers"
-
-#~ msgctxt "staff.cat.copy_editor.field.floating.yes_or_true"
-#~ msgid "Yes"
-#~ msgstr "Yes"
-
-#~ msgctxt "staff.cat.copy_editor.field.floating.no_or_false"
-#~ msgid "No"
-#~ msgstr "No"
-
-#~ msgid "Cancel "
-#~ msgstr "Cancel "
+#~ msgid "Holds transferred."
+#~ msgstr "Holds transferred."

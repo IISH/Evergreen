@@ -1,4 +1,4 @@
-[% 
+[%
 
 ##############################################################################
 # This file contains skin-level configuration settings.
@@ -51,6 +51,17 @@ google_analytics.enabled = 'false';
 google_analytics.code = 'UA-9999999-99';
 
 ##############################################################################
+# Ebook API integration
+##############################################################################
+ebook_api.enabled = 'false';
+ebook_api.ebook_test.enabled = 'false';
+ebook_api.ebook_test.base_uris = [ 'http://example.com/ebookapi/t/' ];
+ebook_api.oneclickdigital.enabled = 'false';
+ebook_api.oneclickdigital.base_uris = [ 'http://example.oneclickdigital.com/Products/ProductDetail.aspx' ];
+ebook_api.overdrive.enabled = 'false';
+ebook_api.overdrive.base_uris = [ 'http://elm.lib.overdrive.com/' ];
+
+##############################################################################
 # Enable "Forgot your password?" prompt at login
 ##############################################################################
 reset_password = 'true';
@@ -72,8 +83,21 @@ disable_email_change = 'false';
 allow_phone_notifications = 'true';
 
 ##############################################################################
+# Format of parts selection on Place Holds screen
+# Set to true to use radio buttons for parts selection on the Place Holds
+# screen. The default behavior is to to display them in a select menu.
+#############################################################################
+enable.radio.parts = 'false';
+
+##############################################################################
 # Misc. UI Settings
 ##############################################################################
+# Option for full details as a default, esp. impt. for e-content
+# that uses resolver plumbing. Valid values are 'true', 'false' and 'hide'.
+# Setting this to 'true' shows full details by default but allows the link
+# to appear for 'Show Fewer Details'. The 'hide' option shows full details
+# and also suppresses the link from displaying at all.
+show_more_details.default = 'false';
 
 ##############################################################################
 # Size of the jacket image to display on the record detail summary.
@@ -81,15 +105,15 @@ allow_phone_notifications = 'true';
 # Options are "small", "medium", and "large"
 record.summary.jacket_size = 'medium';
 
-
 ##############################################################################
-# Define the order in which facets are displayed.  Only facets listed here 
-# will be displayed.  To show all facets sorted by name, comment out this 
-# setting.  
+# Define the order in which facets are displayed.  Only facets listed here
+# will be displayed.  To show all facets sorted by name, comment out this
+# setting.
 # facet.display = [] # show no facets
 facet.display = [
     {facet_class => 'author',  facet_order => ['personal', 'corporate']},
     {facet_class => 'subject', facet_order => ['topic']},
+    {facet_class => 'identifier', facet_order => ['genre']},
     {facet_class => 'series',  facet_order => ['seriestitle']},
     {facet_class => 'subject', facet_order => ['name', 'geographic']}
 ];
@@ -110,8 +134,8 @@ facet.default_display_count = 5;
 #   lib_selector will put the search library box (with limit to available)
 #   pub_year will put the publication year box
 #   sort_selector will put the sort results selector
-# id DOM id used for linking labels to form controls.  They are pinned 
-#   here instead of auto-generated (from the attr type, for example) 
+# id DOM id used for linking labels to form controls.  They are pinned
+#   here instead of auto-generated (from the attr type, for example)
 #   for consistency.
 
 search.adv_config = [
@@ -154,6 +178,9 @@ search.basic_config = {
     none_label => l("All Formats"),
 };
 
+# Make metarecord search the default.
+#search.metarecord_default = 1;
+
 ##############################################################################
 # Show Google Book Previews
 # Set to 1 or 'true' to enable
@@ -165,6 +192,24 @@ ctx.google_books_preview = 0;
 #
 # ctx.maintenance_message = "The system will not be available February 29, 2104.";
 
+##############################################################################
+# Depth Button/Checkbox
+# Recommendation: Do not enable button for basic search without enabling the
+# checkbox for the results page
+ctx.depth_sel_checkbox = 1; # Results Page Checkbox Toggle
+ctx.depth_sel_button = 1; # Basic Search Submit Button
+ctx.depth_sel_depth = 0; # Depth to set to
+ctx.depth_sel_button_label = l('All Libraries');
+ctx.depth_sel_button_class = 'opac-button';
+ctx.depth_sel_checkbox_label = l('Show Results from All Libraries');
+ctx.depth_sel_tooltip = l('Select this option to expand your results to all libraries while retaining the priority of your selected library\'s holdings.');
+ctx.depth_sel_resultshint = l('Showing results from all libraries');
+
+##############################################################################
+# Exclude Electronic Resources Checkbox
+# One setting for both the advanced search page and the results bar.
+# Off by default; set to 1 to display.
+ctx.exclude_electronic_checkbox = 0;
 
 ##############################################################################
 # Metarecords configuration
@@ -183,5 +228,13 @@ ctx.google_books_preview = 0;
 # TIME_FORMAT = '%H:%M:%S'; # for 16:32:32 (24 hour) format
 # TIME_FORMAT = '%H:%M'; # for 16:32 (24 hour) format
 ##############################################################################
+
+##############################################################################
+# Obalkyknih.cz support
+##############################################################################
+# Obalkyknihy.cz is free Czech service providing added content and book covers
+# Set to 'true' to enable
+##############################################################################
+# obalkyknih_cz.enabled = 'false';
 
 %]

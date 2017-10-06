@@ -232,6 +232,7 @@ CREATE INDEX aged_circ_copy_circ_lib_idx ON "action".aged_circulation (copy_circ
 CREATE INDEX aged_circ_copy_owning_lib_idx ON "action".aged_circulation (copy_owning_lib);
 CREATE INDEX aged_circ_copy_location_idx ON "action".aged_circulation (copy_location);
 CREATE INDEX action_aged_circulation_target_copy_idx ON action.aged_circulation (target_copy);
+CREATE INDEX action_aged_circulation_parent_circ_idx ON action.aged_circulation (parent_circ);
 
 CREATE OR REPLACE VIEW action.all_circulation AS
     SELECT  id,usr_post_code, usr_home_ou, usr_profile, usr_birth_year, copy_call_number, copy_location,
@@ -239,7 +240,8 @@ CREATE OR REPLACE VIEW action.all_circulation AS
         circ_lib, circ_staff, checkin_staff, checkin_lib, renewal_remaining, grace_period, due_date,
         stop_fines_time, checkin_time, create_time, duration, fine_interval, recurring_fine,
         max_fine, phone_renewal, desk_renewal, opac_renewal, duration_rule, recurring_fine_rule,
-        max_fine_rule, stop_fines, workstation, checkin_workstation, checkin_scan_time, parent_circ
+        max_fine_rule, stop_fines, workstation, checkin_workstation, checkin_scan_time, parent_circ,
+        NULL AS usr
       FROM  action.aged_circulation
             UNION ALL
     SELECT  DISTINCT circ.id,COALESCE(a.post_code,b.post_code) AS usr_post_code, p.home_ou AS usr_home_ou, p.profile AS usr_profile, EXTRACT(YEAR FROM p.dob)::INT AS usr_birth_year,
@@ -248,7 +250,7 @@ CREATE OR REPLACE VIEW action.all_circulation AS
         circ.checkin_lib, circ.renewal_remaining, circ.grace_period, circ.due_date, circ.stop_fines_time, circ.checkin_time, circ.create_time, circ.duration,
         circ.fine_interval, circ.recurring_fine, circ.max_fine, circ.phone_renewal, circ.desk_renewal, circ.opac_renewal, circ.duration_rule,
         circ.recurring_fine_rule, circ.max_fine_rule, circ.stop_fines, circ.workstation, circ.checkin_workstation, circ.checkin_scan_time,
-        circ.parent_circ
+        circ.parent_circ, circ.usr
       FROM  action.circulation circ
         JOIN asset.copy cp ON (circ.target_copy = cp.id)
         JOIN asset.call_number cn ON (cp.call_number = cn.id)
@@ -404,6 +406,22 @@ ALTER TABLE action.hold_request ADD CONSTRAINT sms_check CHECK (
 );
 
 
+CREATE OR REPLACE FUNCTION action.hold_request_clear_map () RETURNS TRIGGER AS $$
+BEGIN
+  DELETE FROM action.hold_copy_map WHERE hold = NEW.id;
+  RETURN NEW;
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE TRIGGER hold_request_clear_map_tgr
+    AFTER UPDATE ON action.hold_request
+    FOR EACH ROW
+    WHEN (
+        (NEW.cancel_time IS NOT NULL AND OLD.cancel_time IS NULL)
+        OR (NEW.fulfillment_time IS NOT NULL AND OLD.fulfillment_time IS NULL)
+    )
+    EXECUTE PROCEDURE action.hold_request_clear_map();
+
 CREATE INDEX hold_request_target_idx ON action.hold_request (target);
 CREATE INDEX hold_request_usr_idx ON action.hold_request (usr);
 CREATE INDEX hold_request_pickup_lib_idx ON action.hold_request (pickup_lib);
@@ -413,6 +431,11 @@ CREATE INDEX hold_request_fulfillment_staff_idx ON action.hold_request ( fulfill
 CREATE INDEX hold_request_requestor_idx         ON action.hold_request ( requestor );
 CREATE INDEX hold_request_open_idx ON action.hold_request (id) WHERE cancel_time IS NULL AND fulfillment_time IS NULL;
 CREATE INDEX hold_request_current_copy_before_cap_idx ON action.hold_request (current_copy) WHERE capture_time IS NULL AND cancel_time IS NULL;
+CREATE UNIQUE INDEX hold_request_capture_protect_idx ON action.hold_request (current_copy) WHERE current_copy IS NOT NULL AND capture_time IS NOT NULL AND cancel_time IS NULL AND fulfillment_time IS NULL;
+CREATE INDEX hold_request_copy_capture_time_idx ON action.hold_request (current_copy,capture_time);
+CREATE INDEX hold_request_open_captured_shelf_lib_idx ON action.hold_request (current_shelf_lib) WHERE capture_time IS NOT NULL AND fulfillment_time IS NULL AND (pickup_lib <> current_shelf_lib);
+CREATE INDEX hold_fulfillment_time_idx ON action.hold_request (fulfillment_time) WHERE fulfillment_time IS NOT NULL;
+CREATE INDEX hold_request_time_idx ON action.hold_request (request_time);
 
 
 CREATE TABLE action.hold_request_note (
@@ -453,6 +476,13 @@ CREATE TABLE action.hold_copy_map (
 );
 -- CREATE INDEX acm_hold_idx ON action.hold_copy_map (hold);
 CREATE INDEX acm_copy_idx ON action.hold_copy_map (target_copy);
+
+CREATE OR REPLACE FUNCTION
+    action.hold_request_regen_copy_maps(
+        hold_id INTEGER, copy_ids INTEGER[]) RETURNS VOID AS $$
+    DELETE FROM action.hold_copy_map WHERE hold = $1;
+    INSERT INTO action.hold_copy_map (hold, target_copy) SELECT $1, UNNEST($2);
+$$ LANGUAGE SQL;
 
 CREATE TABLE action.transit_copy (
 	id			SERIAL				PRIMARY KEY,
@@ -862,50 +892,94 @@ BEGIN
 END;
 $$ LANGUAGE 'plpgsql';
 
--- Return the list of circ chain heads in xact_start order that the user has chosen to "retain"
-CREATE OR REPLACE FUNCTION action.usr_visible_circs (usr_id INT) RETURNS SETOF action.circulation AS $func$
+-- same as action.circ_chain, but returns action.all_circulation 
+-- rows which may include aged circulations.
+CREATE OR REPLACE FUNCTION action.all_circ_chain (ctx_circ_id INTEGER) 
+    RETURNS SETOF action.all_circulation AS $$
 DECLARE
-    c               action.circulation%ROWTYPE;
-    view_age        INTERVAL;
-    usr_view_age    actor.usr_setting%ROWTYPE;
-    usr_view_start  actor.usr_setting%ROWTYPE;
+    tmp_circ action.all_circulation%ROWTYPE;
+    circ_0 action.all_circulation%ROWTYPE;
 BEGIN
-    SELECT * INTO usr_view_age FROM actor.usr_setting WHERE usr = usr_id AND name = 'history.circ.retention_age';
-    SELECT * INTO usr_view_start FROM actor.usr_setting WHERE usr = usr_id AND name = 'history.circ.retention_start';
 
-    IF usr_view_age.value IS NOT NULL AND usr_view_start.value IS NOT NULL THEN
-        -- User opted in and supplied a retention age
-        IF oils_json_to_text(usr_view_age.value)::INTERVAL > AGE(NOW(), oils_json_to_text(usr_view_start.value)::TIMESTAMPTZ) THEN
-            view_age := AGE(NOW(), oils_json_to_text(usr_view_start.value)::TIMESTAMPTZ);
-        ELSE
-            view_age := oils_json_to_text(usr_view_age.value)::INTERVAL;
-        END IF;
-    ELSIF usr_view_start.value IS NOT NULL THEN
-        -- User opted in
-        view_age := AGE(NOW(), oils_json_to_text(usr_view_start.value)::TIMESTAMPTZ);
-    ELSE
-        -- User did not opt in
-        RETURN;
+    SELECT INTO tmp_circ * FROM action.all_circulation WHERE id = ctx_circ_id;
+
+    IF tmp_circ IS NULL THEN
+        RETURN NEXT tmp_circ;
     END IF;
+    circ_0 := tmp_circ;
 
-    FOR c IN
-        SELECT  *
-          FROM  action.circulation
-          WHERE usr = usr_id
-                AND parent_circ IS NULL
-                AND xact_start > NOW() - view_age
-          ORDER BY xact_start DESC
-    LOOP
-        RETURN NEXT c;
+    -- find the front of the chain
+    WHILE TRUE LOOP
+        SELECT INTO tmp_circ * FROM action.all_circulation 
+            WHERE id = tmp_circ.parent_circ;
+        IF tmp_circ IS NULL THEN
+            EXIT;
+        END IF;
+        circ_0 := tmp_circ;
     END LOOP;
 
-    RETURN;
-END;
-$func$ LANGUAGE PLPGSQL;
+    -- now send the circs to the caller, oldest to newest
+    tmp_circ := circ_0;
+    WHILE TRUE LOOP
+        IF tmp_circ IS NULL THEN
+            EXIT;
+        END IF;
+        RETURN NEXT tmp_circ;
+        SELECT INTO tmp_circ * FROM action.all_circulation 
+            WHERE parent_circ = tmp_circ.id;
+    END LOOP;
 
-CREATE OR REPLACE FUNCTION action.usr_visible_circ_copies( INTEGER ) RETURNS SETOF BIGINT AS $$
-    SELECT DISTINCT(target_copy) FROM action.usr_visible_circs($1)
-$$ LANGUAGE SQL ROWS 10;
+END;
+$$ LANGUAGE 'plpgsql';
+
+-- same as action.summarize_circ_chain, but returns data collected
+-- from action.all_circulation, which may include aged circulations.
+CREATE OR REPLACE FUNCTION action.summarize_all_circ_chain 
+    (ctx_circ_id INTEGER) RETURNS action.circ_chain_summary AS $$
+
+DECLARE
+
+    -- first circ in the chain
+    circ_0 action.all_circulation%ROWTYPE;
+
+    -- last circ in the chain
+    circ_n action.all_circulation%ROWTYPE;
+
+    -- circ chain under construction
+    chain action.circ_chain_summary;
+    tmp_circ action.all_circulation%ROWTYPE;
+
+BEGIN
+    
+    chain.num_circs := 0;
+    FOR tmp_circ IN SELECT * FROM action.all_circ_chain(ctx_circ_id) LOOP
+
+        IF chain.num_circs = 0 THEN
+            circ_0 := tmp_circ;
+        END IF;
+
+        chain.num_circs := chain.num_circs + 1;
+        circ_n := tmp_circ;
+    END LOOP;
+
+    chain.start_time := circ_0.xact_start;
+    chain.last_stop_fines := circ_n.stop_fines;
+    chain.last_stop_fines_time := circ_n.stop_fines_time;
+    chain.last_checkin_time := circ_n.checkin_time;
+    chain.last_checkin_scan_time := circ_n.checkin_scan_time;
+    SELECT INTO chain.checkout_workstation name FROM actor.workstation WHERE id = circ_0.workstation;
+    SELECT INTO chain.last_checkin_workstation name FROM actor.workstation WHERE id = circ_n.checkin_workstation;
+
+    IF chain.num_circs > 1 THEN
+        chain.last_renewal_time := circ_n.xact_start;
+        SELECT INTO chain.last_renewal_workstation name FROM actor.workstation WHERE id = circ_n.workstation;
+    END IF;
+
+    RETURN chain;
+
+END;
+$$ LANGUAGE 'plpgsql';
+
 
 CREATE OR REPLACE FUNCTION action.usr_visible_holds (usr_id INT) RETURNS SETOF action.hold_request AS $func$
 DECLARE
@@ -972,8 +1046,6 @@ $func$ LANGUAGE PLPGSQL;
 
 CREATE OR REPLACE FUNCTION action.purge_circulations () RETURNS INT AS $func$
 DECLARE
-    usr_keep_age    actor.usr_setting%ROWTYPE;
-    usr_keep_start  actor.usr_setting%ROWTYPE;
     org_keep_age    INTERVAL;
     org_use_last    BOOL = false;
     org_age_is_min  BOOL = false;
@@ -1035,24 +1107,7 @@ BEGIN
                 last_finished := circ_chain_tail.xact_finish;
             END IF;
 
-            -- Now get the user settings, if any, to block purging if the user wants to keep more circs
-            usr_keep_age.value := NULL;
-            SELECT * INTO usr_keep_age FROM actor.usr_setting WHERE usr = circ_chain_head.usr AND name = 'history.circ.retention_age';
-
-            usr_keep_start.value := NULL;
-            SELECT * INTO usr_keep_start FROM actor.usr_setting WHERE usr = circ_chain_head.usr AND name = 'history.circ.retention_start';
-
-            IF usr_keep_age.value IS NOT NULL AND usr_keep_start.value IS NOT NULL THEN
-                IF oils_json_to_text(usr_keep_age.value)::INTERVAL > AGE(NOW(), oils_json_to_text(usr_keep_start.value)::TIMESTAMPTZ) THEN
-                    keep_age := AGE(NOW(), oils_json_to_text(usr_keep_start.value)::TIMESTAMPTZ);
-                ELSE
-                    keep_age := oils_json_to_text(usr_keep_age.value)::INTERVAL;
-                END IF;
-            ELSIF usr_keep_start.value IS NOT NULL THEN
-                keep_age := AGE(NOW(), oils_json_to_text(usr_keep_start.value)::TIMESTAMPTZ);
-            ELSE
-                keep_age := COALESCE( org_keep_age, '2000 years'::INTERVAL );
-            END IF;
+            keep_age := COALESCE( org_keep_age, '2000 years'::INTERVAL );
 
             IF org_age_is_min THEN
                 keep_age := GREATEST( keep_age, org_keep_age );
@@ -1352,5 +1407,99 @@ END;
 $f$ LANGUAGE PLPGSQL;
 
 CREATE TRIGGER hold_copy_proximity_update_tgr BEFORE INSERT OR UPDATE ON action.hold_copy_map FOR EACH ROW EXECUTE PROCEDURE action.hold_copy_calculated_proximity_update ();
+
+CREATE TABLE action.usr_circ_history (
+    id           BIGSERIAL PRIMARY KEY,
+    usr          INTEGER NOT NULL REFERENCES actor.usr(id)
+                 DEFERRABLE INITIALLY DEFERRED,
+    xact_start   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    target_copy  BIGINT NOT NULL, -- asset.copy.id / serial.unit.id
+    due_date     TIMESTAMP WITH TIME ZONE NOT NULL,
+    checkin_time TIMESTAMP WITH TIME ZONE,
+    source_circ  BIGINT REFERENCES action.circulation(id)
+                 ON DELETE SET NULL DEFERRABLE INITIALLY DEFERRED
+);
+
+CREATE INDEX action_usr_circ_history_usr_idx ON action.usr_circ_history ( usr );
+
+CREATE TRIGGER action_usr_circ_history_target_copy_trig 
+    AFTER INSERT OR UPDATE ON action.usr_circ_history 
+    FOR EACH ROW EXECUTE PROCEDURE evergreen.fake_fkey_tgr('target_copy');
+
+CREATE OR REPLACE FUNCTION action.maintain_usr_circ_history() 
+    RETURNS TRIGGER AS $FUNK$
+DECLARE
+    cur_circ  BIGINT;
+    first_circ BIGINT;
+BEGIN                                                                          
+
+    -- Any retention value signifies history is enabled.
+    -- This assumes that clearing these values via external 
+    -- process deletes the action.usr_circ_history rows.
+    -- TODO: replace these settings w/ a single bool setting?
+    PERFORM 1 FROM actor.usr_setting 
+        WHERE usr = NEW.usr AND value IS NOT NULL AND name IN (
+            'history.circ.retention_age', 
+            'history.circ.retention_start'
+        );
+
+    IF NOT FOUND THEN
+        RETURN NEW;
+    END IF;
+
+    IF TG_OP = 'INSERT' AND NEW.parent_circ IS NULL THEN
+        -- Starting a new circulation.  Insert the history row.
+        INSERT INTO action.usr_circ_history 
+            (usr, xact_start, target_copy, due_date, source_circ)
+        VALUES (
+            NEW.usr, 
+            NEW.xact_start, 
+            NEW.target_copy, 
+            NEW.due_date, 
+            NEW.id
+        );
+
+        RETURN NEW;
+    END IF;
+
+    -- find the first and last circs in the circ chain 
+    -- for the currently modified circ.
+    FOR cur_circ IN SELECT id FROM action.circ_chain(NEW.id) LOOP
+        IF first_circ IS NULL THEN
+            first_circ := cur_circ;
+            CONTINUE;
+        END IF;
+        -- Allow the loop to continue so that at as the loop
+        -- completes cur_circ points to the final circulation.
+    END LOOP;
+
+    IF NEW.id <> cur_circ THEN
+        -- Modifying an intermediate circ.  Ignore it.
+        RETURN NEW;
+    END IF;
+
+    -- Update the due_date/checkin_time on the history row if the current 
+    -- circ is the last circ in the chain and an update is warranted.
+
+    UPDATE action.usr_circ_history 
+        SET 
+            due_date = NEW.due_date,
+            checkin_time = NEW.checkin_time
+        WHERE 
+            source_circ = first_circ 
+            AND (
+                due_date <> NEW.due_date OR (
+                    (checkin_time IS NULL AND NEW.checkin_time IS NOT NULL) OR
+                    (checkin_time IS NOT NULL AND NEW.checkin_time IS NULL) OR
+                    (checkin_time <> NEW.checkin_time)
+                )
+            );
+    RETURN NEW;
+END;                                                                           
+$FUNK$ LANGUAGE PLPGSQL; 
+
+CREATE TRIGGER maintain_usr_circ_history_tgr 
+    AFTER INSERT OR UPDATE ON action.circulation 
+    FOR EACH ROW EXECUTE PROCEDURE action.maintain_usr_circ_history();
 
 COMMIT;

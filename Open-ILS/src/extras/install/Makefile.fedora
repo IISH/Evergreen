@@ -31,6 +31,7 @@ FEDORA_RPMS = \
 	libyaz \
 	libyaz-devel \
 	mingw32-nsiswrapper \
+	mod_perl \
 	mod_ssl \
 	ncurses-devel \
 	ncurses-libs \
@@ -39,6 +40,7 @@ FEDORA_RPMS = \
 	perl-Business-ISBN-Data \
 	perl-CPAN \
 	perl-Crypt-SSLeay \
+	perl-Date-Manip \
 	perl-DBD-Pg \
 	perl-Email-Send \
 	perl-Email-Simple \
@@ -81,6 +83,7 @@ export CPAN_MODULES_FORCE = \
 	Class::DBI::Frozen::301 \
 	Business::OnlinePayment \
 	Business::OnlinePayment::AuthorizeNet \
+	Business::OnlinePayment::PayflowPro \
 	Business::OnlinePayment::PayPal
 
 PGSQL_FEDORA_RPMS = \
@@ -91,7 +94,7 @@ PGSQL_FEDORA_RPMS = \
 	postgresql-plperl \
 	postgresql-server
 
-all: install_fedora_rpms install_js_sm
+all: install_fedora_rpms
 	make -f $(DIR)/Makefile.common install_net_z3950_simpleserver
 	make -f $(DIR)/Makefile.common install_cpan
 	make -f $(DIR)/Makefile.common install_cpan_force
@@ -102,36 +105,6 @@ install_postgres_server:
 install_fedora_rpms:
 	yum -y update
 	yum -y install $(FEDORA_RPMS)
-
-install_js_sm: install_libjs install_spidermonkey
-
-install_libjs: 
-	if [ ! -f $(LIBJS).tar.gz ]; then wget $(LIBJS_URL); fi;
-	tar -zxf $(LIBJS).tar.gz
-	cd js/src/ && JS_DIST=/usr make -f Makefile.ref
-	mkdir -p $(JS_INSTALL_PREFIX)/include/js/
-	cp js/src/*.h $(JS_INSTALL_PREFIX)/include/js/
-	cp js/src/*.tbl $(JS_INSTALL_PREFIX)/include/js/
-	if [ ! -z $(FEDORA_64) ]; then \
-		cp js/src/Linux_All_DBG.OBJ/*.so $(JS_INSTALL_PREFIX)/lib64/ && \
-		cp js/src/Linux_All_DBG.OBJ/*.a $(JS_INSTALL_PREFIX)/lib64/; \
-	else \
-		cp js/src/Linux_All_DBG.OBJ/*.so $(JS_INSTALL_PREFIX)/lib/ && \
-		cp js/src/Linux_All_DBG.OBJ/*.a $(JS_INSTALL_PREFIX)/lib/; \
-	fi;
-	ldconfig
-
-install_spidermonkey:
-	if [ ! -f $(LIBJS_PERL).tar.gz ]; then wget $(LIBJS_PERL_URL); fi;
-	tar -zxf $(LIBJS_PERL).tar.gz
-	if [ ! -z $(FEDORA_64) ]; then \
-		sed -i -e 's/"\/usr\/lib"/"\/usr\/lib64"/' $(LIBJS_PERL)/Makefile.PL ; \
-	fi;
-	if [ ! -z $(FEDORA) ]; then \
-		sed -i -e 's/js32.dll/libjs.so/' $(LIBJS_PERL)/Makefile.PL ; \
-	fi;
-	cd $(LIBJS_PERL) && perl Makefile.PL -E4X && make && make test && make install
-
 
 clean:
 	make -f $(DIR)/Makefile.common clean

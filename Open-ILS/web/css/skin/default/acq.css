@@ -279,3 +279,19 @@ span[name="bib_origin"] img { vertical-align: middle; }
 }
 
 span[name="cancel_reason"] { text-decoration: underline; font-weight: bold; }
+
+.acq-existing-count-warn {
+    font-weight: bold;
+    color: red;
+}
+
+#oils-acq-final-invoice-pane {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+#acq-final-invoice-tbody td {
+    padding: 6px;
+    border: 1px solid #AAA;
+}
+

@@ -24,11 +24,7 @@ export DEF_LDLIBS = -lopensrf
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 datadir=@localstatedir@/data
-circrulesdir=@localstatedir@/circ
-catalogscriptdir=@localstatedir@/catalog
-penaltyrulesdir=@localstatedir@/penalty
 examples = @top_srcdir@/Open-ILS/examples
-jsbackend = @srcdir@/javascript/backend
 supportscr = @srcdir@/support-scripts
 
 # Collect files to be used by multiple targets
@@ -64,6 +60,7 @@ core_data = @srcdir@/extras/ils_events.xml \
 core_scripts =   $(examples)/oils_ctl.sh \
 		 $(supportscr)/fine_generator.pl \
 		 $(supportscr)/hold_targeter.pl \
+		 $(supportscr)/hold_targeter_v2.pl \
 		 $(supportscr)/reshelving_complete.srfsh \
 		 $(supportscr)/clear_expired_circ_history.srfsh \
 		 $(supportscr)/update_hard_due_dates.srfsh \
@@ -72,28 +69,14 @@ core_scripts =   $(examples)/oils_ctl.sh \
 		 $(supportscr)/long-overdue-status-update.pl \
 		 $(supportscr)/purge_holds.srfsh \
 		 $(supportscr)/purge_circulations.srfsh \
+		 $(supportscr)/purge_pending_users.srfsh \
+		 $(supportscr)/clear_cc_number.srfsh \
 		 $(supportscr)/sitemap_generator \
 		 $(srcdir)/extras/eg_config \
 		 $(srcdir)/extras/openurl_map.pl \
 		 $(srcdir)/extras/import/marc_add_ids
 
 installautojs = $(autojsbinscripts)
-
-#circ-rules-install
-circrules_SCRIPTS = $(jsbackend)/circ/circ_duration.js \
-		    $(jsbackend)/circ/circ_groups.js \
-		    $(jsbackend)/circ/circ_item_config.js \
-		    $(jsbackend)/circ/circ_lib.js \
-		    $(jsbackend)/circ/circ_permit_copy.js \
-		    $(jsbackend)/circ/circ_permit_hold.js \
-		    $(jsbackend)/circ/circ_permit_patron.js \
-		    $(jsbackend)/circ/circ_permit_renew.js 
-penaltyrules_SCRIPTS = $(jsbackend)/penalty/patron_penalty.js
-catalogscript_SCRIPTS = $(jsbackend)/catalog/biblio_descriptor.js \
-		        $(jsbackend)/catalog/biblio_fingerprint.js \
-			$(jsbackend)/catalog/fixed_fields.js \
-		        $(jsbackend)/catalog/phys_char.js \
-	                $(jsbackend)/catalog/record_type.js
 
 endif
 
@@ -269,7 +252,7 @@ ilscore-install:
 	-@if test -d @srcdir@/data/locale; then \
 		$(MKDIR_P) $(DESTDIR)$(datadir)/locale/ && \
 		echo "Installing template data files to $(datadir)/locale/" && \
-		cp @srcdir@/data/locale/* $(datadir)/locale/ ;\
+		cp -r @srcdir@/data/locale/* $(datadir)/locale/ ;\
 	fi;
 	$(MKDIR_P) $(DESTDIR)$(datadir)/overdue/
 	sed -i 's|LOCALSTATEDIR|@localstatedir@|g' '$(DESTDIR)@sysconfdir@/oils_sip.xml.example'
@@ -290,6 +273,10 @@ ilscore-install:
 	sed -i 's|BINDIR|@bindir@|g' '$(DESTDIR)@bindir@/long-overdue-status-update.pl'
 	sed -i 's|SYSCONFDIR|@sysconfdir@|g' '$(DESTDIR)@bindir@/long-overdue-status-update.pl'
 	sed -i 's|BINDIR|@bindir@|g' '$(DESTDIR)@bindir@/thaw_expired_frozen_holds.srfsh'
+	sed -i 's|BINDIR|@bindir@|g' '$(DESTDIR)@bindir@/clear_cc_number.srfsh'
+	sed -i 's|BINDIR|@bindir@|g' '$(DESTDIR)@bindir@/purge_circulations.srfsh'
+	sed -i 's|BINDIR|@bindir@|g' '$(DESTDIR)@bindir@/purge_holds.srfsh'
+	sed -i 's|BINDIR|@bindir@|g' '$(DESTDIR)@bindir@/purge_pending_users.srfsh'
 	sed -i 's|LOCALSTATEDIR|@localstatedir@|g' '$(DESTDIR)@bindir@/oils_ctl.sh'
 	sed -i 's|SYSCONFDIR|@sysconfdir@|g' '$(DESTDIR)@bindir@/oils_ctl.sh'
 

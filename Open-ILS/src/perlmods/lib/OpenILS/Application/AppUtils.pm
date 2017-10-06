@@ -1,5 +1,4 @@
 package OpenILS::Application::AppUtils;
-# vim:noet:ts=4
 use strict; use warnings;
 use OpenILS::Application;
 use base qw/OpenILS::Application/;
@@ -18,6 +17,7 @@ use Encode;
 use DateTime;
 use DateTime::Format::ISO8601;
 use List::MoreUtils qw/uniq/;
+use Digest::MD5 qw(md5_hex);
 
 # ---------------------------------------------------------------------------
 # Pile of utilty methods used accross applications.
@@ -640,7 +640,7 @@ sub fetch_copy_locations {
     my $self = shift; 
     return $self->simplereq(
         'open-ils.cstore', 
-        'open-ils.cstore.direct.asset.copy_location.search.atomic', { id => { '!=' => undef } });
+        'open-ils.cstore.direct.asset.copy_location.search.atomic', { id => { '!=' => undef }, deleted => 'f' });
 }
 
 sub fetch_copy_location_by_name {
@@ -648,7 +648,7 @@ sub fetch_copy_location_by_name {
     my $evt;
     my $cl = $self->cstorereq(
         'open-ils.cstore.direct.asset.copy_location.search',
-            { name => $name, owning_lib => $org } );
+            { name => $name, owning_lib => $org, deleted => 'f' } );
     $evt = OpenILS::Event->new('ASSET_COPY_LOCATION_NOT_FOUND') unless $cl;
     return ($cl, $evt);
 }
@@ -1304,7 +1304,72 @@ sub ou_ancestor_setting {
     return undef unless $setting;
     return {org => $setting->{org_unit}, value => OpenSRF::Utils::JSON->JSON2perl($setting->{value})};
 }   
-        
+
+# This fetches a set of OU settings in one fell swoop,
+# which can be significantly faster than invoking
+# $U->ou_ancestor_setting() one setting at a time.
+# As the "_insecure" implies, however, callers are
+# responsible for ensuring that the settings to be
+# fetch do not need view permission checks.
+sub ou_ancestor_setting_batch_insecure {
+    my( $self, $orgid, $names ) = @_;
+
+    my %result = map { $_ => undef } @$names;
+    my $query = {
+        from => [
+            'actor.org_unit_ancestor_setting_batch',
+            $orgid,
+            '{' . join(',', @$names) . '}'
+        ]
+    };
+    my $e = OpenILS::Utils::CStoreEditor->new();
+    my $settings = $e->json_query($query);
+    foreach my $setting (@$settings) {
+        $result{$setting->{name}} = {
+            org => $setting->{org_unit},
+            value => OpenSRF::Utils::JSON->JSON2perl($setting->{value})
+        };
+    }
+    return %result;
+}
+
+# Returns a hash of hashes like so:
+# { 
+#   $lookup_org_id => {org => $context_org, value => $setting_value},
+#   $lookup_org_id2 => {org => $context_org2, value => $setting_value2},
+#   $lookup_org_id3 => {} # example of no setting value exists
+#   ...
+# }
+sub ou_ancestor_setting_batch_by_org_insecure {
+    my ($self, $org_ids, $name, $e) = @_;
+
+    $e ||= OpenILS::Utils::CStoreEditor->new();
+    my %result = map { $_ => {value => undef} } @$org_ids;
+
+    my $query = {
+        from => [
+            'actor.org_unit_ancestor_setting_batch_by_org',
+            $name, '{' . join(',', @$org_ids) . '}'
+        ]
+    };
+
+    # DB func returns an array of settings matching the order of the
+    # list of org unit IDs.  If the setting does not contain a valid
+    # ->id value, then no setting value exists for that org unit.
+    my $settings = $e->json_query($query);
+    for my $idx (0 .. $#$org_ids) {
+        my $setting = $settings->[$idx];
+        my $org_id = $org_ids->[$idx];
+
+        next unless $setting->{id}; # null ID means no value is present.
+
+        $result{$org_id}->{org} = $setting->{org_unit};
+        $result{$org_id}->{value} = 
+            OpenSRF::Utils::JSON->JSON2perl($setting->{value});
+    }
+
+    return %result;
+}
 
 # returns the ISO8601 string representation of the requested epoch in GMT
 sub epoch2ISO8601 {
@@ -1475,6 +1540,23 @@ sub org_unit_ancestor_at_depth {
     return ($resp) ? $resp->{id} : undef;
 }
 
+# Returns the proximity value between two org units.
+sub get_org_unit_proximity {
+    my ($class, $e, $from_org, $to_org) = @_;
+    $e = OpenILS::Utils::CStoreEditor->new unless ($e);
+    my $r = $e->json_query(
+        {
+            select => {aoup => ['prox']},
+            from => 'aoup',
+            where => {from_org => $from_org, to_org => $to_org}
+        }
+    );
+    if (ref($r) eq 'ARRAY' && @$r) {
+        return $r->[0]->{prox};
+    }
+    return undef;
+}
+
 # returns the user's configured locale as a string.  Defaults to en-US if none is configured.
 sub get_user_locale {
     my($self, $user_id, $e) = @_;
@@ -1628,7 +1710,7 @@ sub find_event_def_by_hook {
     for my $org_id (reverse @$orgs) {
 
         my $def = $e->search_action_trigger_event_definition(
-            {hook => $hook, owner => $org_id})->[0];
+            {hook => $hook, owner => $org_id, active => 't'})->[0];
 
         return $def if $def;
     }
@@ -1767,7 +1849,7 @@ sub create_uuid_string {
 
 sub create_circ_chain_summary {
     my($class, $e, $circ_id) = @_;
-    my $sum = $e->json_query({from => ['action.summarize_circ_chain', $circ_id]})->[0];
+    my $sum = $e->json_query({from => ['action.summarize_all_circ_chain', $circ_id]})->[0];
     return undef unless $sum;
     my $obj = Fieldmapper::action::circ_chain_summary->new;
     $obj->$_($sum->{$_}) for keys %$sum;
@@ -1849,7 +1931,7 @@ sub bib_record_list_via_search {
     }
 
     # Throw away other junk from search, keeping only bib IDs.
-    return [ map { pop @$_ } @{$search_result->{ids}} ];
+    return [ map { shift @$_ } @{$search_result->{ids}} ];
 }
 
 # 'no_flesh' avoids fleshing the target_biblio_record_entry
@@ -1869,7 +1951,7 @@ sub bib_container_items_via_search {
     }
 
     # Throw away other junk from search, keeping only bib IDs.
-    my $id_list = [ map { pop @$_ } @{$search_result->{ids}} ];
+    my $id_list = [ map { shift @$_ } @{$search_result->{ids}} ];
 
     return [] unless @$id_list;
 
@@ -1963,7 +2045,7 @@ sub basic_opac_copy_query {
 
     return {
         select => {
-            acp => ['id', 'barcode', 'circ_lib', 'create_date',
+            acp => ['id', 'barcode', 'circ_lib', 'create_date', 'active_date',
                     'age_protect', 'holdable', 'copy_number'],
             acpl => [
                 {column => 'name', alias => 'copy_location'},
@@ -2021,7 +2103,10 @@ sub basic_opac_copy_query {
                     filter => {checkin_time => undef}
                 },
                 acpl => {
-                    ($staff ? () : (filter => { opac_visible => 't' }))
+                    filter => {
+                        deleted => 'f',
+                        ($staff ? () : ( opac_visible => 't' )),
+                    },
                 },
                 ccs => {
                     ($staff ? () : (filter => { opac_visible => 't' }))
@@ -2030,7 +2115,7 @@ sub basic_opac_copy_query {
                 acpm => {
                     type => 'left',
                     join => {
-                        bmp => { type => 'left' }
+                        bmp => { type => 'left', filter => { deleted => 'f' } }
                     }
                 }
             }
@@ -2048,6 +2133,7 @@ sub basic_opac_copy_query {
         order_by => [
             {class => 'aou', field => 'name'},
             {class => 'acn', field => 'label_sortkey'},
+            {class => 'bmp', field => 'label_sortkey'},
             {class => 'acp', field => 'copy_number'},
             {class => 'acp', field => 'barcode'}
         ],
@@ -2133,6 +2219,30 @@ sub strip_marc_fields {
     return $class->entityize($marcdoc->documentElement->toString);
 }
 
+# marcdoc is an XML::LibXML document
+# updates the document and returns the entityized MARC string.
+sub set_marc_905u {
+    my ($class, $marcdoc, $username) = @_;
+
+    # Look for existing 905$u subfields. If any exist, do nothing.
+    my @nodes = $marcdoc->findnodes('//*[@tag="905"]/*[@code="u"]');
+    unless (@nodes) {
+        # We create a new 905 and the subfield u to that.
+        my $parentNode = $marcdoc->createElement('datafield');
+        $parentNode->setAttribute('tag', '905');
+        $parentNode->setAttribute('ind1', '');
+        $parentNode->setAttribute('ind2', '');
+        $marcdoc->documentElement->addChild($parentNode);
+        my $node = $marcdoc->createElement('subfield');
+        $node->setAttribute('code', 'u');
+        $node->appendTextNode($username);
+        $parentNode->addChild($node);
+
+    }
+
+    return $class->entityize($marcdoc->documentElement->toString);
+}
+
 # Given a list of PostgreSQL arrays of numbers,
 # unnest the numbers and return a unique set, skipping any list elements
 # that are just '{NULL}'.
@@ -2191,6 +2301,89 @@ sub check_open_xact {
     }
     return undef;
 }
+
+# Because floating point math has rounding issues, and Dyrcona gets
+# tired of typing out the code to multiply floating point numbers
+# before adding and subtracting them and then dividing the result by
+# 100 each time, he wrote this little subroutine for subtracting
+# floating point values.  It can serve as a model for the other
+# operations if you like.
+#
+# It takes a list of floating point values as arguments.  The rest are
+# all subtracted from the first and the result is returned.  The
+# values are all multiplied by 100 before being used, and the result
+# is divided by 100 in order to avoid decimal rounding errors inherent
+# in floating point math.
+#
+# XXX shifting using multiplication/division *may* still introduce
+# rounding errors -- better to implement using string manipulation?
+sub fpdiff {
+    my ($class, @args) = @_;
+    my $result = shift(@args) * 100;
+    while (my $arg = shift(@args)) {
+        $result -= $arg * 100;
+    }
+    return $result / 100;
+}
+
+sub fpsum {
+    my ($class, @args) = @_;
+    my $result = shift(@args) * 100;
+    while (my $arg = shift(@args)) {
+        $result += $arg * 100;
+    }
+    return $result / 100;
+}
+
+# Non-migrated passwords can be verified directly in the DB
+# with any extra hashing.
+sub verify_user_password {
+    my ($class, $e, $user_id, $passwd, $pw_type) = @_;
+
+    $pw_type ||= 'main'; # primary login password
+
+    my $verify = $e->json_query({
+        from => [
+            'actor.verify_passwd', 
+            $user_id, $pw_type, $passwd
+        ]
+    })->[0];
+
+    return $class->is_true($verify->{'actor.verify_passwd'});
+}
+
+# Passwords migrated from the original MD5 scheme are passed through 2
+# extra layers of MD5 hashing for backwards compatibility with the
+# MD5 passwords of yore and the MD5-based chap-style authentication.  
+# Passwords are stored in the DB like this:
+# CRYPT( MD5( pw_salt || MD5(real_password) ), pw_salt )
+#
+# If 'as_md5' is true, the password provided has already been
+# MD5 hashed.
+sub verify_migrated_user_password {
+    my ($class, $e, $user_id, $passwd, $as_md5) = @_;
+
+    # 'main' is the primary login password. This is the only password 
+    # type that requires the additional MD5 hashing.
+    my $pw_type = 'main';
+
+    # Sometimes we have the bare password, sometimes the MD5 version.
+    my $md5_pass = $as_md5 ? $passwd : md5_hex($passwd);
+
+    my $salt = $e->json_query({
+        from => [
+            'actor.get_salt', 
+            $user_id, 
+            $pw_type
+        ]
+    })->[0];
+
+    $salt = $salt->{'actor.get_salt'};
+
+    return $class->verify_user_password(
+        $e, $user_id, md5_hex($salt . $md5_pass), $pw_type);
+}
+
 
 1;
 

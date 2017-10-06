@@ -421,7 +421,10 @@ CREATE VIEW metabib.record_attr_flat AS
             LEFT JOIN config.coded_value_map c ON ( c.id = ANY( v.vlist ) );
 
 CREATE VIEW metabib.record_attr AS
-    SELECT id, HSTORE( ARRAY_AGG( attr ), ARRAY_AGG( value ) ) AS attrs FROM metabib.record_attr_flat GROUP BY 1;
+    SELECT  id, HSTORE( ARRAY_AGG( attr ), ARRAY_AGG( value ) ) AS attrs
+      FROM  metabib.record_attr_flat
+      WHERE attr IS NOT NULL
+      GROUP BY 1;
 
 -- Back-back-compat view ... we use to live in an HSTORE world
 CREATE TYPE metabib.rec_desc_type AS (
@@ -1070,11 +1073,12 @@ BEGIN
             raw_text := REGEXP_REPLACE(raw_text, E'^(\\w+).*?$', E'\\1');
         END IF;
 
-		output_text := output_text || REGEXP_REPLACE(raw_text, E'\\s+', '', 'g');
+		output_text := output_text || idx.name || ':' ||
+					   REGEXP_REPLACE(raw_text, E'\\s+', '', 'g') || ' ';
 
 	END LOOP;
 
-    RETURN output_text;
+    RETURN BTRIM(output_text);
 
 END;
 $func$ LANGUAGE PLPGSQL;
@@ -1263,7 +1267,7 @@ BEGIN
                 new_mapping := FALSE;
 
             ELSE -- Our fingerprint changed ... maybe remove the old MR
-                DELETE FROM metabib.metarecord_source_map WHERE metarecord = old_mr AND source = bib_id; -- remove the old source mapping
+                DELETE FROM metabib.metarecord_source_map WHERE metarecord = tmp_mr.id AND source = bib_id; -- remove the old source mapping
                 SELECT COUNT(*) INTO source_count FROM metabib.metarecord_source_map WHERE metarecord = tmp_mr.id;
                 IF source_count = 0 THEN -- No other records
                     deleted_mrs := ARRAY_APPEND(deleted_mrs, tmp_mr.id);
@@ -1343,7 +1347,16 @@ DECLARE
 BEGIN
 
     IF attr_list IS NULL OR rdeleted THEN -- need to do the full dance on INSERT or undelete
-        SELECT ARRAY_AGG(name) INTO attr_list FROM config.record_attr_definition;
+        SELECT ARRAY_AGG(name) INTO attr_list FROM config.record_attr_definition
+        WHERE (
+            tag IS NOT NULL OR
+            fixed_field IS NOT NULL OR
+            xpath IS NOT NULL OR
+            phys_char_sf IS NOT NULL OR
+            composite
+        ) AND (
+            filter OR sorter
+        );
     END IF;
 
     IF rmarc IS NULL THEN
@@ -1402,7 +1415,7 @@ BEGIN
                 prev_xfrm := xfrm.name;
             END IF;
 
-            FOR tmp_xml IN SELECT oils_xpath(attr_def.xpath, transformed_xml, ARRAY[ARRAY[xfrm.prefix, xfrm.namespace_uri]]) LOOP
+            FOR tmp_xml IN SELECT UNNEST(oils_xpath(attr_def.xpath, transformed_xml, ARRAY[ARRAY[xfrm.prefix, xfrm.namespace_uri]])) LOOP
                 tmp_val := oils_xpath_string(
                                 '//*',
                                 tmp_xml,
@@ -1448,7 +1461,9 @@ BEGIN
                     ')' INTO tmp_val;
 
             END LOOP;
-            IF tmp_val IS NOT NULL AND BTRIM(tmp_val) <> '' THEN
+            IF tmp_val IS NOT NULL AND tmp_val <> '' THEN
+                -- note that a string that contains only blanks
+                -- is a valid value for some attributes
                 norm_attr_value := norm_attr_value || tmp_val;
             END IF;
         END LOOP;
@@ -1473,9 +1488,11 @@ BEGIN
             attr_vector := attr_vector || attr_vector_tmp;
         END IF;
 
-        IF attr_def.sorter AND norm_attr_value[1] IS NOT NULL THEN
+        IF attr_def.sorter THEN
             DELETE FROM metabib.record_sorter WHERE source = rid AND attr = attr_def.name;
-            INSERT INTO metabib.record_sorter (source, attr, value) VALUES (rid, attr_def.name, norm_attr_value[1]);
+            IF norm_attr_value[1] IS NOT NULL THEN
+                INSERT INTO metabib.record_sorter (source, attr, value) VALUES (rid, attr_def.name, norm_attr_value[1]);
+            END IF;
         END IF;
 
     END LOOP;
@@ -2185,7 +2202,8 @@ BEGIN
                 superpage_of_records := all_brecords[slice_start:slice_end];
                 qpfts_query :=
                     'SELECT NULL::BIGINT AS id, ARRAY[r] AS records, ' ||
-                    '1::INT AS rel FROM (SELECT UNNEST(' ||
+                    'NULL AS badges, NULL::NUMERIC AS popularity, ' ||
+                    '1::NUMERIC AS rel FROM (SELECT UNNEST(' ||
                     quote_literal(superpage_of_records) || '::BIGINT[]) AS r) rr';
 
                 -- We use search.query_parser_fts() for visibility testing.
@@ -2223,7 +2241,8 @@ BEGIN
                 superpage_of_records := all_arecords[slice_start:slice_end];
                 qpfts_query :=
                     'SELECT NULL::BIGINT AS id, ARRAY[r] AS records, ' ||
-                    '1::INT AS rel FROM (SELECT UNNEST(' ||
+                    'NULL AS badges, NULL::NUMERIC AS popularity, ' ||
+                    '1::NUMERIC AS rel FROM (SELECT UNNEST(' ||
                     quote_literal(superpage_of_records) || '::BIGINT[]) AS r) rr';
 
                 -- We use search.query_parser_fts() for visibility testing.
@@ -2439,6 +2458,36 @@ BEGIN
     );
 END;
 $p$ LANGUAGE PLPGSQL;
+
+-- This function is used to help clean up facet labels. Due to quirks in
+-- MARC parsing, some facet labels may be generated with periods or commas
+-- at the end.  This will strip a trailing commas off all the time, and
+-- periods when they don't look like they are part of initials.
+--      Smith, John    =>  no change
+--      Smith, John,   =>  Smith, John
+--      Smith, John.   =>  Smith, John
+--      Public, John Q. => no change
+CREATE OR REPLACE FUNCTION metabib.trim_trailing_punctuation ( TEXT ) RETURNS TEXT AS $$
+DECLARE
+    result    TEXT;
+    last_char TEXT;
+BEGIN
+    result := $1;
+    last_char = substring(result from '.$');
+
+    IF last_char = ',' THEN
+        result := substring(result from '^(.*),$');
+
+    ELSIF last_char = '.' THEN
+        IF substring(result from ' \w\.$') IS NULL THEN
+            result := substring(result from '^(.*)\.$');
+        END IF;
+    END IF;
+
+    RETURN result;
+
+END;
+$$ language 'plpgsql';
 
 COMMIT;
 

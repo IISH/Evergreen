@@ -10,6 +10,8 @@
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/services/ui.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/services/user.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/services/eframe.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/services/date.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/circ/services/patrons.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/circ/services/billing.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/circ/services/circ.js"></script>
 [% INCLUDE 'staff/circ/share/circ_strings.tt2' %]
@@ -17,11 +19,9 @@
 [% INCLUDE 'staff/circ/share/hold_strings.tt2' %]
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/cat/services/record.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/circ/patron/app.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/circ/patron/regctl.js"></script>
 
 <!-- load the rest on demand? -->
-
-<!-- required for credentials verify API -->
-<script src="[% ctx.media_prefix %]/js/dojo/opensrf/md5.js"></script>
 
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/circ/patron/checkout.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/circ/patron/items_out.js"></script>
@@ -35,6 +35,8 @@
 <script>
 angular.module('egCoreMod').run(['egStrings', function(s) {
   s.ANNOTATE_PAYMENT_MSG = "[% l('Please annotate this payment') %]";
+  s.CONFIRM_VOID_BILLINGS = 
+    "[% l('Are you sure you would like to void $[_1] for these line-item billings? [_2]','{{amount|number:2}}','{{billIds}}') %]";
   s.CONFIRM_REFUND_PAYMENT = 
     "[% |l('{{xactIds}}') -%]Are you sure you would like to refund excess payment on bills [_1]?  This action will simply put the amount in the Payment Pending column as a negative value.  You must still select Apply Payment!  Certain types of payments may not be refunded.  The refund may be applied to checked transactions that follow the refunded transaction.[% END %]";
   s.EDIT_BILL_PAY_NOTE = "[% l('Enter new note for #[_1]:','{{ids}}') %]";
@@ -42,17 +44,34 @@ angular.module('egCoreMod').run(['egStrings', function(s) {
   s.RENEW_ITEMS = "[% l('Renew Items?') %]";
   s.RENEW_ALL_ITEMS = "[% l('Renew All Items?') %]";
   s.CHECK_IN_CONFIRM = "[% l('Check In Items?') %]";
+  s.REG_INVALID_FIELDS = 
+    "[% l('Please enter valid values for all required fields.') %]"
+  s.PAYMENT_WARN_AMOUNT = "[% l('Are you sure you want to apply a payment of $[_1]?', '{{payment_amount}}') %]";
+  s.PAYMENT_WARN_AMOUNT_TITLE = "[% l('Verify Payment Amount') %]";
+  s.PAYMENT_OVER_MAX = "[% l('Payments over $[_1] are denied by policy.', '{{max_amount}}') %]";
+  s.PATRON_NOTE_DELETE_CONFIRM_TITLE = "[% l('Delete Note?') %]";
+  s.PATRON_NOTE_DELETE_CONFIRM = "[% l('Delete the note titled \"[_1]\" created on [_2]?', '{{note_title}}', '{{create_date | date}}') %]";
+  s.PATRON_EDIT_COLLISION = "[% l('Patron record was modified by another user while you were editing it. Your changes were not saved; please reapply them.') %]";
 }]);
 </script>
 
+<!-- add room for the fixed navigation elements -->
+<style ng-if="is_patron_edit">
+  #top-content-container { padding-top: 120px; }
+</style>
+<style ng-if="!is_patron_edit">
+  #top-content-container { padding-top: 80px; }
+</style>
+
 [% END %]
 
-<div class="row">
-  <div class="col-md-3">
+<div class="row" id="patron-fixed-tabs">
+  <div class="col-md-3 patron-name-header">
     <div ng-show="patron()">
       <h4 title="{{patron().id()}}">
         <div class="flex-row">
-          <div class="flex-cell">
+          <div class="flex-cell"
+          ng-class="{'patron-summary-alert' : hasAlerts()}">
             [% l('[_1], [_2] [_3]', 
                 '{{patron().family_name()}}',
                 '{{patron().first_given_name()}}',
@@ -70,17 +89,18 @@ angular.module('egCoreMod').run(['egStrings', function(s) {
               <span class="glyphicon glyphicon-resize-full"></span>
             </a>
           </div>
-        </div><!-- row -->
+        </div>
       </h4>
-    </div><!-- if patron -->
-  </div><!-- col -->
+    </div>
+  </div>
+
   <div class="col-md-9">
     <ul class="nav nav-pills nav-pills-like-tabs">
       <li ng-class="{active : tab == 'checkout', disabled : !patron()}">
-        <a href="./circ/patron/{{patron().id()}}/checkout">[% l('Check Out') %]</a>
+        <a a-disabled="!patron()" href="./circ/patron/{{patron().id()}}/checkout">[% l('Check Out') %]</a>
       </li>
       <li ng-class="{active : tab == 'items_out', disabled : !patron()}">
-        <a href="./circ/patron/{{patron().id()}}/items_out">
+        <a a-disabled="!patron()" href="./circ/patron/{{patron().id()}}/items_out">
           [% l('Items Out') %] 
           <span ng-if="patron()"><!-- lack of space / newline below intentional -->
           (<span ng-class="{'patron-summary-alert-small' : patron_stats().checkouts.overdue}">{{patron_stats().checkouts.total_out}}</span>)
@@ -88,15 +108,15 @@ angular.module('egCoreMod').run(['egStrings', function(s) {
         </a>
       </li>
       <li ng-class="{active : tab == 'holds', disabled : !patron()}">
-        <a href="./circ/patron/{{patron().id()}}/holds">
+        <a a-disabled="!patron()" href="./circ/patron/{{patron().id()}}/holds">
           [% l('Holds') %]
           <span ng-if="patron()">
-            (<span>{{patron_stats().holds.total}} / {{patron_stats().holds.ready}}</span>)
+            (<span>{{patron_stats().holds.ready}} / {{patron_stats().holds.total}}</span>)
           </span>
         </a>
       </li>
       <li ng-class="{active : tab == 'bills', disabled : !patron()}">
-        <a href="./circ/patron/{{patron().id()}}/bills">
+        <a a-disabled="!patron()" href="./circ/patron/{{patron().id()}}/bills">
           [% l('Bills') %]
           <span ng-if="patron()">
             (<span ng-class="{'patron-summary-alert-small' : patron_stats().fines.balance_owed}">{{patron_stats().fines.balance_owed | currency}}</span>)
@@ -104,17 +124,17 @@ angular.module('egCoreMod').run(['egStrings', function(s) {
         </a>
       </li>
       <li ng-class="{active : tab == 'messages', disabled : !patron()}">
-        <a href="./circ/patron/{{patron().id()}}/messages">[% l('Messages') %]</a>
+        <a a-disabled="!patron()" href="./circ/patron/{{patron().id()}}/messages">[% l('Messages') %]</a>
       </li>
       <li ng-class="{active : tab == 'edit', disabled : !patron()}">
         <a href="./circ/patron/{{patron().id()}}/edit">[% l('Edit') %]</a>
       </li>
-      <li class="dropdown" ng-class="{active : tab == 'other', disabled : !patron()}">
-        <a href class="dropdown-toggle" data-toggle="dropdown">
+      <li uib-dropdown ng-class="{active : tab == 'other', disabled : !patron()}">
+        <a a-disabled="!patron()" href uib-dropdown-toggle>
             [% l('Other') %]
             <b class="caret"></b>
         </a>
-        <ul class="dropdown-menu">
+        <ul uib-dropdown-menu>
           <li>
             <a href="./circ/patron/{{patron().id()}}/alerts">
               [% l('Display Alert and Messages') %]
@@ -131,8 +151,18 @@ angular.module('egCoreMod').run(['egStrings', function(s) {
             </a>
           </li>
           <li>
+            <a href="./circ/patron/{{patron().id()}}/message_center">
+              [% l('Message Center') %]
+            </a>
+          </li>
+          <li>
             <a href="./circ/patron/{{patron().id()}}/stat_cats">
               [% l('Statistical Categories') %]
+            </a>
+          </li>
+          <li>
+            <a href="./circ/patron/{{patron().id()}}/surveys">
+              [% l('Surveys') %]
             </a>
           </li>
           <li>
@@ -150,12 +180,31 @@ angular.module('egCoreMod').run(['egStrings', function(s) {
               [% l('Test Password') %]
             </a>
           </li>
+          <li>
+            <a href="./booking/legacy/booking/reservation?patron_barcode={{patron().card().barcode()}}" target="_top">
+              [% l('Booking: Create or Cancel Reservations') %]
+            </a>
+          </li>
+          <li>
+            <a href="./booking/legacy/booking/pickup?patron_barcode={{patron().card().barcode()}}" target="_top">
+              [% l('Booking: Pick Up Reservations') %]
+            </a>
+          </li>
+          <li>
+            <a href="./booking/legacy/booking/return?patron_barcode={{patron().card().barcode()}}" target="_top">
+              [% l('Booking: Return Reservations') %]
+            </a>
+          </li>
        </ul>
       </li>
       <li ng-class="{active : tab == 'search'}" class="pull-right">
         <a href="./circ/patron/search">[% l('Patron Search') %]</a>
       </li>
     </ul>
+    <div class="flex-row patron-reg-actions-bar" ng-if="is_patron_edit()">
+      [% INCLUDE 'staff/circ/patron/reg_actions.tt2' %]
+    </div>
+
   </div><!-- col -->
 </div><!-- row -->
 

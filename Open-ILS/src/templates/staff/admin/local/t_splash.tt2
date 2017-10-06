@@ -1,0 +1,63 @@
+
+<div class="container-fluid" style="text-align:center">
+  <div class="alert alert-info alert-less-pad strong-text-2">
+    <span>[% l('Local Administration') %]</span>
+  </div>
+</div>
+
+<div class="container admin-splash-container">
+
+[%
+    interfaces = [
+     [ l('Address Alerts'), "./admin/local/actor/address_alert" ]
+    ,[ l('Age Overdue Circs to Lost'), "./admin/local/circ/age_to_lost" ]
+    ,[ l('Auto-Print Settings'), "./admin/local/config/auto_print" ]
+    ,[ l('Barcode Completion'), "./admin/local/config/barcode_completion" ]
+    ,[ l('Cash Reports'), "./admin/local/money/cash_reports" ]
+    ,[ l('Circ Limit Sets'), "./admin/local/config/circ_limit_set" ]
+    ,[ l('Circulation Policies'), "./admin/local/config/circ_matrix_matchpoint" ]
+    ,[ l('Closed Dates Editor'), "./admin/local/actor/closed_dates" ]
+    ,[ l('Copy Location Groups'), "./admin/local/asset/copy_location_group" ]
+    ,[ l('Copy Location Order'), "./admin/local/asset/copy_location_order" ]
+    ,[ l('Copy Locations Editor'), "./admin/local/asset/copy_locations" ]
+    ,[ l('Field Documentation'), "./admin/local/config/idl_field_doc" ]
+    ,[ l('Group Penalty Thresholds'), "./admin/local/permission/grp_penalty_threshold" ]
+    ,[ l('Hold Policies'), "./admin/local/config/hold_matrix_matchpoint" ]
+    ,[ l('Library Settings Editor'), "./admin/local/asset/org_unit_settings" ]
+    ,[ l('Non-Cataloged Types Editor'), "./admin/local/config/non_cat_types" ]
+    ,[ l('Notifications / Action Triggers'), "./admin/local/action_trigger/event_definition" ]
+    ,[ l('Patrons with Negative Balances'), "./admin/local/circ/neg_balance_users" ]
+    ,[ l('Search Filter Groups'), "./admin/local/actor/search_filter_group" ]
+    ,[ l('Serial Copy Template Editor'), "./admin/local/asset/copy_template" ]
+    ,[ l('Standing Penalties'), "./admin/local/config/standing_penalty" ]
+    ,[ l('Statistical Categories Editor'), "./admin/local/asset/stat_cat_editor" ]
+    ,[ l('Statistical Popularity Badges'), "./admin/local/rating/badge" ]
+    ,[ l('Surveys'), "./admin/local/action/survey" ]
+    ,[ l('Transit List'), "./circ/transits/list" ]
+    ,[ l('Volume/Copy Template Editor'), "./cat/volcopy/edit_templates" ]
+    ,[ l('Work Log'), "./admin/workstation/log" ]
+   ];
+
+   USE table(interfaces, cols=3);
+%]
+
+<div class="row">
+    [% FOREACH col = table.cols %]
+        <div class="col-md-4">
+        [% FOREACH item = col %][% IF item.1 %]
+        <div class="row new-entry">
+            <div class="col-md-12">
+                <span class="glyphicon glyphicon-pencil"></span>
+                <a target="_self" href="[% item.1 %]">
+                    [% item.0 %]
+                </a>
+            </div>
+        </div>
+        [% END %]
+    [% END %]
+        </div>
+    [% END %]
+</div>
+
+</div>
+

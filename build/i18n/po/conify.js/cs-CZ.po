@@ -1,23 +1,29 @@
+# Czech translation for evergreen
+# Copyright (c) 2017 Rosetta Contributors and Canonical Ltd 2017
+# This file is distributed under the same license as the evergreen package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: Evergreen 1.4\n"
-"Report-Msgid-Bugs-To: open-ils-dev@list.georgialibraries.org\n"
-"POT-Creation-Date: 2014-09-11 02:13-0400\n"
-"PO-Revision-Date: 2013-04-23 11:56+0000\n"
-"Last-Translator: Eva Cerninakova <Unknown>\n"
-"Language-Team: UISK <LL@li.org>\n"
+"Project-Id-Version: evergreen\n"
+"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2017-08-25 14:21-0400\n"
+"PO-Revision-Date: 2017-04-09 07:00+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Czech <cs@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-09-12 06:06+0000\n"
-"X-Generator: Launchpad (build 17196)\n"
-"X-Poedit-Country: CZECH REPUBLIC\n"
-"X-Poedit-Language: Czech\n"
-"X-Poedit-SourceCharset: utf-8\n"
+"X-Launchpad-Export-Date: 2017-08-28 05:33+0000\n"
+"X-Generator: Launchpad (build 18446)\n"
 
 #: conify.js:SURVEY_ID
 msgid "Survey ID # ${0}"
 msgstr "ID průzkumu # ${0}"
+
+#: conify.js:IS_AVAILABLE
+msgid "Is Available"
+msgstr "Je dostupné"
 
 #: conify.js:SUCCESS_NEW_PERM_MAP
 msgid "New permission map created"
@@ -152,9 +158,9 @@ msgstr "Vytvořena nová podřízená organizační jednotka pro ${0}"
 msgid "Cannot delete ${0}, ${1} subordinates still exist."
 msgstr "Nelze odstranit ${0}, podřízený ${1} stále existuje."
 
-#: conify.js:CBHO_EDITING_EXISTING
-msgid "You are editing best-hold order #${0}: ${1}."
-msgstr "Upravujte pořadí \"nejvýhodnější rezervace\" #${0}: ${1}."
+#: conify.js:ACQ_DISTRIB_FORMULA_NAME_PROMPT
+msgid "Enter new formula name"
+msgstr "Vložit nový název vzorce"
 
 #: conify.js:ERROR_DELETING_LAST_AOUT
 msgid "Cannot delete ${0}. You need at least one organization type."
@@ -236,13 +242,22 @@ msgstr "Nový typ"
 msgid "You need to enter a name for the best-hold order."
 msgstr "Je nutné zadat jméno pro pořadí \"nejvýhodnější rezervace\""
 
-#: conify.js:ACQ_DISTRIB_FORMULA_NAME_PROMPT
-msgid "Enter new formula name"
-msgstr "Vložit nový název vzorce"
+#: conify.js:CBHO_EDITING_EXISTING
+msgid "You are editing best-hold order #${0}: ${1}."
+msgstr "Upravujte pořadí \"nejvýhodnější rezervace\" #${0}: ${1}."
 
 #: conify.js:ERROR_CREATING_CHILD_AOU
 msgid "Problem creating child organizational unit"
 msgstr "Problém při vytvoření podřízené organizační jednotky"
+
+#: conify.js:SURVEY_WARN_TEXT
+msgid ""
+"No questions can be modified or added at this time. The survey Start Date "
+"must be set for the future to add new questions or modify existing questions."
+msgstr ""
+"Nyní nelze upravavoat ani přidávat otázky. Abyste mohli přidávat nové otázky "
+"nebo upravovat existující otázky, musíte datum začátku průzkumu nastaveno "
+"jako budoucí."
 
 #: conify.js:ERROR_SAVING_HOLDS
 msgid "Problem saving Holds Address data for ${0}"
@@ -346,7 +361,7 @@ msgstr ""
 
 #: conify.js:OPAC_VISIBLE
 msgid "OPAC Visible"
-msgstr "Viditelné v OPACu"
+msgstr "Zobrazit v OPACu"
 
 #: conify.js:ERROR_SAVING_PHYSICAL
 msgid "Problem saving Physical Address data for ${0}"

@@ -1,21 +1,21 @@
 # English (United Kingdom) translation for evergreen
-# Copyright (c) 2011 Rosetta Contributors and Canonical Ltd 2011
+# Copyright (c) 2017 Rosetta Contributors and Canonical Ltd 2017
 # This file is distributed under the same license as the evergreen package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2011.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: evergreen\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: 2014-09-11 02:13-0400\n"
-"PO-Revision-Date: 2014-02-25 14:53+0000\n"
-"Last-Translator: Andi Chandler <Unknown>\n"
+"POT-Creation-Date: 2017-08-25 14:21-0400\n"
+"PO-Revision-Date: 2017-04-09 07:00+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: English (United Kingdom) <en_GB@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-09-12 06:25+0000\n"
-"X-Generator: Launchpad (build 17196)\n"
+"X-Launchpad-Export-Date: 2017-08-28 05:32+0000\n"
+"X-Generator: Launchpad (build 18446)\n"
 
 #: acq.js:ACQ_SEARCH_CLASS_ABBR_acqlid
 msgid "LID"
@@ -30,6 +30,12 @@ msgstr ""
 #: acq.js:NO_LI_TO_CLAIM
 msgid "You have not selected any line items to claim."
 msgstr "You have not selected any line items to claim."
+
+#: acq.js:INVOICE_ITEM_PO_LABEL
+msgid ""
+"<a href='${0}/acq/po/view/${1}'>PO #${2} ${3}</a><br/>Total Estimated Cost: "
+"$${4}"
+msgstr ""
 
 #: acq.js:CONFIRM_FUNDS_AT_WARNING
 msgid ""
@@ -98,6 +104,20 @@ msgid ""
 "href='${11}/acq/picklist/view/${14}?focus_li=${10}&source=${22}'>&#x2756; "
 "${15}</a></div>"
 msgstr ""
+"<div class='acq-lineitem-summary'><a "
+"href='${19}?focus_li=${10}&source=${22}'>${0}</a>, by ${1} (${2})</div>\n"
+"<div class='acq-lineitem-summary-extra'>\n"
+"${3} Ordered, ${4} Received, ${7} Invoiced, ${8} Claimed, ${9} Cancelled, "
+"${23} Delayed</div>\n"
+"<div class='acq-lineitem-summary-extra'>Estimated $${6}, Encumbered $${16}, "
+"Paid $${17}</div>\n"
+"<div class='acq-lineitem-summary-extra'>\n"
+"# ${10} <a style='padding-right: 10px;' class='hidden${20}'  "
+"href='${11}/acq/po/view/${12}?focus_li=${10}&source=${22}'>&#x2318; ${13} "
+"${18}</a>\n"
+"<a style='padding-right: 10px;' class='hidden${21}' "
+"href='${11}/acq/picklist/view/${14}?focus_li=${10}&source=${22}'>&#x2756; "
+"${15}</a></div>"
 
 #: acq.js:INVOICE_CONFIRM_PRORATE
 msgid ""
@@ -111,9 +131,9 @@ msgstr ""
 "Any subsequent changes to the invoice that would affect prorated amounts "
 "should be resolved manually."
 
-#: acq.js:FUND_LIST_ROLLOVER_SUMMARY
-msgid "Fund Propagation &amp; Rollover Summary for Fiscal Year ${0}"
-msgstr "Fund Propagation &amp; Rollover Summary for Fiscal Year ${0}"
+#: acq.js:LI_CREATING_ASSETS
+msgid "Creating bib, call number, and copy records..."
+msgstr ""
 
 #: acq.js:CONFIRM_FUNDS_AT_STOP
 msgid ""
@@ -145,9 +165,17 @@ msgstr ""
 "There is already an invoice in the system with the given combination of "
 "'Vendor Invoice ID' and 'Provider,' which is not allowed."
 
-#: acq.js:CONFIRM_DELETE_MAPPING
-msgid "Are you sure you want to remove this tag from this fund?"
-msgstr "Are you sure you want to remove this tag from this fund?"
+#: acq.js:DUPE_PO_NAME_LINK
+msgid "View PO"
+msgstr ""
+
+#: acq.js:ACTIVATE_LI_PROCESSED
+msgid "Lineitems Processed: ${0}"
+msgstr ""
+
+#: acq.js:ACTIVATE_DEBITS_ACCRUED_PROCESSED
+msgid "Debits Encumbered: ${0}"
+msgstr ""
 
 #: acq.js:VENDOR_SAYS_PREPAY_NOT_NEEDED
 msgid ""
@@ -165,9 +193,9 @@ msgstr "Remove this £${0} '${1}' charge from the invoice?"
 msgid "Yes; fund ${0} (${1}) would be encumbered beyond its warning level."
 msgstr "Yes; fund ${0} (${1}) would be encumbered beyond its warning level."
 
-#: acq.js:FUND_XFER_SAME_SOURCE_AND_DEST
-msgid "Cannot transfer. The source and destination funds are the same."
-msgstr "Cannot transfer. The source and destination funds are the same."
+#: acq.js:ACTIVATE_BIBS_PROCESSED
+msgid "Bib Records Merged/Imported: ${0}"
+msgstr ""
 
 #: acq.js:ROLLBACK_LI_RECEIVE_CONFIRM
 msgid ""
@@ -220,6 +248,10 @@ msgstr "Are you SURE you want to cancel this purchase order?"
 #: acq.js:PRINT
 msgid "Print"
 msgstr "Print"
+
+#: acq.js:PO_ACTIVATING
+msgid "Activating purchase order..."
+msgstr ""
 
 #: acq.js:INVOICE_ITEM_PO_DETAILS
 msgid ""
@@ -289,13 +321,25 @@ msgstr "Select Search Field"
 msgid "VENDOR PUBLIC"
 msgstr "VENDOR PUBLIC"
 
-#: acq.js:VENDOR_SAYS_PREPAY_NEEDED
+#: acq.js:CONFIRM_SPLIT_PO
 msgid ""
-"The selected vendor requires prepayment, according to records.\n"
-"Proceed anyway without required prepayment on this PO?"
+"Are you sure you want to split this purchase order into\n"
+"one purchase order for every constituent line item?"
 msgstr ""
-"The selected vendor requires prepayment, according to records.\n"
-"Proceed anyway without required prepayment on this PO?"
+"Are you sure you want to split this purchase order into\n"
+"one purchase order for every constituent line item?"
+
+#: acq.js:FUND_LIST_ROLLOVER_SUMMARY_ROLLOVER_AMOUNT
+msgid ""
+"<b>$${1}</b> unspent money rolled over to fiscal year ${0} for the selected "
+"locations"
+msgstr ""
+"<b>£${1}</b> unspent money rolled over to fiscal year ${0} for the selected "
+"locations"
+
+#: acq.js:ACTIVATE_VQBR_PROCESSED
+msgid "Vandelay Records Processed: ${0}"
+msgstr ""
 
 #: acq.js:INVOICES
 msgid "Invoices"
@@ -313,9 +357,11 @@ msgstr "Invoice #${0}"
 msgid "Canceled"
 msgstr "Cancelled"
 
-#: acq.js:COULD_NOT_DELETE_MAPPING
-msgid "Error removing tag from fund."
-msgstr "Error removing tag from fund."
+#: acq.js:FINALIZE_PO
+msgid ""
+"Finalize this blanket PO?\n"
+"This will disencumber all blanket charges and mark the PO as received"
+msgstr ""
 
 #: acq.js:NEW_INVOICE
 msgid "New Invoice"
@@ -324,6 +370,10 @@ msgstr "New Invoice"
 #: acq.js:YES
 msgid "Yes"
 msgstr "Yes"
+
+#: acq.js:FUND_XFER_SAME_SOURCE_AND_DEST
+msgid "Cannot transfer. The source and destination funds are the same."
+msgstr "Cannot transfer. The source and destination funds are the same."
 
 #: acq.js:COPIES_TO_RECEIVE
 msgid "Number of copies to receive: "
@@ -380,17 +430,21 @@ msgstr ""
 msgid "Claims (${0} existing)"
 msgstr "Claims (${0} existing)"
 
-#: acq.js:FUND_LIST_ROLLOVER_SUMMARY_ROLLOVER_AMOUNT
+#: acq.js:VENDOR_SAYS_PREPAY_NEEDED
 msgid ""
-"<b>$${1}</b> unspent money rolled over to fiscal year ${0} for the selected "
-"locations"
+"The selected vendor requires prepayment, according to records.\n"
+"Proceed anyway without required prepayment on this PO?"
 msgstr ""
-"<b>£${1}</b> unspent money rolled over to fiscal year ${0} for the selected "
-"locations"
+"The selected vendor requires prepayment, according to records.\n"
+"Proceed anyway without required prepayment on this PO?"
 
 #: acq.js:DFA_TIP
 msgid "<strong>Applied by</strong>: ${0}<br /><strong>When</strong>: ${1}"
 msgstr "<strong>Applied by</strong>: ${0}<br /><strong>When</strong>: ${1}"
+
+#: acq.js:FUND_LIST_ROLLOVER_SUMMARY
+msgid "Fund Propagation &amp; Rollover Summary for Fiscal Year ${0}"
+msgstr "Fund Propagation &amp; Rollover Summary for Fiscal Year ${0}"
 
 #: acq.js:OUT_OF_COPIES
 msgid "You have applied distribution formulas to every copy."
@@ -404,13 +458,25 @@ msgstr "You have not selected any line items to update."
 msgid "A purchase order must have an ordering agency and a provider."
 msgstr "A purchase order must have an ordering agency and a provider."
 
+#: acq.js:ACTIVATE_LID_PROCESSED
+msgid "ACQ Copies Processed: ${0}"
+msgstr ""
+
 #: acq.js:LI_ATTR_SEARCH_TOO_LARGE
 msgid "That file is too large for this operation."
 msgstr "That file is too large for this operation."
 
+#: acq.js:CONFIRM_DELETE_MAPPING
+msgid "Are you sure you want to remove this tag from this fund?"
+msgstr "Are you sure you want to remove this tag from this fund?"
+
 #: acq.js:PO_HEADING_ERROR
 msgid "Unexpected problem building virtual combined PO"
 msgstr "Unexpected problem building virtual combined PO"
+
+#: acq.js:PO_NAME_OPTIONAL
+msgid "${0} (optional)"
+msgstr ""
 
 #: acq.js:DELETE_LI_COPIES_CONFIRM
 msgid "This will delete the last ${0} copies in the table.  Proceed?"
@@ -424,9 +490,9 @@ msgstr "Are you sure you're ready to commit this transfer?"
 msgid "Are you sure? Did you see the warning about over-encumbering a fund?"
 msgstr "Are you sure? Did you see the warning about over-encumbering a fund?"
 
-#: acq.js:UR_FILTER_USER
-msgid "Enter barcode for user (or leave blank to unset the filter):"
-msgstr "Enter barcode for user (or leave blank to unset the filter):"
+#: acq.js:ACTIVATE_COPIES_PROCESSED
+msgid "Real Copies Processed: ${0}"
+msgstr ""
 
 #: acq.js:UR_FILTER_LINEITEM
 msgid "Enter id for lineitem (or leave blank to unset the filter):"
@@ -444,13 +510,9 @@ msgstr "SL"
 msgid "Cancel"
 msgstr "Cancel"
 
-#: acq.js:CONFIRM_SPLIT_PO
-msgid ""
-"Are you sure you want to split this purchase order into\n"
-"one purchase order for every constituent line item?"
-msgstr ""
-"Are you sure you want to split this purchase order into\n"
-"one purchase order for every constituent line item?"
+#: acq.js:UR_FILTER_USER
+msgid "Enter barcode for user (or leave blank to unset the filter):"
+msgstr "Enter barcode for user (or leave blank to unset the filter):"
 
 #: acq.js:CHANGE_CLAIM_POLICY
 msgid "Change claim policy"
@@ -463,6 +525,11 @@ msgstr "Activated ${0}"
 #: acq.js:ADD_LI_TO_PO_BAD_PO_STATE
 msgid "The selected PO has already been activated"
 msgstr "The selected PO has already been activated"
+
+#: acq.js:LI_EXISTING_COPIES
+msgid ""
+"There are ${0} existing copies for this bibliographic record at this location"
+msgstr ""
 
 #: acq.js:EXPORT_SAVE_DIALOG_TITLE
 msgid "Save field values to a file"
@@ -492,6 +559,10 @@ msgstr "Reset Formulas"
 msgid "Are you sure you want to mark this lineitem as UN-received?"
 msgstr "Are you sure you want to mark this lineitem as UN-received?"
 
+#: acq.js:DUPE_PO_NAME_MSG
+msgid "This name is already in use by another PO"
+msgstr ""
+
 #: acq.js:ACQ_SEARCH_CLASS_ABBR_jub
 msgid "LI"
 msgstr "LI"
@@ -503,6 +574,10 @@ msgstr "Error tagging fund."
 #: acq.js:UNRECEIVE_LID
 msgid "Are you sure you want to mark this copy as UN-received?"
 msgstr "Are you sure you want to mark this copy as UN-received?"
+
+#: acq.js:COULD_NOT_DELETE_MAPPING
+msgid "Error removing tag from fund."
+msgstr "Error removing tag from fund."
 
 #: acq.js:CANCEL_REASON
 msgid "Cancel reason"
@@ -547,44 +622,3 @@ msgstr "No values for attribute '${0}' found."
 #: acq.js:APPLY
 msgid "Apply"
 msgstr "Apply"
-
-#~ msgid "You have not selected any lineitem details to claim."
-#~ msgstr "You have not selected any lineitem details to claim."
-
-#~ msgid ""
-#~ "<b>${1}</b> funds propagated for fiscal year ${0} for the selected locations"
-#~ msgstr ""
-#~ "<b>${1}</b> funds propagated for fiscal year ${0} for the selected locations"
-
-#~ msgid "Could not record all of your applications of distribution forumulas."
-#~ msgstr "Could not record all of your applications of distribution formulas."
-
-#~ msgid "You have not selected any lineitems to claim."
-#~ msgstr "You have not selected any lineitems to claim."
-
-#~ msgid ""
-#~ "<div class='acq-lineitem-summary'><a href='${19}'>${0}</a>, by ${1} "
-#~ "(${2})</div>\n"
-#~ "<div class='acq-lineitem-summary-extra'>\n"
-#~ "${3} Ordered, ${4} Received, ${7} Invoiced, ${8} Claimed, ${9} "
-#~ "Cancelled</div>\n"
-#~ "<div class='acq-lineitem-summary-extra'>Estimated $${6}, Encumbered $${16}, "
-#~ "Paid $${17}</div>\n"
-#~ "<div class='acq-lineitem-summary-extra'>\n"
-#~ "# ${10} <a style='padding-right: 10px;' class='hidden${20}'  "
-#~ "href='${11}/acq/po/view/${12}'>&#x2318; ${13} ${18}</a>\n"
-#~ "<a style='padding-right: 10px;' class='hidden${21}' "
-#~ "href='${11}/acq/picklist/view/${14}'>&#x2756; ${15}</a></div>"
-#~ msgstr ""
-#~ "<div class='acq-lineitem-summary'><a href='${19}'>${0}</a>, by ${1} "
-#~ "(${2})</div>\n"
-#~ "<div class='acq-lineitem-summary-extra'>\n"
-#~ "${3} Ordered, ${4} Received, ${7} Invoiced, ${8} Claimed, ${9} "
-#~ "Cancelled</div>\n"
-#~ "<div class='acq-lineitem-summary-extra'>Estimated £${6}, Encumbered £${16}, "
-#~ "Paid £${17}</div>\n"
-#~ "<div class='acq-lineitem-summary-extra'>\n"
-#~ "# ${10} <a style='padding-right: 10px;' class='hidden${20}'  "
-#~ "href='${11}/acq/po/view/${12}'>&#x2318; ${13} ${18}</a>\n"
-#~ "<a style='padding-right: 10px;' class='hidden${21}' "
-#~ "href='${11}/acq/picklist/view/${14}'>&#x2756; ${15}</a></div>"

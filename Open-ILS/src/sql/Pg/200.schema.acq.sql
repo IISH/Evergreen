@@ -358,6 +358,11 @@ CREATE TABLE acq.cancel_reason (
 
 SELECT SETVAL('acq.cancel_reason_id_seq'::TEXT, 2000);
 
+DROP TRIGGER IF EXISTS acq_no_deleted_reserved_cancel_reasons ON acq.cancel_reason;
+
+CREATE TRIGGER acq_no_deleted_reserved_cancel_reasons BEFORE DELETE ON acq.cancel_reason
+    FOR EACH ROW EXECUTE PROCEDURE evergreen.protect_reserved_rows_from_delete(2000);
+
 CREATE TABLE acq.purchase_order (
 	id		SERIAL				PRIMARY KEY,
 	owner		INT				NOT NULL REFERENCES actor.usr (id) DEFERRABLE INITIALLY DEFERRED,
@@ -489,6 +494,7 @@ CREATE INDEX li_pl_idx ON acq.lineitem (picklist);
 CREATE INDEX li_creator_idx   ON acq.lineitem ( creator );
 CREATE INDEX li_editor_idx    ON acq.lineitem ( editor );
 CREATE INDEX li_selector_idx  ON acq.lineitem ( selector );
+CREATE INDEX li_queued_record_idx ON acq.lineitem ( queued_record );
 
 CREATE TABLE acq.lineitem_alert_text (
     id               SERIAL         PRIMARY KEY,
@@ -535,6 +541,7 @@ CREATE TABLE acq.lineitem_detail (
 );
 
 CREATE INDEX li_detail_li_idx ON acq.lineitem_detail (lineitem);
+CREATE INDEX lineitem_detail_fund_debit_idx ON acq.lineitem_detail (fund_debit);
 
 CREATE TABLE acq.lineitem_attr_definition (
 	id		BIGSERIAL	PRIMARY KEY,
@@ -779,6 +786,7 @@ CREATE TABLE acq.edi_message (
 );
 CREATE INDEX edi_message_account_status_idx ON acq.edi_message (account,status);
 CREATE INDEX edi_message_po_idx ON acq.edi_message (purchase_order);
+CREATE INDEX edi_message_remote_file_idx ON acq.edi_message (evergreen.lowercase(remote_file));
 
 -- Note below that the primary key is NOT a SERIAL type.  We will periodically truncate and rebuild
 -- the table, assigning ids programmatically instead of using a sequence.
@@ -846,10 +854,20 @@ CREATE INDEX ie_inv_idx on acq.invoice_entry (invoice);
 CREATE INDEX ie_po_idx on acq.invoice_entry (purchase_order);
 CREATE INDEX ie_li_idx on acq.invoice_entry (lineitem);
 
+ALTER TABLE acq.fund_debit 
+    ADD COLUMN invoice_entry INTEGER 
+        REFERENCES acq.invoice_entry (id)
+        ON DELETE SET NULL;
+
+CREATE INDEX fund_debit_invoice_entry_idx ON acq.fund_debit (invoice_entry);
+
 CREATE TABLE acq.invoice_item_type (
     code    TEXT    PRIMARY KEY,
     name    TEXT    NOT NULL,  -- i18n-ize
-	prorate BOOL    NOT NULL DEFAULT FALSE
+	prorate BOOL    NOT NULL DEFAULT FALSE,
+    blanket BOOL    NOT NULL DEFAULT FALSE,
+    CONSTRAINT aiit_not_blanket_and_prorate
+        CHECK (blanket IS FALSE OR prorate IS FALSE)
 );
 
 CREATE TABLE acq.po_item (
@@ -1932,6 +1950,27 @@ BEGIN
 END;
 $$ LANGUAGE 'plpgsql';
 
+CREATE OR REPLACE FUNCTION acq.copy_fund_tags(
+        old_fund_id INTEGER,
+        new_fund_id INTEGER
+) RETURNS VOID AS $$
+DECLARE
+fund_tag_rec	RECORD;
+BEGIN
+       
+	FOR fund_tag_rec IN SELECT * FROM acq.fund_tag_map WHERE fund=old_fund_id LOOP
+                BEGIN
+		     INSERT INTO acq.fund_tag_map(fund, tag) VALUES(new_fund_id, fund_tag_rec.tag);
+                EXCEPTION
+			WHEN unique_violation THEN
+			--    RAISE NOTICE 'Fund tag already propagated', old_fund.id;
+			CONTINUE;
+		END;
+	END LOOP;
+	RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION acq.propagate_funds_by_org_tree(
 	old_year INTEGER,
 	user_id INTEGER,
@@ -2008,6 +2047,9 @@ BEGIN
 				--RAISE NOTICE 'Fund % already propagated', old_fund.id;
 				CONTINUE;
 		END;
+
+		PERFORM acq.copy_fund_tags(old_fund.id,new_id);
+
 		--RAISE NOTICE 'Propagating fund % to fund %',
 		--	old_fund.code, new_id;
 	END LOOP;
@@ -2126,6 +2168,9 @@ BEGIN
 				roll_fund.balance_stop_percent
 			)
 			RETURNING id INTO new_fund;
+
+		        PERFORM acq.copy_fund_tags(roll_fund.id,new_fund);
+
 		ELSE
 			new_fund = roll_fund.new_fund_id;
 		END IF;
@@ -2220,6 +2265,7 @@ BEGIN
 	END LOOP;
 END;
 $$ LANGUAGE plpgsql;
+
 
 
 

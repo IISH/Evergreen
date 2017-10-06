@@ -1,6 +1,21 @@
 <!-- JS imports, etc.  -->
 <script type="text/javascript" src="[% ctx.media_prefix %]/js/ui/default/opac/simple.js"></script>
 
+[% INCLUDE "opac/i18n_strings.tt2" %]
+<!-- DOB validation for Patron Registration in OPAC -->
+<script type="text/javascript">
+    function dobValidate(input) {
+        var validformat = /^(19|20)\d\d([- /.])(0[1-9]|1[012])\2(0[1-9]|[12][0-9]|3[01])$/
+        var returnval = false
+        if (!validformat.test(input.value))
+            alert("[% l('You have entered an invalid date, or an improperly formatted date.  Please enter Date of Birth in YYYY-MM-DD or YYYY/MM/DD format and try again.') %]")
+        else
+            returnval = true
+        if (returnval == false) input.select()
+        return returnval
+}
+</script>
+
 [%- IF ctx.use_stripe %]
 <script type="text/javascript">unHideMe($("pay_fines_now"));[%# the DOM is loaded now, right? %]</script>
 [% END -%]
@@ -45,6 +60,13 @@
     IF CGI.https; url = url.replace('^http:', 'https:'); END; %]
 <script type='text/javascript' id='EIT' src='[% url %]'></script>
 [%- END %]
+
+<!-- Require some inputs and selections for browsers that don't support required form field element -->
+[% IF ctx.page == 'place_hold' %]
+  <script type="text/javascript" src="[% ctx.media_prefix %]/js/ui/default/opac/holds-validation.js">
+  </script>
+[% END %]
+
 [%- IF want_dojo; -%]
 <script type="text/javascript">
      var djConfig = {
@@ -93,6 +115,12 @@
     src="[% ctx.media_prefix %]/js/ui/default/opac/copyloc.js"></script>
 [% END %]
 
+[% IF ebook_api.enabled == 'true' %]
+    [% INCLUDE "opac/parts/ebook_api/base_js.tt2" %]
+    [% INCLUDE "opac/parts/ebook_api/avail_js.tt2" IF (ctx.page == 'rresult' OR ctx.page == 'record') %]
+    [% INCLUDE "opac/parts/ebook_api/login_js.tt2" IF (ctx.page == 'login') %]
+[% END %]
+
 <!-- provide a JS friendly org unit hash -->
 <script type="text/javascript">
 var aou_hash = {
@@ -108,4 +136,5 @@ var aou_hash = {
 };
 </script>
 
+<script type="text/javascript">if ($('client_tz_id')) { $('client_tz_id').value = OpenSRF.tz }</script>
 [%- END; # want_dojo -%]

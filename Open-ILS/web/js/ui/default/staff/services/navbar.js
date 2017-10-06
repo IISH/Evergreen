@@ -17,7 +17,8 @@ angular.module('egCoreMod')
                     scope.addHotkey(
                         elm.attr('eg-accesskey'),
                         elm.attr('href'),
-                        elm.attr('eg-accesskey-desc')
+                        elm.attr('eg-accesskey-desc'),
+                        elm
                     );
                 }
                 angular.forEach(elm.children(), inspect);
@@ -25,25 +26,47 @@ angular.module('egCoreMod')
             inspect(element);
         },
 
-        controller:['$scope','$window','$location','hotkeys','egCore',
-            function($scope , $window , $location , hotkeys , egCore) {
+        controller:['$scope','$window','$location','$timeout','hotkeys',
+                    'egCore','$uibModal','ngToast','egOpChange',
+            function($scope , $window , $location , $timeout , hotkeys ,
+                     egCore , $uibModal , ngToast, egOpChange) {
+
+                $scope.reprintLast = function (e) {
+                    egCore.print.reprintLast();
+                    return e.preventDefault();
+                }
 
                 function navTo(path) {                                           
-                    // $location.path() does not want a leading ".",
-                    // which <a>'s will have.  
-                    // Note: avoid using $location.path() to derive the new
-                    // URL, since it creates an intermediate path change.
-                    path = path.replace(/^\./,'');
+                    // Strip the leading "./" if any.
+                    path = path.replace(/^\.\//,'');
                     var reg = new RegExp($location.path());
-                    $window.location.href = 
-                        $window.location.href.replace(reg, path);
+                    $window.location.href = egCore.env.basePath + path;
                 }       
 
                 // adds a keyboard shortcut
                 // http://chieffancypants.github.io/angular-hotkeys/
-                $scope.addHotkey = function(key, path, desc) {                 
-                    hotkeys.add(key, desc, function() { navTo(path) });
+                $scope.addHotkey = function(key, path, desc, elm) {                 
+                    angular.forEach(key.split(' '), function (k) {
+                        hotkeys.add({
+                            combo: k,
+                            allowIn: ['INPUT','SELECT','TEXTAREA'],
+                            description: desc,
+                            callback: function(e) {
+                                e.preventDefault();
+                                if (path) return navTo(path);
+                                return $timeout(function(){$(elm).trigger('click')});
+                            }
+                        });
+                    });
                 };
+
+                $scope.retrieveLastRecord = function() {
+                    var last_record = egCore.hatch.getLocalItem("eg.cat.last_record_retrieved");
+                    if (last_record) {
+                        $window.location.href =
+                            egCore.env.basePath + 'cat/catalog/record/' + last_record;
+                    }
+                }
 
                 $scope.applyLocale = function(locale) {
                     // EGWeb.pm can change the locale for us w/ the right param
@@ -58,6 +81,24 @@ angular.module('egCoreMod')
                         );
                 }
 
+                $scope.changeOperatorUndo = function() {
+                    egOpChange.changeOperatorUndo().then(function() {
+                        $scope.op_changed = false;
+                        $scope.username = egCore.auth.user().usrname();
+                    });
+                }
+
+                $scope.changeOperator = function() {
+                    egOpChange.changeOperator().then(function() {
+                        $scope.op_changed = egCore.auth.OCtoken() ? true : false;
+                        $scope.username = egCore.auth.user().usrname();
+                    });
+                }
+
+                $scope.currentToken = function () {
+                    return egCore.auth.token();
+                }
+
                 // tied to logout link
                 $scope.logout = function() {
                     egCore.auth.logout();
@@ -67,6 +108,7 @@ angular.module('egCoreMod')
                 egCore.startup.go().then(
                     function() {
                         if (egCore.auth.user()) {
+                            $scope.op_changed = egCore.auth.OCtoken() ? true : false;
                             $scope.username = egCore.auth.user().usrname();
                             $scope.workstation = egCore.auth.workstation();
                         }

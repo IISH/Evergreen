@@ -26,6 +26,7 @@ use OpenILS::Utils::Fieldmapper;
 use OpenILS::WWW::SuperCat::Feed;
 use OpenSRF::Utils::Logger qw/$logger/;
 use OpenILS::Application::AppUtils;
+use OpenILS::Utils::TagURI;
 
 use MARC::Record;
 use MARC::File::XML ( BinaryEncoding => 'UTF-8' );
@@ -444,6 +445,56 @@ sub oisbn {
     return Apache2::Const::OK;
 }
 
+sub unapi2 {
+    my $apache = shift;
+    my $u2 = shift;
+    my $format = shift;
+
+    my $ctype = 'application/xml';
+    # Only bre and biblio_record_entry_feed have tranforms, but we'll ignore that for now
+    if ($u2->classname =~ /^(?:bre|biblio_record_entry_feed)$/ and $format ne 'xml') {
+        # XXX set $ctype to something else
+    }
+
+    print "Content-type: $ctype; charset=utf-8\n\n";
+    print "<?xml version='1.0' encoding='UTF-8' ?>\n";
+    print $U->entityize(
+         $supercat->request("open-ils.supercat.u2", $u2->toURI, $format)
+        ->gather(1)
+    );
+
+    return Apache2::Const::OK;
+}
+
+sub unapi2_formats {
+    my $apache = shift;
+    my $u2 = shift;
+
+    print "Content-type: application/xml; charset=utf-8\n\n";
+    print "<?xml version='1.0' encoding='UTF-8' ?>\n";
+    my $id = $u2->toURI;
+    if ($u2->classname =~ /^(?:bre|biblio_record_entry_feed)$/) {
+        # TODO: if/when unapi.bre_output_layout becomes something
+        # that actually changes, the hard-coding here should be
+        # replaced
+        print <<FORMATS;
+<formats id='$id'>
+<format name="holdings_xml" type="application/xml"/>
+<format name="marcxml" type="application/xml" namespace_uri="http://www.loc.gov/MARC21/slim" docs="http://www.loc.gov/marcxml/" schema_location="http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd"/>
+<format name="mods32" type="application/xml" namespace_uri="http://www.loc.gov/mods/v3" docs="http://www.loc.gov/mods/" schema_location="http://www.loc.gov/standards/mods/v3/mods-3-2.xsd"/>
+</formats>
+FORMATS
+    } else {
+        print <<FORMATS;
+<formats id='$id'>
+<format name="xml" type="application/xml"/>
+</formats>
+FORMATS
+    }
+
+    return Apache2::Const::OK;
+}
+
 sub unapi {
 
     my $apache = shift;
@@ -465,6 +516,18 @@ sub unapi {
 
 
     my $uri = $cgi->param('id') || '';
+
+    my $format = $cgi->param('format') || '';
+    (my $base_format = $format) =~ s/(-full|-uris)$//o;
+    my $u2uri = OpenILS::Utils::TagURI->new($uri);
+    if ($u2uri->version > 1) {
+        if ($format) {
+            return unapi2($apache, $u2uri, $format);
+        } else {
+            return unapi2_formats($apache, $u2uri);
+        }
+    }
+
     my $host = $cgi->virtual_host || $cgi->server_name;
 
     my $skin = $cgi->param('skin') || 'default';
@@ -473,9 +536,8 @@ sub unapi {
     # Enable localized results of copy status, etc
     $supercat->session_locale($locale);
 
-    my $format = $cgi->param('format') || '';
     my $flesh_feed = parse_feed_type($format);
-    (my $base_format = $format) =~ s/(-full|-uris)$//o;
+    ($base_format = $format) =~ s/(-full|-uris)$//o;
     my ($id,$type,$command,$lib,$depth,$paging) = ('','record','');
     my $body = "Content-type: application/xml; charset=utf-8\n\n";
 
@@ -1375,20 +1437,22 @@ sub opensearch_feed {
 
     my $org_unit = get_ou($org);
 
-    # Apostrophes break search and get indexed as spaces anyway
     my $safe_terms = $terms;
+
+    # XXX Apostrophes used to break search, but no longer do.  The following
+    # XXX line breaks phrase searching in OpenSearch, and should be removed.
     $safe_terms =~ s{'}{ }go;
+    
+    my $query_terms = 'site('.$org_unit->[0]->shortname.") $safe_terms";
+    $query_terms = "sort($sort) $query_terms" if ($sort);
+    $query_terms = "language($lang) $query_terms" if ($lang);
+    $query_terms = "#$sortdir $query_terms" if ($sortdir);
 
     my $recs = $search->request(
         'open-ils.search.biblio.multiclass.query' => {
-            org_unit    => $org_unit->[0]->id,
             offset        => $offset,
-            limit        => $limit,
-            sort        => $sort,
-            sort_dir    => $sortdir,
-            default_class => $class,
-            ($lang ?    ( 'language' => $lang    ) : ()),
-        } => $safe_terms => 1
+            limit        => $limit
+        } => $query_terms => 1
     )->gather(1);
 
     $log->debug("Hits for [$terms]: $recs->{count}");
@@ -1611,8 +1675,8 @@ sub string_browse {
     my $path = $cgi->path_info;
     $path =~ s/^\///og;
 
-    my ($format,$axis,$site,$string,$page,$page_size) = split '/', $path;
-    #warn " >>> $format -> $axis -> $site -> $string -> $page -> $page_size ";
+    my ($format,$axis,$site,$string,$page,$page_size,$thesauruses) = split '/', $path;
+    #warn " >>> $format -> $axis -> $site -> $string -> $page -> $page_size -> $thesauruses";
 
     return item_age_browse($apache) if ($axis eq 'item-age'); # short-circut to the item-age sub
 
@@ -1621,12 +1685,16 @@ sub string_browse {
     $site ||= $cgi->param('searchOrg');
     $page ||= $cgi->param('startPage') || 0;
     $page_size ||= $cgi->param('count') || 9;
+    $thesauruses //= '';
+    $thesauruses =~ s/\s//g;
+    # protect against cats bouncing on the comma key...
+    $thesauruses = join(',', grep { $_ ne '' } split /,/, $thesauruses); 
 
     $page = 0 if ($page !~ /^-?\d+$/);
     $page_size = 9 if $page_size !~ /^\d+$/;
 
-    my $prev = join('/', $base,$format,$axis,$site,$string,$page - 1,$page_size);
-    my $next = join('/', $base,$format,$axis,$site,$string,$page + 1,$page_size);
+    my $prev = join('/', $base,$format,$axis,$site,$string,$page - 1,$page_size,$thesauruses);
+    my $next = join('/', $base,$format,$axis,$site,$string,$page + 1,$page_size,$thesauruses);
 
     unless ($string and $axis and grep { $axis eq $_ } keys %browse_types) {
         warn "something's wrong...";
@@ -1650,7 +1718,8 @@ sub string_browse {
             $realaxis,
             $string,
             $page,
-            $page_size
+            $page_size,
+            $thesauruses
         )->gather(1);
     } else {
         $tree = $supercat->request(
@@ -1696,20 +1765,24 @@ sub string_startwith {
     my $path = $cgi->path_info;
     $path =~ s/^\///og;
 
-    my ($format,$axis,$site,$string,$page,$page_size) = split '/', $path;
-    #warn " >>> $format -> $axis -> $site -> $string -> $page -> $page_size ";
+    my ($format,$axis,$site,$string,$page,$page_size,$thesauruses) = split '/', $path;
+    #warn " >>> $format -> $axis -> $site -> $string -> $page -> $page_size -> $thesauruses ";
 
     my $status = [$cgi->param('status')];
     my $cpLoc = [$cgi->param('copyLocation')];
     $site ||= $cgi->param('searchOrg');
     $page ||= $cgi->param('startPage') || 0;
     $page_size ||= $cgi->param('count') || 9;
+    $thesauruses //= '';
+    $thesauruses =~ s/\s//g;
+    # protect against cats bouncing on the comma key...
+    $thesauruses = join(',', grep { $_ ne '' } split /,/, $thesauruses); 
 
     $page = 0 if ($page !~ /^-?\d+$/);
     $page_size = 9 if $page_size !~ /^\d+$/;
 
-    my $prev = join('/', $base,$format,$axis,$site,$string,$page - 1,$page_size);
-    my $next = join('/', $base,$format,$axis,$site,$string,$page + 1,$page_size);
+    my $prev = join('/', $base,$format,$axis,$site,$string,$page - 1,$page_size,$thesauruses);
+    my $next = join('/', $base,$format,$axis,$site,$string,$page + 1,$page_size,$thesauruses);
 
     unless ($string and $axis and grep { $axis eq $_ } keys %browse_types) {
         warn "something's wrong...";
@@ -1733,7 +1806,8 @@ sub string_startwith {
             $realaxis,
             $string,
             $page,
-            $page_size
+            $page_size,
+            $thesauruses
         )->gather(1);
     } else {
         $tree = $supercat->request(
@@ -1923,20 +1997,53 @@ sub sru_search {
 
         $log->info("SRU search string [$cql_query] converted to [$search_string]\n");
 
+        if (!$shortname || $shortname eq '-') {
+            my $search_org = get_ou($shortname);
+            $shortname = $search_org->[0]->shortname;
+        }
+
          my $recs = $search->request(
             'open-ils.search.biblio.multiclass.query' => {offset => $offset, limit => $limit} => $search_string => 1
         )->gather(1);
 
-        my $bre = $supercat->request( 'open-ils.supercat.record.object.retrieve' => [ map { $_->[0] } @{$recs->{ids}} ] )->gather(1);
+        my $cstore = OpenSRF::AppSession->create('open-ils.cstore');
+        foreach my $rec (@{$recs->{ids}}) {
+            my $rec_id = shift @$rec;
+            my $data = $cstore->request(
+                'open-ils.cstore.json_query' => {
+                    from => [
+                        'unapi.bre', $rec_id,
+                        'marcxml', 'record',
+                        ($holdings) ? '{holdings_xml,acp}' : '{}',
+                        $shortname
+                    ]
+                }
+            )->gather(1);
+            try {
+                my $marcxml = XML::LibXML->load_xml( string => $data->{'unapi.bre'} );
 
-        foreach my $record (@$bre) {
-            my $marcxml = $record->marc;
-            # Make the beast conform to a VDX-supported format
-            # See http://vdxipedia.oclc.org/index.php/Holdings_Parsing
-            # Trying to implement LIBSOL_852_A format; so much for standards
-            if ($holdings) {
-                my $bib_holdings = $supercat->request('open-ils.supercat.record.basic_holdings.retrieve', $record->id, $shortname || '-')->gather(1);
-                my $marc = MARC::Record->new_from_xml($marcxml, 'UTF8', 'XML');
+                # process <holdings> element, if any
+                my @copies;
+                for my $node ($marcxml->getElementsByTagName('holdings')) {
+                    for my $volume ($node->getElementsByTagName('volume')) {
+                        my $cn = $volume->getAttribute('label');
+                        my $owning_lib = $volume->getAttribute('lib');
+                        for my $copy ($volume->getElementsByTagName('copy')) {
+                            push @copies, {
+                                a => $copy->getChildrenByTagName('location')->[0]->textContent,
+                                b => $owning_lib,
+                                c => $cn,
+                                d => $copy->getChildrenByTagName('circ_lib')->[0]->getAttribute('shortname'),
+                                g => $copy->getAttribute('barcode'),
+                                n => $copy->getChildrenByTagName('status')->[0]->textContent
+                            };
+                        }
+                    }
+                    # remove <holdings> element
+                    $node->parentNode->removeChild($node);
+                }
+
+                my $marc = MARC::Record->new_from_xml($marcxml->toString(), 'UTF8', 'XML');
 
                 # Force record leader to 'a' as our data is always UTF8
                 # Avoids marc8_to_utf8 from being invoked with horrible results
@@ -1949,38 +2056,38 @@ sub sru_search {
                 $marc->delete_field($_) for ($marc->field('001'));
                 if (!$marc->field('001')) {
                     $marc->insert_fields_ordered(
-                        MARC::Field->new( '001', $record->id )
+                        MARC::Field->new( '001', $rec_id )
                     );
                 }
+
                 $marc->delete_field($_) for ($marc->field('852')); # remove any legacy 852s
-                foreach my $cn (keys %$bib_holdings) {
-                    foreach my $cp (@{$bib_holdings->{$cn}->{'copies'}}) {
-                        $marc->insert_fields_ordered(
-                            MARC::Field->new(
-                                '852', '4', '',
-                                a => $cp->{'location'},
-                                b => $bib_holdings->{$cn}->{'owning_lib'},
-                                c => $cn,
-                                d => $cp->{'circlib'},
-                                g => $cp->{'barcode'},
-                                n => $cp->{'status'},
-                            )
-                        );
-                    }
+                for my $copy (@copies) {
+                    $marc->insert_fields_ordered(
+                        MARC::Field->new(
+                            '852', '4', '',
+                            a => $copy->{a},
+                            b => $copy->{b},
+                            c => $copy->{c},
+                            d => $copy->{d},
+                            g => $copy->{g},
+                            n => $copy->{n}
+                        )
+                    );
                 }
 
-                # Ensure the data is encoded as UTF8 before we hand it off
-                $marcxml = encode_utf8($marc->as_xml_record());
-                $marcxml =~ s/^<\?xml version="1.0" encoding="UTF-8"\?>//o;
+                my $output = $marc->as_xml_record();
+                $output =~ s/^<\?xml version="1.0" encoding="UTF-8"\?>//o;
+                $resp->addRecord(
+                    SRU::Response::Record->new(
+                        recordSchema    => 'info:srw/schema/1/marcxml-v1.1',
+                        recordData => $output,
+                        recordPosition => ++$offset
+                    )
+                );
 
+            } catch Error with {
+                $log->error("Failed to process record for SRU search");
             }
-            $resp->addRecord(
-                SRU::Response::Record->new(
-                    recordSchema    => 'info:srw/schema/1/marcxml-v1.1',
-                    recordData => $marcxml,
-                    recordPosition => ++$offset
-                )
-            );
         }
 
         $resp->numberOfRecords($recs->{count});
@@ -1999,7 +2106,7 @@ sub sru_search {
         );
     }
 
-    print $cgi->header( -type => 'application/xml' );
+    print $cgi->header( -type => 'application/xml', -charset => 'UTF-8' );
     print $U->entityize($resp->asXML) . "\n";
     return Apache2::Const::OK;
 }
@@ -2018,7 +2125,7 @@ sub sru_search {
         my $op =  '||' if uc $self->op() eq 'OR';
         $op ||=  '&&';
 
-        return  "$leftStr $rightStr";
+        return  "$leftStr $op $rightStr";
     }
 
     sub toEvergreenAuth {
@@ -2116,7 +2223,7 @@ sub sru_auth_search {
         );
     }
 
-    print $cgi->header( -type => 'application/xml' );
+    print $cgi->header( -type => 'application/xml', -charset => 'UTF-8' );
     print $U->entityize($resp->asXML) . "\n";
     return Apache2::Const::OK;
 }

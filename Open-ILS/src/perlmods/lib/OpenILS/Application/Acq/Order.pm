@@ -4,6 +4,10 @@ use OpenSRF::AppSession;
 use OpenSRF::EX qw/:try/;
 use strict; use warnings;
 
+# empirically derived number of responses we can
+# stream back before the XUL client has indigestion
+use constant MAX_RESPONSES => 20;
+
 sub new {
     my($class, %args) = @_;
     my $self = bless(\%args, $class);
@@ -24,6 +28,7 @@ sub new {
     };
     $self->{cache} = {};
     $self->throttle(4) unless $self->throttle;
+    $self->exponential_falloff(1) unless $self->exponential_falloff;
     $self->{post_proc_queue} = [];
     $self->{last_respond_progress} = 0;
     return $self;
@@ -39,6 +44,11 @@ sub throttle {
     $self->{throttle} = $val if $val;
     return $self->{throttle};
 }
+sub exponential_falloff {
+    my($self, $val) = @_;
+    $self->{exponential_falloff} = $val if defined $val;
+    return $self->{exponential_falloff};
+}
 sub respond {
     my($self, %other_args) = @_;
     if($self->throttle and not %other_args) {
@@ -48,7 +58,7 @@ sub respond {
     }
     $self->conn->respond({ %{$self->{args}}, %other_args });
     $self->{last_respond_progress} = $self->{args}->{progress};
-    $self->throttle($self->throttle * 2) unless $self->throttle >= 256;
+    $self->throttle($self->throttle * 2) if ($self->exponential_falloff() and $self->throttle < 256);
 }
 sub respond_complete {
     my($self, %other_args) = @_;
@@ -74,6 +84,12 @@ sub total {
     my($self, $val) = @_;
     $self->{args}->{total} = $val if defined $val;
     $self->{args}->{maximum} = $self->{args}->{total};
+    if ($self->{args}->{maximum}) {
+        # if a total has been set, space responses linearly
+        $self->exponential_falloff(0);
+        $self->throttle(int($self->{args}->{maximum} / MAX_RESPONSES));
+        $self->throttle(4) if $self->throttle < 4;
+    }
     return $self->{args}->{total};
 }
 sub purchase_order {
@@ -569,7 +585,7 @@ sub check_import_li_marc_perms {
 sub describe_affected_po {
     my ($e, $po) = @_;
 
-    my ($enc, $spent) =
+    my ($enc, $spent, $estimated) =
         OpenILS::Application::Acq::Financials::build_price_summary(
             $e, $po->id
         );
@@ -577,7 +593,8 @@ sub describe_affected_po {
     +{$po->id => {
             "state" => $po->state,
             "amount_encumbered" => $enc,
-            "amount_spent" => $spent
+            "amount_spent" => $spent,
+            "amount_estimated" => $estimated
         }
     };
 }
@@ -750,7 +767,12 @@ sub receive_lineitem_detail {
     if ($lid->eg_copy_id) {
         my $copy = $e->retrieve_asset_copy($lid->eg_copy_id) or return 0;
         # only update status if it hasn't already been updated
-        $copy->status(OILS_COPY_STATUS_IN_PROCESS) if $copy->status == OILS_COPY_STATUS_ON_ORDER;
+        if ($copy->status == OILS_COPY_STATUS_ON_ORDER) {
+            my $custom_status = $U->ou_ancestor_setting_value(
+                $e->requestor->ws_ou, 'acq.copy_status_on_receiving', $e);
+            my $new_status = $custom_status || OILS_COPY_STATUS_IN_PROCESS;
+            $copy->status($new_status);
+        }
         $copy->edit_date('now');
         $copy->editor($e->requestor->id);
         $copy->creator($e->requestor->id) if $U->ou_ancestor_setting_value(
@@ -765,7 +787,7 @@ sub receive_lineitem_detail {
     my $li = check_lineitem_received($mgr, $lid->lineitem) or return 0;
     return 1 if $li == 1; # li not received
 
-    return check_purchase_order_received($mgr, $li->purchase_order) or return 0;
+    return check_purchase_order_received($mgr, $li->purchase_order);
 }
 
 
@@ -1163,19 +1185,53 @@ sub create_purchase_order {
 }
 
 # ----------------------------------------------------------------------------
-# if all of the lineitems for this PO are received,
-# mark the PO as received
+# if all of the lineitems for this PO are received and no 
+# blanket charges are still encumbered, mark the PO as received.
 # ----------------------------------------------------------------------------
 sub check_purchase_order_received {
     my($mgr, $po_id) = @_;
 
-    my $non_recv_li = $mgr->editor->search_acq_lineitem(
-        {   purchase_order => $po_id,
-            state => {'!=' => 'received'}
-        }, {idlist=>1});
+    my $non_recv_li = $mgr->editor->json_query({
+        "select" =>{
+            "jub" =>["id"]
+        },
+        "from" =>{
+            "jub" => {"acqcr" => {"type" => "left"}}
+        },
+        "where" => {
+            "+jub" => {"purchase_order" => $po_id},
+            # Return lineitems that are not in the received/cancelled [sic] 
+            # state OR those that are canceled with keep_debits=true.
+            "-or" => [
+                {"+jub" => {
+                    "state" => {"not in" => ["received", "cancelled"]}}
+                }, {
+                    "-and" => [
+                        {"+jub" => {"state" => "cancelled"}},
+                        {"+acqcr" => {"keep_debits" =>"t"}}
+                    ]
+                }
+            ]
+        }
+    });
 
     my $po = $mgr->editor->retrieve_acq_purchase_order($po_id);
     return $po if @$non_recv_li;
+
+    # avoid marking the PO as received if any blanket charges
+    # are still encumbered.
+    my $blankets = $mgr->editor->json_query({
+        select => {acqpoi => ['id']},
+        from => {
+            acqpoi => {
+                aiit => {filter => {blanket=>'t'}},
+                acqfdeb => {filter => {encumbrance => 't'}}
+            }
+        },
+        where => {'+acqpoi' => {purchase_order => $po_id}}
+    });
+
+    return $po if @$blankets;
 
     $po->state('received');
     return update_purchase_order($mgr, $po);
@@ -1700,7 +1756,7 @@ sub extract_lineitem_detail_data {
             my $org = $cp_base_org;
             while ($org) {
                 $loc = $mgr->editor->search_asset_copy_location(
-                    {owning_lib => $org, name => $name}, {idlist => 1})->[0];
+                    {owning_lib => $org, name => $name, deleted => 'f'}, {idlist => 1})->[0];
                 last if $loc;
                 $org = $mgr->editor->retrieve_actor_org_unit($org)->parent_ou;
             }
@@ -1761,7 +1817,9 @@ sub create_po_assets {
         where => {'+acqpo' => {id => $po_id}}
     })->[0]->{id};
 
-    $mgr->total(scalar(@$li_ids) + $lid_total);
+    # maximum number of Vandelay bib actions is twice
+    # the number line items (queue bib, then create it)
+    $mgr->total(scalar(@$li_ids) * 2 + $lid_total);
 
     create_lineitem_list_assets($mgr, $li_ids, $args->{vandelay}) 
         or return $e->die_event;
@@ -1803,6 +1861,7 @@ sub create_purchase_order_api {
     $pargs{provider}            = $po->provider            if $po->provider;
     $pargs{ordering_agency}     = $po->ordering_agency     if $po->ordering_agency;
     $pargs{prepayment_required} = $po->prepayment_required if $po->prepayment_required;
+    $pargs{name}                = $po->name                 if $po->name;
     my $vandelay = $args->{vandelay};
         
     $po = create_purchase_order($mgr, %pargs) or return $e->die_event;
@@ -2925,6 +2984,26 @@ sub cancel_purchase_order {
         }
     }
 
+    my $po_item_ids = $mgr->editor
+        ->search_acq_po_item({purchase_order => $po_id}, {idlist => 1});
+
+    for my $po_item_id (@$po_item_ids) {
+
+        my $po_item = $mgr->editor->retrieve_acq_po_item([
+            $po_item_id, {
+                flesh => 1,
+                flesh_fields => {acqpoi => ['purchase_order', 'fund_debit']}
+            }
+        ]) or return -1; # results in rollback
+
+        # returns undef on success
+        my $result = clear_po_item($mgr->editor, $po_item);
+
+        return $result if not_cancelable($result);
+        return -1 if $result; # other failure events, results in rollback
+    }
+
+
     # TODO who/what/where/how do we indicate this change for electronic orders?
     # TODO return changes to encumbered/spent
     # TODO maybe cascade up from smaller object to container object if last
@@ -3158,7 +3237,7 @@ sub cancel_lineitem {
             }
         }
     }
-
+ 
     update_lineitem($mgr, $li) or return 0;
     $result->{"li"} = {
         $li_id => {
@@ -3166,6 +3245,11 @@ sub cancel_lineitem {
             "cancel_reason" => $cancel_reason
         }
     };
+
+    # check to see if this cancelation should result in
+    # marking the purchase order "received"
+    return 0 unless check_purchase_order_received($mgr, $li->purchase_order->id);
+
     return $result;
 }
 
@@ -3278,6 +3362,78 @@ sub cancel_lineitem_detail {
     $mgr->editor->update_acq_lineitem_detail($lid) or return 0;
 
     return {"lid" => {$lid_id => {"cancel_reason" => $cancel_reason}}};
+}
+
+__PACKAGE__->register_method(
+    method => "delete_po_item_api",
+    api_name    => "open-ils.acq.po_item.delete",
+    signature => {
+        desc => q/Deletes a po_item and removes its debit/,
+        params => [
+            {desc => "Authentication token", type => "string"},
+            {desc => "po_item ID to delete", type => "number"},
+        ],
+        return => {desc => q/1 on success, Event on error/}
+    }
+);
+
+sub delete_po_item_api {
+    my($self, $client, $auth, $po_item_id) = @_;
+    my $e = new_editor(authtoken => $auth, xact => 1);
+    return $e->die_event unless $e->checkauth;
+
+    my $po_item = $e->retrieve_acq_po_item([
+        $po_item_id, {
+            flesh => 1,
+            flesh_fields => {acqpoi => ['purchase_order', 'fund_debit']}
+        }
+    ]) or return $e->die_event;
+
+    return $e->die_event unless 
+        $e->allowed('CREATE_PURCHASE_ORDER', 
+            $po_item->purchase_order->ordering_agency);
+
+    # remove debit, delete item
+    my $result = clear_po_item($e, $po_item, 1);
+
+    if ($result) {
+        $e->rollback;
+        return $result;
+    }
+
+    $e->commit;
+    return 1;
+}
+
+
+# 1. Removes linked fund debit from a PO item if present and still encumbered.
+# 2. Optionally also deletes the po_item object
+# po_item is fleshed with purchase_order and fund_debit
+sub clear_po_item {
+    my ($e, $po_item, $delete_item) = @_;
+
+    if ($po_item->fund_debit) {
+
+        if (!$U->is_true($po_item->fund_debit->encumbrance)) {
+            # debit has been paid.  We cannot delete it.
+            return OpenILS::Event->new('ACQ_NOT_CANCELABLE', 
+               note => "Debit is marked as paid: ".$po_item->fund_debit->id);
+        }
+
+        # fund_debit is OK to delete.
+        $e->delete_acq_fund_debit($po_item->fund_debit)
+            or return $e->die_event;
+    }
+
+    if ($delete_item) {
+        $e->delete_acq_po_item($po_item) or return $e->die_event;
+    } else {
+        # remove our link to the now-deleted fund_debit.
+        $po_item->clear_fund_debit;
+        $e->update_acq_po_item($po_item) or return $e->die_event;
+    }
+
+    return undef;
 }
 
 
@@ -3955,6 +4111,73 @@ sub apply_new_li_ident_attr {
     $e->update_biblio_record_entry($bre) or return (undef, $e->die_event);
 
     return ($source_attr);
+}
+
+__PACKAGE__->register_method(
+    method => 'li_existing_copies',
+    api_name => 'open-ils.acq.lineitem.existing_copies.count',
+    authoritative => 1, 
+    signature => {
+        desc => q/
+            Returns the number of catalog copies (acp) which are children of
+            the same bib record linked to by the given lineitem and which 
+            are owned at or below the lineitem context org unit.
+            Copies with the following statuses are not counted:
+            Lost, Missing, Discard Weed, and Lost and Paid.
+        /,
+        params => [
+            {desc => 'Authentication token', type => 'string'},
+            {desc => 'Lineitem ID', type => 'number'}
+        ],
+        return => {desc => q/Count or event on error/}
+    }
+);
+
+sub li_existing_copies {
+    my ($self, $client, $auth, $li_id) = @_;
+    my $e = new_editor("authtoken" => $auth);
+    return $e->die_event unless $e->checkauth;
+
+    my ($li, $evt, $org) = fetch_and_check_li($e, $li_id);
+    return 0 if $evt;
+
+    # No fuzzy matching here (e.g. on ISBN).  Only exact matches are supported.
+    return 0 unless $li->eg_bib_id;
+
+    my $counts = $e->json_query({
+        select => {acp => [{
+            column => 'id', 
+            transform => 'count', 
+            aggregate => 1
+        }]},
+        from => {
+            acp => {
+                acqlid => {
+                    fkey => 'id',
+                    field => 'eg_copy_id',
+                    type => 'left'
+                },
+                acn => {join => {bre => {}}}
+            }
+        },
+        where => {
+            '+bre' => {id => $li->eg_bib_id},
+            # don't count copies linked to the lineitem in question
+            '+acqlid' => {
+                '-or' => [
+                    {lineitem => undef},
+                    {lineitem => {'<>' => $li_id}}
+                ]
+            },
+            '+acn' => {
+                owning_lib => $U->get_org_descendants($org)
+            },
+            # NOTE: should the excluded copy statuses be an AOUS?
+            '+acp' => {status => {'not in' => [3, 4, 13, 17]}}
+        }
+    });
+
+    return $counts->[0]->{id};
 }
 
 

@@ -135,8 +135,11 @@ sub retrieve_core {
                             password => $account->password,
                             in_dir => $account->in_dir
                         },
-                        remote_file => {ilike => $remote_file},
-                        status      => {'in' => [qw/ processed /]},
+                        remote_file => {'=' => {
+                            transform => 'evergreen.lowercase',
+                            value => ['evergreen.lowercase', $remote_file]
+                        }},
+                        status      => {'in' => [qw/ processed proc_error trans_error /]},
                     },
                     { join => {"acqedi" => {}}, limit => 1 }
                 ], { idlist => 1 }

@@ -13,6 +13,7 @@ dojo.require("fieldmapper.Fieldmapper");
 dojo.require('openils.CGI');
 dojo.require('openils.PermaCrud');
 dojo.require('openils.XUL');
+dojo.require('openils.Util');
 dojo.require('openils.widget.OrgUnitFilteringSelect');
 dojo.require("openils.widget.PCrudAutocompleteBox");
 dojo.require("MARC.FixedFields");
@@ -100,10 +101,11 @@ function displayAuthorities(data) {
             '<div class="authEntry" id="auth' + auth.id + '">' +
             '<div class="text" id="authLabel' + auth.id + '">' +
             '<span class="text">' + auth.text + '</span></div>' +
-            '<div class="authority-control-set">Control Set: <span class="acs-name">' +
+            '<div class="authority-control-set-thesaurus"><span class="authority-control-set">Control Set: <span class="acs-name">' +
             fetch_control_set(auth.thesaurus).name() +
             '</span> <span class="acs-id">(#' +
-            fetch_control_set(auth.thesaurus).id() + ')</span></div></div>',
+            fetch_control_set(auth.thesaurus).id() + ')</span>' +
+            '</span> <span class="authority-thesaurus">Thes: ' + auth.thesaurus + '</span></div></div>',
             "authlist-div", "last"
         );
 
@@ -283,6 +285,13 @@ function loadMarcEditor(pcrud, rec) {
     var initHeight = self.outerHeight - 40;
     /* Setting an explicit height results in a super skinny window, so fix that up */
     var initWidth = self.outerWidth / 2;
+
+    if (openils.Util.inIframe()) {
+        initWidth = initHeight;
+        win = window.open('/eg/staff/cat/catalog/authority/' + rec.id() + '/marc_edit','',    // XXX version?
+            'chrome,resizable=yes,height=' + initHeight + ',width=' + initWidth);
+        return;
+    }
 
     /*
        To run in Firefox directly, must set signed.applets.codebase_principal_support

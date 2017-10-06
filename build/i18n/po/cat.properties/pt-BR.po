@@ -1,24 +1,21 @@
 # Brazilian Portuguese translation for evergreen
-# Copyright (c) 2009 Rosetta Contributors and Canonical Ltd 2009
+# Copyright (c) 2017 Rosetta Contributors and Canonical Ltd 2017
 # This file is distributed under the same license as the evergreen package.
-# FIRST AUTHOR: Job Diógenes Ribeiro Borges <jobdrb@gmail.com>, 2009.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: evergreen\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: 2014-09-11 02:13-0400\n"
-"PO-Revision-Date: 2013-03-15 13:35+0000\n"
-"Last-Translator: Job Diógenes Ribeiro Borges <jobdrb@gmail.com>\n"
+"POT-Creation-Date: 2017-08-25 14:21-0500\n"
+"PO-Revision-Date: 2017-04-09 07:00+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Brazilian Portuguese <pt_BR@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-09-12 06:06+0000\n"
-"X-Generator: Launchpad (build 17196)\n"
-"X-Poedit-Country: BRAZIL\n"
-"X-Poedit-Language: Portuguese\n"
-"X-Poedit-SourceCharset: UTF-8\n"
+"X-Launchpad-Export-Date: 2017-08-28 05:33+0000\n"
+"X-Generator: Launchpad (build 18446)\n"
 
 #: bib.no_marc
 msgid "No MARC Record"
@@ -931,6 +928,10 @@ msgstr "Montante Depositado"
 msgid "Price"
 msgstr "Preço"
 
+#: staff.cat.copy_editor.field.cost.label
+msgid "Acquisition Cost"
+msgstr ""
+
 #: staff.cat.copy_editor.field.opac_visible.label
 msgid "OPAC Visible?"
 msgstr "OPAC Visível?"
@@ -1278,8 +1279,8 @@ msgstr ""
 "Transferência."
 
 #: staff.cat.opac.title_for_hold_transfer.success.label
-msgid "Holds transferred."
-msgstr "Reservas transferidas."
+msgid "All holds not available for pickup have been transferred."
+msgstr ""
 
 #: staff.cat.opac.title_for_hold_transfer.failure.label
 msgid "Holds not transferred."
@@ -1723,6 +1724,12 @@ msgstr "Marque aqui para confirmar esta ação"
 #: staff.cat.util.mark_item_damaged.item_circulating_to_patron
 msgid "Item %1$s is checked out to patron, %2$s, and is due on %3$s. "
 msgstr "Item %1$s emprestado ao usuário, %2$s, até %3$s. "
+
+#: staff.cat.util.mark_item_damaged.item_no_linked_patron
+msgid ""
+"Item %1$s is no longer associated with an active circulation.  Please "
+"resolve charges manually."
+msgstr ""
 
 #: staff.cat.util.mark_item_damaged.charge_patron_prompt.message
 msgid ""
@@ -2419,59 +2426,5 @@ msgstr "Itens:"
 msgid "%1$s available"
 msgstr "%1$s disponíveis"
 
-#~ msgid "Record ID = %1$s"
-#~ msgstr "ID do Registro = %1$s"
-
-#~ msgid ""
-#~ "You must delete all the copies on the volume before you may delete the "
-#~ "volume itself."
-#~ msgstr ""
-#~ "Você deve excluir todos os exemplares de um volume antes de excluir o "
-#~ "próprio volume."
-
-#~ msgid "Volumes deleted."
-#~ msgstr "Volumes excluídos."
-
-#~ msgid "Record: %1$s"
-#~ msgstr "Registro : %1$s"
-
-#~ msgid "Merge these records? (Select the \"lead\" record first)"
-#~ msgstr ""
-#~ "Mesclar estes registros? (Selecione primeiro o registro \"principal\")"
-
-#~ msgid "Merge"
-#~ msgstr "Mesclar"
-
-#~ msgctxt "staff.cat.record_buckets.merge_records.cancel_button.label"
-#~ msgid "Cancel"
-#~ msgstr "Cancelar"
-
-#~ msgctxt "staff.cat.record_buckets.merge_records.cancel_button.accesskey"
-#~ msgid "C"
-#~ msgstr "C"
-
-#~ msgid "Lead Record? # %1$s"
-#~ msgstr "Registro principal? # %1$s"
-
-#~ msgid "Lead"
-#~ msgstr "Principal"
-
-#~ msgid "Merge Aborted"
-#~ msgstr "Mesclagem Cancelada"
-
-#~ msgid "Records were successfully merged."
-#~ msgstr "Registros mesclados com sucesso."
-
-#~ msgid "Call Numbers"
-#~ msgstr "Números de Chamada"
-
-#~ msgctxt "staff.cat.copy_editor.field.floating.yes_or_true"
-#~ msgid "Yes"
-#~ msgstr "Sim"
-
-#~ msgctxt "staff.cat.copy_editor.field.floating.no_or_false"
-#~ msgid "No"
-#~ msgstr "Não"
-
-#~ msgid "Cancel "
-#~ msgstr "Cancelar "
+#~ msgid "Holds transferred."
+#~ msgstr "Reservas transferidas."

@@ -31,6 +31,7 @@ my $U = 'OpenILS::Application::AppUtils';
 
 use constant COOKIE_SES => 'ses';
 use constant COOKIE_LOGGEDIN => 'eg_loggedin';
+use constant COOKIE_TZ => 'client_tz';
 use constant COOKIE_PHYSICAL_LOC => 'eg_physical_loc';
 use constant COOKIE_SSS_EXPAND => 'eg_sss_expand';
 
@@ -56,6 +57,11 @@ sub new {
     return $self;
 }
 
+sub DESTROY {
+    my $self = shift;
+    $ENV{TZ} = $self->ctx->{original_tz}
+        if ($self->ctx && exists $self->ctx->{original_tz});
+}
 
 # current Apache2::RequestRec;
 sub apache {
@@ -150,6 +156,8 @@ sub load {
     return $self->load_logout if $path =~ m|opac/logout|;
     return $self->load_patron_reg if $path =~ m|opac/register|;
 
+    $self->load_simple("myopac") if $path =~ m:opac/myopac:; # A default page for myopac parts
+
     if($path =~ m|opac/login|) {
         return $self->load_login unless $self->editor->requestor; # already logged in?
 
@@ -184,6 +192,7 @@ sub load {
     return $self->load_place_hold if $path =~ m|opac/place_hold|;
     return $self->load_myopac_holds if $path =~ m|opac/myopac/holds|;
     return $self->load_myopac_circs if $path =~ m|opac/myopac/circs|;
+    return $self->load_myopac_messages if $path =~ m|opac/myopac/messages|;
     return $self->load_myopac_payment_form if $path =~ m|opac/myopac/main_payment_form|;
     return $self->load_myopac_payments if $path =~ m|opac/myopac/main_payments|;
     return $self->load_myopac_pay_init if $path =~ m|opac/myopac/main_pay_init|;
@@ -255,11 +264,20 @@ sub load_common {
         return $self->redirect_ssl unless $self->cgi->https;
     }
 
+    # XXX Cache this? Makes testing difficult as apache needs a restart.
+    my $default_sort = $e->retrieve_config_global_flag('opac.default_sort');
+    $ctx->{default_sort} =
+        ($default_sort && $U->is_true($default_sort->enabled)) ? $default_sort->value : '';
+
+    $ctx->{client_tz} = $self->cgi->cookie(COOKIE_TZ) || $ENV{TZ};
     $ctx->{referer} = $self->cgi->referer;
     $ctx->{path_info} = $self->cgi->path_info;
     $ctx->{full_path} = $ctx->{base_path} . $self->cgi->path_info;
     $ctx->{unparsed_uri} = $self->apache->unparsed_uri;
     $ctx->{opac_root} = $ctx->{base_path} . "/opac"; # absolute base url
+
+    $ctx->{original_tz} = $ENV{TZ};
+    $ENV{TZ} = $ctx->{client_tz};
 
     my $xul_wrapper = 
         ($self->apache->headers_in->get('OILS-Wrapper') || '') =~ /true/;
@@ -284,6 +302,8 @@ sub load_common {
             $ctx->{authtoken} = $e->authtoken;
             $ctx->{authtime} = $e->authtime;
             $ctx->{user} = $e->requestor;
+            my $card = $self->editor->retrieve_actor_card($ctx->{user}->card);
+            $ctx->{active_card} = (ref $card) ? $card->barcode : undef;
             $ctx->{place_unfillable} = 1 if $e->requestor->wsid && $e->allowed('PLACE_UNFILLABLE_HOLD', $e->requestor->ws_ou);
 
             # The browser client does not set an OILS-Wrapper header (above).
@@ -297,10 +317,7 @@ sub load_common {
                 $ctx->{is_browser_staff} = 1;
             }
 
-            $ctx->{user_stats} = $U->simplereq(
-                'open-ils.actor', 
-                'open-ils.actor.user.opac.vital_stats', 
-                $e->authtoken, $e->requestor->id);
+            $self->update_dashboard_stats();
 
         } else {
 
@@ -310,6 +327,9 @@ sub load_common {
             return $self->load_logout($self->apache->unparsed_uri);
         }
     }
+
+    # List of <meta> and <link> elements to populate
+    $ctx->{metalinks} = [];
 
     $self->extract_copy_location_group_info;
     $ctx->{search_ou} = $self->_get_search_lib();
@@ -322,6 +342,18 @@ sub load_common {
     $self->load_perm_funcs;
 
     return Apache2::Const::OK;
+}
+
+sub update_dashboard_stats {
+    my $self = shift;
+
+    my $e = $self->editor;
+    my $ctx = $self->ctx;
+
+    $ctx->{user_stats} = $U->simplereq(
+        'open-ils.actor', 
+        'open-ils.actor.user.opac.vital_stats', 
+        $e->authtoken, $e->requestor->id);
 }
 
 sub staff_saved_searches_set_expansion_state {
@@ -388,6 +420,7 @@ sub load_login {
     my $password = $cgi->param('password');
     my $org_unit = $ctx->{physical_loc} || $ctx->{aou_tree}->()->id;
     my $persist = $cgi->param('persist');
+    my $client_tz = $cgi->param('client_tz');
 
     # initial log form only
     return Apache2::Const::OK unless $username and $password;
@@ -448,27 +481,41 @@ sub load_login {
     # both login-related cookies should expire at the same time
     my $login_cookie_expires = ($persist) ? CORE::time + $response->{payload}->{authtime} : undef;
 
+    my $cookie_list = [
+        # contains the actual auth token and should be sent only over https
+        $cgi->cookie(
+            -name => COOKIE_SES,
+            -path => '/',
+            -secure => 1,
+            -value => $response->{payload}->{authtoken},
+            -expires => $login_cookie_expires
+        ),
+        # contains only a hint that we are logged in, and is used to
+        # trigger a redirect to https
+        $cgi->cookie(
+            -name => COOKIE_LOGGEDIN,
+            -path => '/',
+            -secure => 0,
+            -value => '1',
+            -expires => $login_cookie_expires
+        )
+    ];
+
+    if ($client_tz) {
+        # contains the client's tz, as passed by the client
+        # trigger a redirect to https
+        push @$cookie_list, $cgi->cookie(
+            -name => COOKIE_TZ,
+            -path => '/',
+            -secure => 0,
+            -value => $client_tz,
+            -expires => $login_cookie_expires
+        );
+    }
+
     return $self->generic_redirect(
         $cgi->param('redirect_to') || $acct,
-        [
-            # contains the actual auth token and should be sent only over https
-            $cgi->cookie(
-                -name => COOKIE_SES,
-                -path => '/',
-                -secure => 1,
-                -value => $response->{payload}->{authtoken},
-                -expires => $login_cookie_expires
-            ),
-            # contains only a hint that we are logged in, and is used to
-            # trigger a redirect to https
-            $cgi->cookie(
-                -name => COOKIE_LOGGEDIN,
-                -path => '/',
-                -secure => 0,
-                -value => '1',
-                -expires => $login_cookie_expires
-            )
-        ]
+        $cookie_list
     );
 }
 

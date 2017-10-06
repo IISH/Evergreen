@@ -20,8 +20,8 @@
 
 export PATH=${PATH}:/usr/sbin
 AC_PREREQ(2.61)
-AC_INIT(Open-ILS, 2.7.1, open-ils-dev@list.georgialibraries.org)
-AM_INIT_AUTOMAKE([OpenILS], [2.7.1])
+AC_INIT(Open-ILS, 2.12.6, open-ils-dev@list.georgialibraries.org)
+AM_INIT_AUTOMAKE([OpenILS], [2.12.6])
 AC_REVISION($Revision: 0.1 $)
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_SUBDIRS([Open-ILS/xul/staff_client/external/libmar])
@@ -218,6 +218,12 @@ AC_ARG_WITH([dbi],
 [DBI_LIBS=${withval}],
 [DBI_LIBS=/usr/lib/x86_64-linux-gnu/dbd/])
 
+AC_ARG_WITH([perlbase],
+[  --with-perlbase=path        base location to install Perl modules (default based on Config.pm)],
+[PERL_BASE=${withval}],
+[PERL_BASE=x])
+AC_SUBST([PERL_BASE])
+
 # If the passed in value doesn't work, fall back to reasonable defaults
 # Distributions are starting to package a good version of libdbi / libdbd
 if ! test -d "$DBI_LIBS"; then
@@ -229,6 +235,8 @@ if ! test -d "$DBI_LIBS"; then
     done
 fi
 AC_SUBST([DBI_LIBS])
+
+AM_CONDITIONAL(CHECK_TESTS, test x$enable_tests = xyes)
 
 if test "x$openils_core" = "xtrue"; then
 
@@ -311,6 +319,8 @@ if test "x$openils_core" = "xtrue"; then
     AC_CHECK_LIB([xml2], [main], [], AC_MSG_ERROR(*** OpenILS requires libxml2))
     AC_CHECK_LIB([xslt], [main], [], AC_MSG_ERROR(*** OpenILS requires libxslt))
     AC_CHECK_LIB([pq], [main], [], AC_MSG_ERROR(*** OpenILS requires libpq))
+    PKG_CHECK_MODULES(pcre, libpcre >= 3.0.0)
+
 
     #------------------------------------
     # Checks for header files.
@@ -335,6 +345,15 @@ if test "x$openils_core" = "xtrue"; then
     AC_FUNC_STRFTIME
     AC_FUNC_STRTOD
     AC_CHECK_FUNCS([localtime_r memset nl_langinfo setlocale strcasecmp strchr strdup strerror strncasecmp])
+
+    #---------------------------------
+    # Check for unit test framework.
+    #---------------------------------
+    PKG_CHECK_MODULES([CHECK], [check >= 0.9.0], [enable_tests=yes],
+                      [enable_tests=no])
+    if test "x$enable_tests" = "xno"; then
+        AC_MSG_WARN(Check unit testing framework not found.)
+    fi
 
     #----------------------------
     # Create Makefiles/Output

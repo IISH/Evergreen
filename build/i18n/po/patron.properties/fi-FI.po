@@ -1,22 +1,21 @@
-# extracted from ../../Open-ILS/xul/staff_client/server/locale/en-US/patron.properties
-#. extracted from ../../Open-ILS/xul/staff_client/server/locale/en-US/patron.properties
+# Finnish translation for evergreen
+# Copyright (c) 2017 Rosetta Contributors and Canonical Ltd 2017
+# This file is distributed under the same license as the evergreen package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-10-01 20:32+0300\n"
-"PO-Revision-Date: 2013-03-19 20:04+0000\n"
-"Last-Translator: Finnish <evergreen@jns.fi>\n"
-"Language-Team: Finnish <evergreen@jns.fi>\n"
-"Language: fi\n"
+"Project-Id-Version: evergreen\n"
+"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2017-08-25 14:21-0500\n"
+"PO-Revision-Date: 2017-04-09 07:00+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Finnish <fi@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Translate Toolkit 1.10.0\n"
-"X-Accelerator-Marker: &\n"
-"X-Merge-On: location\n"
-"X-Launchpad-Export-Date: 2013-03-20 04:44+0000\n"
-"X-Project-Style: mozilla\n"
+"X-Launchpad-Export-Date: 2017-08-28 05:41+0000\n"
+"X-Generator: Launchpad (build 18446)\n"
 
 #: staff.patron.barcode_entry.user_permission_editor
 msgid "User Permission Editor"
@@ -41,6 +40,10 @@ msgstr ""
 #: staff.patron.barcode_entry.barcode_not_found
 msgid "Barcode %1$s not found."
 msgstr "Asiakastunnusta %1$s ei löytynyt."
+
+#: staff.patron.barcode_entry.opt_in_restricted
+msgid "This patron's record is not viewable at your library."
+msgstr ""
 
 #: staff.patron.barcode_entry.consent_from_patron
 msgid ""
@@ -89,7 +92,7 @@ msgstr "Sinun on syötettävä hyväksymiskoodi tai julkaisutietonumero"
 
 #: staff.patron.bill_details.my_init.error
 msgid "bill_details.xul, my_init:"
-msgstr ""
+msgstr "bill_details.xul, my_init:"
 
 #: staff.patron.bill_details.my_cleanup.error
 msgid "bill_details.xul, my_cleanup:"
@@ -110,12 +113,14 @@ msgid "Note for selected bills not likely updated."
 msgstr "Valittujen maksujen ilmoitusta ei luultavasti päivitetty."
 
 #: staff.patron.bill_details.handle_edit_payment_note.note_dialog.title
-msgctxt "staff.patron.bill_details.handle_edit_payment_note.note_dialog.title"
+msgctxt ""
+"staff.patron.bill_details.handle_edit_payment_note.note_dialog.title"
 msgid "Replacement Note"
 msgstr "Korvausilmoitus"
 
 #: staff.patron.bill_details.handle_edit_payment_note.note_dialog.prompt
-msgctxt "staff.patron.bill_details.handle_edit_payment_note.note_dialog.prompt"
+msgctxt ""
+"staff.patron.bill_details.handle_edit_payment_note.note_dialog.prompt"
 msgid "Enter new note:"
 msgstr "Syötä uusi ilmoitus:"
 
@@ -129,7 +134,8 @@ msgstr "Kaikki valitut maksut on jo mitätöity."
 
 #: staff.patron.bill_details.handle_void.confirm_void_billing
 msgctxt "staff.patron.bill_details.handle_void.confirm_void_billing"
-msgid "Are you sure you would like to void $%1$s worth of line-item billings?"
+msgid ""
+"Are you sure you would like to void $%1$s worth of line-item billings?"
 msgstr "Haluatko varmasti mitätöidä %1$s € arvosta maksuja?"
 
 #: staff.patron.bill_details.handle_void.confirm_void_billing_title
@@ -148,7 +154,8 @@ msgid "No"
 msgstr "Ei"
 
 #: staff.patron.bill_details.handle_void.confirm_void_billing_confirm_message
-msgctxt "staff.patron.bill_details.handle_void.confirm_void_billing_confirm_message"
+msgctxt ""
+"staff.patron.bill_details.handle_void.confirm_void_billing_confirm_message"
 msgid "Check here to confirm this message"
 msgstr "Vahvista viesti valitsemalla tämä"
 
@@ -234,9 +241,9 @@ msgid ""
 msgstr ""
 "Haluatko varmasti hyvittää liiallisesti maksetun osuuden maksuissa %1$s? "
 "Toiminto siirtää osuuden Maksu vireillä -sarakkeeseen negatiivisena summana. "
-"Sinun on silti valittava Ota maksu käyttöön! Joitakin maksutyyppejä ei "
-"voida hyvittää. Hyvitystä voidaan soveltaa tarkistettuihin maksutapahtumiin, "
-"jotka seuraavat hyvitettyä maksutapahtumaa."
+"Sinun on silti valittava Ota maksu käyttöön! Joitakin maksutyyppejä ei voida "
+"hyvittää. Hyvitystä voidaan soveltaa tarkistettuihin maksutapahtumiin, jotka "
+"seuraavat hyvitettyä maksutapahtumaa."
 
 #: staff.patron.bills.handle_refund.message_singular
 msgid ""
@@ -248,9 +255,9 @@ msgid ""
 msgstr ""
 "Haluatko varmasti hyvittää liiallisesti maksetun osuuden maksussa %1$s? "
 "Toiminto siirtää osuuden Maksu vireillä -sarakkeeseen negatiivisena summana. "
-"Sinun on silti valittava Ota maksu käyttöön! Joitakin maksutyyppejä ei "
-"voida hyvittää. Hyvitystä voidaan soveltaa tarkistettuihin maksutapahtumiin, "
-"jotka seuraavat hyvitettyä maksutapahtumaa."
+"Sinun on silti valittava Ota maksu käyttöön! Joitakin maksutyyppejä ei voida "
+"hyvittää. Hyvitystä voidaan soveltaa tarkistettuihin maksutapahtumiin, jotka "
+"seuraavat hyvitettyä maksutapahtumaa."
 
 #: staff.patron.bills.handle_refund.title
 msgid "Refund Excess Payment"
@@ -266,10 +273,29 @@ msgctxt "staff.patron.bills.handle_refund.btn_no"
 msgid "No"
 msgstr "Ei"
 
-#: staff.patron.bills.handle_refund.confirm_message
-msgctxt "staff.patron.bills.handle_refund.confirm_message"
-msgid "Check here to confirm this message"
-msgstr "Vahvista viesti valitsemalla tämä"
+#: staff.patron.bills.handle_adjust_to_zero.message_plural
+msgid ""
+"Are you sure you would like to adjust to zero the balance on bills %1$s?"
+msgstr ""
+
+#: staff.patron.bills.handle_adjust_to_zero.message_singular
+msgid ""
+"Are you sure you would like to adjust to zero the balance on bill %1$s?"
+msgstr ""
+
+#: staff.patron.bills.handle_adjust_to_zero.title
+msgid "Adjust to Zero"
+msgstr ""
+
+#: staff.patron.bills.handle_adjust_to_zero.btn_yes
+msgctxt "staff.patron.bills.handle_adjust_to_zero.btn_yes"
+msgid "Yes"
+msgstr ""
+
+#: staff.patron.bills.handle_adjust_to_zero.btn_no
+msgctxt "staff.patron.bills.handle_adjust_to_zero.btn_no"
+msgid "No"
+msgstr ""
 
 #: staff.patron.bill_history.print_bills.print_error
 msgid "printing bills"
@@ -340,6 +366,18 @@ msgstr ""
 msgid "Bill payment likely failed"
 msgstr "Maksu luultavasti epäonnistui"
 
+#: staff.patron.bills.pay.over_warn_limit.title
+msgid "Verify Payment Amount"
+msgstr ""
+
+#: staff.patron.bills.pay.over_warn_limit
+msgid "Are you sure you want to apply a payment of $%1$s?"
+msgstr ""
+
+#: staff.patron.bills.pay.over_limit
+msgid "Payments over $%1$s are denied by policy."
+msgstr ""
+
 #: staff.patron.bills.info_box.label_value.reservation
 msgid "Reservation"
 msgstr "Erikoisvaraus"
@@ -385,7 +423,8 @@ msgstr "Kaikki tällä maksulla olevat maksut on jo mitätöity."
 
 #: staff.patron.bills.void_all_billings.void.message
 msgctxt "staff.patron.bills.void_all_billings.void.message"
-msgid "Are you sure you would like to void $%1$s worth of line-item billings?"
+msgid ""
+"Are you sure you would like to void $%1$s worth of line-item billings?"
 msgstr "Haluatko varmasti mitätöidä %1$s € arvosta maksuja?"
 
 #: staff.patron.bills.void_all_billings.void.title
@@ -416,6 +455,16 @@ msgstr "Virhe maksujen mitätöinnissä."
 #: staff.patron.bills.void_all_billings.billings_voided
 msgid "Billings voided."
 msgstr "Maksut mitätöity."
+
+#: staff.patron.bills.void_warning.title
+msgid "Void Policy Warning"
+msgstr ""
+
+#: staff.patron.bills.void_warning.message
+msgid ""
+"WARNING: Voiding these bills may violate local policy.  Are you sure you "
+"wish to continue?"
+msgstr ""
 
 #: staff.patron.bill_wizard.patron_bill_finish.billing_added
 msgid "Billing added."
@@ -466,11 +515,6 @@ msgstr ""
 "Käyttäjällä, jonka tiedot yrität tuhota, on STAFF_LOGIN-oikeudet. Syötä "
 "kohdekäyttäjän asiakastunnus, jos haluat saada itsellesi tuhottavan "
 "käyttäjän sekalaiset henkilökunta-aineistot (raportit jne.)"
-
-#: staff.patron.display.cmd_patron_delete.dest_user.default_value
-msgctxt "staff.patron.display.cmd_patron_delete.dest_user.default_value"
-msgid ""
-msgstr ""
 
 #: staff.patron.display.cmd_patron_delete.dest_user.title
 msgid "Destination User"
@@ -539,8 +583,7 @@ msgstr "Huomautus"
 
 #: staff.patron.display.init.network_request.window_message
 msgid ""
-"Press a navigation button above (for example, Check Out) to clear this "
-"alert."
+"Press a navigation button above (for example, Check Out) to clear this alert."
 msgstr ""
 "Poista huomautus painamalla jotakin yllä olevaa navigointipainiketta (esim. "
 "Lainaus)."
@@ -729,14 +772,14 @@ msgstr "Valitse noutokirjasto"
 
 #: staff.patron.holds.holds_edit_selection_depth.modify_holds_message.singular
 msgid ""
-"Are you sure you would like to change the Hold Range for hold %1$s to \"%"
-"2$s\"?;"
+"Are you sure you would like to change the Hold Range for hold %1$s to "
+"\"%2$s\"?;"
 msgstr "Haluatko varmasti muuttaa varauksen %1$s varausväliksi \"%2$s\"?;"
 
 #: staff.patron.holds.holds_edit_selection_depth.modify_holds_message.plural
 msgid ""
-"Are you sure you would like to change the Hold Range for holds %1$s to \"%"
-"2$s\"?;"
+"Are you sure you would like to change the Hold Range for holds %1$s to "
+"\"%2$s\"?;"
 msgstr "Haluatko varmasti muuttaa varausten %1$s varausväliksi \"%2$s\"?;"
 
 #: staff.patron.holds.holds_edit_selection_depth.modify_holds_title
@@ -779,8 +822,8 @@ msgstr "Valitse noutokirjasto"
 
 #: staff.patron.holds.holds_edit_pickup_lib.change_pickup_lib_message.singular
 msgid ""
-"Are you sure you would like to change the Pick Up Library for hold %1$s to %"
-"2$s?"
+"Are you sure you would like to change the Pick Up Library for hold %1$s to "
+"%2$s?"
 msgstr "Haluatko varmasti muuttaa varauksen %1$s noutokirjastoksi %2$s?"
 
 #: staff.patron.holds.holds_edit_pickup_lib.change_pickup_lib_message.plural
@@ -882,16 +925,16 @@ msgid ""
 "Are you sure you would like to change the Notification Mobile/Text Number "
 "for hold %1$s to \"%2$s\"?"
 msgstr ""
-"Haluatko varmasti muuttaa varauksen %1$s ilmoitusten "
-"puhelin-/tekstiviestinumeroksi \"%2$s\"?"
+"Haluatko varmasti muuttaa varauksen %1$s ilmoitusten puhelin-"
+"/tekstiviestinumeroksi \"%2$s\"?"
 
 #: staff.patron.holds.holds_edit_sms_notify.confirm_phone_number_change.plural
 msgid ""
 "Are you sure you would like to change the Notification Mobile/Text Number "
 "for holds %1$s to \"%2$s\"?"
 msgstr ""
-"Haluatko varmasti muuttaa varausten %1$s ilmoitusten "
-"puhelin-/tekstiviestinumeroksi \"%2$s\"?"
+"Haluatko varmasti muuttaa varausten %1$s ilmoitusten puhelin-"
+"/tekstiviestinumeroksi \"%2$s\"?"
 
 #: staff.patron.holds.holds_edit_sms_notify.modifying_holds_title
 msgctxt "staff.patron.holds.holds_edit_sms_notify.modifying_holds_title"
@@ -932,16 +975,16 @@ msgid ""
 "Are you sure you would like to change the Notification Mobile/Text Carrier "
 "for hold %1$s to \"%2$s\"?"
 msgstr ""
-"Haluatko varmasti muuttaa varauksen %1$s ilmoitusten "
-"matkapuhelin-/tekstiviestioperaattoriksi \"%2$s\"?"
+"Haluatko varmasti muuttaa varauksen %1$s ilmoitusten matkapuhelin-"
+"/tekstiviestioperaattoriksi \"%2$s\"?"
 
 #: staff.patron.holds.holds_edit_sms_carrier.confirm_carrier_change.plural
 msgid ""
 "Are you sure you would like to change the Notification Mobile/Text Carrier "
 "for holds %1$s to \"%2$s\"?"
 msgstr ""
-"Haluatko varmasti muuttaa varausten %1$s ilmoitusten "
-"matkapuhelin-/tekstiviestioperaattoriksi \"%2$s\"?"
+"Haluatko varmasti muuttaa varausten %1$s ilmoitusten matkapuhelin-"
+"/tekstiviestioperaattoriksi \"%2$s\"?"
 
 #: staff.patron.holds.holds_edit_sms_carrier.modifying_holds_title
 msgctxt "staff.patron.holds.holds_edit_sms_carrier.modifying_holds_title"
@@ -988,7 +1031,8 @@ msgid "Set Email Notification for Holds"
 msgstr "Määritä varausten sähköposti-ilmoitus"
 
 #: staff.patron.holds.holds_edit_email_notify.enable_email.singular
-msgid "Are you sure you would like to enable email notification for hold %1$s?"
+msgid ""
+"Are you sure you would like to enable email notification for hold %1$s?"
 msgstr ""
 "Haluatko varmasti ottaa sähköposti-ilmoituksen käyttöön varaukselle %1$s?"
 
@@ -1002,15 +1046,15 @@ msgstr ""
 msgid ""
 "Are you sure you would like to disable email notification for hold %1$s?"
 msgstr ""
-"Haluatko varmasti ottaa sähköposti-ilmoituksen pois käytöstä varaukselle %"
-"1$s?"
+"Haluatko varmasti ottaa sähköposti-ilmoituksen pois käytöstä varaukselle "
+"%1$s?"
 
 #: staff.patron.holds.holds_edit_email_notify.disable_email.plural
 msgid ""
 "Are you sure you would like to disable email notification for holds %1$s?"
 msgstr ""
-"Haluatko varmasti ottaa sähköposti-ilmoituksen pois käytöstä varauksille %"
-"1$s?"
+"Haluatko varmasti ottaa sähköposti-ilmoituksen pois käytöstä varauksille "
+"%1$s?"
 
 #: staff.patron.holds.holds_edit_email_notify.mod_holds_title
 msgctxt "staff.patron.holds.holds_edit_email_notify.mod_holds_title"
@@ -1094,7 +1138,8 @@ msgid "Any Condition"
 msgstr "Missä tahansa kunnossa"
 
 #: staff.patron.holds.holds_desire_mint_condition.btn_mediocre.accesskey
-msgctxt "staff.patron.holds.holds_desire_mint_condition.btn_mediocre.accesskey"
+msgctxt ""
+"staff.patron.holds.holds_desire_mint_condition.btn_mediocre.accesskey"
 msgid "A"
 msgstr "A"
 
@@ -1114,14 +1159,14 @@ msgstr "Määritä haluamasi varatun niteen laatu"
 
 #: staff.patron.holds.holds_desire_mint_condition.enable_good.singular
 msgid ""
-"Are you sure you would like to restrict to Good Condition copies for hold %"
-"1$s?"
+"Are you sure you would like to restrict to Good Condition copies for hold "
+"%1$s?"
 msgstr "Haluatko varmasti rajoittaa varauksen %1$s hyväkuntoisiin niteisiin?"
 
 #: staff.patron.holds.holds_desire_mint_condition.enable_good.plural
 msgid ""
-"Are you sure you would like to restrict to Good Condition copies for holds %"
-"1$s?"
+"Are you sure you would like to restrict to Good Condition copies for holds "
+"%1$s?"
 msgstr "Haluatko varmasti rajoittaa varaukset %1$s hyväkuntoisiin niteisiin?"
 
 #: staff.patron.holds.holds_desire_mint_condition.disable_good.singular
@@ -1136,8 +1181,7 @@ msgid ""
 "Are you sure you would like to NOT restrict to Good Condition copies for "
 "holds %1$s?"
 msgstr ""
-"Haluatko varmasti olla rajoittamatta varauksia %1$s hyväkuntoisiin "
-"niteisiin?"
+"Haluatko varmasti olla rajoittamatta varauksia %1$s hyväkuntoisiin niteisiin?"
 
 #: staff.patron.holds.holds_desire_mint_condition.mod_holds_title
 msgctxt "staff.patron.holds.holds_desire_mint_condition.mod_holds_title"
@@ -1637,7 +1681,8 @@ msgstr "Haluatko varmasti palauttaa niteet %1$s?"
 msgid ""
 "Are you sure you would like to mark this item as Claimed Never Checked Out? "
 "%1$s"
-msgstr "Haluatko varmasti merkitä, että nide on ilmoitettu ei-lainatuksi? %1$s"
+msgstr ""
+"Haluatko varmasti merkitä, että nide on ilmoitettu ei-lainatuksi? %1$s"
 
 #: staff.patron.items.items_checkin.confirm_item_claimed_never_checked_out.plural
 msgid ""
@@ -1660,7 +1705,8 @@ msgid "Retrieving title..."
 msgstr "Haetaan nimekettä..."
 
 #: staff.patron.items.retrieve_row.callback_error
-msgid "Error in callback for FM_CIRC_DETAILS.authoritative in patron/items.js"
+msgid ""
+"Error in callback for FM_CIRC_DETAILS.authoritative in patron/items.js"
 msgstr ""
 "Virhe FM_CIRC_DETALS.authoritative-toiminnon takaisinkutsussa tiedostossa "
 "patron/items.js"
@@ -2004,15 +2050,3 @@ msgstr "Saatavilla / Yhteensä (Tiskin takana)"
 #: staff.patron.summary.hold_counts
 msgid "Available / Total"
 msgstr "Saatavilla / Yhteensä"
-
-#~ msgid "Alert message: \"%1$s\"<br/><br/>"
-#~ msgstr "Huomautusviesti: \"%1$s\"<br/><br/>"
-
-#~ msgid "Patron account is BARRED.<br/><br/>"
-#~ msgstr "Asiakkaan tili on LAINAUSKIELLOSSA.<br/><br/>"
-
-#~ msgid "Patron account is INACTIVE.<br/><br/>"
-#~ msgstr "Asiakkaan tili on EI-AKTIIVINEN.<br/><br/>"
-
-#~ msgid "Patron account is EXPIRED.<br/><br/>"
-#~ msgstr "Asiakkaan tili on VANHENTUNUT.<br/><br/>"

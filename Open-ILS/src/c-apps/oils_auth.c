@@ -6,6 +6,7 @@
 #include "openils/oils_utils.h"
 #include "openils/oils_constants.h"
 #include "openils/oils_event.h"
+#include <pcre.h>
 
 #define OILS_AUTH_CACHE_PRFX "oils_auth_"
 #define OILS_AUTH_COUNT_SFFX "_count"
@@ -23,10 +24,6 @@
 int osrfAppInitialize();
 int osrfAppChildInit();
 
-static long _oilsAuthOPACTimeout = 0;
-static long _oilsAuthStaffTimeout = 0;
-static long _oilsAuthOverrideTimeout = 0;
-static long _oilsAuthPersistTimeout = 0;
 static long _oilsAuthSeedTimeout = 0;
 static long _oilsAuthBlockTimeout = 0;
 static long _oilsAuthBlockCount = 0;
@@ -49,6 +46,20 @@ int osrfAppInitialize() {
 		"oilsAuthInit",
 		"Start the authentication process and returns the intermediate authentication seed"
 		" PARAMS( username )", 1, 0 );
+
+    osrfAppRegisterMethod(
+        MODULENAME,
+        "open-ils.auth.authenticate.init.barcode",
+        "oilsAuthInitBarcode",
+        "Start the authentication process using a patron barcode and return "
+        "the intermediate authentication seed. PARAMS(barcode)", 1, 0);
+
+    osrfAppRegisterMethod(
+        MODULENAME,
+        "open-ils.auth.authenticate.init.username",
+        "oilsAuthInitUsername",
+        "Start the authentication process using a patron username and return "
+        "the intermediate authentication seed. PARAMS(username)", 1, 0);
 
 	osrfAppRegisterMethod(
 		MODULENAME,
@@ -144,6 +155,221 @@ int osrfAppChildInit() {
 	return 0;
 }
 
+// free() response
+static char* oilsAuthGetSalt(int user_id) {
+    char* salt_str = NULL;
+
+    jsonObject* params = jsonParseFmt( // free
+        "{\"from\":[\"actor.get_salt\",%d,\"%s\"]}", user_id, "main");
+
+    jsonObject* salt_obj = // free
+        oilsUtilsCStoreReq("open-ils.cstore.json_query", params);
+
+    jsonObjectFree(params);
+
+    if (salt_obj) {
+
+        if (salt_obj->type != JSON_NULL) {
+
+            const char* salt_val = jsonObjectGetString(
+                jsonObjectGetKeyConst(salt_obj, "actor.get_salt"));
+
+            // caller expects a free-able string, could be NULL.
+            if (salt_val) { salt_str = strdup(salt_val); } 
+        }
+
+        jsonObjectFree(salt_obj);
+    }
+
+    return salt_str;
+}
+
+// ident is either a username or barcode
+// Returns the init seed -> requires free();
+static char* oilsAuthBuildInitCache(
+    int user_id, const char* ident, const char* ident_type, const char* nonce) {
+
+    char* cache_key  = va_list_to_string(
+        "%s%s%s", OILS_AUTH_CACHE_PRFX, ident, nonce);
+
+    char* count_key = va_list_to_string(
+        "%s%s%s", OILS_AUTH_CACHE_PRFX, ident, OILS_AUTH_COUNT_SFFX);
+
+    char* auth_seed;
+    if (user_id == -1) {
+        // user does not exist.  Use a dummy seed
+        auth_seed = strdup("x");
+    } else {
+        auth_seed = oilsAuthGetSalt(user_id);
+    }
+
+    jsonObject* seed_object = jsonParseFmt(
+        "{\"%s\":\"%s\",\"user_id\":%d,\"seed\":\"%s\"}",
+        ident_type, ident, user_id, auth_seed);
+
+    jsonObject* count_object = osrfCacheGetObject(count_key);
+    if(!count_object) {
+        count_object = jsonNewNumberObject((double) 0);
+    }
+
+    osrfCachePutObject(cache_key, seed_object, _oilsAuthSeedTimeout);
+
+    if (user_id != -1) {
+        // Only track login counts for existing users, since a 
+        // login for a nonexistent user will never succeed anyway.
+        osrfCachePutObject(count_key, count_object, _oilsAuthBlockTimeout);
+    }
+
+    osrfLogDebug(OSRF_LOG_MARK, 
+        "oilsAuthInit(): has seed %s and key %s", auth_seed, cache_key);
+
+    free(cache_key);
+    free(count_key);
+    jsonObjectFree(count_object);
+    jsonObjectFree(seed_object);
+
+    return auth_seed;
+}
+
+static int oilsAuthInitUsernameHandler(
+    osrfMethodContext* ctx, const char* username, const char* nonce) {
+
+    osrfLogInfo(OSRF_LOG_MARK, 
+        "User logging in with username %s", username);
+
+    int user_id = -1;
+    jsonObject* resp = NULL; // free
+    jsonObject* user_obj = oilsUtilsFetchUserByUsername(ctx, username); // free
+
+    if (user_obj && user_obj->type != JSON_NULL) 
+        user_id = oilsFMGetObjectId(user_obj);
+
+    jsonObjectFree(user_obj); // NULL OK
+
+    char* seed = oilsAuthBuildInitCache(user_id, username, "username", nonce);
+    resp = jsonNewObject(seed);
+    free(seed);
+
+    osrfAppRespondComplete(ctx, resp);
+    jsonObjectFree(resp);
+    return 0;
+}
+
+// open-ils.auth.authenticate.init.username
+int oilsAuthInitUsername(osrfMethodContext* ctx) {
+    OSRF_METHOD_VERIFY_CONTEXT(ctx);
+
+    char* username =  // free
+        jsonObjectToSimpleString(jsonObjectGetIndex(ctx->params, 0));
+    const char* nonce = 
+        jsonObjectGetString(jsonObjectGetIndex(ctx->params, 1));
+
+    if (!nonce) nonce = "";
+    if (!username) return -1;
+
+    int resp = oilsAuthInitUsernameHandler(ctx, username, nonce);
+
+    free(username);
+    return resp;
+}
+
+static int oilsAuthInitBarcodeHandler(
+    osrfMethodContext* ctx, const char* barcode, const char* nonce) {
+
+    osrfLogInfo(OSRF_LOG_MARK, 
+        "User logging in with barcode %s", barcode);
+
+    int user_id = -1;
+    jsonObject* resp = NULL; // free
+    jsonObject* user_obj = oilsUtilsFetchUserByBarcode(ctx, barcode); // free
+
+    if (user_obj && user_obj->type != JSON_NULL) 
+        user_id = oilsFMGetObjectId(user_obj);
+
+    jsonObjectFree(user_obj); // NULL OK
+
+    char* seed = oilsAuthBuildInitCache(user_id, barcode, "barcode", nonce);
+    resp = jsonNewObject(seed);
+    free(seed);
+
+    osrfAppRespondComplete(ctx, resp);
+    jsonObjectFree(resp);
+    return 0;
+}
+
+
+// open-ils.auth.authenticate.init.barcode
+int oilsAuthInitBarcode(osrfMethodContext* ctx) {
+    OSRF_METHOD_VERIFY_CONTEXT(ctx);
+
+    char* barcode = // free
+        jsonObjectToSimpleString(jsonObjectGetIndex(ctx->params, 0));
+    const char* nonce = 
+        jsonObjectGetString(jsonObjectGetIndex(ctx->params, 1));
+
+    if (!nonce) nonce = "";
+    if (!barcode) return -1;
+
+    int resp = oilsAuthInitBarcodeHandler(ctx, barcode, nonce);
+
+    free(barcode);
+    return resp;
+}
+
+// returns true if the provided identifier matches the barcode regex.
+static int oilsAuthIdentIsBarcode(const char* identifier) {
+
+    // Assumes barcode regex is a global setting.
+    // TODO: add an org_unit param to the .init API for future use?
+    char* bc_regex = oilsUtilsFetchOrgSetting(
+        oilsUtilsGetRootOrgId(), "opac.barcode_regex");
+
+    if (!bc_regex) {
+        // if no regex is set, assume any identifier starting
+        // with a number is a barcode.
+        bc_regex = strdup("^\\d"); // dupe for later free'ing
+    }
+
+    const char *err_str;
+    int err_offset, match_ret;
+
+    pcre *compiled = pcre_compile(
+        bc_regex, 0, &err_str, &err_offset, NULL);
+
+    if (compiled == NULL) {
+        osrfLogError(OSRF_LOG_MARK,
+            "Could not compile '%s': %s", bc_regex, err_str);
+        free(bc_regex);
+        pcre_free(compiled);
+        return 0;
+    }
+
+    pcre_extra *extra = pcre_study(compiled, 0, &err_str);
+
+    if(err_str != NULL) {
+        osrfLogError(OSRF_LOG_MARK,
+            "Could not study regex '%s': %s", bc_regex, err_str);
+        free(bc_regex);
+        pcre_free(compiled);
+        return 0;
+    } 
+
+    match_ret = pcre_exec(
+        compiled, extra, identifier, strlen(identifier), 0, 0, NULL, 0);       
+
+    free(bc_regex);
+    pcre_free(compiled);
+    if (extra) pcre_free(extra);
+
+    if (match_ret >= 0) return 1; // regex matched
+
+    if (match_ret != PCRE_ERROR_NOMATCH) 
+        osrfLogError(OSRF_LOG_MARK, "Unknown error processing barcode regex");
+
+    return 0; // regex did not match
+}
+
+
 /**
 	@brief Implement the "init" method.
 	@param ctx The method context.
@@ -157,103 +383,27 @@ int osrfAppChildInit() {
 		near-simultaneous logins.
 
 	Return to client: Intermediate authentication seed.
-
-	Combine the username with a timestamp and process ID, and take an md5 hash of the result.
-	Store the hash in memcache, with a key based on the username.  Then return the hash to
-	the client.
-
-	However: if the username includes one or more embedded blank spaces, return a dummy
-	hash without storing anything in memcache.  The dummy will never match a stored hash, so
-	any attempt to authenticate with it will fail.
 */
-int oilsAuthInit( osrfMethodContext* ctx ) {
-	OSRF_METHOD_VERIFY_CONTEXT(ctx);
+int oilsAuthInit(osrfMethodContext* ctx) {
+    OSRF_METHOD_VERIFY_CONTEXT(ctx);
+    int resp = 0;
 
-	char* username  = jsonObjectToSimpleString( jsonObjectGetIndex(ctx->params, 0) );
-	const char* nonce = jsonObjectGetString(jsonObjectGetIndex(ctx->params, 1));
-	if (!nonce) nonce = "";
+    char* identifier = // free
+        jsonObjectToSimpleString(jsonObjectGetIndex(ctx->params, 0));
+    const char* nonce = 
+        jsonObjectGetString(jsonObjectGetIndex(ctx->params, 1));
 
-	if( username ) {
+    if (!nonce) nonce = "";
+    if (!identifier) return -1;  // we need an identifier
 
-		jsonObject* resp;
+    if (oilsAuthIdentIsBarcode(identifier)) {
+        resp = oilsAuthInitBarcodeHandler(ctx, identifier, nonce);
+    } else {
+        resp = oilsAuthInitUsernameHandler(ctx, identifier, nonce);
+    }
 
-		if( strchr( username, ' ' ) ) {
-
-			// Embedded spaces are not allowed in a username.  Use "x" as a dummy
-			// seed.  It will never be a valid seed because 'x' is not a hex digit.
-			resp = jsonNewObject( "x" );
-
-		} else {
-
-			// Build a key and a seed; store them in memcache.
-			char* key  = va_list_to_string( "%s%s%s", OILS_AUTH_CACHE_PRFX, username, nonce );
-			char* countkey = va_list_to_string( "%s%s%s", OILS_AUTH_CACHE_PRFX, username, OILS_AUTH_COUNT_SFFX );
-			char* seed = md5sum( "%d.%ld.%s.%s", (int) time(NULL), (long) getpid(), username, nonce );
-			jsonObject* countobject = osrfCacheGetObject( countkey );
-			if(!countobject) {
-				countobject = jsonNewNumberObject( (double) 0 );
-			}
-			osrfCachePutString( key, seed, _oilsAuthSeedTimeout );
-			osrfCachePutObject( countkey, countobject, _oilsAuthBlockTimeout );
-
-			osrfLogDebug( OSRF_LOG_MARK, "oilsAuthInit(): has seed %s and key %s", seed, key );
-
-			// Build a returnable object containing the seed.
-			resp = jsonNewObject( seed );
-
-			free( seed );
-			free( key );
-			free( countkey );
-			jsonObjectFree( countobject );
-		}
-
-		// Return the seed to the client.
-		osrfAppRespondComplete( ctx, resp );
-
-		jsonObjectFree(resp);
-		free(username);
-		return 0;
-	}
-
-	return -1;  // Error: no username parameter
-}
-
-/**
-	Verifies that the user has permission to login with the
-	given type.  If the permission fails, an oilsEvent is returned
-	to the caller.
-	@return -1 if the permission check failed, 0 if the permission
-	is granted
-*/
-static int oilsAuthCheckLoginPerm(
-		osrfMethodContext* ctx, const jsonObject* userObj, const char* type ) {
-
-	if(!(userObj && type)) return -1;
-	oilsEvent* perm = NULL;
-
-	if(!strcasecmp(type, OILS_AUTH_OPAC)) {
-		char* permissions[] = { "OPAC_LOGIN" };
-		perm = oilsUtilsCheckPerms( oilsFMGetObjectId( userObj ), -1, permissions, 1 );
-
-	} else if(!strcasecmp(type, OILS_AUTH_STAFF)) {
-		char* permissions[] = { "STAFF_LOGIN" };
-		perm = oilsUtilsCheckPerms( oilsFMGetObjectId( userObj ), -1, permissions, 1 );
-
-	} else if(!strcasecmp(type, OILS_AUTH_TEMP)) {
-		char* permissions[] = { "STAFF_LOGIN" };
-		perm = oilsUtilsCheckPerms( oilsFMGetObjectId( userObj ), -1, permissions, 1 );
-	} else if(!strcasecmp(type, OILS_AUTH_PERSIST)) {
-		char* permissions[] = { "PERSISTENT_LOGIN" };
-		perm = oilsUtilsCheckPerms( oilsFMGetObjectId( userObj ), -1, permissions, 1 );
-	}
-
-	if(perm) {
-		osrfAppRespondComplete( ctx, oilsEventToJSON(perm) );
-		oilsEventFree(perm);
-		return -1;
-	}
-
-	return 0;
+    free(identifier);
+    return resp;
 }
 
 /**
@@ -281,192 +431,56 @@ static int oilsAuthCheckLoginPerm(
 	means that the client process needs either to be the same process that called the init
 	method or to receive the seed from the process that did so.
 */
-static int oilsAuthVerifyPassword( const osrfMethodContext* ctx,
-		const jsonObject* userObj, const char* uname,
-		const char* password, const char* nonce ) {
+static int oilsAuthVerifyPassword( const osrfMethodContext* ctx, int user_id, 
+        const char* identifier, const char* password, const char* nonce) {
 
-	// Get the username seed, as stored previously in memcache by the init method
-	char* seed = osrfCacheGetString( "%s%s%s", OILS_AUTH_CACHE_PRFX, uname, nonce );
-	if(!seed) {
-		return osrfAppRequestRespondException( ctx->session,
-			ctx->request, "No authentication seed found. "
-			"open-ils.auth.authenticate.init must be called first "
-			" (check that memcached is running and can be connected to) "
-		);
-	}
-    
-	// We won't be needing the seed again, remove it
-	osrfCacheRemove( "%s%s%s", OILS_AUTH_CACHE_PRFX, uname, nonce );
+    int verified = 0;
 
-	// Get the hashed password from the user object
-	char* realPassword = oilsFMGetString( userObj, "passwd" );
+    // We won't be needing the seed again, remove it
+    osrfCacheRemove("%s%s%s", OILS_AUTH_CACHE_PRFX, identifier, nonce);
 
-	osrfLogInternal(OSRF_LOG_MARK, "oilsAuth retrieved real password: [%s]", realPassword);
-	osrfLogDebug(OSRF_LOG_MARK, "oilsAuth retrieved seed from cache: %s", seed );
+    // Ask the DB to verify the user's password.
+    // Here, the password is md5(md5(password) + salt)
 
-	// Concatenate them and take an MD5 hash of the result
-	char* maskedPw = md5sum( "%s%s", seed, realPassword );
+    jsonObject* params = jsonParseFmt( // free
+        "{\"from\":[\"actor.verify_passwd\",%d,\"main\",\"%s\"]}", 
+        user_id, password);
 
-	free(realPassword);
-	free(seed);
+    jsonObject* verify_obj = // free 
+        oilsUtilsCStoreReq("open-ils.cstore.json_query", params);
 
-	if( !maskedPw ) {
-		// This happens only if md5sum() runs out of memory
-		free( maskedPw );
-		return -1;  // md5sum() ran out of memory
-	}
+    jsonObjectFree(params);
 
-	osrfLogDebug(OSRF_LOG_MARK,  "oilsAuth generated masked password %s. "
-			"Testing against provided password %s", maskedPw, password );
+    if (verify_obj) {
+        verified = oilsUtilsIsDBTrue(
+            jsonObjectGetString(
+                jsonObjectGetKeyConst(
+                    verify_obj, "actor.verify_passwd")));
 
-	int ret = 0;
-	if( !strcmp( maskedPw, password ) )
-		ret = 1;
+        jsonObjectFree(verify_obj);
+    }
 
-	free(maskedPw);
+    char* countkey = va_list_to_string("%s%s%s", 
+        OILS_AUTH_CACHE_PRFX, identifier, OILS_AUTH_COUNT_SFFX );
+    jsonObject* countobject = osrfCacheGetObject( countkey );
+    if(countobject) {
+        long failcount = (long) jsonObjectGetNumber( countobject );
+        if(failcount >= _oilsAuthBlockCount) {
+            verified = 0;
+            osrfLogInfo(OSRF_LOG_MARK, 
+                "oilsAuth found too many recent failures for '%s' : %i, "
+                "forcing failure state.", identifier, failcount);
+        }
+        if(verified == 0) {
+            failcount += 1;
+        }
+        jsonObjectSetNumber( countobject, failcount );
+        osrfCachePutObject( countkey, countobject, _oilsAuthBlockTimeout );
+        jsonObjectFree(countobject);
+    }
+    free(countkey);
 
-	char* countkey = va_list_to_string( "%s%s%s", OILS_AUTH_CACHE_PRFX, uname, OILS_AUTH_COUNT_SFFX );
-	jsonObject* countobject = osrfCacheGetObject( countkey );
-	if(countobject) {
-		long failcount = (long) jsonObjectGetNumber( countobject );
-		if(failcount >= _oilsAuthBlockCount) {
-			ret = 0;
-		    osrfLogInfo(OSRF_LOG_MARK, "oilsAuth found too many recent failures for '%s' : %i, forcing failure state.", uname, failcount);
-		}
-		if(ret == 0) {
-			failcount += 1;
-		}
-		jsonObjectSetNumber( countobject, failcount );
-		osrfCachePutObject( countkey, countobject, _oilsAuthBlockTimeout );
-		jsonObjectFree(countobject);
-	}
-	free(countkey);
-
-	return ret;
-}
-
-/**
-	@brief Determine the login timeout.
-	@param userObj Pointer to an object describing the user.
-	@param type Pointer to one of four possible character strings identifying the login type.
-	@param orgloc Org unit to use for settings lookups (negative or zero means unspecified)
-	@return The length of the timeout, in seconds.
-
-	The default timeout value comes from the configuration file, and depends on the
-	login type.
-
-	The default may be overridden by a corresponding org unit setting.  The @a orgloc
-	parameter says what org unit to use for the lookup.  If @a orgloc <= 0, or if the
-	lookup for @a orgloc yields no result, we look up the setting for the user's home org unit
-	instead (except that if it's the same as @a orgloc we don't bother repeating the lookup).
-
-	Whether defined in the config file or in an org unit setting, a timeout value may be
-	expressed as a raw number (i.e. all digits, possibly with leading and/or trailing white
-	space) or as an interval string to be translated into seconds by PostgreSQL.
-*/
-static long oilsAuthGetTimeout( const jsonObject* userObj, const char* type, int orgloc ) {
-
-	if(!_oilsAuthOPACTimeout) { /* Load the default timeouts */
-
-		jsonObject* value_obj;
-
-		value_obj = osrf_settings_host_value_object(
-			"/apps/open-ils.auth/app_settings/default_timeout/opac" );
-		_oilsAuthOPACTimeout = oilsUtilsIntervalToSeconds( jsonObjectGetString( value_obj ));
-		jsonObjectFree(value_obj);
-		if( -1 == _oilsAuthOPACTimeout ) {
-			osrfLogWarning( OSRF_LOG_MARK, "Invalid default timeout for OPAC logins" );
-			_oilsAuthOPACTimeout = 0;
-		}
-
-		value_obj = osrf_settings_host_value_object(
-			"/apps/open-ils.auth/app_settings/default_timeout/staff" );
-		_oilsAuthStaffTimeout = oilsUtilsIntervalToSeconds( jsonObjectGetString( value_obj ));
-		jsonObjectFree(value_obj);
-		if( -1 == _oilsAuthStaffTimeout ) {
-			osrfLogWarning( OSRF_LOG_MARK, "Invalid default timeout for staff logins" );
-			_oilsAuthStaffTimeout = 0;
-		}
-
-		value_obj = osrf_settings_host_value_object(
-			"/apps/open-ils.auth/app_settings/default_timeout/temp" );
-		_oilsAuthOverrideTimeout = oilsUtilsIntervalToSeconds( jsonObjectGetString( value_obj ));
-		jsonObjectFree(value_obj);
-		if( -1 == _oilsAuthOverrideTimeout ) {
-			osrfLogWarning( OSRF_LOG_MARK, "Invalid default timeout for temp logins" );
-			_oilsAuthOverrideTimeout = 0;
-		}
-
-		value_obj = osrf_settings_host_value_object(
-			"/apps/open-ils.auth/app_settings/default_timeout/persist" );
-		_oilsAuthPersistTimeout = oilsUtilsIntervalToSeconds( jsonObjectGetString( value_obj ));
-		jsonObjectFree(value_obj);
-		if( -1 == _oilsAuthPersistTimeout ) {
-			osrfLogWarning( OSRF_LOG_MARK, "Invalid default timeout for persist logins" );
-			_oilsAuthPersistTimeout = 0;
-		}
-
-		osrfLogInfo(OSRF_LOG_MARK, "Set default auth timeouts: "
-			"opac => %ld : staff => %ld : temp => %ld : persist => %ld",
-			_oilsAuthOPACTimeout, _oilsAuthStaffTimeout,
-			_oilsAuthOverrideTimeout, _oilsAuthPersistTimeout );
-	}
-
-	int home_ou = (int) jsonObjectGetNumber( oilsFMGetObject( userObj, "home_ou" ));
-	if(orgloc < 1)
-		orgloc = home_ou;
-
-	char* setting = NULL;
-	long default_timeout = 0;
-
-	if( !strcmp( type, OILS_AUTH_OPAC )) {
-		setting = OILS_ORG_SETTING_OPAC_TIMEOUT;
-		default_timeout = _oilsAuthOPACTimeout;
-	} else if( !strcmp( type, OILS_AUTH_STAFF )) {
-		setting = OILS_ORG_SETTING_STAFF_TIMEOUT;
-		default_timeout = _oilsAuthStaffTimeout;
-	} else if( !strcmp( type, OILS_AUTH_TEMP )) {
-		setting = OILS_ORG_SETTING_TEMP_TIMEOUT;
-		default_timeout = _oilsAuthOverrideTimeout;
-	} else if( !strcmp( type, OILS_AUTH_PERSIST )) {
-		setting = OILS_ORG_SETTING_PERSIST_TIMEOUT;
-		default_timeout = _oilsAuthPersistTimeout;
-	}
-
-	// Get the org unit setting, if there is one.
-	char* timeout = oilsUtilsFetchOrgSetting( orgloc, setting );
-	if(!timeout) {
-		if( orgloc != home_ou ) {
-			osrfLogDebug(OSRF_LOG_MARK, "Auth timeout not defined for org %d, "
-				"trying home_ou %d", orgloc, home_ou );
-			timeout = oilsUtilsFetchOrgSetting( home_ou, setting );
-		}
-	}
-
-	if(!timeout)
-		return default_timeout;   // No override from org unit setting
-
-	// Translate the org unit setting to a number
-	long t;
-	if( !*timeout ) {
-		osrfLogWarning( OSRF_LOG_MARK,
-			"Timeout org unit setting is an empty string for %s login; using default",
-			timeout, type );
-		t = default_timeout;
-	} else {
-		// Treat timeout string as an interval, and convert it to seconds
-		t = oilsUtilsIntervalToSeconds( timeout );
-		if( -1 == t ) {
-			// Unable to convert; possibly an invalid interval string
-			osrfLogError( OSRF_LOG_MARK,
-				"Unable to convert timeout interval \"%s\" for %s login; using default",
-				timeout, type );
-			t = default_timeout;
-		}
-	}
-
-	free(timeout);
-	return t;
+    return verified;
 }
 
 /*
@@ -476,83 +490,54 @@ static long oilsAuthGetTimeout( const jsonObject* userObj, const char* type, int
 	Returns the event that should be returned to the user.
 	Event must be freed
 */
-static oilsEvent* oilsAuthHandleLoginOK( jsonObject* userObj, const char* uname,
+static oilsEvent* oilsAuthHandleLoginOK( osrfMethodContext* ctx, jsonObject* userObj, const char* uname,
 		const char* type, int orgloc, const char* workstation ) {
 
-	oilsEvent* response;
+	oilsEvent* response = NULL;
 
-	long timeout;
-	char* wsorg = jsonObjectToSimpleString(oilsFMGetObject(userObj, "ws_ou"));
-	if(wsorg) { /* if there is a workstation, use it for the timeout */
-		osrfLogDebug( OSRF_LOG_MARK,
-				"Auth session trying workstation id %d for auth timeout", atoi(wsorg));
-		timeout = oilsAuthGetTimeout( userObj, type, atoi(wsorg) );
-		free(wsorg);
-	} else {
-		osrfLogDebug( OSRF_LOG_MARK,
-				"Auth session trying org from param [%d] for auth timeout", orgloc );
-		timeout = oilsAuthGetTimeout( userObj, type, orgloc );
-	}
-	osrfLogDebug(OSRF_LOG_MARK, "Auth session timeout for %s: %ld", uname, timeout );
+    jsonObject* params = jsonNewObject(NULL);
+    jsonObjectSetKey(params, "user_id", 
+        jsonNewNumberObject(oilsFMGetObjectId(userObj)));
+    jsonObjectSetKey(params,"org_unit", jsonNewNumberObject(orgloc));
+    jsonObjectSetKey(params, "login_type", jsonNewObject(type));
+    if (workstation) 
+        jsonObjectSetKey(params, "workstation", jsonNewObject(workstation));
 
-	char* string = va_list_to_string(
-			"%d.%ld.%s", (long) getpid(), time(NULL), uname );
-	char* authToken = md5sum(string);
-	char* authKey = va_list_to_string(
-			"%s%s", OILS_AUTH_CACHE_PRFX, authToken );
+    jsonObject* authEvt = oilsUtilsQuickReqCtx(
+        ctx,
+        "open-ils.auth_internal",
+        "open-ils.auth_internal.session.create", params);
+    jsonObjectFree(params);
 
-	const char* ws = (workstation) ? workstation : "";
-	osrfLogActivity(OSRF_LOG_MARK,
-		"successful login: username=%s, authtoken=%s, workstation=%s", uname, authToken, ws );
+    if (authEvt) {
 
-	oilsFMSetString( userObj, "passwd", "" );
-	jsonObject* cacheObj = jsonParseFmt( "{\"authtime\": %ld}", timeout );
-	jsonObjectSetKey( cacheObj, "userobj", jsonObjectClone(userObj));
+        response = oilsNewEvent2(
+            OSRF_LOG_MARK, 
+            jsonObjectGetString(jsonObjectGetKey(authEvt, "textcode")),
+            jsonObjectGetKey(authEvt, "payload")   // cloned within Event
+        );
 
-	if( !strcmp( type, OILS_AUTH_PERSIST )) {
-		// Add entries for endtime and reset_interval, so that we can gracefully
-		// extend the session a bit if the user is active toward the end of the 
-		// timeout originally specified.
-		time_t endtime = time( NULL ) + timeout;
-		jsonObjectSetKey( cacheObj, "endtime", jsonNewNumberObject( (double) endtime ) );
+        osrfLogActivity(OSRF_LOG_MARK,
+            "successful login: username=%s, authtoken=%s, workstation=%s",
+            uname,
+            jsonObjectGetString(
+                jsonObjectGetKeyConst(
+                    jsonObjectGetKeyConst(authEvt, "payload"),
+                    "authtoken"
+                )
+            ),
+            workstation ? workstation : ""
+        );
 
-		// Reset interval is hard-coded for now, but if we ever want to make it
-		// configurable, this is the place to do it:
-		jsonObjectSetKey( cacheObj, "reset_interval",
-			jsonNewNumberObject( (double) DEFAULT_RESET_INTERVAL ));
-	}
+        jsonObjectFree(authEvt);
 
-	osrfCachePutObject( authKey, cacheObj, (time_t) timeout );
-	jsonObjectFree(cacheObj);
-	osrfLogInternal(OSRF_LOG_MARK, "oilsAuthHandleLoginOK(): Placed user object into cache");
-	jsonObject* payload = jsonParseFmt(
-		"{ \"authtoken\": \"%s\", \"authtime\": %ld }", authToken, timeout );
+    } else {
+        osrfLogError(OSRF_LOG_MARK, 
+            "Error caching auth session in open-ils.auth_internal");
+    }
 
-	response = oilsNewEvent2( OSRF_LOG_MARK, OILS_EVENT_SUCCESS, payload );
-	free(string); free(authToken); free(authKey);
-	jsonObjectFree(payload);
-
-	return response;
+    return response;
 }
-
-static oilsEvent* oilsAuthVerifyWorkstation(
-		const osrfMethodContext* ctx, jsonObject* userObj, const char* ws ) {
-	osrfLogInfo(OSRF_LOG_MARK, "Attaching workstation to user at login: %s", ws);
-	jsonObject* workstation = oilsUtilsFetchWorkstationByName(ws);
-	if(!workstation || workstation->type == JSON_NULL) {
-		jsonObjectFree(workstation);
-		return oilsNewEvent(OSRF_LOG_MARK, "WORKSTATION_NOT_FOUND");
-	}
-	long wsid = oilsFMGetObjectId(workstation);
-	LONG_TO_STRING(wsid);
-	char* orgid = oilsFMGetString(workstation, "owning_lib");
-	oilsFMSetString(userObj, "wsid", LONGSTR);
-	oilsFMSetString(userObj, "ws_ou", orgid);
-	free(orgid);
-	jsonObjectFree(workstation);
-	return NULL;
-}
-
 
 
 /**
@@ -584,203 +569,203 @@ static oilsEvent* oilsAuthVerifyWorkstation(
 	Upon deciding whether to allow the logon, return a corresponding event to the client.
 */
 int oilsAuthComplete( osrfMethodContext* ctx ) {
-	OSRF_METHOD_VERIFY_CONTEXT(ctx);
+    OSRF_METHOD_VERIFY_CONTEXT(ctx);
 
-	const jsonObject* args  = jsonObjectGetIndex(ctx->params, 0);
+    const jsonObject* args  = jsonObjectGetIndex(ctx->params, 0);
 
-	const char* uname       = jsonObjectGetString(jsonObjectGetKeyConst(args, "username"));
-	const char* password    = jsonObjectGetString(jsonObjectGetKeyConst(args, "password"));
-	const char* type        = jsonObjectGetString(jsonObjectGetKeyConst(args, "type"));
-	int orgloc        = (int) jsonObjectGetNumber(jsonObjectGetKeyConst(args, "org"));
-	const char* workstation = jsonObjectGetString(jsonObjectGetKeyConst(args, "workstation"));
-	const char* barcode     = jsonObjectGetString(jsonObjectGetKeyConst(args, "barcode"));
-	const char* ewho        = jsonObjectGetString(jsonObjectGetKeyConst(args, "agent"));
-	const char* nonce       = jsonObjectGetString(jsonObjectGetKeyConst(args, "nonce"));
+    const char* uname       = jsonObjectGetString(jsonObjectGetKeyConst(args, "username"));
+    const char* identifier  = jsonObjectGetString(jsonObjectGetKeyConst(args, "identifier"));
+    const char* password    = jsonObjectGetString(jsonObjectGetKeyConst(args, "password"));
+    const char* type        = jsonObjectGetString(jsonObjectGetKeyConst(args, "type"));
+    int orgloc        = (int) jsonObjectGetNumber(jsonObjectGetKeyConst(args, "org"));
+    const char* workstation = jsonObjectGetString(jsonObjectGetKeyConst(args, "workstation"));
+    const char* barcode     = jsonObjectGetString(jsonObjectGetKeyConst(args, "barcode"));
+    const char* ewho        = jsonObjectGetString(jsonObjectGetKeyConst(args, "agent"));
+    const char* nonce       = jsonObjectGetString(jsonObjectGetKeyConst(args, "nonce"));
 
-	const char* ws = (workstation) ? workstation : "";
-	if (!nonce) nonce = "";
+    const char* ws = (workstation) ? workstation : "";
+    if (!nonce) nonce = "";
 
-	/* Use __FILE__, harmless_line_number for creating
-	 * OILS_EVENT_AUTH_FAILED events (instead of OSRF_LOG_MARK) to avoid
-	 * giving away information about why an authentication attempt failed.
-	 */
-	int harmless_line_number = __LINE__;
+    // we no longer care how the identifier reaches us, 
+    // as long as we have one.
+    if (!identifier) {
+        if (uname) {
+            identifier = uname;
+        } else if (barcode) {
+            identifier = barcode;
+        }
+    }
 
-	if( !type )
-		 type = OILS_AUTH_STAFF;
+    if (!identifier) {
+        return osrfAppRequestRespondException(ctx->session, ctx->request,
+            "username/barcode and password required for method: %s", 
+            ctx->method->name);
+    }
 
-	if( !( (uname || barcode) && password) ) {
-		return osrfAppRequestRespondException( ctx->session, ctx->request,
-			"username/barcode and password required for method: %s", ctx->method->name );
-	}
+    osrfLogInfo(OSRF_LOG_MARK, 
+        "Patron completing authentication with identifer %s", identifier);
 
-	oilsEvent* response = NULL;
-	jsonObject* userObj = NULL;
-	int card_active     = 1;      // boolean; assume active until proven otherwise
+    /* Use __FILE__, harmless_line_number for creating
+     * OILS_EVENT_AUTH_FAILED events (instead of OSRF_LOG_MARK) to avoid
+     * giving away information about why an authentication attempt failed.
+     */
+    int harmless_line_number = __LINE__;
 
-	// Fetch a row from the actor.usr table, by username if available,
-	// or by barcode if not.
-	if(uname) {
-		userObj = oilsUtilsFetchUserByUsername( uname );
-		if( userObj && JSON_NULL == userObj->type ) {
-			jsonObjectFree( userObj );
-			userObj = NULL;         // username not found
-		}
-	}
-	else if(barcode) {
-		// Read from actor.card by barcode
+    if( !type )
+         type = OILS_AUTH_STAFF;
 
-		osrfLogInfo( OSRF_LOG_MARK, "Fetching user by barcode %s", barcode );
+    oilsEvent* response = NULL; // free
+    jsonObject* userObj = NULL; // free
+    int card_active = 1; // boolean; assume active until proven otherwise
 
-		jsonObject* params = jsonParseFmt("{\"barcode\":\"%s\"}", barcode);
-		jsonObject* card = oilsUtilsQuickReq(
-			"open-ils.cstore", "open-ils.cstore.direct.actor.card.search", params );
-		jsonObjectFree( params );
+    char* cache_key = va_list_to_string(
+        "%s%s%s", OILS_AUTH_CACHE_PRFX, identifier, nonce);
+    jsonObject* cacheObj = osrfCacheGetObject(cache_key); // free
 
-		if( card && card->type != JSON_NULL ) {
-			// Determine whether the card is active
-			char* card_active_str = oilsFMGetString( card, "active" );
-			card_active = oilsUtilsIsDBTrue( card_active_str );
-			free( card_active_str );
+    if (!cacheObj) {
+        return osrfAppRequestRespondException(ctx->session,
+            ctx->request, "No authentication seed found. "
+            "open-ils.auth.authenticate.init must be called first "
+            " (check that memcached is running and can be connected to) "
+        );
+    }
 
-			// Look up the user who owns the card
-			char* userid = oilsFMGetString( card, "usr" );
-			jsonObjectFree( card );
-			params = jsonParseFmt( "[%s]", userid );
-			free( userid );
-			userObj = oilsUtilsQuickReq(
-					"open-ils.cstore", "open-ils.cstore.direct.actor.user.retrieve", params );
-			jsonObjectFree( params );
-			if( userObj && JSON_NULL == userObj->type ) {
-				// user not found (shouldn't happen, due to foreign key)
-				jsonObjectFree( userObj );
-				userObj = NULL;
-			}
-		}
-	}
+    int user_id = jsonObjectGetNumber(
+        jsonObjectGetKeyConst(cacheObj, "user_id"));
 
-	int     barred = 0, deleted = 0;
-	char   *barred_str, *deleted_str;
+    if (user_id == -1) {
+        // User was not found during init.  Clean up and exit early.
+        response = oilsNewEvent(
+            __FILE__, harmless_line_number, OILS_EVENT_AUTH_FAILED);
+        osrfAppRespondComplete(ctx, oilsEventToJSON(response));
+        oilsEventFree(response); // frees event JSON
+        osrfCacheRemove(cache_key);
+        jsonObjectFree(cacheObj);
+        return 0;
+    }
 
-	if(userObj) {
-		barred_str = oilsFMGetString( userObj, "barred" );
-		barred = oilsUtilsIsDBTrue( barred_str );
-		free( barred_str );
+    jsonObject* param = jsonNewNumberObject(user_id); // free
+    userObj = oilsUtilsCStoreReqCtx(
+        ctx, "open-ils.cstore.direct.actor.user.retrieve", param);
+    jsonObjectFree(param);
 
-		deleted_str = oilsFMGetString( userObj, "deleted" );
-		deleted = oilsUtilsIsDBTrue( deleted_str );
-		free( deleted_str );
-	}
+    char* freeable_uname = NULL;
+    if (!uname) {
+        uname = freeable_uname = oilsFMGetString(userObj, "usrname");
+    }
 
-	if(!userObj || barred || deleted) {
-		response = oilsNewEvent( __FILE__, harmless_line_number, OILS_EVENT_AUTH_FAILED );
-		osrfLogInfo(OSRF_LOG_MARK,  "failed login: username=%s, barcode=%s, workstation=%s",
-				uname, (barcode ? barcode : "(none)"), ws );
-		osrfAppRespondComplete( ctx, oilsEventToJSON(response) );
-		oilsEventFree(response);
-		return 0;           // No such user
-	}
+    // See if the user is allowed to login.
 
-	// Such a user exists and isn't barred or deleted.
-	// Now see if he or she has the right credentials.
-	int passOK = -1;
-	if(uname)
-		passOK = oilsAuthVerifyPassword( ctx, userObj, uname, password, nonce );
-	else if (barcode)
-		passOK = oilsAuthVerifyPassword( ctx, userObj, barcode, password, nonce );
+    jsonObject* params = jsonNewObject(NULL);
+    jsonObjectSetKey(params, "user_id", 
+        jsonNewNumberObject(oilsFMGetObjectId(userObj)));
+    jsonObjectSetKey(params,"org_unit", jsonNewNumberObject(orgloc));
+    jsonObjectSetKey(params, "login_type", jsonNewObject(type));
+    if (barcode) jsonObjectSetKey(params, "barcode", jsonNewObject(barcode));
 
-	if( passOK < 0 ) {
-		jsonObjectFree(userObj);
-		return passOK;
-	}
+    jsonObject* authEvt = oilsUtilsQuickReqCtx( // freed after password test
+        ctx,
+        "open-ils.auth_internal",
+        "open-ils.auth_internal.user.validate", params);
+    jsonObjectFree(params);
 
-	// See if the account is active
-	char* active = oilsFMGetString(userObj, "active");
-	if( !oilsUtilsIsDBTrue(active) ) {
-		if( passOK )
-			response = oilsNewEvent( OSRF_LOG_MARK, "PATRON_INACTIVE" );
-		else
-			response = oilsNewEvent( __FILE__, harmless_line_number, OILS_EVENT_AUTH_FAILED );
+    if (!authEvt) {
+        // Something went seriously wrong.  Get outta here before 
+        // we start segfaulting.
+        jsonObjectFree(userObj);
+        if(freeable_uname) free(freeable_uname);
+        return -1;
+    }
 
-		osrfAppRespondComplete( ctx, oilsEventToJSON(response) );
-		oilsEventFree(response);
-		jsonObjectFree(userObj);
-		free(active);
-		return 0;
-	}
-	free(active);
+    const char* authEvtCode = 
+        jsonObjectGetString(jsonObjectGetKey(authEvt, "textcode"));
 
-	osrfLogInfo( OSRF_LOG_MARK, "Fetching card by barcode %s", barcode );
+    if (!strcmp(authEvtCode, OILS_EVENT_AUTH_FAILED)) {
+        // Received the generic login failure event.
 
-	if( !card_active ) {
-		osrfLogInfo( OSRF_LOG_MARK, "barcode %s is not active, returning event", barcode );
-		response = oilsNewEvent( OSRF_LOG_MARK, "PATRON_CARD_INACTIVE" );
-		osrfAppRespondComplete( ctx, oilsEventToJSON( response ) );
-		oilsEventFree( response );
-		jsonObjectFree( userObj );
-		return 0;
-	}
+        osrfLogInfo(OSRF_LOG_MARK,  
+            "failed login: username=%s, barcode=%s, workstation=%s",
+            uname, (barcode ? barcode : "(none)"), ws);
+
+        response = oilsNewEvent(
+            __FILE__, harmless_line_number, OILS_EVENT_AUTH_FAILED);
+    }
+
+    int passOK = 0;
+    
+    if (!response) {
+        // User exists and is not barred, etc.  Test the password.
+
+        passOK = oilsAuthVerifyPassword(
+            ctx, user_id, identifier, password, nonce);
+
+        if (!passOK) {
+            // Password check failed. Return generic login failure.
+
+            response = oilsNewEvent(
+                __FILE__, harmless_line_number, OILS_EVENT_AUTH_FAILED);
+
+            osrfLogInfo(OSRF_LOG_MARK,  
+                "failed login: username=%s, barcode=%s, workstation=%s",
+                    uname, (barcode ? barcode : "(none)"), ws );
+        }
+    }
 
 
-	// See if the user is even allowed to log in
-	if( oilsAuthCheckLoginPerm( ctx, userObj, type ) == -1 ) {
-		jsonObjectFree(userObj);
-		return 0;
-	}
+    // Below here, we know the password check succeeded if no response
+    // object is present.
 
-	// If a workstation is defined, add the workstation info
-	if( workstation != NULL ) {
-		osrfLogDebug(OSRF_LOG_MARK, "Workstation is %s", workstation);
-		response = oilsAuthVerifyWorkstation( ctx, userObj, workstation );
-		if(response) {
-			jsonObjectFree(userObj);
-			osrfAppRespondComplete( ctx, oilsEventToJSON(response) );
-			oilsEventFree(response);
-			return 0;
-		}
+    if (!response && (
+        !strcmp(authEvtCode, "PATRON_INACTIVE") ||
+        !strcmp(authEvtCode, "PATRON_CARD_INACTIVE"))) {
+        // Patron and/or card is inactive but the correct password 
+        // was provided.  Alert the caller to the inactive-ness.
+        response = oilsNewEvent2(
+            OSRF_LOG_MARK, authEvtCode,
+            jsonObjectGetKey(authEvt, "payload")   // cloned within Event
+        );
+    }
 
-	} else {
-		// Otherwise, use the home org as the workstation org on the user
-		char* orgid = oilsFMGetString(userObj, "home_ou");
-		oilsFMSetString(userObj, "ws_ou", orgid);
-		free(orgid);
-	}
+    if (!response && strcmp(authEvtCode, OILS_EVENT_SUCCESS)) {
+        // Validate API returned an unexpected non-success event.
+        // To be safe, treat this as a generic login failure.
 
-	char* freeable_uname = NULL;
-	if(!uname) {
-		uname = freeable_uname = oilsFMGetString( userObj, "usrname" );
-	}
+        response = oilsNewEvent(
+            __FILE__, harmless_line_number, OILS_EVENT_AUTH_FAILED);
+    }
 
-	if( passOK ) { // login successful  
-        
-		char* ewhat = "login";
+    if (!response) {
+        // password OK and no other events have prevented login completion.
 
-		if (0 == strcmp(ctx->method->name, "open-ils.auth.authenticate.verify")) {
-			response = oilsNewEvent( OSRF_LOG_MARK, OILS_EVENT_SUCCESS );
-			ewhat = "verify";
+        char* ewhat = "login";
 
-		} else {
-			response = oilsAuthHandleLoginOK( userObj, uname, type, orgloc, workstation );
-		}
+        if (0 == strcmp(ctx->method->name, "open-ils.auth.authenticate.verify")) {
+            response = oilsNewEvent( OSRF_LOG_MARK, OILS_EVENT_SUCCESS );
+            ewhat = "verify";
 
-		oilsUtilsTrackUserActivity(
-			oilsFMGetObjectId(userObj), 
-			ewho, ewhat, 
-			osrfAppSessionGetIngress()
-		);
+        } else {
+            response = oilsAuthHandleLoginOK(
+                ctx, userObj, uname, type, orgloc, workstation);
+        }
 
-	} else {
-		response = oilsNewEvent( __FILE__, harmless_line_number, OILS_EVENT_AUTH_FAILED );
-		osrfLogInfo(OSRF_LOG_MARK,  "failed login: username=%s, barcode=%s, workstation=%s",
-				uname, (barcode ? barcode : "(none)"), ws );
-	}
+        oilsUtilsTrackUserActivity(
+            ctx,
+            oilsFMGetObjectId(userObj), 
+            ewho, ewhat, 
+            osrfAppSessionGetIngress()
+        );
+    }
 
-	jsonObjectFree(userObj);
-	osrfAppRespondComplete( ctx, oilsEventToJSON(response) );
-	oilsEventFree(response);
+    // reply
+    osrfAppRespondComplete(ctx, oilsEventToJSON(response));
 
-	if(freeable_uname)
-		free(freeable_uname);
+    // clean up
+    oilsEventFree(response);
+    jsonObjectFree(userObj);
+    jsonObjectFree(authEvt);
+    jsonObjectFree(cacheObj);
+    if(freeable_uname)
+        free(freeable_uname);
 
 	return 0;
 }
@@ -815,7 +800,7 @@ static int _oilsAuthReloadUser(jsonObject* cacheObj) {
     int reqid, userId;
     osrfAppSession* session;
 	osrfMessage* omsg;
-    jsonObject *param, *userObj, *newUserObj;
+    jsonObject *param, *userObj, *newUserObj = NULL;
 
     userObj = jsonObjectGetKey( cacheObj, "userobj" );
     userId = oilsFMGetObjectId( userObj );

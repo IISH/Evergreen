@@ -23,11 +23,13 @@ CREATE TABLE vandelay.match_set_point (
     subfield    TEXT,
     negate      BOOL    DEFAULT FALSE,
     quality     INT     NOT NULL DEFAULT 1, -- higher is better
+    heading     BOOLEAN NOT NULL DEFAULT FALSE, -- match on authority heading
     CONSTRAINT vmsp_need_a_subfield_with_a_tag CHECK ((tag IS NOT NULL AND subfield IS NOT NULL) OR tag IS NULL),
     CONSTRAINT vmsp_need_a_tag_or_a_ff_or_a_bo CHECK (
-        (tag IS NOT NULL AND svf IS NULL AND bool_op IS NULL) OR
-        (tag IS NULL AND svf IS NOT NULL AND bool_op IS NULL) OR
-        (tag IS NULL AND svf IS NULL AND bool_op IS NOT NULL)
+        (tag IS NOT NULL AND svf IS NULL AND heading IS FALSE AND bool_op IS NULL) OR 
+        (tag IS NULL AND svf IS NOT NULL AND heading IS FALSE AND bool_op IS NULL) OR 
+        (tag IS NULL AND svf IS NULL AND heading IS TRUE AND bool_op IS NULL) OR 
+        (tag IS NULL AND svf IS NULL AND heading IS FALSE AND bool_op IS NOT NULL)
     )
 );
 
@@ -105,6 +107,8 @@ CREATE TABLE vandelay.import_item_attr_definition (
     priv_note_title TEXT,
     priv_note       TEXT,
     internal_id     TEXT,
+    stat_cat_data   TEXT,
+    parts_data      TEXT,
 	CONSTRAINT vand_import_item_attr_def_idx UNIQUE (owner,name)
 );
 
@@ -148,6 +152,7 @@ CREATE TABLE vandelay.bib_match (
     quality         INT         NOT NULL DEFAULT 1,
     match_score     INT         NOT NULL DEFAULT 0
 );
+CREATE INDEX bib_match_queued_record_idx ON vandelay.bib_match (queued_record);
 
 CREATE TABLE vandelay.import_item (
     id              BIGSERIAL   PRIMARY KEY,
@@ -175,9 +180,12 @@ CREATE TABLE vandelay.import_item (
     alert_message   TEXT,
     pub_note        TEXT,
     priv_note       TEXT,
+    stat_cat_data   TEXT,
+    parts_data      TEXT,
     opac_visible    BOOL,
     internal_id     BIGINT -- queue_type == 'acq' ? acq.lineitem_detail.id : asset.copy.id
 );
+CREATE INDEX import_item_record_idx ON vandelay.import_item (record);
 
 CREATE TABLE vandelay.import_bib_trash_group(
     id           SERIAL  PRIMARY KEY,
@@ -202,6 +210,7 @@ CREATE TABLE vandelay.merge_profile (
     replace_spec    TEXT,
     strip_spec      TEXT,
     preserve_spec   TEXT,
+    update_bib_source BOOLEAN	NOT NULL DEFAULT FALSE,
     lwm_ratio       NUMERIC,
 	CONSTRAINT vand_merge_prof_owner_name_idx UNIQUE (owner,name),
 	CONSTRAINT add_replace_strip_or_preserve CHECK ((preserve_spec IS NOT NULL OR replace_spec IS NOT NULL) OR (preserve_spec IS NULL AND replace_spec IS NULL))
@@ -638,23 +647,38 @@ BEGIN
 END;
 $func$ LANGUAGE PLPGSQL;
 
+-- backwards compat version so we don't have 
+-- to modify vandelay.match_set_test_marcxml()
 CREATE OR REPLACE FUNCTION vandelay.get_expr_from_match_set(
     match_set_id INTEGER,
     tags_rstore HSTORE
 ) RETURNS TEXT AS $$
+BEGIN
+    RETURN vandelay.get_expr_from_match_set(
+        match_set_id, tags_rstore, NULL);
+END;
+$$  LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION vandelay.get_expr_from_match_set(
+    match_set_id INTEGER,
+    tags_rstore HSTORE,
+    auth_heading TEXT
+) RETURNS TEXT AS $$
 DECLARE
-    root    vandelay.match_set_point;
+    root vandelay.match_set_point;
 BEGIN
     SELECT * INTO root FROM vandelay.match_set_point
         WHERE parent IS NULL AND match_set = match_set_id;
 
-    RETURN vandelay.get_expr_from_match_set_point(root, tags_rstore);
+    RETURN vandelay.get_expr_from_match_set_point(
+        root, tags_rstore, auth_heading);
 END;
 $$  LANGUAGE PLPGSQL;
 
 CREATE OR REPLACE FUNCTION vandelay.get_expr_from_match_set_point(
     node vandelay.match_set_point,
-    tags_rstore HSTORE
+    tags_rstore HSTORE,
+    auth_heading TEXT
 ) RETURNS TEXT AS $$
 DECLARE
     q           TEXT;
@@ -677,13 +701,14 @@ BEGIN
                 q := q || ' ' || this_op || ' ';
             END IF;
             i := i + 1;
-            q := q || vandelay.get_expr_from_match_set_point(child, tags_rstore);
+            q := q || vandelay.get_expr_from_match_set_point(
+                child, tags_rstore, auth_heading);
         END LOOP;
         q := q || ')';
         RETURN q;
     ELSIF node.bool_op IS NULL THEN
         PERFORM vandelay._get_expr_push_qrow(node);
-        PERFORM vandelay._get_expr_push_jrow(node, tags_rstore);
+        PERFORM vandelay._get_expr_push_jrow(node, tags_rstore, auth_heading);
         RETURN vandelay._get_expr_render_one(node);
     ELSE
         RETURN '';
@@ -702,7 +727,8 @@ $$ LANGUAGE PLPGSQL;
 
 CREATE OR REPLACE FUNCTION vandelay._get_expr_push_jrow(
     node vandelay.match_set_point,
-    tags_rstore HSTORE
+    tags_rstore HSTORE,
+    auth_heading TEXT
 ) RETURNS VOID AS $$
 DECLARE
     jrow        TEXT;
@@ -713,8 +739,16 @@ DECLARE
     jrow_count  INT;
     my_using    TEXT;
     my_join     TEXT;
+    rec_table   TEXT;
 BEGIN
     -- remember $1 is tags_rstore, and $2 is svf_rstore
+    -- a non-NULL auth_heading means we're matching authority records
+
+    IF auth_heading IS NOT NULL THEN
+        rec_table := 'authority.full_rec';
+    ELSE
+        rec_table := 'metabib.full_rec';
+    END IF;
 
     caseless := FALSE;
     SELECT COUNT(*) INTO jrow_count FROM _vandelay_tmp_jrows;
@@ -753,7 +787,7 @@ BEGIN
     jrow := my_join || ' (SELECT *, ';
     IF node.tag IS NOT NULL THEN
         jrow := jrow  || node.quality ||
-            ' AS quality FROM metabib.full_rec mfr WHERE mfr.tag = ''' ||
+            ' AS quality FROM ' || rec_table || ' mfr WHERE mfr.tag = ''' ||
             node.tag || '''';
         IF node.subfield IS NOT NULL THEN
             jrow := jrow || ' AND mfr.subfield = ''' ||
@@ -763,10 +797,19 @@ BEGIN
         jrow := jrow || vandelay._node_tag_comparisons(caseless, op, tags_rstore, tagkey);
         jrow := jrow || ')) ' || my_alias || my_using || E'\n';
     ELSE    -- svf
-        jrow := jrow || 'id AS record, ' || node.quality ||
-            ' AS quality FROM metabib.record_attr_flat mraf WHERE mraf.attr = ''' ||
-            node.svf || ''' AND mraf.value ' || op || ' $2->''' || node.svf || ''') ' ||
-            my_alias || my_using || E'\n';
+        IF auth_heading IS NOT NULL THEN -- authority record
+            IF node.heading AND auth_heading <> '' THEN
+                jrow := jrow || 'id AS record, ' || node.quality ||
+                ' AS quality FROM authority.record_entry are ' ||
+                ' WHERE are.heading = ''' || auth_heading || '''';
+                jrow := jrow || ') ' || my_alias || my_using || E'\n';
+            END IF;
+        ELSE -- bib record
+            jrow := jrow || 'id AS record, ' || node.quality ||
+                ' AS quality FROM metabib.record_attr_flat mraf WHERE mraf.attr = ''' ||
+                node.svf || ''' AND mraf.value ' || op || ' $2->''' || node.svf || ''') ' ||
+                my_alias || my_using || E'\n';
+        END IF;
     END IF;
     INSERT INTO _vandelay_tmp_jrows (j) VALUES (jrow);
 END;
@@ -1409,25 +1452,77 @@ BEGIN
 END;
 $$ LANGUAGE PLPGSQL;
 
+CREATE OR REPLACE FUNCTION vandelay.merge_record_xml_using_profile ( incoming_marc TEXT, existing_marc TEXT, merge_profile_id BIGINT ) RETURNS TEXT AS $$
+DECLARE
+    merge_profile   vandelay.merge_profile%ROWTYPE;
+    dyn_profile     vandelay.compile_profile%ROWTYPE;
+    target_marc     TEXT;
+    source_marc     TEXT;
+    replace_rule    TEXT;
+    match_count     INT;
+BEGIN
+
+    IF existing_marc IS NULL OR incoming_marc IS NULL THEN
+        -- RAISE NOTICE 'no marc for source or target records';
+        RETURN NULL;
+    END IF;
+
+    IF merge_profile_id IS NOT NULL THEN
+        SELECT * INTO merge_profile FROM vandelay.merge_profile WHERE id = merge_profile_id;
+        IF FOUND THEN
+            dyn_profile.add_rule := COALESCE(merge_profile.add_spec,'');
+            dyn_profile.strip_rule := COALESCE(merge_profile.strip_spec,'');
+            dyn_profile.replace_rule := COALESCE(merge_profile.replace_spec,'');
+            dyn_profile.preserve_rule := COALESCE(merge_profile.preserve_spec,'');
+        ELSE
+            -- RAISE NOTICE 'merge profile not found';
+            RETURN NULL;
+        END IF;
+    ELSE
+        -- RAISE NOTICE 'no merge profile specified';
+        RETURN NULL;
+    END IF;
+
+    IF dyn_profile.replace_rule <> '' AND dyn_profile.preserve_rule <> '' THEN
+        -- RAISE NOTICE 'both replace [%] and preserve [%] specified', dyn_profile.replace_rule, dyn_profile.preserve_rule;
+        RETURN NULL;
+    END IF;
+
+    IF dyn_profile.replace_rule = '' AND dyn_profile.preserve_rule = '' AND dyn_profile.add_rule = '' AND dyn_profile.strip_rule = '' THEN
+        -- Since we have nothing to do, just return a target record as is
+        RETURN existing_marc;
+    ELSIF dyn_profile.preserve_rule <> '' THEN
+        source_marc = existing_marc;
+        target_marc = incoming_marc;
+        replace_rule = dyn_profile.preserve_rule;
+    ELSE
+        source_marc = incoming_marc;
+        target_marc = existing_marc;
+        replace_rule = dyn_profile.replace_rule;
+    END IF;
+
+    RETURN vandelay.merge_record_xml( target_marc, source_marc, dyn_profile.add_rule, replace_rule, dyn_profile.strip_rule );
+
+END;
+$$ LANGUAGE PLPGSQL;
+
 CREATE OR REPLACE FUNCTION vandelay.template_overlay_bib_record ( v_marc TEXT, eg_id BIGINT) RETURNS BOOL AS $$
     SELECT vandelay.template_overlay_bib_record( $1, $2, NULL);
 $$ LANGUAGE SQL;
 
 CREATE OR REPLACE FUNCTION vandelay.overlay_bib_record ( import_id BIGINT, eg_id BIGINT, merge_profile_id INT ) RETURNS BOOL AS $$
 DECLARE
-    merge_profile   vandelay.merge_profile%ROWTYPE;
-    dyn_profile     vandelay.compile_profile%ROWTYPE;
     editor_string   TEXT;
     editor_id       INT;
-    source_marc     TEXT;
-    target_marc     TEXT;
-    eg_marc         TEXT;
     v_marc          TEXT;
-    replace_rule    TEXT;
+    v_bib_source    INT;
+    update_fields   TEXT[];
+    update_query    TEXT;
+    update_bib      BOOL;
 BEGIN
 
-    SELECT  q.marc INTO v_marc
-      FROM  vandelay.queued_record q
+    SELECT  q.marc, q.bib_source INTO v_marc, v_bib_source
+      FROM  vandelay.queued_bib_record q
             JOIN vandelay.bib_match m ON (m.queued_record = q.id AND q.id = import_id)
       LIMIT 1;
 
@@ -1442,18 +1537,33 @@ BEGIN
                 import_time = NOW()
           WHERE id = import_id;
 
-        editor_string := (oils_xpath('//*[@tag="905"]/*[@code="u"]/text()',v_marc))[1];
+	  SELECT q.update_bib_source INTO update_bib FROM vandelay.merge_profile q where q.id = merge_profile_Id;
 
-        IF editor_string IS NOT NULL AND editor_string <> '' THEN
-            SELECT usr INTO editor_id FROM actor.card WHERE barcode = editor_string;
+          IF update_bib THEN
+		editor_string := (oils_xpath('//*[@tag="905"]/*[@code="u"]/text()',v_marc))[1];
 
-            IF editor_id IS NULL THEN
-                SELECT id INTO editor_id FROM actor.usr WHERE usrname = editor_string;
-            END IF;
+		IF editor_string IS NOT NULL AND editor_string <> '' THEN
+		    SELECT usr INTO editor_id FROM actor.card WHERE barcode = editor_string;
 
-            IF editor_id IS NOT NULL THEN
-                UPDATE biblio.record_entry SET editor = editor_id WHERE id = eg_id;
-            END IF;
+		    IF editor_id IS NULL THEN
+			SELECT id INTO editor_id FROM actor.usr WHERE usrname = editor_string;
+		    END IF;
+
+		    IF editor_id IS NOT NULL THEN
+			--only update the edit date if we have a valid editor
+			update_fields := ARRAY_APPEND(update_fields, 'editor = ' || editor_id || ', edit_date = NOW()');
+		    END IF;
+		END IF;
+
+		IF v_bib_source IS NOT NULL THEN
+		    update_fields := ARRAY_APPEND(update_fields, 'source = ' || v_bib_source);
+		END IF;
+
+		IF ARRAY_LENGTH(update_fields, 1) > 0 THEN
+		    update_query := 'UPDATE biblio.record_entry SET ' || ARRAY_TO_STRING(update_fields, ',') || ' WHERE id = ' || eg_id || ';';
+		    --RAISE NOTICE 'query: %', update_query;
+		    EXECUTE update_query;
+		END IF;
         END IF;
 
         RETURN TRUE;
@@ -1676,7 +1786,8 @@ CREATE TABLE vandelay.authority_match (
 	id				BIGSERIAL	PRIMARY KEY,
 	queued_record	BIGINT		REFERENCES vandelay.queued_authority_record (id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
 	eg_record		BIGINT		REFERENCES authority.record_entry (id) DEFERRABLE INITIALLY DEFERRED,
-    quality         INT         NOT NULL DEFAULT 0
+    quality         INT         NOT NULL DEFAULT 0,
+    match_score     INT         NOT NULL DEFAULT 0
 );
 
 CREATE OR REPLACE FUNCTION vandelay.ingest_authority_marc ( ) RETURNS TRIGGER AS $$
@@ -1728,15 +1839,20 @@ CREATE OR REPLACE FUNCTION vandelay.overlay_authority_record ( import_id BIGINT,
 DECLARE
     merge_profile   vandelay.merge_profile%ROWTYPE;
     dyn_profile     vandelay.compile_profile%ROWTYPE;
+    editor_string   TEXT;
+    new_editor      INT;
+    new_edit_date   TIMESTAMPTZ;
     source_marc     TEXT;
     target_marc     TEXT;
+    eg_marc_row     authority.record_entry%ROWTYPE;
     eg_marc         TEXT;
     v_marc          TEXT;
     replace_rule    TEXT;
     match_count     INT;
+    update_query    TEXT;
 BEGIN
 
-    SELECT  b.marc INTO eg_marc
+    SELECT  * INTO eg_marc_row
       FROM  authority.record_entry b
             JOIN vandelay.authority_match m ON (m.eg_record = b.id AND m.queued_record = import_id)
       LIMIT 1;
@@ -1746,9 +1862,40 @@ BEGIN
             JOIN vandelay.authority_match m ON (m.queued_record = q.id AND q.id = import_id)
       LIMIT 1;
 
+    eg_marc := eg_marc_row.marc;
+
     IF eg_marc IS NULL OR v_marc IS NULL THEN
         -- RAISE NOTICE 'no marc for vandelay or authority record';
         RETURN FALSE;
+    END IF;
+
+    -- Extract the editor string before any modification to the vandelay
+    -- MARC occur.
+    editor_string := 
+        (oils_xpath('//*[@tag="905"]/*[@code="u"]/text()',v_marc))[1];
+
+    -- If an editor value can be found, update the authority record
+    -- editor and edit_date values.
+    IF editor_string IS NOT NULL AND editor_string <> '' THEN
+
+        -- Vandelay.pm sets the value to 'usrname' when needed.  
+        SELECT id INTO new_editor
+            FROM actor.usr WHERE usrname = editor_string;
+
+        IF new_editor IS NULL THEN
+            SELECT usr INTO new_editor
+                FROM actor.card WHERE barcode = editor_string;
+        END IF;
+
+        IF new_editor IS NOT NULL THEN
+            new_edit_date := NOW();
+        ELSE -- No valid editor, use current values
+            new_editor = eg_marc_row.editor;
+            new_edit_date = eg_marc_row.edit_date;
+        END IF;
+    ELSE
+        new_editor = eg_marc_row.editor;
+        new_edit_date = eg_marc_row.edit_date;
     END IF;
 
     dyn_profile := vandelay.compile_profile( v_marc );
@@ -1782,20 +1929,25 @@ BEGIN
     END IF;
 
     UPDATE  authority.record_entry
-      SET   marc = vandelay.merge_record_xml( target_marc, source_marc, dyn_profile.add_rule, replace_rule, dyn_profile.strip_rule )
+      SET   marc = vandelay.merge_record_xml( target_marc, source_marc, dyn_profile.add_rule, replace_rule, dyn_profile.strip_rule ),
+            editor = new_editor,
+            edit_date = new_edit_date
       WHERE id = eg_id;
 
-    IF FOUND THEN
-        UPDATE  vandelay.queued_authority_record
-          SET   imported_as = eg_id,
-                import_time = NOW()
-          WHERE id = import_id;
-        RETURN TRUE;
+    IF NOT FOUND THEN 
+        -- Import/merge failed.  Nothing left to do.
+        RETURN FALSE;
     END IF;
 
-    -- RAISE NOTICE 'update of authority.record_entry failed';
+    -- Authority record successfully merged / imported.
 
-    RETURN FALSE;
+    -- Update the vandelay record to show the successful import.
+    UPDATE  vandelay.queued_authority_record
+      SET   imported_as = eg_id,
+            import_time = NOW()
+      WHERE id = import_id;
+
+    RETURN TRUE;
 
 END;
 $$ LANGUAGE PLPGSQL;
@@ -1846,6 +1998,192 @@ $$ LANGUAGE PLPGSQL;
 CREATE OR REPLACE FUNCTION vandelay.auto_overlay_authority_queue ( queue_id BIGINT ) RETURNS SETOF BIGINT AS $$
     SELECT * FROM vandelay.auto_overlay_authority_queue( $1, NULL );
 $$ LANGUAGE SQL;
+
+CREATE OR REPLACE FUNCTION vandelay.match_set_test_authxml(
+    match_set_id INTEGER, record_xml TEXT
+) RETURNS SETOF vandelay.match_set_test_result AS $$
+DECLARE
+    tags_rstore HSTORE;
+    heading     TEXT;
+    coal        TEXT;
+    joins       TEXT;
+    query_      TEXT;
+    wq          TEXT;
+    qvalue      INTEGER;
+    rec         RECORD;
+BEGIN
+    tags_rstore := vandelay.flatten_marc_hstore(record_xml);
+
+    SELECT normalize_heading INTO heading 
+        FROM authority.normalize_heading(record_xml);
+
+    CREATE TEMPORARY TABLE _vandelay_tmp_qrows (q INTEGER);
+    CREATE TEMPORARY TABLE _vandelay_tmp_jrows (j TEXT);
+
+    -- generate the where clause and return that directly (into wq), and as
+    -- a side-effect, populate the _vandelay_tmp_[qj]rows tables.
+    wq := vandelay.get_expr_from_match_set(
+        match_set_id, tags_rstore, heading);
+
+    query_ := 'SELECT DISTINCT(record), ';
+
+    -- qrows table is for the quality bits we add to the SELECT clause
+    SELECT STRING_AGG(
+        'COALESCE(n' || q::TEXT || '.quality, 0)', ' + '
+    ) INTO coal FROM _vandelay_tmp_qrows;
+
+    -- our query string so far is the SELECT clause and the inital FROM.
+    -- no JOINs yet nor the WHERE clause
+    query_ := query_ || coal || ' AS quality ' || E'\n';
+
+    -- jrows table is for the joins we must make (and the real text conditions)
+    SELECT STRING_AGG(j, E'\n') INTO joins
+        FROM _vandelay_tmp_jrows;
+
+    -- add those joins and the where clause to our query.
+    query_ := query_ || joins || E'\n';
+
+    query_ := query_ || 'JOIN authority.record_entry are ON (are.id = record) ' 
+        || 'WHERE ' || wq || ' AND not are.deleted';
+
+    -- this will return rows of record,quality
+    FOR rec IN EXECUTE query_ USING tags_rstore LOOP
+        RETURN NEXT rec;
+    END LOOP;
+
+    DROP TABLE _vandelay_tmp_qrows;
+    DROP TABLE _vandelay_tmp_jrows;
+    RETURN;
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION vandelay.measure_auth_record_quality 
+    ( xml TEXT, match_set_id INT ) RETURNS INT AS $_$
+DECLARE
+    out_q   INT := 0;
+    rvalue  TEXT;
+    test    vandelay.match_set_quality%ROWTYPE;
+BEGIN
+
+    FOR test IN SELECT * FROM vandelay.match_set_quality 
+            WHERE match_set = match_set_id LOOP
+        IF test.tag IS NOT NULL THEN
+            FOR rvalue IN SELECT value FROM vandelay.flatten_marc( xml ) 
+                WHERE tag = test.tag AND subfield = test.subfield LOOP
+                IF test.value = rvalue THEN
+                    out_q := out_q + test.quality;
+                END IF;
+            END LOOP;
+        END IF;
+    END LOOP;
+
+    RETURN out_q;
+END;
+$_$ LANGUAGE PLPGSQL;
+
+
+
+CREATE OR REPLACE FUNCTION vandelay.match_authority_record() RETURNS TRIGGER AS $func$
+DECLARE
+    incoming_existing_id    TEXT;
+    test_result             vandelay.match_set_test_result%ROWTYPE;
+    tmp_rec                 BIGINT;
+    match_set               INT;
+BEGIN
+    IF TG_OP IN ('INSERT','UPDATE') AND NEW.imported_as IS NOT NULL THEN
+        RETURN NEW;
+    END IF;
+
+    DELETE FROM vandelay.authority_match WHERE queued_record = NEW.id;
+
+    SELECT q.match_set INTO match_set FROM vandelay.authority_queue q WHERE q.id = NEW.queue;
+
+    IF match_set IS NOT NULL THEN
+        NEW.quality := vandelay.measure_auth_record_quality( NEW.marc, match_set );
+    END IF;
+
+    -- Perfect matches on 901$c exit early with a match with high quality.
+    incoming_existing_id :=
+        oils_xpath_string('//*[@tag="901"]/*[@code="c"][1]', NEW.marc);
+
+    IF incoming_existing_id IS NOT NULL AND incoming_existing_id != '' THEN
+        SELECT id INTO tmp_rec FROM authority.record_entry WHERE id = incoming_existing_id::bigint;
+        IF tmp_rec IS NOT NULL THEN
+            INSERT INTO vandelay.authority_match (queued_record, eg_record, match_score, quality) 
+                SELECT
+                    NEW.id, 
+                    b.id,
+                    9999,
+                    -- note: no match_set means quality==0
+                    vandelay.measure_auth_record_quality( b.marc, match_set )
+                FROM authority.record_entry b
+                WHERE id = incoming_existing_id::bigint;
+        END IF;
+    END IF;
+
+    IF match_set IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    FOR test_result IN SELECT * FROM
+        vandelay.match_set_test_authxml(match_set, NEW.marc) LOOP
+
+        INSERT INTO vandelay.authority_match ( queued_record, eg_record, match_score, quality )
+            SELECT  
+                NEW.id,
+                test_result.record,
+                test_result.quality,
+                vandelay.measure_auth_record_quality( b.marc, match_set )
+	        FROM  authority.record_entry b
+	        WHERE id = test_result.record;
+
+    END LOOP;
+
+    RETURN NEW;
+END;
+$func$ LANGUAGE PLPGSQL;
+
+CREATE TRIGGER zz_match_auths_trigger
+    BEFORE INSERT OR UPDATE ON vandelay.queued_authority_record
+    FOR EACH ROW EXECUTE PROCEDURE vandelay.match_authority_record();
+
+CREATE OR REPLACE FUNCTION vandelay.auto_overlay_authority_record_with_best ( import_id BIGINT, merge_profile_id INT, lwm_ratio_value_p NUMERIC ) RETURNS BOOL AS $$
+DECLARE
+    eg_id           BIGINT;
+    lwm_ratio_value NUMERIC;
+BEGIN
+
+    lwm_ratio_value := COALESCE(lwm_ratio_value_p, 0.0);
+
+    PERFORM * FROM vandelay.queued_authority_record WHERE import_time IS NOT NULL AND id = import_id;
+
+    IF FOUND THEN
+        -- RAISE NOTICE 'already imported, cannot auto-overlay'
+        RETURN FALSE;
+    END IF;
+
+    SELECT  m.eg_record INTO eg_id
+      FROM  vandelay.authority_match m
+            JOIN vandelay.queued_authority_record qr ON (m.queued_record = qr.id)
+            JOIN vandelay.authority_queue q ON (qr.queue = q.id)
+            JOIN authority.record_entry r ON (r.id = m.eg_record)
+      WHERE m.queued_record = import_id
+            AND qr.quality::NUMERIC / COALESCE(NULLIF(m.quality,0),1)::NUMERIC >= lwm_ratio_value
+      ORDER BY  m.match_score DESC, -- required match score
+                qr.quality::NUMERIC / COALESCE(NULLIF(m.quality,0),1)::NUMERIC DESC, -- quality tie breaker
+                m.id -- when in doubt, use the first match
+      LIMIT 1;
+
+    IF eg_id IS NULL THEN
+        -- RAISE NOTICE 'incoming record is not of high enough quality';
+        RETURN FALSE;
+    END IF;
+
+    RETURN vandelay.overlay_authority_record( import_id, eg_id, merge_profile_id );
+END;
+$$ LANGUAGE PLPGSQL;
+
+
 
 
 -- Vandelay (for importing and exporting records) 012.schema.vandelay.sql 

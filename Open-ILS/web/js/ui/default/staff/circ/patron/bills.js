@@ -4,8 +4,8 @@
 angular.module('egPatronApp')
 
 .factory('billSvc', 
-       ['$q','egCore','patronSvc',
-function($q , egCore , patronSvc) {
+       ['$q','egCore','egWorkLog','patronSvc',
+function($q , egCore , egWorkLog , patronSvc) {
 
     var service = {};
 
@@ -13,7 +13,7 @@ function($q , egCore , patronSvc) {
     service.fetchBillSettings = function() {
         if (service.settings) return $q.when(service.settings);
         return egCore.org.settings(
-            ['ui.circ.billing.uncheck_bills_and_unfocus_payment_box']
+            ['ui.circ.billing.uncheck_bills_and_unfocus_payment_box','ui.circ.billing.amount_warn','ui.circ.billing.amount_limit','circ.staff_client.do_not_auto_attempt_print']
         ).then(function(s) {return service.settings = s});
     }
 
@@ -24,7 +24,7 @@ function($q , egCore , patronSvc) {
         .then(function(summary) {return service.summary = summary})
     }
 
-    service.applyPayment = function(type, payments, note) {
+    service.applyPayment = function(type, payments, note, check) {
         return egCore.net.request(
             'open-ils.circ',
             'open-ils.circ.money.payment',
@@ -32,12 +32,31 @@ function($q , egCore , patronSvc) {
                 userid : service.userId,
                 note : note || '', 
                 payment_type : type,
+                check_number : check,
                 payments : payments,
                 patron_credit : 0
             },
             patronSvc.current.last_xact_id()
         ).then(function(resp) {
             console.debug('payments: ' + js2JSON(resp));
+            var total = 0; angular.forEach(payments,function(p) { total += p[1]; });
+            var msg;
+            switch(type) {
+                case 'cash_payment' : msg = egCore.strings.EG_WORK_LOG_CASH_PAYMENT; break;
+                case 'check_payment' : msg = egCore.strings.EG_WORK_LOG_CHECK_PAYMENT; break;
+                case 'credit_card_payment' : msg = egCore.strings.EG_WORK_LOG_CREDIT_CARD_PAYMENT; break;
+                case 'credit_payment' : msg = egCore.strings.EG_WORK_LOG_CREDIT_PAYMENT; break;
+                case 'work_payment' : msg = egCore.strings.EG_WORK_LOG_WORK_PAYMENT; break;
+                case 'forgive_payment' : msg = egCore.strings.EG_WORK_LOG_FORGIVE_PAYMENT; break;
+                case 'goods_payment' : msg = egCore.strings.EG_WORK_LOG_GOODS_PAYMENT; break;
+            }
+            egWorkLog.record(
+                msg,{
+                    'action' : 'paid_bill',
+                    'patron_id' : service.userId,
+                    'total_amount' : total
+                }
+            );
             if (evt = egCore.evt.parse(resp)) 
                 return alert(evt);
 
@@ -111,23 +130,28 @@ function($q , egCore , patronSvc) {
  */
 .controller('PatronBillsCtrl',
        ['$scope','$q','$routeParams','egCore','egConfirmDialog','$location',
-        'egGridDataProvider','billSvc','patronSvc','egPromptDialog','$modal',
+        'egGridDataProvider','billSvc','patronSvc','egPromptDialog', 'egAlertDialog',
         'egBilling',
 function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
-         egGridDataProvider , billSvc , patronSvc , egPromptDialog , $modal,
+         egGridDataProvider , billSvc , patronSvc , egPromptDialog, egAlertDialog,
          egBilling) {
 
     $scope.initTab('bills', $routeParams.id);
     billSvc.userId = $routeParams.id;
 
     // set up some defaults
-    $scope.payment_amount = 0;
+    $scope.check_number = null;
+    $scope.payment_amount = null;
     $scope.session_voided = 0;
     $scope.payment_type = 'cash_payment';
     $scope.focus_payment = true;
     $scope.annotate_payment = false;
     $scope.receipt_count = 1;
-    $scope.receipt_on_pay = false;
+    $scope.receipt_on_pay = { isChecked: false };
+    $scope.warn_amount = 1000;
+    $scope.max_amount = 100000;
+    $scope.amount_verified = false;
+    $scope.disable_auto_print = false;
 
     // pre-define list-returning funcs in case we access them
     // before the grid instantiates
@@ -206,6 +230,9 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
         });
         return -(amount / 100);
     }
+    $scope.invalid_check_number = function() { 
+        return $scope.payment_type == 'check_payment' && ! $scope.check_number; 
+    }
 
     // update the item.payment_pending value each time the user
     // selects different transactions to pay against.
@@ -265,7 +292,7 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
     function refreshDisplay() {
         patronSvc.fetchUserStats();
         billSvc.fetchSummary().then(function(s) {$scope.summary = s});
-        $scope.payment_amount = 0;
+        $scope.payment_amount = null;
         $scope.gridControls.refresh();
     }
 
@@ -274,10 +301,10 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
     function sendPayment(note) {
         var make_payments = generatePayments();
         billSvc.applyPayment(
-            $scope.payment_type, make_payments, note)
+            $scope.payment_type, make_payments, note, $scope.check_number)
         .then(function(payment_ids) {
 
-            if ($scope.receipt_on_pay) {
+            if (!$scope.disable_auto_print && $scope.receipt_on_pay.isChecked) {
                 printReceipt(
                     $scope.payment_type, payment_ids, make_payments, note);
             }
@@ -305,6 +332,7 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
 
         // page data not yet refreshed, capture data from current scope
         var print_data = {
+            payment_type : type,
             payment_note : note,
             previous_balance : Number($scope.summary.balance_owed()),
             payment_total : Number($scope.payment_amount),
@@ -376,6 +404,17 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
             // arrive, manually de-select everything.
             $scope.gridControls.selectItems([]);
         }
+        if (s['ui.circ.billing.amount_warn']) {
+            $scope.warn_amount = Number(s['ui.circ.billing.amount_warn']);
+        }
+        if (s['ui.circ.billing.amount_limit']) {
+            $scope.max_amount = Number(s['ui.circ.billing.amount_limit']);
+        }
+        if (s['circ.staff_client.do_not_auto_attempt_print'] && angular.isArray(s['circ.staff_client.do_not_auto_attempt_print'])) {
+            $scope.disable_auto_print = Boolean(
+                s['circ.staff_client.do_not_auto_attempt_print'].indexOf('Bill Pay') > -1
+            );
+        }
     });
 
     $scope.gridControls.allItemsRetrieved = function() {
@@ -424,6 +463,37 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
     }
 
     $scope.applyPayment = function() {
+
+        if ($scope.payment_amount > $scope.max_amount ) {
+            egAlertDialog.open(
+                egCore.strings.PAYMENT_OVER_MAX,
+                {   max_amount : ''+$scope.max_amount,
+                    ok : function() {
+                        $scope.payment_amount = 0;
+                    }
+                }
+            );
+            return;
+        }
+
+        if (($scope.payment_amount > $scope.warn_amount) && ($scope.amount_verified == false)) {
+            egConfirmDialog.open(
+                egCore.strings.PAYMENT_WARN_AMOUNT_TITLE, egCore.strings.PAYMENT_WARN_AMOUNT,
+                {   payment_amount : ''+$scope.payment_amount,
+                    ok : function() {
+                        $scope.amount_verfied = true;
+                        $scope.applyPayment();
+                    },
+                    cancel : function() {
+                        $scope.payment_amount = 0;
+                    }
+                }
+            );
+            return;
+        }
+
+        $scope.amount_verfied = false;
+
         if ($scope.annotate_payment) {
             egPromptDialog.open(
                 egCore.strings.ANNOTATE_PAYMENT_MSG, '',
@@ -435,32 +505,43 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
     }
 
     $scope.voidAllBillings = function(items) {
+        var promises = [];
+        var bill_ids = [];
+        var cents = 0;
         angular.forEach(items, function(item) {
+            promises.push(
+                billSvc.fetchBills(item.id).then(function(bills) {
+                    angular.forEach(bills, function(b) {
+                        if (b.voided() != 't') {
+                            cents += b.amount() * 100;
+                            bill_ids.push(b.id())
+                        }
+                    });
 
-            billSvc.fetchBills(item.id).then(function(bills) {
-                var bill_ids = [];
-                var cents = 0;
-                angular.forEach(bills, function(b) {
-                    if (b.voided() != 't') {
-                        cents += b.amount() * 100;
-                        bill_ids.push(b.id())
+                    if (bill_ids.length == 0) {
+                        // TODO: warn
+                        return;
                     }
-                });
 
-                $scope.session_voided = 
-                    ($scope.session_voided * 100 + cents) / 100;
+                })
+            );
+        });
 
-                if (bill_ids.length == 0) {
-                    // TODO: warn
-                    return;
+        $q.all(promises).then(function(){
+            egCore.audio.play('warning.circ.void_billings_confirmation');
+            egConfirmDialog.open(
+                egCore.strings.CONFIRM_VOID_BILLINGS, '', 
+                {   billIds : ''+bill_ids,
+                    amount : ''+(cents/100),
+                    ok : function() {
+                        billSvc.voidBills(bill_ids).then(function() {
+                            $scope.session_voided = 
+                                ($scope.session_voided * 100 + cents) / 100;
+                            refreshDisplay();
+                        });
+                    }
                 }
-
-                // TODO: alert of pending voiding
-
-                billSvc.voidBills(bill_ids).then(function() {
-                    refreshDisplay();
-                });
-            });
+            );
         });
     }
 
@@ -475,7 +556,8 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
         if (items.length == 0) return;
 
         var ids = items.map(function(item) {return item.id});
-            
+
+        egCore.audio.play('warning.circ.refund_confirmation');
         egConfirmDialog.open(
             egCore.strings.CONFIRM_REFUND_PAYMENT, '', 
             {   xactIds : ''+ids,
@@ -505,8 +587,8 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
  * Displays details of a single transaction
  */
 .controller('XactDetailsCtrl',
-       ['$scope','$q','$routeParams','egCore','egGridDataProvider','patronSvc','billSvc','egPromptDialog','egBilling',
-function($scope,  $q , $routeParams , egCore , egGridDataProvider , patronSvc , billSvc , egPromptDialog , egBilling) {
+       ['$scope','$q','$routeParams','egCore','egGridDataProvider','patronSvc','billSvc','egPromptDialog','egBilling','egConfirmDialog',
+function($scope,  $q , $routeParams , egCore , egGridDataProvider , patronSvc , billSvc , egPromptDialog , egBilling , egConfirmDialog ) {
 
     $scope.initTab('bills', $routeParams.id);
     var xact_id = $routeParams.xact_id;
@@ -524,8 +606,12 @@ function($scope,  $q , $routeParams , egCore , egGridDataProvider , patronSvc , 
     // -- actions
     $scope.voidBillings = function(bill_list) {
         var bill_ids = [];
+        var cents = 0;
         angular.forEach(bill_list, function(b) {
-            if (b.voided != 't') bill_ids.push(b.id);
+            if (b.voided != 't') {
+                cents += b.amount * 100;
+                bill_ids.push(b.id)
+            }
         });
 
         if (bill_ids.length == 0) {
@@ -533,18 +619,28 @@ function($scope,  $q , $routeParams , egCore , egGridDataProvider , patronSvc , 
             return;
         }
 
-        billSvc.voidBills(bill_ids).then(function() {
+        egCore.audio.play('warning.circ.void_billings_confirmation');
+        egConfirmDialog.open(
+            egCore.strings.CONFIRM_VOID_BILLINGS, '', 
+            {   billIds : ''+bill_ids,
+                amount : ''+(cents/100),
+                ok : function() {
+                    billSvc.voidBills(bill_ids).then(function() {
+                        // TODO? $scope.session_voided = ...
 
-            // refresh bills and summary data
-            // note: no need to update payments
-            patronSvc.fetchUserStats();
+                        // refresh bills and summary data
+                        // note: no need to update payments
+                        patronSvc.fetchUserStats();
 
-            egBilling.fetchXact(xact_id).then(function(xact) {
-                $scope.xact = xact
-            });
+                        egBilling.fetchXact(xact_id).then(function(xact) {
+                            $scope.xact = xact
+                        });
 
-            xactGrid.refresh();
-        });
+                        xactGrid.refresh();
+                    });
+                }
+            }
+        );
     }
 
     // batch-edit billing and payment notes, depending on 'type'
@@ -582,9 +678,20 @@ function($scope,  $q , $routeParams , egCore , egGridDataProvider , patronSvc , 
     }
 
     // -- retrieve our data
+    $scope.total_circs = 0; // start with 0 instead of undefined
     egBilling.fetchXact(xact_id).then(function(xact) {
         $scope.xact = xact;
 
+        var copyId = xact.circulation().target_copy().id();
+        var circ_count = 0;
+        egCore.pcrud.search('circbyyr',
+            {copy : copyId}, null, {atomic : true})
+        .then(function(counts) {
+            angular.forEach(counts, function(count) {
+                circ_count += Number(count.count());
+            });
+            $scope.total_circs = circ_count;
+        });
         // set the title.  only needs to be done on initial page load
         if (xact.circulation()) {
             if (xact.circulation().target_copy().call_number().id() == -1) {
@@ -610,6 +717,9 @@ function($scope,  $q , $routeParams , egCore , patronSvc , billSvc , egPromptDia
     $scope.bill_tab = $routeParams.history_tab;
     $scope.totals = {};
 
+    // link page controller actions defined by sub-controllers here
+    $scope.actions = {};
+
     var start = new Date(); // now - 1 year
     start.setFullYear(start.getFullYear() - 1),
     $scope.dates = {
@@ -631,24 +741,31 @@ function($scope,  $q , $routeParams , egCore , patronSvc , billSvc , egPromptDia
        ['$scope','$q','egCore','patronSvc','billSvc','egPromptDialog','$location','egBilling',
 function($scope,  $q , egCore , patronSvc , billSvc , egPromptDialog , $location , egBilling) {
 
+    // generate a grid query with the current date widget values.
+    function current_grid_query() {
+        return {
+            '-or' : [
+                {'summary.balance_owed' : {'<>' : 0}},
+                {'summary.last_payment_ts' : {'<>' : null}}
+            ],
+            xact_start : {between : $scope.date_range()},
+            usr : billSvc.userId
+        }
+    }
+
     $scope.gridControls = {
         selectedItems : function(){return []},
         activateItem : function(item) {
             $scope.showFullDetails([item]);
         },
-        setQuery : function() {
-            // open-ils.actor.user.transactions.history.have_bill_or_payment
-            return {
-                '-or' : [
-                    {'summary.balance_owed' : {'<>' : 0}},
-                    {'summary.last_payment_ts' : {'<>' : null}}
-                ],
-                xact_start : {between : $scope.date_range()},
-                usr : billSvc.userId
-            }
-        }
+        // this sets the query on page load
+        setQuery : current_grid_query
     }
 
+    $scope.actions.apply_date_range = function() {
+        // tells the grid to re-draw itself with the new query
+        $scope.gridControls.setQuery(current_grid_query());
+    }
 
     // TODO; move me to service
     function selected_payment_info() {
@@ -690,11 +807,52 @@ function($scope,  $q , egCore , patronSvc , billSvc , egPromptDialog , $location
             })
         }
     }
+
+    $scope.printBills = function(selected) { // FIXME: refactor me
+        if (!selected.length) return;
+        // bills print receipt assumes nested hashes, but our grid
+        // stores flattener data.  Fetch the selected xacts as
+        // fleshed pcrud objects and hashify.  
+        // (Consider an alternate approach..)
+        var ids = selected.map(function(t){ return t.id });
+        var xacts = [];
+        egCore.pcrud.search('mbt', 
+            {id : ids},
+            {flesh : 1, flesh_fields : {'mbt' : ['summary']}},
+            {authoritative : true}
+        ).then(
+            function() {
+                egCore.print.print({
+                    context : 'receipt', 
+                    template : 'bills_historical', 
+                    scope : {   
+                        transactions : xacts,
+                        current_location : egCore.idl.toHash(
+                            egCore.org.get(egCore.auth.user().ws_ou()))
+                    }
+                });
+            }, 
+            null, 
+            function(xact) {
+                xacts.push(egCore.idl.toHash(xact));
+            }
+        );
+    }
+
+
 }])
 
 .controller('BillPaymentHistoryCtrl',
        ['$scope','$q','egCore','patronSvc','billSvc','$location',
 function($scope,  $q , egCore , patronSvc , billSvc , $location) {
+
+    // generate a grid query with the current date widget values.
+    function current_grid_query() {
+        return {
+            'payment_ts' : {between : $scope.date_range()},
+            'xact.usr' : billSvc.userId
+        }
+    }
 
     $scope.gridControls = {
         selectedItems : function(){return []},
@@ -704,12 +862,12 @@ function($scope,  $q , egCore , patronSvc , billSvc , $location) {
         setSort : function() {
             return [{'payment_ts' : 'DESC'}, 'id'];
         },
-        setQuery : function() {
-            return {
-                'payment_ts' : {between : $scope.date_range()},
-                'xact.usr' : billSvc.userId
-            }
-        }
+        setQuery : current_grid_query
+    }
+
+    $scope.actions.apply_date_range = function() {
+        // tells the grid to re-draw itself with the new query
+        $scope.gridControls.setQuery(current_grid_query());
     }
 
     $scope.showFullDetails = function(all) {

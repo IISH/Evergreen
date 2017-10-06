@@ -174,6 +174,9 @@ function load_item() {
         set("renewal_type", '');
         set("opac_visible", '');
         set("price", '');
+        set_tooltip("price", '');
+        set("cost", '');
+        set_tooltip("cost", '');
         set("ref", '');
         set("copy_status", '');
         set_tooltip("copy_status", '');
@@ -188,7 +191,12 @@ function load_item() {
 
         if (details.copy) {
             set("stat_cat_entries", details.copy.stat_cat_entries()); 
-            set("age_protect", details.copy.age_protect()); 
+            var ap = details.copy.age_protect();
+            if (typeof data.hash.crahp[ap] != 'undefined') {
+                set("age_protect", data.lookup('crahp',details.copy.age_protect()).name());
+            } else {
+                set("age_protect","");
+            }
             set("alert_message", details.copy.alert_message()); 
             set("barcode", details.copy.barcode()); 
             if (typeof details.copy.call_number() == 'object') {
@@ -245,6 +253,9 @@ function load_item() {
                 ));
             set("opac_visible", get_localized_bool( details.copy.opac_visible() )); 
             set("price", details.copy.price()); 
+            set_tooltip("price" , "Replacement Amount charged to Patron");
+            set("cost", details.copy.cost());
+            set_tooltip("cost" , "Acquisition Amount paid by Library");
             set("ref", get_localized_bool( details.copy.ref() )); 
             var copy_status = typeof details.copy.status() == 'object' ? details.copy.status() : data.hash.ccs[ details.copy.status() ];
                 set("copy_status", copy_status.name() );
@@ -335,6 +346,9 @@ function load_item() {
             transit_list.clear();
             transit_list.append( { 'row' : { 'my' : { 'atc' : details.transit, } } });
 
+            //Set transit caption back to default of "In Transit"
+            $('transit_caption').setAttribute('label', $('circStrings').getString('staff.circ.copy_details.transit_caption'));
+            
             var transit_copy_status = typeof details.transit.copy_status() == 'object' ? details.transit.copy_status() : data.hash.ccs[ details.transit.copy_status() ];
                 set("transit_copy_status", transit_copy_status.name() );
                 set_tooltip("transit_copy_status", document.getElementById('circStrings').getFormattedString(
@@ -354,6 +368,7 @@ function load_item() {
             set("target_copy", details.transit.target_copy()); 
             set("hold_transit_copy", details.transit.hold_transit_copy()); 
         } else {
+            transit_list.clear();
             $('transit_caption').setAttribute('label', $('circStrings').getString('staff.circ.copy_details.not_transit'));
         }
 
@@ -437,17 +452,26 @@ function load_item() {
             set("stop_fines", details.circ.stop_fines()); 
             set("stop_fines_time", util.date.formatted_date( details.circ.stop_fines_time(), '%{localized}' )); 
             set("target_copy", details.circ.target_copy()); 
-            set("circ_usr", details.circ.usr()); 
-            network.simple_request('FM_AU_FLESHED_RETRIEVE_VIA_ID',[ ses(), details.circ.usr() ], function(preq) {
-                var r_au = preq.getResultObject();
-                JSAN.use('patron.util');
-                set(
-                    'patron_name', 
-                    patron.util.format_name( r_au ) + ' : ' + r_au.card().barcode(),
-                    details.circ.usr()
-                );
+
+            if (details.circ.usr()) {
+                set("circ_usr", details.circ.usr()); 
+                network.simple_request('FM_AU_FLESHED_RETRIEVE_VIA_ID',
+                    [ ses(), details.circ.usr() ], function(preq) {
+                    var r_au = preq.getResultObject();
+                    JSAN.use('patron.util');
+                    set(
+                        'patron_name', 
+                        patron.util.format_name( r_au ) + ' : ' + r_au.card().barcode(),
+                        details.circ.usr()
+                    );
+                    set_tooltip('patron_name','circ id ' + details.circ.id());
+                });
+            } else {
+                set("circ_usr", "");
+                set('patron_name', document.getElementById(
+                    'circStrings').getString('staff.circ.aged_circ'));
                 set_tooltip('patron_name','circ id ' + details.circ.id());
-            });
+            }
             set("xact_finish", util.date.formatted_date( details.circ.xact_finish(), '%{localized}' )); 
             set("xact_start", util.date.formatted_date( details.circ.xact_start(), '%{localized}' )); 
             set("create_time", util.date.formatted_date( details.circ.create_time(), '%{localized}' )); 
@@ -480,16 +504,22 @@ function load_item() {
                     var robj = req.getResultObject();
                     if (!robj || typeof robj == 'null') { return; }
                     var summary = robj['summary'];
-                    network.simple_request('FM_AU_FLESHED_RETRIEVE_VIA_ID',[ ses(), robj['usr'] ], function(preq) {
-                        var r_au = preq.getResultObject();
-                        JSAN.use('patron.util');
-                        set(
-                            'prev_patron_name', 
-                            patron.util.format_name( r_au ) + ' : ' + r_au.card().barcode(),
-                            robj['usr']
-                        );
+                    if (robj['usr']) {
+                        network.simple_request('FM_AU_FLESHED_RETRIEVE_VIA_ID',[ ses(), robj['usr'] ], function(preq) {
+                            var r_au = preq.getResultObject();
+                            JSAN.use('patron.util');
+                            set(
+                                'prev_patron_name', 
+                                patron.util.format_name( r_au ) + ' : ' + r_au.card().barcode(),
+                                robj['usr']
+                            );
+                            set_tooltip('prev_patron_name','circ chain prior to circ id ' + details.circ.id());
+                        });
+                    } else {
+                        set('prev_patron_name', document.getElementById(
+                            'circStrings').getString('staff.circ.aged_circ'));
                         set_tooltip('prev_patron_name','circ chain prior to circ id ' + details.circ.id());
-                    });
+                    }
                     set("prev_num_circs", summary.num_circs());
                     set("prev_num_renewals", Number(summary.num_circs()) - 1);
                     set("prev_xact_start", util.date.formatted_date( summary.start_time(), '%{localized}' )); 
@@ -624,7 +654,10 @@ function load_item() {
 
             hold_list.clear();
             hold_list.append( { 'row' : { 'my' : { 'ahr' : better_fleshed_hold_blob.hold, 'acp' : details.copy, 'status' : status_robj, } } });
-
+            
+            //Set hold_caption back to default of "Captured for Hold"
+            $('hold_caption').setAttribute('label', $('circStrings').getString('staff.circ.copy_details.hold_caption'));
+     
             JSAN.use('patron.util'); 
             var au_obj = patron.util.retrieve_fleshed_au_via_id( ses(), details.hold.usr() );
             $('hold_patron_name').setAttribute('value', $('circStrings').getFormattedString('staff.circ.copy_details.user_details', [au_obj.family_name(), au_obj.first_given_name(), au_obj.card().barcode()]) );
@@ -675,6 +708,9 @@ function load_item() {
             set("cancel_note", details.hold.cancel_note()); 
             set("notes", details.hold.notes()); 
         } else {
+            // Clear the hold list and remove patron name from hold screen
+            hold_list.clear();
+            $('hold_patron_name').removeAttribute('value');
             if (details.copy.status() == 8 /* ON HOLDS SHELF */) {
                 $('hold_caption').setAttribute('label', $('circStrings').getString('staff.circ.copy_details.bad_hold_status'));
             } else {

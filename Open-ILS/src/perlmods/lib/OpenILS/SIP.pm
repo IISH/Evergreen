@@ -186,12 +186,19 @@ sub patron_barcode_from_id {
 sub format_date {
     my $class = shift;
     my $date = shift;
-    my $type = shift || 'dob';
+    my $type = shift || '';
 
     return "" unless $date;
 
     my $dt = DateTime::Format::ISO8601->new->
         parse_datetime(OpenSRF::Utils::cleanse_ISO8601($date));
+
+    # actor.usr.dob stores dates without time/timezone, which causes
+    # DateTime to assume the date is stored as UTC.  Tell DateTime
+    # to use the local time zone, instead.
+    # Other dates will have time zones and should be parsed as-is.
+    $dt->set_time_zone('local') if $type eq 'dob';
+
     my @time = localtime($dt->epoch);
 
     my $year   = $time[5]+1900;
@@ -234,19 +241,27 @@ sub login {
     }
 
     my $nonce = rand($$);
-    my $seed = $U->simplereq( 
+
+    my $seed = $U->simplereq(
         'open-ils.auth',
         'open-ils.auth.authenticate.init', $username, $nonce );
 
-    my $response = $U->simplereq(
-        'open-ils.auth', 
-        'open-ils.auth.authenticate.complete', 
-        {    
-            username => $username, 
-            password => md5_hex($seed . md5_hex($password)), 
+    my $opts =
+        {
+            username => $username,
+            password => md5_hex($seed . md5_hex($password)),
             type     => 'opac',
             nonce    => $nonce
-        }
+        };
+
+    if ($self->{login}->{location}) {
+        $opts->{workstation} = $self->{login}->{location};
+    }
+
+    my $response = $U->simplereq(
+        'open-ils.auth',
+        'open-ils.auth.authenticate.complete',
+        $opts
     );
 
     if( my $code = $U->event_code($response) ) {
@@ -280,12 +295,14 @@ sub find_patron {
     my $key  =  (@_ > 1) ? shift : 'barcode';  # if we have multiple args, the first is the key index (default barcode)
     my $patron_id = shift;
 
+    $self->verify_session;
     return OpenILS::SIP::Patron->new($key => $patron_id, authtoken => $self->{authtoken}, @_);
 }
 
 
 sub find_item {
     my $self = shift;
+    $self->verify_session;
     return OpenILS::SIP::Item->new(@_);
 }
 

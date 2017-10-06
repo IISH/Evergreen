@@ -6,7 +6,12 @@
 # ----------------------------------------------------------------------------------
 # Point / to the opac - if you have a custom skin or locale, point at it here
 # ----------------------------------------------------------------------------------
-RedirectMatch 301 ^/$ /eg/opac/home
+RewriteRule ^/$ %{REQUEST_SCHEME}://%{HTTP_HOST}/eg/opac/home [R=301,L]
+
+# ----------------------------------------------------------------------------------
+# Redirect staff to the correct URL if they forget to include the final /
+# ----------------------------------------------------------------------------------
+RewriteRule ^/eg/staff$ https://%{HTTP_HOST}/eg/staff/ [R=301,L]
 
 # ----------------------------------------------------------------------------------
 # Point / to the IP address redirector
@@ -29,8 +34,8 @@ RedirectMatch 301 ^/$ /eg/opac/home
 # ----------------------------------------------------------------------------------
 # Assign a default locale to the accessible OPAC
 # ----------------------------------------------------------------------------------
-RedirectMatch 301 ^/opac/extras/slimpac/start.html$    /opac/en-US/extras/slimpac/start.html
-RedirectMatch 301 ^/opac/extras/slimpac/advanced.html$ /opac/en-US/extras/slimpac/advanced.html
+RewriteRule ^/opac/extras/slimpac/start.html$ %{REQUEST_SCHEME}://%{HTTP_HOST}/opac/en-US/extras/slimpac/start.html [R=301,L]
+RewriteRule ^/opac/extras/slimpac/advanced.html$ %{REQUEST_SCHEME}://%{HTTP_HOST}/opac/en-US/extras/slimpac/advanced.html [R=301,L]
 
 # ----------------------------------------------------------------------------------
 # Configure the gateway and translator
@@ -50,6 +55,12 @@ OSRFTranslatorConfig @sysconfdir@/opensrf_core.xml
     Options +ExecCGI
     PerlSendHeader On
     Require all granted 
+</Location>
+
+# Lock clearing cache down to STAFF_LOGIN
+<Location /opac/extras/ac/clearcache/>
+    PerlAccessHandler OpenILS::WWW::AccessHandler
+    PerlSetVar OILSAccessHandlerPermission "STAFF_LOGIN"
 </Location>
 
 # Autosuggest for searches
@@ -79,6 +90,24 @@ RewriteRule ^/opac/extras/ac/jacket/(small|medium|large)/$ \
         ErrorDocument 404 /opac/images/blank.png
 </Location>
 
+# Uncomment one or more of these to have a "no image" image other than the blank
+# image above.
+
+# Note: There are no default images provided for these, you will need to provide
+# your own "no image" image(s).
+
+#<Location /opac/extras/ac/jacket/small>
+#        ErrorDocument 404 /opac/images/noimage_small.png
+#</Location>
+
+#<Location /opac/extras/ac/jacket/medium>
+#        ErrorDocument 404 /opac/images/noimage_medium.png
+#</Location>
+
+#<Location /opac/extras/ac/jacket/large>
+#        ErrorDocument 404 /opac/images/noimage_large.png
+#</Location>
+
 # ----------------------------------------------------------------------------------
 # Add the row ID (RID) and date so we can make unAPI happy
 # ----------------------------------------------------------------------------------
@@ -94,46 +123,8 @@ RewriteRule . - [E=locale:%1]
 # ----------------------------------------------------------------------------------
 # Rewrite JSPac->TPac with redirects
 # ----------------------------------------------------------------------------------
-
-# First things first, extract useful data
-# And we are going to start with a "this is the JSPac" check on each of these:
-# RewriteCond %{REQUEST_URI} ^/?opac/
-
-# Basic (overall) search type, if present
-# I am cheating and grabbing RT or TP because I dunno the difference between them.
-RewriteCond %{REQUEST_URI} ^/opac/
-RewriteCond %{QUERY_STRING} (^|[^0-9a-zA-Z])(rt|tp)=([^;&]*)
-RewriteRule . - [E=OILS_JSPAC_SEARCH_TYPE:qtype=%3;]
-
-# Basic (overall) search term(s), if present - NOTE: Not doing advanced search.
-RewriteCond %{REQUEST_URI} ^/opac/
-RewriteCond %{QUERY_STRING} (^|[^0-9a-zA-Z])t=([^;&]*)
-RewriteRule . - [E=OILS_JSPAC_SEARCH_TERMS:query=%2;]
-
-# Search Location, if present
-RewriteCond %{REQUEST_URI} ^/opac/
-RewriteCond %{QUERY_STRING} (^|[^0-9a-zA-Z])l=([^;&]*)
-RewriteRule . - [E=OILS_JSPAC_SEARCH_LOCATION:locg=%2;]
-
 # My Account
-RewriteRule /opac/[^/]*/skin/default/xml/myopac.xml /eg/opac/myopac/main?%{ENV:OILS_JSPAC_SEARCH_TYPE}%{ENV:OILS_JSPAC_SEARCH_TERMS}%{ENV:OILS_JSPAC_SEARCH_LOCATION} [NE,R,L]
-
-# Record Pages
-# /opac/en-US/skin/default/xml/rdetail.xml?r=32 -> /eg/opac/record/32
-RewriteCond %{QUERY_STRING} (^|[^0-9a-zA-Z])r=([^;&]*)
-RewriteRule /opac/.*/rdetail.xml /eg/opac/record/%2?%{ENV:OILS_JSPAC_SEARCH_TYPE}%{ENV:OILS_JSPAC_SEARCH_TERMS}%{ENV:OILS_JSPAC_SEARCH_LOCATION} [NE,R,L]
-
-# Bookbag Pages
-# /opac/extras/feed/bookbag/html-full/1 -> /eg/opac/results?bookbag=1;page=0;locg=1;depth=0
-RewriteRule /opac/extras/feed/bookbag/html-full/(\d*) /eg/opac/results?bookbag=$1;%{ENV:OILS_JSPAC_SEARCH_TYPE}%{ENV:OILS_JSPAC_SEARCH_TERMS}%{ENV:OILS_JSPAC_SEARCH_LOCATION} [NE,R,L]
-
-# Search Results Pages
-RewriteRule /opac/[^/]*/skin/[^/]*/xml/rresult.xml /eg/opac/results?%{ENV:OILS_JSPAC_SEARCH_TYPE}%{ENV:OILS_JSPAC_SEARCH_TERMS}%{ENV:OILS_JSPAC_SEARCH_LOCATION} [NE,R,L]
-
-# Basic Search (STILL not doing advanced)
-# Fallback! But only for things that end in xml, htm, or html
-# Images, CSS, etc can stick around.
-RewriteRule /opac/[^/]*/skin/.*(xml|htm|html|/)$ /eg/opac/home?%{ENV:OILS_JSPAC_SEARCH_TYPE}%{ENV:OILS_JSPAC_SEARCH_TERMS}%{ENV:OILS_JSPAC_SEARCH_LOCATION} [NE,R,L]
+RewriteRule /opac/[^/]*/skin/default/xml/myopac.xml %{REQUEST_SCHEME}://%{HTTP_HOST}/eg/opac/myopac/main?%{ENV:OILS_JSPAC_SEARCH_TYPE}%{ENV:OILS_JSPAC_SEARCH_TERMS}%{ENV:OILS_JSPAC_SEARCH_LOCATION} [NE,R,L]
 
 # -----------------------------------------------------------------------------$
 # Force HTTPS for /eg/circ/selfcheck
@@ -255,17 +246,8 @@ Options -Indexes
     SSLRequireSSL
 </LocationMatch>
 
-<LocationMatch /opac/extras/>
-    SSILegacyExprParser on
-    # Force to en-US for now to satisfy bbags.xml
-    SetEnv locale en-US
-    Options +Includes
-    AddOutputFilter INCLUDES .xml
-    AddType application/xhtml+xml .xml
-</LocationMatch>
-
 RewriteCond %{QUERY_STRING} locale=([^&]*)
-RewriteRule ^/opac/[a-z]{2}-[A-Z]{2}/extras/slimpac/(.*)$ /opac/%1/extras/slimpac/$1? [redirect]
+RewriteRule ^/opac/[a-z]{2}-[A-Z]{2}/extras/slimpac/(.*)$ %{REQUEST_SCHEME}://%{HTTP_HOST}/opac/%1/extras/slimpac/$1? [redirect]
 <LocationMatch /opac/[a-z]{2}-[A-Z]{2}/extras/slimpac/>
     AddOutputFilter INCLUDES;XMLENT .html
 </LocationMatch>
@@ -441,11 +423,10 @@ RewriteRule .? - [E=locale:%{HTTP:Accept-Language}]
     PerlOptions +GlobalRequest
     PerlSetVar OILSProxyPermissions "STAFF_LOGIN"
     PerlAuthenHandler OpenILS::WWW::Proxy::Authen
-    require valid-user
+    Require valid-user
     PerlHandler OpenILS::WWW::Exporter
     Options +ExecCGI
     PerlSendHeader On
-    Require all granted 
 </Location>
 
 <Location /opac/extras/merge_template>
@@ -455,11 +436,10 @@ RewriteRule .? - [E=locale:%{HTTP:Accept-Language}]
     PerlOptions +GlobalRequest
     PerlSetVar OILSProxyPermissions "STAFF_LOGIN"
     PerlAuthenHandler OpenILS::WWW::Proxy::Authen
-    require valid-user
+    Require valid-user
     PerlHandler OpenILS::WWW::TemplateBatchBibUpdate
     PerlSendHeader On
     Options +ExecCGI
-    Require all granted 
 </Location>
 
 <Location /opac/extras/circ>
@@ -468,10 +448,9 @@ RewriteRule .? - [E=locale:%{HTTP:Accept-Language}]
     PerlOptions +GlobalRequest
     PerlSetVar OILSProxyPermissions "STAFF_LOGIN"
     PerlAuthenHandler OpenILS::WWW::Proxy::Authen
-    require valid-user
+    Require valid-user
     Options +ExecCGI
     PerlSendHeader On
-    Require all granted 
 </Location>
 
 <Location /collections>
@@ -481,10 +460,9 @@ RewriteRule .? - [E=locale:%{HTTP:Accept-Language}]
     PerlOptions +GlobalRequest
     PerlSetVar OILSProxyPermissions "money.collections_tracker.create"
     PerlAuthenHandler OpenILS::WWW::Proxy::Authen
-    require valid-user
+    Require valid-user
     Options +ExecCGI
     PerlSendHeader On
-    Require all granted 
 </Location>
 
 # ----------------------------------------------------------------------------------
@@ -496,7 +474,7 @@ RewriteRule .? - [E=locale:%{HTTP:Accept-Language}]
     PerlOptions +GlobalRequest
     PerlSetVar OILSProxyPermissions "STAFF_LOGIN"
     PerlAuthenHandler OpenILS::WWW::Proxy::Authen
-    require valid-user
+    Require valid-user
     PerlSendHeader On
     allow from all
     SSLRequireSSL
@@ -511,31 +489,22 @@ RewriteRule .? - [E=locale:%{HTTP:Accept-Language}]
     PerlOptions +GlobalRequest
     PerlSetVar OILSProxyPermissions "VIEW_REPORT_OUTPUT"
     PerlAuthenHandler OpenILS::WWW::Proxy::Authen
-    require valid-user
+    Require valid-user
     Options +ExecCGI
     PerlSendHeader On
-    Require all granted 
 </Location>
-
-# ----------------------------------------------------------------------------------
-# Selfcheck interface
-# ----------------------------------------------------------------------------------
-<LocationMatch .*/selfcheck.xml>
-    AuthType Basic
-    AuthName "Self-check Login"
-    PerlOptions +GlobalRequest
-    PerlSetVar OILSProxyPermissions "STAFF_LOGIN"
-    PerlAuthenHandler OpenILS::WWW::Proxy::Authen
-    require valid-user
-    Options +ExecCGI
-    PerlSendHeader On
-    Require all granted 
-</LocationMatch>
-
 
 # ----------------------------------------------------------------------------------
 # Reports GUI
 # ----------------------------------------------------------------------------------
+<LocationMatch /reports.*\.x?html>
+    SSILegacyExprParser on
+    Options +Includes
+    XMLEntContentType "text/html; charset=utf-8"
+    AddOutputFilter INCLUDES;XMLENT .xhtml
+    AddOutputFilter INCLUDES;XMLENT .html
+</LocationMatch>
+
 <LocationMatch /reports>
     SSILegacyExprParser on
     Options +Includes
@@ -554,6 +523,7 @@ RewriteRule . - [E=locale:%1]
     IDLChunkStripDoctype "yes"
     IDLChunkContentType "application/xml; charset=utf-8"
     AddOutputFilter INCLUDES;IDLCHUNK .xml
+    SetEnv no-gzip
 </LocationMatch>
 
 # ----------------------------------------------------------------------------------
@@ -599,10 +569,9 @@ RewriteRule ^/conify/([a-z]{2}-[A-Z]{2})/global/(.*)$ /conify/global/$2 [E=local
     PerlOptions +GlobalRequest
     PerlSetVar OILSProxyPermissions "STAFF_LOGIN"
     PerlAuthenHandler OpenILS::WWW::Proxy::Authen
-    require valid-user
+    Require valid-user
     Options +ExecCGI
     PerlSendHeader On
-    Require all granted 
 </Location>
 
 # ----------------------------------------------------------------------------------
@@ -612,14 +581,13 @@ RewriteRule ^/conify/([a-z]{2}-[A-Z]{2})/global/(.*)$ /conify/global/$2 [E=local
     SetHandler perl-script
     AuthType Basic
     AuthName "PhoneList Login"
-    require valid-user
+    Require valid-user
     PerlOptions +GlobalRequest
     PerlSetVar OILSProxyPermissions "STAFF_LOGIN"
     PerlHandler OpenILS::WWW::PhoneList
     PerlAuthenHandler OpenILS::WWW::Proxy::Authen
     Options +ExecCGI
     PerlSendHeader On
-    allow from all
     <IfModule mod_headers.c>
         Header onsuccess set Cache-Control no-cache
     </IfModule>
@@ -650,8 +618,19 @@ RewriteRule ^/openurl$ ${openurl:%1} [NE,PT]
     PerlSetVar OILSWebWebDir "@localstatedir@/web"
     PerlSetVar OILSWebDefaultTemplateExtension "tt2"
 
+    # Port Apache listens on for HTTP traffic.  Used for HTTP requests 
+    # routed from Perl handlers back to the same Apache instance, like
+    # added content requests.  Use this when running Apache with a 
+    # non-standard port, typical with a proxy setup.  Defaults to "80".
+    # PerlSetVar OILSWebInternalHTTPPort "7080"
+
     # Enable Template-Toolkit error debugging messages (apache error log)
-    PerlSetVar OILSWebDebugTemplate "true"
+    PerlSetVar OILSWebDebugTemplate "false"
+    # local cache of compiled Template Toolkit templates
+    PerlSetVar OILSWebCompiledTemplateCache "/tmp/eg_template_cache"
+    # template TTL - how long, in seconds, that Template Toolkit
+    # waits to check for updated template files
+    #PerlSetVar OILSWebTemplateStatTTL 60
 
     # -------------------------------------------------------
     # Media Prefix.  In the 3rd example, the protocol (http) is enforced
@@ -670,11 +649,11 @@ RewriteRule ^/openurl$ ${openurl:%1} [NE,PT]
     # select their preferred locale from a locale picker in the TPAC.
     #
     #PerlAddVar OILSWebLocale "en"
-    #PerlAddVar OILSWebLocale "@localstatedir@/data/locale/messages.en.po"
+    #PerlAddVar OILSWebLocale "@localstatedir@/data/locale/opac/messages.en.po"
     #PerlAddVar OILSWebLocale "en_ca"
-    #PerlAddVar OILSWebLocale "@localstatedir@/data/locale/en-CA.po"
+    #PerlAddVar OILSWebLocale "@localstatedir@/data/locale/opac/en-CA.po"
     #PerlAddVar OILSWebLocale "fr_ca"
-    #PerlAddVar OILSWebLocale "@localstatedir@/data/locale/fr-CA.po"
+    #PerlAddVar OILSWebLocale "@localstatedir@/data/locale/opac/fr-CA.po"
 
     # Set the default locale: defaults to en-US
     #PerlAddVar OILSWebDefaultLocale "fr_ca"
@@ -809,14 +788,18 @@ RewriteRule ^/openurl$ ${openurl:%1} [NE,PT]
 </Location>
 
 <LocationMatch /eg/staff/>
+    SSLRequireSSL
     Options -MultiViews
     PerlSetVar OILSWebStopAtIndex "true"
 
+    RewriteCond %{HTTPS} off
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [NE,R,L]
+
     # sample staff-specific translation files
-    #PerlAddVar OILSWebLocale "en_ca"                                           
-    #PerlAddVar OILSWebLocale "/openils/var/data/locale/staff/en-CA.po"         
-    #PerlAddVar OILSWebLocale "fr_ca"                                           
-    #PerlAddVar OILSWebLocale "/openils/var/data/locale/staff/fr-CA.po"   
+    #PerlAddVar OILSWebLocale "en_ca"
+    #PerlAddVar OILSWebLocale "@localstatedir@/data/locale/staff/en-CA.po"
+    #PerlAddVar OILSWebLocale "fr_ca"
+    #PerlAddVar OILSWebLocale "@localstatedir@/data/locale/staff/fr-CA.po"
 </LocationMatch>
 
 <Location /js/>

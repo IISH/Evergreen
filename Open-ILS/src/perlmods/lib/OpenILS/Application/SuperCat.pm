@@ -37,6 +37,7 @@ use OpenSRF::Utils::Logger qw($logger);
 use OpenILS::Utils::Fieldmapper;
 
 use OpenILS::Utils::CStoreEditor q/:funcs/;
+use OpenILS::Utils::TagURI;
 
 
 our (
@@ -281,6 +282,7 @@ sub generic_new_authorities_method {
     my $term = ''.shift;
     my $page = int(shift || 0);
     my $page_size = shift;
+    my $thesauruses = shift;
 
     # undef ok, but other non numbers not ok
     $page_size = int($page_size) if defined $page_size;
@@ -303,7 +305,7 @@ sub generic_new_authorities_method {
     my $storage = create OpenSRF::AppSession("open-ils.storage");
     my $list = $storage->request(
         "open-ils.storage.authority.in_db.browse_or_search",
-        $method, $what, $term, $page, $page_size
+        $method, $what, $term, $page, $page_size, $thesauruses
     )->gather(1);
 
     $storage->kill_me;
@@ -339,15 +341,38 @@ sub _label_sortkey_from_label {
               deleted    => 'f',
               @$cp_filter
             },
-            { limit     => 1,
+            { flesh     => 1,
+              flesh_fields  => { acn => [qw/label_class/] },
+              limit     => 1,
               order_by  => { acn => "oils_text_as_bytea(label), id" }
             }
         )->gather(1);
     if (@$closest_cn) {
-        return $closest_cn->[0]->label_sortkey;
-    } else {
-        return '~~~'; #fallback to high ascii value, we are at the end
+        if ($closest_cn->[0]->label eq $label) {
+            # we found an exact match stop here
+            return $closest_cn->[0]->label_sortkey;
+        } else {
+            # we got as close as we could by label alone, let's try to
+            # normalize and get closer
+            $closest_cn = $_storage->request(
+                "open-ils.cstore.direct.asset.call_number.search.atomic",
+                { label_sortkey
+                             => { ">=" => [$closest_cn->[0]->label_class->normalizer, $label] },
+                  (scalar(@$ou_ids) ? (owning_lib => $ou_ids) : ()),
+                  deleted    => 'f',
+                  @$cp_filter
+                },
+                { limit     => 1,
+                  order_by  => { acn => "label_sortkey, id" }
+                }
+            )->gather(1);
+            if (@$closest_cn) {
+                return $closest_cn->[0]->label_sortkey;
+            }
+        }
     }
+
+    return '~~~'; #fallback to high ascii value, we are at the end of the range
 }
 
 sub cn_browse {
@@ -704,6 +729,64 @@ Returns the XML representation of the requested bibliographic record's holdings
           'return' =>
             { desc => 'Record IDs',
               type => 'array' }
+        }
+);
+
+sub u2 {
+    my $self = shift;
+    my $client = shift;
+
+    my $u2 = shift;
+    my $format = shift || 'xml';
+
+    $u2 = OpenILS::Utils::TagURI->new($u2);
+    return '' unless $u2;
+
+    # Use pathinfo on acp as a lookup type specifier.
+    if ($u2->classname eq 'acp' and $u2->pathinfo =~ /\bbarcode\b/) {
+        my( $copy, $evt ) = $U->fetch_copy_by_barcode( $u2->id );
+        $u2->id( $copy->id );
+    }
+
+    if ($u2->classname eq 'biblio_record_entry_feed') {
+        $u2->id( '{' . $u2->id . '}' );
+    }
+    my $args = [
+        'unapi.' . $u2->classname,
+        $u2->id,
+        $format,
+    ];
+    push @$args, $u2->classname unless $u2->classname eq 'biblio_record_entry_feed';
+    push @$args, '{' . ( $u2->includes ? join( ',', keys %{ $u2->includes } ) : '' ) . '}';
+    push @$args, ($u2->location || undef);
+    push @$args, ($u2->depth || undef);
+
+    return OpenSRF::AppSession->create('open-ils.cstore')->request(
+        "open-ils.cstore.json_query.atomic",
+        { from => $args }
+    )->gather(1)->[0]{'unapi.'. $u2->classname};
+}
+__PACKAGE__->register_method(
+    method    => 'u2',
+    api_name  => 'open-ils.supercat.u2',
+    api_level => 1,
+    argc      => 2,
+    signature =>
+        { desc     => <<"          DESC",
+Returns the XML representation of the requested object
+          DESC
+          params   =>
+            [
+                { name => 'u2',
+                  desc => 'The U2 Tag URI (OpenILS::Utils::TagURI)',
+                  type => 'object' },
+                { name => 'format',
+                  desc => 'For bre and bre feeds, the xml transform format',
+                  type => 'string' }
+            ],
+          'return' =>
+            { desc => 'XML (or transformed) object data',
+              type => 'string' }
         }
 );
 
@@ -2605,6 +2688,7 @@ sub retrieve_record_transform {
     my $rid = shift;
 
     (my $transform = $self->api_name) =~ s/^.+record\.([^\.]+)\.retrieve$/$1/o;
+    my $xslt = $record_xslt{$transform}{xslt};
 
     my $_storage = OpenSRF::AppSession->create( 'open-ils.cstore' );
     #$_storage->connect;
@@ -2616,7 +2700,7 @@ sub retrieve_record_transform {
 
     return undef unless ($record);
 
-    return $U->entityize($record_xslt{$transform}{xslt}->transform( $_parser->parse_string( $record->marc ) )->toString);
+    return $U->entityize($xslt->output_as_chars($xslt->transform($_parser->parse_string($record->marc))));
 }
 
 sub retrieve_isbn_transform {
@@ -2634,12 +2718,13 @@ sub retrieve_isbn_transform {
     return undef unless (@$recs);
 
     (my $transform = $self->api_name) =~ s/^.+isbn\.([^\.]+)\.retrieve$/$1/o;
+    my $xslt = $record_xslt{$transform}{xslt};
 
     my $record = $_storage->request( 'open-ils.cstore.direct.biblio.record_entry.retrieve' => $recs->[0]->record )->gather(1);
 
     return undef unless ($record);
 
-    return $U->entityize($record_xslt{$transform}{xslt}->transform( $_parser->parse_string( $record->marc ) )->toString);
+    return $U->entityize($xslt->output_as_chars($xslt->transform($_parser->parse_string($record->marc))));
 }
 
 sub retrieve_record_objects {
@@ -3712,6 +3797,9 @@ sub as_xml {
 package OpenILS::Application::SuperCat::unAPI::acp;
 use base qw/OpenILS::Application::SuperCat::unAPI/;
 
+use OpenILS::Application::AppUtils;
+my $U = "OpenILS::Application::AppUtils";
+
 sub as_xml {
     my $self = shift;
     my $args = shift;
@@ -3739,6 +3827,7 @@ sub as_xml {
     $xml .= "        <monograph_parts>\n";
     if (ref($self->obj->parts) && $self->obj->parts) {
         for my $part ( @{$self->obj->parts} ) {
+            next if $U->is_true($part->deleted);
             $xml .= sprintf('        <monograph_part record="%s" sortkey="%s">%s</monograph_part>',$part->record, $self->escape($part->label_sortkey), $self->escape($part->label));
             $xml .= "\n";
         }

@@ -41,13 +41,16 @@ function($scope , $q , $window , $location , egCore , checkinSvc , egGridDataPro
     $scope.checkins = checkinSvc.checkins;
     var today = new Date();
     $scope.checkinArgs = {backdate : today}
-    $scope.using_hatch = egCore.hatch.usingHatch();
+    $scope.using_hatch_printer = egCore.hatch.usePrinting();
     $scope.modifiers = {};
     $scope.fine_total = 0;
     $scope.is_capture = $location.path().match(/capture$/);
     var suppress_popups = false;
     $scope.grid_persist_key = $scope.is_capture ? 
         'circ.checkin.capture' : 'circ.checkin.checkin';
+
+    egCore.hatch.getItem('circ.checkin.strict_barcode')
+        .then(function(sb){ $scope.strict_barcode = sb });
 
     egCore.org.settings([
         'ui.circ.suppress_checkin_popups' // add other settings as needed
@@ -143,6 +146,7 @@ function($scope , $q , $window , $location , egCore , checkinSvc , egGridDataPro
             }
         }
 
+        egCore.hatch.setItem('circ.checkin.strict_barcode', $scope.strict_barcode);
         var options = {
             check_barcode : $scope.strict_barcode,
             no_precat_alert : $scope.modifiers.no_precat_alert,
@@ -162,6 +166,7 @@ function($scope , $q , $window , $location , egCore , checkinSvc , egGridDataPro
         delete $scope.alert;
         delete $scope.billable_amount;
         delete $scope.billable_barcode;
+        delete $scope.billable_user_id;
 
         var params = compiled.params;
         var options = compiled.options;
@@ -191,6 +196,7 @@ function($scope , $q , $window , $location , egCore , checkinSvc , egGridDataPro
                 if (amt != 0) {
                     $scope.billable_barcode = row_item.copy_barcode;
                     $scope.billable_amount = amt;
+                    $scope.billable_user_id = row_item.circ.usr();
                     $scope.fine_total = 
                         ($scope.fine_total * 100 + amt * 100) / 100;
                 }
@@ -213,7 +219,7 @@ function($scope , $q , $window , $location , egCore , checkinSvc , egGridDataPro
             angular.forEach(checkinSvc.checkins, function(ci, idx) {
                 if (ci.index == row_item.index) pos = idx;
             });
-            checkinSvc.checkin.splice(pos, 1);
+            checkinSvc.checkins.splice(pos, 1);
 
         })['finally'](function() {
 

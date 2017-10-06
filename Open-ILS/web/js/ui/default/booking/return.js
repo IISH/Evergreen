@@ -37,5 +37,21 @@ function my_init() {
     }, document.getElementById("barcode"));
     init_auto_l10n(document.getElementById("auto_l10n_start_here"));
 
-    react_to_pass_in(xulG.bresv_interface_opts);
+    setTimeout(
+        function() {
+            var opts;
+            if (typeof xulG != 'undefined' && typeof xulG.bresv_interface_opts != 'undefined') {
+                opts = xulG.bresv_interface_opts;
+            } else {
+                opts = {};
+            }
+            var uri = location.href;
+            var query = uri.substring(uri.indexOf("?") + 1, uri.length);
+            var queryObject = dojo.queryToObject(query);
+            if (typeof queryObject['patron_barcode'] != 'undefined') {
+                opts.patron_barcode = queryObject['patron_barcode'];
+            }
+            react_to_pass_in(opts);
+        }, 0
+    );
 }

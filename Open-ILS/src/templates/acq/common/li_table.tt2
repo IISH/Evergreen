@@ -2,10 +2,11 @@
 <script type="text/javascript" src='[% ctx.media_prefix %]/js/ui/default/acq/common/vlagent.js'> </script>
 <script type="text/javascript" src='[% ctx.media_prefix %]/js/ui/default/acq/common/li_table.js'> </script>
 <script type="text/javascript" src='[% ctx.media_prefix %]/js/ui/default/acq/financial/claim_voucher.js'> </script>
+<script type="text/javascript" src='[% ctx.media_prefix %]/js/file-saver/FileSaver.min.js'> </script>
 <div id='acq-lit-table-container'>
-    <div id='acq-lit-table-div' class='hidden'>
 
-        <!-- Line Item (bib record) list -->
+    <div> <!-- Container for actions selector and paging controls.
+           This container and the actions selector are always visible -->
         <div style="float: left;">
             <span>
                 <select id="acq-lit-li-actions-selector">
@@ -61,7 +62,8 @@
             </div>
         </div>
         <div style="clear: both;">&nbsp;</div><!-- XXX better way to end effects of float: left/right ? -->
-
+    </div>
+    <div id='acq-lit-table-div' class='hidden'>
         <table id="acq-batch-update" class="hidden"><!-- XXX freeze in place w/ CSS? -->
             <tr>
                 <th>
@@ -158,7 +160,7 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td colspan='0'>
+                                    <td colspan='8'>
                                         <table><tr>
                                             <td>[% l('Order Identifier') %]</td>
                                             <td>
@@ -173,8 +175,9 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td colspan='0'>
-                                        <span name="liid"># </span> 
+                                    <td colspan='8'>
+                                        <span name="liid"># </span> | 
+                                        <span name="li_existing_count">0</span> 
                                         <span name="catalog" class='hidden'> | <a title='[% l('Show In Catalog') %]' name="catalog_link" href="javascript:void(0);">[% l('&#x279F; catalog') %]</a></span> 
                                         <span name="link_to_catalog" class='hidden'> | <a title='[% l('Link To Catalog Record') %]' name="link_to_catalog_link" href="javascript:void(0);">[% l('&#x27BE; link to catalog') %]</a></span> 
                                         <span name="worksheet"> | <a title='[% l('Generate Worksheet') %]' name="worksheet_link" href="javascript:void(0);">[% l('&#x270D; worksheet') %]</a></span>
@@ -185,6 +188,7 @@
                                         <span name="claim_policy" class="hidden"> | [% l("claim policy:") %] <span name="claim_policy_name"></span></span>
                                         <span name='pro' class='hidden'> | <a title='[% l('Provider') %]' name='pro_link' href='javascript:void(0);'>&#x235F; </a></span>
                                         <span name='queue' class='hidden'> | <a title='[% l('Import Queue') %]' name='queue_link' href='javascript:void(0);'>[% l('&#x27AC; queue') %]</a></span>
+                                        <span name='paid' class='hidden'> | <span class="acq-existing-count-warn">[% l('Paid') %]</span></span>
                                     </td>
                                 </tr>
                             </tbody>
@@ -200,11 +204,11 @@
                     </td>
                     <td>
                         <select name='actions'>
-                            <option name='action_none'>[% l('-- Actions --') %]</option>
-                            <option name='action_update_barcodes'>[% l('Update Barcodes') %]</option>
-                            <option name='action_holdings_maint'>[% l('Holdings Maint.') %]</option>
-                            <option name='action_manage_claims'>[% l('Claims') %]</option>
-                            <option name='action_view_history'>[% l('View History') %]</option>
+                            <option name='action_none' value='action_none'>[% l('-- Actions --') %]</option>
+                            <option name='action_update_barcodes' value='action_update_barcodes'>[% l('Update Barcodes') %]</option>
+                            <option name='action_holdings_maint' value='action_holdings_maint'>[% l('Holdings Maint.') %]</option>
+                            <option name='action_manage_claims' value='action_manage_claims'>[% l('Claims') %]</option>
+                            <option name='action_view_history' value='action_view_history'>[% l('View History') %]</option>
                         </select>
                     </td>
                     <td>
@@ -220,7 +224,7 @@
                     <td><input type='text' size='8' name='price'/></td>
                 </tr>
                 <tr id='acq-inline-copies-row' class='acq-inline-copies-row'>
-                    <td colspan='0'>
+                    <td colspan='8'>
                         <table class='acq-li-inline-copies-table'>
                             <thead>
                                 <tr>
@@ -319,7 +323,7 @@
                     <td colspan="4"></td>
                 </tr>
             </tbody>
-        <table>
+        </table>
 
         <table id='acq-lit-li-details-table'>
             <tbody><tr><td class='acq-lit-table-spacer' colspan='0'/></tr></tbody>
@@ -461,6 +465,14 @@
                     <td><div name='ordering_agency' id='acq-lit-po-agency'></div></td>
                 </tr>
                 <tr>
+                    <td>[% l('Name (optional)') %]</td>
+                    <td><div name='name' id='acq-lit-po-name'></div></td>
+                </tr>
+                <tr id='acq-dupe-po-name' class='hidden'>
+                    <td>[% l('This name is used by another PO') %]</td>
+                    <td><a href='javascript:;' id='acq-dupe-po-link'>[% l('View PO') %]</a>
+                </tr>
+                <tr>
                     <td>[% l('Provider') %]</td>
                     <td><div name='provider' id='acq-lit-po-provider'></div></td>
                 </tr>
@@ -481,8 +493,11 @@
                     <td><input name='create_assets' dojoType='dijit.form.CheckBox'/></td>
                 </tr>
                 <tr>
-                    <td colspan='2'>
+                    <td>
                         <div dojoType='dijit.form.Button' type='submit' jsId='acqLitCreatePoSubmit'>[% l('Submit') %]</div>
+                    </td>
+                    <td>
+                        <div dojoType='dijit.form.Button' jsId='acqLitCreatePoCancel'>[% l('Cancel') %]</div>
                     </td>
                 </tr>
             </table>

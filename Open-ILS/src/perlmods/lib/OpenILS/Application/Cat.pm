@@ -263,11 +263,11 @@ sub template_overlay_container {
         $template = $e->retrieve_biblio_record_entry( $titem->target_biblio_record_entry )->marc;
     }
 
-    my $responses = [];
-    my $some_failed = 0;
+    my $num_failed = 0;
+    my $num_succeeded = 0;
 
     $conn->respond_complete(
-        $actor->request('open-ils.actor.anon_cache.set_value', $auth, res_list => $responses)->gather(1)
+        $actor->request('open-ils.actor.anon_cache.set_value', $auth, batch_edit_progress => {})->gather(1)
     ) if ($actor);
 
     for my $item ( @$items ) {
@@ -281,11 +281,20 @@ sub template_overlay_container {
             )->[0]->{'vandelay.template_overlay_bib_record'};
         }
 
-        $some_failed++ if ($success eq 'f');
+        if ($success eq 'f') {
+            $num_failed++;
+        } else {
+            $num_succeeded++;
+        }
 
         if ($actor) {
-            push @$responses, { record => $rec->id, success => $success };
-            $actor->request('open-ils.actor.anon_cache.set_value', $auth, res_list => $responses);
+            $actor->request(
+                'open-ils.actor.anon_cache.set_value', $auth,
+                batch_edit_progress => {
+                    succeeded => $num_succeeded,
+                    failed    => $num_failed
+                },
+            );
         } else {
             $conn->respond({ record => $rec->id, success => $success });
         }
@@ -294,8 +303,15 @@ sub template_overlay_container {
             unless ($e->delete_container_biblio_record_entry_bucket_item($item)) {
                 $e->rollback;
                 if ($actor) {
-                    push @$responses, { complete => 1, success => 'f' };
-                    $actor->request('open-ils.actor.anon_cache.set_value', $auth, res_list => $responses);
+                    $actor->request(
+                        'open-ils.actor.anon_cache.set_value', $auth,
+                        batch_edit_progress => {
+                            complete => 1,
+                            success  => 'f',
+                            succeeded => $num_succeeded,
+                            failed    => $num_failed,
+                        }
+                    );
                     return undef;
                 } else {
                     return { complete => 1, success => 'f' };
@@ -304,21 +320,35 @@ sub template_overlay_container {
         }
     }
 
-    if ($titem && !$some_failed) {
+    if ($titem && !$num_failed) {
         return $e->die_event unless ($e->delete_container_biblio_record_entry_bucket_item($titem));
     }
 
     if ($e->commit) {
         if ($actor) {
-            push @$responses, { complete => 1, success => 't' };
-            $actor->request('open-ils.actor.anon_cache.set_value', $auth, res_list => $responses);
+            $actor->request(
+                'open-ils.actor.anon_cache.set_value', $auth,
+                batch_edit_progress => {
+                    complete => 1,
+                    success  => 't',
+                    succeeded => $num_succeeded,
+                    failed    => $num_failed,
+                }
+            );
         } else {
             return { complete => 1, success => 't' };
         }
     } else {
         if ($actor) {
-            push @$responses, { complete => 1, success => 'f' };
-            $actor->request('open-ils.actor.anon_cache.set_value', $auth, res_list => $responses);
+            $actor->request(
+                'open-ils.actor.anon_cache.set_value', $auth,
+                batch_edit_progress => {
+                    complete => 1,
+                    success  => 'f',
+                    succeeded => $num_succeeded,
+                    failed    => $num_failed,
+                }
+            );
         } else {
             return { complete => 1, success => 'f' };
         }
@@ -640,14 +670,19 @@ sub retrieve_copies {
         @org_ids = ($user_obj->home_ou);
     }
 
+    # Create an editor that can be shared across all iterations of 
+    # _build_volume_list().  Otherwise, .authoritative calls can result 
+    # in creating too many cstore connections.
+    my $e = new_editor();
+
     if( $self->api_name =~ /global/ ) {
-        return _build_volume_list( { record => $docid, deleted => 'f', label => { '<>' => '##URI##' } } );
+        return _build_volume_list($e, { record => $docid, deleted => 'f', label => { '<>' => '##URI##' } } );
 
     } else {
 
         my @all_vols;
         for my $orgid (@org_ids) {
-            my $vols = _build_volume_list( 
+            my $vols = _build_volume_list($e,
                     { record => $docid, owning_lib => $orgid, deleted => 'f', label => { '<>' => '##URI##' } } );
             push( @all_vols, @$vols );
         }
@@ -660,10 +695,12 @@ sub retrieve_copies {
 
 
 sub _build_volume_list {
+    my $e = shift;
     my $search_hash = shift;
 
+    $e ||= new_editor();
+
     $search_hash->{deleted} = 'f';
-    my $e = new_editor();
 
     my $vols = $e->search_asset_call_number([
         $search_hash,
@@ -680,10 +717,24 @@ sub _build_volume_list {
 
         my $copies = $e->search_asset_copy([
             { call_number => $volume->id , deleted => 'f' },
-            { flesh => 1, flesh_fields => { acp => ['stat_cat_entries','parts'] } }
+            {
+                join => {
+                    acpm => {
+                        type => 'left',
+                        join => {
+                            bmp => { type => 'left' }
+                        }
+                    }
+                },
+                flesh => 1,
+                flesh_fields => { acp => ['stat_cat_entries','parts'] },
+                order_by => [
+                    {'class' => 'bmp', 'field' => 'label_sortkey', 'transform' => 'oils_text_as_bytea'},
+                    {'class' => 'bmp', 'field' => 'label', 'transform' => 'oils_text_as_bytea'},
+                    {'class' => 'acp', 'field' => 'barcode'}
+                ]
+            }
         ]);
-
-        $copies = [ sort { $a->barcode cmp $b->barcode } @$copies  ];
 
         for my $c (@$copies) {
             if( $c->status == OILS_COPY_STATUS_CHECKED_OUT ) {
@@ -721,7 +772,7 @@ __PACKAGE__->register_method(
 
 
 sub fleshed_copy_update {
-    my( $self, $conn, $auth, $copies, $delete_stats, $oargs ) = @_;
+    my( $self, $conn, $auth, $copies, $delete_stats, $oargs, $create_parts ) = @_;
     return 1 unless ref $copies;
     my( $reqr, $evt ) = $U->checkses($auth);
     return $evt if $evt;
@@ -733,7 +784,7 @@ sub fleshed_copy_update {
     }
     my $retarget_holds = [];
     $evt = OpenILS::Application::Cat::AssetCommon->update_fleshed_copies(
-        $editor, $oargs, undef, $copies, $delete_stats, $retarget_holds, undef);
+        $editor, $oargs, undef, $copies, $delete_stats, $retarget_holds, undef, $create_parts);
 
     if( $evt ) { 
         $logger->info("fleshed copy update failed with event: ".OpenSRF::Utils::JSON->perl2JSON($evt));
@@ -756,6 +807,76 @@ sub reset_hold_list {
     $ses->request('open-ils.circ.hold.reset.batch', $auth, $hold_ids);
 }
 
+__PACKAGE__->register_method(
+    method    => "transfer_copies_to_volume",
+    api_name  => "open-ils.cat.transfer_copies_to_volume",
+    argc      => 3,
+    signature => {
+        desc   => 'Transfers specified copies to the specified call number, and changes Circ Lib to match the new Owning Lib.',
+        params => [
+            {desc => 'Authtoken', type => 'string'},
+            {desc => 'Call Number ID', type => 'number'},
+            {desc => 'Array of Copy IDs', type => 'array'},
+        ]
+    },
+    return => {desc => '1 on success, Event on error'}
+);
+
+__PACKAGE__->register_method(
+    method   => "transfer_copies_to_volume",
+    api_name => "open-ils.cat.transfer_copies_to_volume.override",);
+
+sub transfer_copies_to_volume {
+    my( $self, $conn, $auth, $volume, $copies, $oargs ) = @_;
+    my $delete_stats = 1;
+    my $force_delete_empty_bib = undef;
+    my $create_parts = undef;
+
+    # initial tests
+
+    return 1 unless ref $copies;
+    my( $reqr, $evt ) = $U->checkses($auth);
+    return $evt if $evt;
+    my $editor = new_editor(requestor => $reqr, xact => 1);
+    if ($self->api_name =~ /override/) {
+        $oargs = { all => 1 } unless defined $oargs;
+    } else {
+        $oargs = {};
+    }
+
+    # does the volume exist?  good, we also need its owning_lib later
+    my( $cn, $cn_evt ) = $U->fetch_callnumber( $volume, 0, $editor );
+    return $cn_evt if $cn_evt;
+
+    # flesh and munge the copies
+    my $fleshed_copies = [];
+    my ($copy, $copy_evt);
+    foreach my $copy_id ( @{ $copies } ) {
+        ($copy, $copy_evt) = $U->fetch_copy($copy_id);
+        return $copy_evt if $copy_evt;
+        $copy->call_number( $volume );
+        $copy->circ_lib( $cn->owning_lib() );
+        $copy->ischanged( 't' );
+        push @$fleshed_copies, $copy;
+    }
+
+    # actual work
+    my $retarget_holds = [];
+    $evt = OpenILS::Application::Cat::AssetCommon->update_fleshed_copies(
+        $editor, $oargs, undef, $fleshed_copies, $delete_stats, $retarget_holds, $force_delete_empty_bib, $create_parts);
+
+    if( $evt ) { 
+        $logger->info("copy to volume transfer failed with event: ".OpenSRF::Utils::JSON->perl2JSON($evt));
+        $editor->rollback; 
+        return $evt; 
+    }
+
+    $editor->commit;
+    $logger->info("copy to volume transfer successfully updated ".scalar(@$copies)." copies");
+    reset_hold_list($auth, $retarget_holds);
+
+    return 1;
+}
 
 __PACKAGE__->register_method(
     method    => 'in_db_merge',
@@ -844,6 +965,122 @@ sub in_db_auth_merge {
 }
 
 __PACKAGE__->register_method(
+    method    => 'calculate_marc_merge',
+    api_name  => 'open-ils.cat.merge.marc.per_profile',
+    signature => q/
+        Calculate the result of merging one or more MARC records
+        per the specified merge profile
+        @param auth The login session key
+        @param merge_profile ID of the record merge profile
+        @param records Array of two or more MARCXML records to be
+                       merged. If two are supplied, the first
+                       is treated as the record to be overlaid,
+                       and the the incoming record that will
+                       overlay the first. If more than two are
+                       supplied, the first is treated as the
+                       record to be overlaid, and each following
+                       record in turn will be merged into that
+                       record.
+        @return MARCXML string of the results of the merge
+    /
+);
+__PACKAGE__->register_method(
+    method    => 'calculate_bib_marc_merge',
+    api_name  => 'open-ils.cat.merge.biblio.per_profile',
+    signature => q/
+        Calculate the result of merging one or more bib records
+        per the specified merge profile
+        @param auth The login session key
+        @param merge_profile ID of the record merge profile
+        @param records Array of two or more bib record IDs of
+                       the bibs to be merged.
+        @return MARCXML string of the results of the merge
+    /
+);
+__PACKAGE__->register_method(
+    method    => 'calculate_authority_marc_merge',
+    api_name  => 'open-ils.cat.merge.authority.per_profile',
+    signature => q/
+        Calculate the result of merging one or more authority records
+        per the specified merge profile
+        @param auth The login session key
+        @param merge_profile ID of the record merge profile
+        @param records Array of two or more bib record IDs of
+                       the bibs to be merged.
+        @return MARCXML string of the results of the merge
+    /
+);
+
+sub _handle_marc_merge {
+    my ($e, $merge_profile_id, $records) = @_;
+
+    my $result = shift @$records;
+    foreach my $incoming (@$records) {
+        my $response = $e->json_query({
+            from => [
+                'vandelay.merge_record_xml_using_profile',
+                $incoming, $result,
+                $merge_profile_id
+            ]
+        });
+        return unless ref($response);
+        $result = $response->[0]->{'vandelay.merge_record_xml_using_profile'};
+    }
+    return $result;
+}
+
+sub calculate_marc_merge {
+    my( $self, $conn, $auth, $merge_profile_id, $records ) = @_;
+
+    my $e = new_editor(authtoken=>$auth, xact=>1);
+    return $e->die_event unless $e->checkauth;
+
+    my $merge_profile = $e->retrieve_vandelay_merge_profile($merge_profile_id)
+        or return $e->die_event;
+    return $e->die_event unless ref($records) && @$records >= 2;
+
+    return _handle_marc_merge($e, $merge_profile_id, $records)
+}
+
+sub calculate_bib_marc_merge {
+    my( $self, $conn, $auth, $merge_profile_id, $bib_ids ) = @_;
+
+    my $e = new_editor(authtoken=>$auth, xact=>1);
+    return $e->die_event unless $e->checkauth;
+
+    my $merge_profile = $e->retrieve_vandelay_merge_profile($merge_profile_id)
+        or return $e->die_event;
+    return $e->die_event unless ref($bib_ids) && @$bib_ids >= 2;
+
+    my $records = [];
+    foreach my $id (@$bib_ids) {
+        my $bre = $e->retrieve_biblio_record_entry($id) or return $e->die_event;
+        push @$records, $bre->marc();
+    }
+
+    return _handle_marc_merge($e, $merge_profile_id, $records)
+}
+
+sub calculate_authority_marc_merge {
+    my( $self, $conn, $auth, $merge_profile_id, $authority_ids ) = @_;
+
+    my $e = new_editor(authtoken=>$auth, xact=>1);
+    return $e->die_event unless $e->checkauth;
+
+    my $merge_profile = $e->retrieve_vandelay_merge_profile($merge_profile_id)
+        or return $e->die_event;
+    return $e->die_event unless ref($authority_ids) && @$authority_ids >= 2;
+
+    my $records = [];
+    foreach my $id (@$authority_ids) {
+        my $are = $e->retrieve_authority_record_entry($id) or return $e->die_event;
+        push @$records, $are->marc();
+    }
+
+    return _handle_marc_merge($e, $merge_profile_id, $records)
+}
+
+__PACKAGE__->register_method(
     method   => "fleshed_volume_update",
     api_name => "open-ils.cat.asset.volume.fleshed.batch.update",);
 
@@ -865,6 +1102,7 @@ sub fleshed_volume_update {
     my $editor = new_editor( requestor => $reqr, xact => 1 );
     my $retarget_holds = [];
     my $auto_merge_vols = $options->{auto_merge_vols};
+    my $create_parts = $options->{create_parts};
 
     for my $vol (@$volumes) {
         $logger->info("vol-update: investigating volume ".$vol->id);
@@ -894,21 +1132,21 @@ sub fleshed_volume_update {
 
         } elsif( $vol->isnew ) {
             $logger->info("vol-update: creating volume");
-            $evt = $assetcom->create_volume( $oargs, $editor, $vol );
+            ($vol,$evt) = $assetcom->create_volume( $auto_merge_vols ? { all => 1} : $oargs, $editor, $vol );
             return $evt if $evt;
 
         } elsif( $vol->ischanged ) {
             $logger->info("vol-update: update volume");
             my $resp = update_volume($vol, $editor, ($oargs->{all} or grep { $_ eq 'VOLUME_LABEL_EXISTS' } @{$oargs->{events}} or $auto_merge_vols));
             return $resp->{evt} if $resp->{evt};
-            $vol = $resp->{merge_vol};
+            $vol = $resp->{merge_vol} if $resp->{merge_vol};
         }
 
         # now update any attached copies
         if( $copies and @$copies and !$vol->isdeleted ) {
             $_->call_number($vol->id) for @$copies;
             $evt = $assetcom->update_fleshed_copies(
-                $editor, $oargs, $vol, $copies, $delete_stats, $retarget_holds, undef);
+                $editor, $oargs, $vol, $copies, $delete_stats, $retarget_holds, undef, $create_parts);
             return $evt if $evt;
         }
     }
@@ -1379,6 +1617,136 @@ sub fixed_field_values_by_rec_type {
     }
 
     return $result;
+}
+
+__PACKAGE__->register_method(
+    method    => "retrieve_tag_table",
+    api_name  => "open-ils.cat.tag_table.all.retrieve.local",
+    stream    => 1,
+    argc      => 3,
+    signature => {
+        desc   => "Retrieve set of MARC tags, subfields, and indicator values for the user's OU",
+        params => [
+            {desc => 'Authtoken', type => 'string'},
+            {desc => 'MARC Format', type => 'string'},
+            {desc => 'MARC Record Type', type => 'string'},
+        ]
+    },
+    return => {desc => 'Structure representing the tag table available to that user', type => 'object' }
+);
+__PACKAGE__->register_method(
+    method    => "retrieve_tag_table",
+    api_name  => "open-ils.cat.tag_table.all.retrieve.stock",
+    stream    => 1,
+    argc      => 3,
+    signature => {
+        desc   => 'Retrieve set of MARC tags, subfields, and indicator values for stock MARC standard',
+        params => [
+            {desc => 'Authtoken', type => 'string'},
+            {desc => 'MARC Format', type => 'string'},
+            {desc => 'MARC Record Type', type => 'string'},
+        ]
+    },
+    return => {desc => 'Structure representing the stock tag table', type => 'object' }
+);
+__PACKAGE__->register_method(
+    method    => "retrieve_tag_table",
+    api_name  => "open-ils.cat.tag_table.field_list.retrieve.local",
+    stream    => 1,
+    argc      => 3,
+    signature => {
+        desc   => "Retrieve set of MARC tags for available to the user's OU",
+        params => [
+            {desc => 'Authtoken', type => 'string'},
+            {desc => 'MARC Format', type => 'string'},
+            {desc => 'MARC Record Type', type => 'string'},
+        ]
+    },
+    return => {desc => 'Structure representing the tags available to that user', type => 'object' }
+);
+__PACKAGE__->register_method(
+    method    => "retrieve_tag_table",
+    api_name  => "open-ils.cat.tag_table.field_list.retrieve.stock",
+    stream    => 1,
+    argc      => 3,
+    signature => {
+        desc   => 'Retrieve set of MARC tags for stock MARC standard',
+        params => [
+            {desc => 'Authtoken', type => 'string'},
+            {desc => 'MARC Format', type => 'string'},
+            {desc => 'MARC Record Type', type => 'string'},
+        ]
+    },
+    return => {desc => 'Structure representing the stock MARC tags', type => 'object' }
+);
+
+sub retrieve_tag_table {
+    my( $self, $conn, $auth, $marc_format, $marc_record_type ) = @_;
+    my $e = new_editor( authtoken=>$auth, xact=>1 );
+    return $e->die_event unless $e->checkauth;
+
+    my $field_list_only = ($self->api_name =~ /\.field_list\./) ? 1 : 0;
+    my $context_ou;
+    if ($self->api_name =~ /\.local$/) {
+        $context_ou = $e->requestor->ws_ou;
+    }
+
+    my %sf_by_tag;
+    unless ($field_list_only) {
+        my $subfields = $e->json_query(
+            { from => [ 'config.ou_marc_subfields', 1, $marc_record_type, $context_ou ] }
+        );
+        foreach my $sf (@$subfields) {
+            my $sf_data = {
+                code        => $sf->{code},
+                description => $sf->{description},
+                mandatory   => $sf->{mandatory},
+                repeatable   => $sf->{repeatable},
+            };
+            if ($sf->{value_ctype}) {
+                $sf_data->{value_list} = $e->json_query({
+                    select => { ccvm => [
+                                            'code',
+                                            { column => 'value', alias => 'description' }
+                                        ]
+                              },
+                    from   => 'ccvm',
+                    where  => { ctype => $sf->{value_ctype} },
+                    order_by => { ccvm => { code => {} } },
+                });
+            }
+            push @{ $sf_by_tag{$sf->{tag}} }, $sf_data;
+        }
+    }
+
+    my $fields = $e->json_query(
+        { from => [ 'config.ou_marc_fields', 1, $marc_record_type, $context_ou ] }
+    );
+
+    foreach my $field (@$fields) {
+        next if $field->{hidden} eq 't';
+        unless ($field_list_only) {
+            my $tag = $field->{tag};
+            if ($tag ge '010') {
+                for my $pos (1..2) {
+                    my $ind_ccvm_key = "${marc_format}_${marc_record_type}_${tag}_ind_${pos}";
+                    my $indvals = $e->json_query({
+                        select => { ccvm => [
+                                                'code',
+                                                { column => 'value', alias => 'description' }
+                                            ]
+                                  },
+                        from   => 'ccvm',
+                        where  => { ctype => $ind_ccvm_key }
+                    });
+                    next unless defined($indvals);
+                    $field->{"ind$pos"} = $indvals;
+                }
+                $field->{subfields} = exists($sf_by_tag{$tag}) ? $sf_by_tag{$tag} : [];
+            }
+        }
+        $conn->respond($field);
+    }
 }
 
 1;

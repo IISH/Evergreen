@@ -10,7 +10,7 @@
 -->
 
 <div id="top-navbar" role="navigation"
-  class="navbar navbar-default navbar-static-top" role="navigation">
+  class="navbar navbar-default navbar-fixed-top" role="navigation">
 
   <!-- navbar-header here needed for supporting angular-ui-bootstrap -->
   <div class="navbar-header">
@@ -29,24 +29,33 @@
         class="glyphicon glyphicon-home"></a><li>
 
       <!-- search -->
-      <li class="dropdown">
-        <a href="javascript:;" class="dropdown-toggle"
-          data-toggle="dropdown">[% l('Search') %]
+      <li class="dropdown" uib-dropdown>
+        <a href uib-dropdown-toggle>[% l('Search') %]
           <b class="caret"></b>
         </a>
-        <ul class="dropdown-menu">
+        <ul uib-dropdown-menu>
           <li>
             <a href="./circ/patron/search" target="_self"
-              eg-accesskey="[% l('alt+s') %]" 
+              eg-accesskey="[% l('alt+s') %] [% l('f4') %]" 
               eg-accesskey-desc="[% l('Patron search by name, address, etc.') %]">
               <span class="glyphicon glyphicon-user"></span>
               <span eg-accesskey-label>[% l('Search for Patrons') %]</span>
             </a>
           </li>
           <li>
-            <a href="./cat/item/search" target="_self">
+            <a href="./cat/item/search" target="_self"
+              eg-accesskey="[% l('f5') %]" 
+              eg-accesskey-desc="[% l('Item Status') %]">
               <span class="glyphicon glyphicon-barcode"></span>
               <span>[% l('Search for Copies by Barcode') %]</span>
+            </a>
+          </li>
+          <li>
+            <a href="./cat/catalog/index" target="_self"
+              eg-accesskey="[% l('f3') %]" 
+              eg-accesskey-desc="[% l('OPAC') %]">
+              <span class="glyphicon glyphicon-search"></span>
+              <span>[% l('Search the Catalog') %]</span>
             </a>
           </li>
         </ul>
@@ -54,27 +63,31 @@
 
 
       <!-- circulation -->
-      <li class="dropdown">
-        <a href="javascript:;" class="dropdown-toggle"
-          data-toggle="dropdown">[% l('Circulation') %]
-          <b class="caret"></b>
+      <li class="dropdown" uib-dropdown>
+        <a href uib-dropdown-toggle>[% l('Circulation') %]<b class="caret"></b>
         </a>
 
-        <ul class="dropdown-menu">
+        <ul uib-dropdown-menu>
           <li>
-            <a href="./circ/patron/bcsearch" target="_self">
+            <a href="./circ/patron/bcsearch" target="_self"
+              eg-accesskey="[% l('f1') %]" 
+              eg-accesskey-desc="[% l('Check Out') %]">
               <span class="glyphicon glyphicon-export"></span>
               [% l('Check Out') %]
             </a>
           </li>
           <li>
-            <a href="./circ/checkin/checkin" target="_self">
+            <a href="./circ/checkin/checkin" target="_self"
+              eg-accesskey="[% l('f2') %]" 
+              eg-accesskey-desc="[% l('Check In') %]">
               <span class="glyphicon glyphicon-import"></span>
               [% l('Check In') %]
             </a>
           </li>
           <li>
-            <a href="./circ/checkin/capture" target="_self">
+            <a href="./circ/checkin/capture" target="_self"
+              eg-accesskey="[% l('shift+f2') %]" 
+              eg-accesskey-desc="[% l('Capture Holds') %]">
               <span class="glyphicon glyphicon-pushpin"></span>
               [% l('Capture Holds') %]
             </a>
@@ -86,19 +99,25 @@
             </a>
           </li>
           <li>
-            <a href="./circ/renew/renew" target="_self">
+            <a href="./circ/renew/renew" target="_self"
+              eg-accesskey="[% l('ctrl+f2') %]" 
+              eg-accesskey-desc="[% l('Renew items') %]">
               <span class="glyphicon glyphicon-refresh"></span>
               [% l('Renew Items') %]
             </a>
           </li>
           <li>
-            <a href="./circ/patron/register" target="_self">
+            <a href="./circ/patron/register" target="_self"
+              eg-accesskey="[% l('shift+f1') %]" 
+              eg-accesskey-desc="[% l('Register Patron') %]">
               <span class="glyphicon glyphicon-user"></span>
               [% l('Register Patron') %]
             </a>
           </li>
           <li>
-            <a href="./circ/patron/last" target="_self">
+            <a href="./circ/patron/last" target="_self"
+              eg-accesskey="[% l('f8') %]" 
+              eg-accesskey-desc="[% l('Retrieve Last Patron') %]">
               <span class="glyphicon glyphicon-share-alt"></span>
               [% l('Retrieve Last Patron') %]
             </a>
@@ -117,7 +136,9 @@
             </a>
           </li>
           <li>
-            <a href="./circ/in_house_use/index" target="_self">
+            <a href="./circ/in_house_use/index" target="_self"
+              eg-accesskey="[% l('f6') %]" 
+              eg-accesskey-desc="[% l('Record In-House Use') %]">
               <span class="glyphicon glyphicon-pencil"></span>
               <span>[% l('Record In-House Use') %]</span>
             </a>
@@ -136,21 +157,34 @@
             </a>
           </li>
           <li>
+            <a href="./cat/item/search" target="_self">
+              <span class="glyphicon glyphicon-saved"></span>
+              <span>[% l('Item Status') %]</span>
+            </a>
+          </li>
+          <li>
             <a href="./cat/item/missing_pieces" target="_self">
               <span class="glyphicon glyphicon-th"></span>
               <span>[% l('Scan Item as Missing Pieces') %]</span>
+            </a>
+          </li>
+          <li class="divider"></li>
+          <li>
+            <a href="" ng-click="reprintLast($event)"
+              eg-accesskey="[% l('f9') %]" 
+              eg-accesskey-desc="[% l('Reprint Last Receipt') %]">
+              <span class="glyphicon glyphicon-print"></span>
+              <span>[% l('Reprint Last Receipt') %]</span>
             </a>
           </li>
         </ul>
       </li><!-- circ -->
 
       <!-- cataloging -->
-      <li class="dropdown">
-        <a href="javascript:;" class="dropdown-toggle" 
-          data-toggle="dropdown">[% l('Cataloging') %]
-            <b class="caret"></b>
+      <li class="dropdown" uib-dropdown>
+        <a href uib-dropdown-toggle>[% l('Cataloging') %]<b class="caret"></b>
         </a>
-        <ul class="dropdown-menu">
+        <ul uib-dropdown-menu>
           <li>
             <a href="./cat/catalog/index" target="_self">
               <span class="glyphicon glyphicon-search"></span>
@@ -163,16 +197,202 @@
               [% l('Record Buckets') %]
             </a>
           </li>
+          <li>
+            <a href="./cat/bucket/copy/view" target="_self">
+              <span class="glyphicon glyphicon-list-alt"></span>
+              [% l('Copy Buckets') %]
+            </a>
+          </li>
+          <li class="divider"></li>
+          <li>
+            <a href="./cat/catalog/retrieve_by_id" target="_self">
+              <span class="glyphicon glyphicon-file"></span>
+              [% l('Retrieve Bib Record by ID') %]
+            </a>
+          </li>
+          <li>
+            <a href="./cat/catalog/retrieve_by_tcn" target="_self"
+              eg-accesskey="[% l('shift+f3') %]" 
+              eg-accesskey-desc="[% l('Retrieve Last Bib Record') %]">
+              <span class="glyphicon glyphicon-tag"></span>
+              [% l('Retrieve Bib Record by TCN') %]
+            </a>
+          </li>
+          <li>
+            <a href="" ng-click="retrieveLastRecord()" target="_self"
+              eg-accesskey="[% l('shift+f8') %]" 
+              eg-accesskey-desc="[% l('Retrieve Last Bib Record') %]">
+              <span class="glyphicon glyphicon-share-alt"></span>
+              [% l('Retrieve Last Bib Record') %]
+            </a>
+          </li>
+          <li class="divider"></li>
+          <li>
+            <a href="./cat/catalog/new_bib" target="_self">
+              <span class="glyphicon glyphicon-plus"></span>
+              [% l('Create New MARC Record') %]
+            </a>
+          </li>
+          <li>
+            <a href="./cat/z3950/index" target="_self">
+              <span class="glyphicon glyphicon-cloud-download"></span>
+              [% l('Import Record from Z39.50') %]
+            </a>
+          </li>
+          <li>
+            <a href="./cat/catalog/vandelay" target="_self">
+              <span class="glyphicon glyphicon-transfer"></span>
+              [% l('MARC Batch Import/Export') %]
+            </a>
+          </li>
+          <li>
+            <a href="./cat/catalog/batchEdit" target="_self">
+              <span class="glyphicon glyphicon-edit"></span>
+              [% l('MARC Batch Edit') %]
+            </a>
+          </li>
+          <li class="divider"></li>
+          <li>
+            <a href="./cat/catalog/verifyURLs" target="_self">
+              <span class="glyphicon glyphicon-link"></span>
+              [% l('Link Checker') %]
+            </a>
+          </li>
+          <li class="divider"></li>
+          <li>
+            <a href="./cat/catalog/manageAuthorities" target="_self">
+              <span class="glyphicon glyphicon-lock"></span>
+              [% l('Manage Authorities') %]
+            </a>
+          </li>
        </ul>
       </li>
 
-      <!-- admin -->
-      <li class="dropdown">
-        <a href="javascript:;" class="dropdown-toggle" 
-          data-toggle="dropdown">[% l('Administration') %]
-            <b class="caret"></b>
+      <!-- acquisitions -->
+      <li class="dropdown" uib-dropdown>
+        <a href uib-dropdown-toggle>[% l('Acquisitions') %]<b class="caret"></b>
         </a>
-        <ul class="dropdown-menu">
+        <ul uib-dropdown-menu>
+          <li>
+            <a href="./acq/legacy/search/unified" target="_self">
+              <span class="glyphicon glyphicon-search"></span>
+              [% l('General Search') %]
+            </a>
+          </li>
+          <li class="divider"></li>
+          <li>
+            <a href="./acq/legacy/search/unified?ca=pl" target="_self">
+              <span class="glyphicon glyphicon-list"></span>
+              [% l('My Selection Lists') %]
+            </a>
+          </li>
+          <li>
+            <a href="./acq/legacy/picklist/brief_record" target="_self">
+              <span class="glyphicon glyphicon-pencil"></span>
+              [% l('New Brief Record') %]
+            </a>
+          </li>
+          <li>
+            <a href="./acq/legacy/picklist/user_request" target="_self">
+              <span class="glyphicon glyphicon-thumbs-up"></span>
+              [% l('Patron Requests') %]
+            </a>
+          </li>
+          <li>
+            <a href="./acq/legacy/picklist/bib_search" target="_self">
+              <span class="glyphicon glyphicon-cloud-download"></span>
+              [% l('MARC Federated Search') %]
+            </a>
+          </li>
+          <li>
+            <a href="./acq/legacy/picklist/from_bib" target="_self">
+              <span class="glyphicon glyphicon-import"></span>
+              [% l('Load Catalog Record IDs') %]
+            </a>
+          </li>
+          <li class="divider"></li>
+          <li>
+            <a href="./acq/legacy/picklist/upload" target="_self">
+              <span class="glyphicon glyphicon-cloud-upload"></span>
+              [% l('Load MARC Order Records') %]
+            </a>
+          </li>
+          <li>
+            <a href="./acq/legacy/search/unified?ca=po" target="_self">
+              <span class="glyphicon glyphicon-shopping-cart"></span>
+              [% l('Purchase Orders') %]
+            </a>
+          </li>
+          <li>
+            <a href="./acq/legacy/po/create" target="_self">
+              <span class="glyphicon glyphicon-plus"></span>
+              [% l('Create Purchase Order') %]
+            </a>
+          </li>
+          <li class="divider"></li>
+          <li>
+            <a href="./acq/legacy/financial/claim_eligible" target="_self">
+              <span class="glyphicon glyphicon-question-sign"></span>
+              [% l('Claim-Ready Items') %]
+            </a>
+          </li>
+          <li>
+            <a href="./acq/legacy/search/unified?ca=inv" target="_self">
+              <span class="glyphicon glyphicon-usd"></span>
+              [% l('Open Invoices') %]
+            </a>
+          </li>
+          <li>
+            <a href="./acq/legacy/invoice/view?create=1" target="_self">
+              <span class="glyphicon glyphicon-credit-card"></span>
+              [% l('Create Invoice') %]
+            </a>
+          </li>
+       </ul>
+      </li>
+
+      <!-- booking -->
+      <li class="dropdown" uib-dropdown>
+        <a href uib-dropdown-toggle>[% l('Booking') %]<b class="caret"></b>
+        </a>
+        <ul uib-dropdown-menu>
+          <li>
+            <a href="./booking/legacy/booking/reservation" target="_self">
+              <span class="glyphicon glyphicon-plus"></span>
+              [% l('Create Reservations') %]
+            </a>
+          </li>
+          <li>
+            <a href="./booking/legacy/booking/pull_list" target="_self">
+              <span class="glyphicon glyphicon-th-list"></span>
+              [% l('Pull List') %]
+            </a>
+          </li>
+          <li>
+            <a href="./booking/legacy/booking/capture" target="_self">
+              <span class="glyphicon glyphicon-pushpin"></span>
+              [% l('Capture Resources') %]
+            </a>
+          </li>
+          <li>
+            <a href="./booking/legacy/booking/pickup" target="_self">
+              <span class="glyphicon glyphicon-export"></span>
+              [% l('Pick Up Reservations') %]
+            </a>
+          </li>
+          <li>
+            <a href="./booking/legacy/booking/return" target="_self">
+              <span class="glyphicon glyphicon-import"></span>
+              [% l('Return Reservations') %]
+            </a>
+          </li>
+        </ul>
+      </li>
+
+      <!-- admin -->
+      <li class="dropdown" uib-dropdown>
+        <a href uib-dropdown-toggle>[% l('Administration') %]<b class="caret"></b></a>
+        <ul uib-dropdown-menu>
           <li>
             <a href="./admin/workstation/index" target="_self">
               <span class="glyphicon glyphicon-hdd"></span>
@@ -185,6 +405,36 @@
               [% l('User Permission Editor') %]
             </a>
           </li>
+          <li>
+            <a href="./admin/server/index" target="_self">
+              <span class="glyphicon glyphicon-briefcase"></span>
+              [% l('Server Administration') %]
+            </a>
+          </li>
+          <li>
+            <a href="./admin/local/index" target="_self">
+              <span class="glyphicon glyphicon-picture"></span>
+              [% l('Local Administration') %]
+            </a>
+          </li>
+          <li>
+            <a href="./admin/acq/index" target="_self">
+              <span class="glyphicon glyphicon-usd"></span>
+              [% l('Acquisitions Administration') %]
+            </a>
+          </li>
+          <li>
+            <a href="./admin/booking/index" target="_self">
+              <span class="glyphicon glyphicon-calendar"></span>
+              [% l('Booking Administration') %]
+            </a>
+          </li>
+          <li>
+            <a href="./reporter/legacy/main" target="_self">
+              <span class="glyphicon glyphicon-object-align-bottom"></span>
+              [% l('Reports') %]
+            </a>
+          </li>
         </ul> <!-- admin dropdown -->
       </li>
     </ul> <!-- end left side entries -->
@@ -192,7 +442,7 @@
     <!-- entries along the right side of the navbar -->
     <ul class="nav navbar-nav navbar-right" style='margin-right: 6px;'>
       <li>
-        <a ng-cloak ng-show="username" 
+        <a ng-cloak ng-show="username" title="{{currentToken()}}"
           ng-init="workstation = '[% l('<no workstation>') %]'">
             [% l('{{username}} @ {{workstation}}') %]
         </a>
@@ -201,12 +451,12 @@
       <!-- locale selector.  
         only shown if multiple locales are registered -->
       [% IF ctx.locales.keys.size > 1 %]
-      <li class="dropdown">
-        <a href='' class="dropdown-toggle" data-toggle="dropdown">
-            [% lcl = ctx.locale;  ctx.locales.$lcl %]
-            <span class="glyphicon glyphicon-flag"></span>
+      <li class="dropdown" uib-dropdown>
+        <a href uib-dropdown-toggle>
+          [% lcl = ctx.locale;  ctx.locales.$lcl %]
+          <span class="glyphicon glyphicon-flag"></span>
         </a>
-        <ul class="dropdown-menu">
+        <ul uib-dropdown-menu>
         [% FOR locale IN ctx.locales.keys.sort %]
           <!-- disable the selected locale -->
           <li ng-class="{disabled : '[% ctx.locale %]'=='[% locale %]'}">
@@ -219,14 +469,20 @@
       </li>
       [% END %]
 
-      <li class="dropdown" ng-show="username">
-        <a href='' class="dropdown-toggle glyphicon glyphicon-list" 
-          data-toggle="dropdown"></a>
-        <ul class="dropdown-menu">
-          <li class="disabled">
-            <a href="" ng-click="" target="_self">
+      <li class="dropdown" ng-show="username" uib-dropdown>
+        <a href class="glyphicon glyphicon-list" 
+          uib-dropdown-toggle></a>
+        <ul uib-dropdown-menu>
+          <li ng-if="!op_changed">
+            <a href="" ng-click="changeOperator()">
               <span class="glyphicon glyphicon-random"></span>
               [% l('Change Operator') %]
+            </a>
+          </li>
+          <li ng-if="op_changed">
+            <a href="" ng-click="changeOperatorUndo()">
+              <span class="glyphicon glyphicon-random"></span>
+              [% l('Restore Operator') %]
             </a>
           </li>
           <li>

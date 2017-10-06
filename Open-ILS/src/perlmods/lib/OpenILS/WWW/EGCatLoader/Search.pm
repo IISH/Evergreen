@@ -26,8 +26,10 @@ sub _prepare_biblio_search_basics {
         next unless $query =~ /\S/;
 
         # Hack for journal title
+        my $jtitle = 0;
         if ($qtype eq 'jtitle') {
             $qtype = 'title';
+            $jtitle = 1;
         }
 
         # This stuff probably will need refined or rethought to better handle
@@ -49,6 +51,12 @@ sub _prepare_biblio_search_basics {
             $query = '^' . $query;
             $query = ('"' . $query . '"') if index $query, ' ';
         }
+
+        # Journal title hackery complete
+        if ($jtitle) {
+            $query = "bib_level(s) $query";
+        }
+
         $query = "$qtype:$query" unless $qtype eq 'keyword' and $i == 0;
 
         $bool = ($bool and $bool eq 'or') ? '||' : '&&';
@@ -61,7 +69,9 @@ sub _prepare_biblio_search_basics {
 sub _prepare_biblio_search {
     my ($cgi, $ctx) = @_;
 
-    my $query = _prepare_biblio_search_basics($cgi) || '';
+    # XXX This will still contain the jtitle hack...
+    my $user_query = _prepare_biblio_search_basics($cgi) || '';
+    my $query = $user_query;
 
     $query .= ' ' . $ctx->{global_search_filter} if $ctx->{global_search_filter};
 
@@ -91,11 +101,6 @@ sub _prepare_biblio_search {
         $query = "container(bre,bookbag," . int($cgi->param("bookbag")) . ") $query";
     }
 
-    # Journal title hackery complete
-    if ($cgi->param("qtype") && $cgi->param("qtype") eq "jtitle") {
-        $query = "bib_level(s) $query";
-    }
-
     if ($cgi->param('pubdate') && $cgi->param('date1')) {
         if ($cgi->param('pubdate') eq 'between') {
             my $btw = 'between(' . $cgi->param('date1');
@@ -103,8 +108,7 @@ sub _prepare_biblio_search {
             $btw .= ')';
             $query = "$btw $query";
         } elsif ($cgi->param('pubdate') eq 'is') {
-            $query = 'between(' . $cgi->param('date1') .
-                ',' .  $cgi->param('date1') . ") $query";  # sic, date1 twice
+            $query = 'date1(' . $cgi->param('date1') . ") $query";
         } else {
             $query = $cgi->param('pubdate') .
                 '(' . $cgi->param('date1') . ") $query";
@@ -117,15 +121,18 @@ sub _prepare_biblio_search {
     return () unless $query;
 
     # sort is treated specially, even though it's actually a filter
-    if ($cgi->param('sort')) {
+    if (defined($cgi->param('sort'))) {
         $query =~ s/sort\([^\)]*\)//g;  # override existing sort(). no stacking.
         my ($axis, $desc) = split /\./, $cgi->param('sort');
-        $query = "sort($axis) $query";
+        $query = "sort($axis) $query" if $axis;
         if ($desc and not $query =~ /\#descending/) {
             $query = "#descending $query";
         } elsif (not $desc) {
             $query =~ s/\#descending//;
         }
+        # tidy up
+        $query =~ s/^\s+//;
+        $query =~ s/\s+$//;
     }
 
     my (@naive_query_re, $site);
@@ -183,9 +190,9 @@ sub _prepare_biblio_search {
         return $query;
     };
 
-    $logger->info("tpac: site=$site, depth=$depth, query=$query");
+    $logger->info("tpac: site=$site, depth=$depth, user_query=$user_query, query=$query");
 
-    return ($query, $site, $depth);
+    return ($user_query, $query, $site, $depth);
 }
 
 sub _get_search_limit {
@@ -347,6 +354,7 @@ sub load_rresults {
     $ctx->{records} = [];
     $ctx->{search_facets} = {};
     $ctx->{hit_count} = 0;
+    $ctx->{is_meta} = $is_meta;
 
     # Special alternative searches here.  This could all stand to be cleaner.
     if ($cgi->param("_special")) {
@@ -383,7 +391,7 @@ sub load_rresults {
         $offset = 0;
     }
 
-    my ($query, $site, $depth) = _prepare_biblio_search($cgi, $ctx);
+    my ($user_query, $query, $site, $depth) = _prepare_biblio_search($cgi, $ctx);
 
     $self->get_staff_search_settings;
 
@@ -401,61 +409,54 @@ sub load_rresults {
             $ctx->{saved_searches} = $list;
         }
     }
+    # Limit and offset will stay here. Everything else should be part of
+    # the query string, not special args.
+    my $args = {'limit' => $limit, 'offset' => $offset};
 
-    if ($metarecord) {
-        my $bre_ids = $self->recs_from_metarecord(
-            $metarecord, $ctx->{search_ou}, $depth);
-       
-        # force the metarecord result blob to match the format of regular search results
-        $results->{ids} = [map { [$_] } @$bre_ids];
-        $results->{count} = scalar(@{$results->{ids}});
+    return Apache2::Const::OK unless $query;
 
-    } else {
-
-        return Apache2::Const::OK unless $query;
-
-        # Limit and offset will stay here. Everything else should be part of
-        # the query string, not special args.
-        my $args = {'limit' => $limit, 'offset' => $offset};
-
-        if ($tag_circs) {
-            $args->{tag_circulated_records} = 1;
-            $args->{authtoken} = $self->editor->authtoken;
-        }
-
-        # Stuff these into the TT context so that templates can use them in redrawing forms
-        $ctx->{processed_search_query} = $query;
-
-        $query = "$_ $query" for @facets;
-
-        my $ltag = $is_meta ? '[mmr search]' : '[bre search]';
-        $logger->activity("EGWeb: $ltag $query");
-
-        try {
-
-            my $method = 'open-ils.search.biblio.multiclass.query';
-            $method .= '.staff' if $ctx->{is_staff};
-            $method =~ s/biblio/metabib/ if $is_meta;
-
-            my $ses = OpenSRF::AppSession->create('open-ils.search');
-
-            $self->timelog("Firing off the multiclass query");
-            my $req = $ses->request($method, $args, $query, 1);
-            $results = $req->gather(1);
-            $self->timelog("Returned from the multiclass query");
-
-        } catch Error with {
-            my $err = shift;
-            $logger->error("multiclass search error: $err");
-            $results = {count => 0, ids => []};
-        };
+    if ($tag_circs) {
+        $args->{tag_circulated_records} = 1;
+        $args->{authtoken} = $self->editor->authtoken;
     }
+    $args->{from_metarecord} = $metarecord if $metarecord;
+
+    # Stuff these into the TT context so that templates can use them in redrawing forms
+    $ctx->{user_query} = $user_query;
+    $ctx->{processed_search_query} = $query;
+
+    $query = "$_ $query" for @facets;
+
+    my $ltag = $is_meta ? '[mmr search]' : '[bre search]';
+    $logger->activity("EGWeb: $ltag $query");
+
+    try {
+
+        my $method = 'open-ils.search.biblio.multiclass.query';
+        $method .= '.staff' if $ctx->{is_staff};
+        $method =~ s/biblio/metabib/ if $is_meta;
+
+        my $ses = OpenSRF::AppSession->create('open-ils.search');
+
+        $self->timelog("Firing off the multiclass query");
+        my $req = $ses->request($method, $args, $query, 1);
+        $results = $req->gather(1);
+        $self->timelog("Returned from the multiclass query");
+
+    } catch Error with {
+        my $err = shift;
+        $logger->error("multiclass search error: $err");
+        $results = {count => 0, ids => []};
+    };
 
     my $rec_ids = [map { $_->[0] } @{$results->{ids}}];
 
     $ctx->{ids} = $rec_ids;
     $ctx->{hit_count} = $results->{count};
-    $ctx->{parsed_query} = $results->{parsed_query};
+    $ctx->{query_struct} = $results->{global_summary}{query_struct};
+    $logger->debug('query struct: '. Dumper($ctx->{query_struct}));
+    $ctx->{canonicalized_query} = $results->{global_summary}{canonicalized_query};
+    $ctx->{search_summary} = $results->{global_summary};
 
     if ($find_last) {
         # redirect to the record detail page for the last record in the results
@@ -477,7 +478,7 @@ sub load_rresults {
     my ($facets, @data) = $self->get_records_and_facets(
         $fetch_recs, $results->{facet_key}, 
         {
-            flesh => '{holdings_xml,mra,acp,acnp,acns,bmp}',
+            flesh => '{holdings_xml,mra,acp,acnp,acns,bmp,cbs}',
             site => $site,
             metarecord => $is_meta,
             depth => $depth,
@@ -490,9 +491,9 @@ sub load_rresults {
         my $stat = 0;
         if ($is_meta) {
             # if the MR has a single constituent record, it will
-            # be in array position 2 of the result blob.
+            # be in array position 4 of the result blob.
             # otherwise, we don't want to redirect anyway.
-            my $bre_id = $results->{ids}->[0]->[2];
+            my $bre_id = $results->{ids}->[0]->[4];
             $stat = $self->check_1hit_redirect([$bre_id]) if $bre_id;
         } else {
             my $stat = $self->check_1hit_redirect($rec_ids);
@@ -509,20 +510,42 @@ sub load_rresults {
         push(@{$ctx->{records}}, $rec);
 
         if ($is_meta) {
-            # collect filtered, constituent records count for each MR
-            my $bre_ids = $self->recs_from_metarecord(
-                $rec_id, $ctx->{search_ou}, $depth);
-            $rec->{mr_constituent_count} = scalar(@$bre_ids);
+            my $meta_results;
+            try {
+                my $method = 'open-ils.search.biblio.multiclass.query';
+                $method .= '.staff' if $ctx->{is_staff};
+                my $ses = OpenSRF::AppSession->create('open-ils.search');
+                $self->timelog("Firing off the multiclass query");
+                $args->{from_metarecord} = $rec_id;
+                # offset of main search does not apply to the MR
+                # constituents query
+                my $save_offset = $args->{offset};
+                $args->{offset} = 0;
+                my $req = $ses->request($method, $args, $query, 1);
+                $args->{offset} = $save_offset;
+                $meta_results = $req->gather(1);
+                $self->timelog("Returned from the multiclass query");
+
+            } catch Error with {
+                my $err = shift;
+                $logger->error("multiclass search error: $err");
+                $meta_results = {count => 0, ids => []};
+            };
+            my $meta_rec_ids = [map { $_->[0] } @{$meta_results->{ids}}];
+            $rec->{mr_constituent_count} = $meta_results->{count};
+            $rec->{mr_constituent_ids} = $meta_rec_ids;
         }
     }
 
-    if ($tag_circs) {
-        for my $rec (@{$ctx->{records}}) {
-            my ($res_rec) = grep { $_->[0] == $rec->{$id_key} } @{$results->{ids}};
-            # index 1 in the per-record result array is a boolean which
+    for my $rec (@{$ctx->{records}}) {
+        my ($res_rec) = grep { $_->[0] == $rec->{$id_key} } @{$results->{ids}};
+        $rec->{badges} = [split(',', $res_rec->[1])] if $res_rec->[1];
+        $rec->{popularity} = $res_rec->[2];
+        if ($tag_circs) {
+            # index 3 (5 for MR) in the per-record result array is a boolean which
             # indicates whether the record in question is in the users
             # accessible circ history list
-            my $index = $is_meta ? 3 : 1;
+            my $index = $is_meta ? 5 : 3;
             $rec->{user_circulated} = 1 if $res_rec->[$index];
         }
     }
@@ -616,7 +639,7 @@ sub item_barcode_shortcut {
 
         $self->timelog("Calling get_records_and_facets() for item_barcode");
         my ($facets, @data) = $self->get_records_and_facets(
-            $rec_ids, undef, {flesh => "{holdings_xml,mra,acnp,acns,bmp}"}
+            $rec_ids, undef, {flesh => "{holdings_xml,mra,acnp,acns,bmp,cbs}"}
         );
         $self->timelog("Returned from calling get_records_and_facets() for item_barcode");
 
@@ -735,7 +758,7 @@ sub marc_expert_search {
     $self->timelog("Calling get_records_and_facets() for MARC expert");
     my ($facets, @data) = $self->get_records_and_facets(
         $self->ctx->{ids}, undef, {
-            flesh => "{holdings_xml,mra,acnp,acns}",
+            flesh => "{holdings_xml,mra,acnp,acns,cbs}",
             pref_lib => $self->ctx->{pref_ou},
         }
     );

@@ -8,6 +8,7 @@ use OpenILS::Application::Circ::Survey;
 use OpenILS::Application::Circ::StatCat;
 use OpenILS::Application::Circ::Holds;
 use OpenILS::Application::Circ::HoldNotify;
+use OpenILS::Application::Circ::CircNotify;
 use OpenILS::Application::Circ::CreditCard;
 use OpenILS::Application::Circ::Money;
 use OpenILS::Application::Circ::NonCat;
@@ -54,14 +55,20 @@ __PACKAGE__->register_method(
         Retrieve a circ object by id
         @param authtoken Login session key
         @pararm circid The id of the circ object
+        @param all_circ Returns an action.all_circulation object instead
+            of an action.circulation object to pick up aged circs.
     /
 );
+
 sub retrieve_circ {
-    my( $s, $c, $a, $i ) = @_;
+    my( $s, $c, $a, $i, $all_circ ) = @_;
     my $e = new_editor(authtoken => $a);
     return $e->event unless $e->checkauth;
-    my $circ = $e->retrieve_action_circulation($i) or return $e->event;
-    if( $e->requestor->id ne $circ->usr ) {
+    my $method = $all_circ ?
+        'retrieve_action_all_circulation' :
+        'retrieve_action_circulation';
+    my $circ = $e->$method($i) or return $e->event;
+    if( $e->requestor->id ne ($circ->usr || '') ) {
         return $e->event unless $e->allowed('VIEW_CIRCULATIONS');
     }
     return $circ;
@@ -461,7 +468,7 @@ sub set_circ_claims_returned {
 
         # make it look like the circ stopped at the cliams returned time
         $circ->stop_fines_time($backdate);
-        my $evt = OpenILS::Application::Circ::CircCommon->void_overdues($e, $circ, $backdate);
+        my $evt = OpenILS::Application::Circ::CircCommon->void_or_zero_overdues($e, $circ, {backdate => $backdate, note => 'System: OVERDUE REVERSED FOR CLAIMS-RETURNED', force_zero => 1});
         return $evt if $evt;
     }
 
@@ -474,6 +481,67 @@ sub set_circ_claims_returned {
         $copy->editor($e->requestor->id);
         $e->update_asset_copy($copy) or return $e->die_event;
     }
+
+    # Check if the copy circ lib wants lost fees voided on claims
+    # returned.
+    if ($U->is_true($U->ou_ancestor_setting_value($copy->circ_lib, 'circ.void_lost_on_claimsreturned', $e))) {
+        my $result = OpenILS::Application::Circ::CircCommon->void_lost(
+            $e,
+            $circ,
+            3
+        );
+        if ($result) {
+            $e->rollback;
+            return $result;
+        }
+    }
+
+    # Check if the copy circ lib wants lost processing fees voided on
+    # claims returned.
+    if ($U->is_true($U->ou_ancestor_setting_value($copy->circ_lib, 'circ.void_lost_proc_fee_on_claimsreturned', $e))) {
+        my $result = OpenILS::Application::Circ::CircCommon->void_lost(
+            $e,
+            $circ,
+            4
+        );
+        if ($result) {
+            $e->rollback;
+            return $result;
+        }
+    }
+
+    # Check if the copy circ lib wants longoverdue fees voided on claims
+    # returned.
+    if ($U->is_true($U->ou_ancestor_setting_value($copy->circ_lib, 'circ.void_longoverdue_on_claimsreturned', $e))) {
+        my $result = OpenILS::Application::Circ::CircCommon->void_lost(
+            $e,
+            $circ,
+            10
+        );
+        if ($result) {
+            $e->rollback;
+            return $result;
+        }
+    }
+
+    # Check if the copy circ lib wants longoverdue processing fees voided on
+    # claims returned.
+    if ($U->is_true($U->ou_ancestor_setting_value($copy->circ_lib, 'circ.void_longoverdue_proc_fee_on_claimsreturned', $e))) {
+        my $result = OpenILS::Application::Circ::CircCommon->void_lost(
+            $e,
+            $circ,
+            11
+        );
+        if ($result) {
+            $e->rollback;
+            return $result;
+        }
+    }
+
+    # Now that all data has been munged, do a no-op update of 
+    # the patron to force a change of the last_xact_id value.
+    $e->update_actor_user($e->retrieve_actor_user($circ->usr))
+        or return $e->die_event;
 
     $e->commit;
     return 1;
@@ -548,7 +616,7 @@ sub post_checkin_backdate_circ_impl {
     $e->update_action_circulation($circ) or return $e->die_event;
 
     # now void the overdues "erased" by the back-dating
-    my $evt = OpenILS::Application::Circ::CircCommon->void_overdues($e, $circ, $backdate);
+    my $evt = OpenILS::Application::Circ::CircCommon->void_or_zero_overdues($e, $circ, {backdate => $backdate});
     return $evt if $evt;
 
     # If the circ was closed before and the balance owned !=0, re-open the transaction
@@ -726,9 +794,9 @@ sub view_circs {
         $count = 4 unless defined $count;
     }
 
-    return $e->search_action_circulation([
+    return $e->search_action_all_circulation([
         {target_copy => $copyid}, 
-        {limit => $count, order_by => { circ => "xact_start DESC" }} 
+        {limit => $count, order_by => { combcirc => "xact_start DESC" }} 
     ]);
 }
 
@@ -742,15 +810,27 @@ __PACKAGE__->register_method(
     /);
 
 sub circ_count {
-    my( $self, $client, $copyid, $range ) = @_; 
+    my( $self, $client, $copyid ) = @_; 
 
-    return $U->simplereq(
-        'open-ils.storage',
-        'open-ils.storage.asset.copy.circ_count',
-        $copyid, $range
-    );
+    my $count = new_editor()->json_query({
+        select => {
+            circbyyr => [{
+                column => 'count',
+                transform => 'sum',
+                aggregate => 1
+            }]
+        },
+        from => 'circbyyr',
+        where => {'+circbyyr' => {copy => $copyid}}
+    })->[0]->{count};
+
+    return {
+        total => {
+            when => 'total',
+            count => $count
+        }
+    };
 }
-
 
 
 __PACKAGE__->register_method(
@@ -1005,35 +1085,33 @@ sub copy_details {
     my $transit = $e->search_action_transit_copy(
         { target_copy => $copy_id, dest_recv_time => undef } )->[0];
 
-    # find the latest circ, open or closed
-    my $circ = $e->search_action_circulation(
-        [
-            { target_copy => $copy_id },
-            { 
-                flesh => 1,
-                flesh_fields => {
-                    circ => [
-                        'workstation',
-                        'checkin_workstation', 
-                        'duration_rule', 
-                        'max_fine_rule', 
-                        'recurring_fine_rule'
-                    ]
-                },
-                order_by => { circ => 'xact_start desc' }, 
-                limit => 1 
-            }
-        ]
-    )->[0];
-
+    # find the most recent circulation for the requested copy,
+    # be it active, completed, or aged.
+    my $circ = $e->search_action_all_circulation([
+        { target_copy => $copy_id },
+        {
+            flesh => 1,
+            flesh_fields => {
+                combcirc => [
+                    'workstation',
+                    'checkin_workstation',
+                    'duration_rule',
+                    'max_fine_rule',
+                    'recurring_fine_rule'
+                ],
+            },
+            order_by => { combcirc => 'xact_start desc' },
+            limit => 1
+        }
+    ])->[0];
 
     return {
-        copy        => $copy,
-        hold        => $hold,
+        copy    => $copy,
+        hold    => $hold,
         transit => $transit,
-        circ        => $circ,
+        circ    => $circ,
         volume  => $vol,
-        mvr     => $mvr,
+        mvr     => $mvr
     };
 }
 
@@ -1263,7 +1341,7 @@ sub handle_mark_damaged {
         # the assumption is that you would not void the overdues unless you 
         # were also charging for the item and/or applying a processing fee
         if($void_overdue) {
-            my $evt = OpenILS::Application::Circ::CircCommon->void_overdues($e, $circ);
+            my $evt = OpenILS::Application::Circ::CircCommon->void_or_zero_overdues($e, $circ, {note => 'System: OVERDUE REVERSED FOR DAMAGE CHARGE'});
             return $evt if $evt;
         }
 
@@ -1727,10 +1805,10 @@ sub retrieve_circ_chain {
 
     } else {
 
-        my $chain = $e->json_query({from => ['action.circ_chain', $circ_id]});
+        my $chain = $e->json_query({from => ['action.all_circ_chain', $circ_id]});
 
         for my $circ_info (@$chain) {
-            my $circ = Fieldmapper::action::circulation->new;
+            my $circ = Fieldmapper::action::all_circulation->new;
             $circ->$_($circ_info->{$_}) for keys %$circ_info;
             $conn->respond($circ);
         }
@@ -1775,51 +1853,51 @@ sub retrieve_prev_circ_chain {
     return $e->event unless $e->checkauth;
     return $e->event unless $e->allowed('VIEW_CIRCULATIONS');
 
-    if($self->api_name =~ /summary/) {
-        my $first_circ = $e->json_query({from => ['action.circ_chain', $circ_id]})->[0];
-        my $target_copy = $$first_circ{'target_copy'};
-        my $usr = $$first_circ{'usr'};
-        my $last_circ_from_prev_chain = $e->json_query({
-            'select' => { 'circ' => ['id','usr'] },
-            'from' => 'circ', 
-            'where' => {
-                target_copy => $target_copy,
-                xact_start => { '<' => $$first_circ{'xact_start'} }
+    my $first_circ = 
+        $e->json_query({from => ['action.all_circ_chain', $circ_id]})->[0];
+
+    my $prev_circ = $e->search_action_all_circulation([
+        {   target_copy => $first_circ->{target_copy},
+            xact_start => {'<' => $first_circ->{xact_start}}
+        }, {   
+            flesh => 1,
+            flesh_fields => {
+                combcirc => [
+                    'active_circ',
+                    'aged_circ'
+                ]
             },
-            'order_by' => [{ 'class'=>'circ', 'field'=>'xact_start', 'direction'=>'desc' }],
-            'limit' => 1
-        })->[0];
-        return undef unless $last_circ_from_prev_chain;
-        return undef unless $$last_circ_from_prev_chain{'id'};
-        my $sum = $e->json_query({from => ['action.summarize_circ_chain', $$last_circ_from_prev_chain{'id'}]})->[0];
-        return undef unless $sum;
-        my $obj = Fieldmapper::action::circ_chain_summary->new;
-        $obj->$_($sum->{$_}) for keys %$sum;
-        return { 'summary' => $obj, 'usr' => $$last_circ_from_prev_chain{'usr'} };
-
-    } else {
-
-        my $first_circ = $e->json_query({from => ['action.circ_chain', $circ_id]})->[0];
-        my $target_copy = $$first_circ{'target_copy'};
-        my $last_circ_from_prev_chain = $e->json_query({
-            'select' => { 'circ' => ['id'] },
-            'from' => 'circ', 
-            'where' => {
-                target_copy => $target_copy,
-                xact_start => { '<' => $$first_circ{'xact_start'} }
-            },
-            'order_by' => [{ 'class'=>'circ', 'field'=>'xact_start', 'direction'=>'desc' }],
-            'limit' => 1
-        })->[0];
-        return undef unless $last_circ_from_prev_chain;
-        return undef unless $$last_circ_from_prev_chain{'id'};
-        my $chain = $e->json_query({from => ['action.circ_chain', $$last_circ_from_prev_chain{'id'}]});
-
-        for my $circ_info (@$chain) {
-            my $circ = Fieldmapper::action::circulation->new;
-            $circ->$_($circ_info->{$_}) for keys %$circ_info;
-            $conn->respond($circ);
+            order_by => { combcirc => 'xact_start desc' },
+            limit => 1 
         }
+    ])->[0];
+
+    return undef unless $prev_circ;
+
+    my $chain_usr = $prev_circ->usr; # note: may be undef
+
+    if ($self->api_name =~ /summary/) {
+        my $sum = $e->json_query({
+            from => [
+                'action.summarize_all_circ_chain', 
+                $prev_circ->id
+            ]
+        })->[0];
+
+        my $summary = Fieldmapper::action::circ_chain_summary->new;
+        $summary->$_($sum->{$_}) for keys %$sum;
+
+        return {summary => $summary, usr => $chain_usr};
+    }
+
+
+    my $chain = $e->json_query(
+        {from => ['action.all_circ_chain', $prev_circ->id]});
+
+    for my $circ_info (@$chain) {
+        my $circ = Fieldmapper::action::all_circulation->new;
+        $circ->$_($circ_info->{$_}) for keys %$circ_info;
+        $conn->respond($circ);
     }
 
     return undef;

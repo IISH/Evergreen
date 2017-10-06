@@ -49,6 +49,9 @@ INSERT INTO biblio.record_entry (marc, last_xact_id)
 -- load RDA copies, etc.
 \i assets_rda.sql
 
+-- load copy-related data
+\i assets_extras.sql
+
 -- load sample patrons
 \i users_patrons_100.sql
 
@@ -57,6 +60,26 @@ INSERT INTO biblio.record_entry (marc, last_xact_id)
 
 -- circs, etc.
 \i transactions.sql
+\i neg_bal_custom_transactions.sql
+
+-- funds, orders, etc.
+\i acq.sql
+
+-- delete previously imported bibs
+DELETE FROM marcxml_import;
+
+-- load EbookAPI bibs
+\i bibs_ebook_api.sql
+
+-- load metarecord bibs
+\i bibs_mr.sql
+
+-- insert all loaded bibs into the biblio.record_entry in insert order
+INSERT INTO biblio.record_entry (marc, last_xact_id)
+    SELECT marc, tag FROM marcxml_import ORDER BY id;
+
+-- load MR copies, etc.
+\i assets_mr.sql
 
 -- clean up the env
 \i env_destroy.sql

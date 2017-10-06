@@ -125,7 +125,6 @@ my %controllees = (
              b => { 100 => 'b' },
              c => { 100 => 'c' },
              d => { 100 => 'd' },
-             e => { 100 => 'e' },
              f => { 100 => 'f' },
              g => { 100 => 'g' },
              j => { 100 => 'j' },
@@ -136,13 +135,11 @@ my %controllees = (
              q => { 100 => 'q' },
              t => { 100 => 't' },
              u => { 100 => 'u' },
-             4 => { 100 => '4' },
     },
     110 => { a => { 110 => 'a' },
              b => { 110 => 'b' },
              c => { 110 => 'c' },
              d => { 110 => 'd' },
-             e => { 110 => 'e' },
              f => { 110 => 'f' },
              g => { 110 => 'g' },
              k => { 110 => 'k' },
@@ -151,7 +148,6 @@ my %controllees = (
              p => { 110 => 'p' },
              t => { 110 => 't' },
              u => { 110 => 'u' },
-             4 => { 110 => '4' },
     },
     111 => { a => { 111 => 'a' },
              c => { 111 => 'c' },
@@ -167,7 +163,6 @@ my %controllees = (
              q => { 111 => 'q' },
              t => { 111 => 't' },
              u => { 111 => 'u' },
-             4 => { 111 => '4' },
     },
     130 => { a => { 130 => 'a' },
              d => { 130 => 'd' },
@@ -188,7 +183,6 @@ my %controllees = (
              b => { 100 => 'b' },
              c => { 100 => 'c' },
              d => { 100 => 'd' },
-             e => { 100 => 'e' },
              f => { 100 => 'f' },
              g => { 100 => 'g' },
              h => { 100 => 'h' },
@@ -207,13 +201,11 @@ my %controllees = (
              x => { 100 => 'x' },
              y => { 100 => 'y' },
              z => { 100 => 'z' },
-             4 => { 100 => '4' },
     },
     610 => { a => { 110 => 'a' },
              b => { 110 => 'b' },
              c => { 110 => 'c' },
              d => { 110 => 'd' },
-             e => { 110 => 'e' },
              f => { 110 => 'f' },
              g => { 110 => 'g' },
              h => { 110 => 'h' },
@@ -299,7 +291,6 @@ my %controllees = (
              b => { 100 => 'b' },
              c => { 100 => 'c' },
              d => { 100 => 'd' },
-             e => { 100 => 'e' },
              f => { 100 => 'f' },
              g => { 100 => 'g' },
              j => { 100 => 'j' },
@@ -310,13 +301,11 @@ my %controllees = (
              q => { 100 => 'q' },
              t => { 100 => 't' },
              u => { 100 => 'u' },
-             4 => { 100 => '4' },
     },
     710 => { a => { 110 => 'a' },
              b => { 110 => 'b' },
              c => { 110 => 'c' },
              d => { 110 => 'd' },
-             e => { 110 => 'e' },
              f => { 110 => 'f' },
              g => { 110 => 'g' },
              k => { 110 => 'k' },
@@ -325,7 +314,6 @@ my %controllees = (
              p => { 110 => 'p' },
              t => { 110 => 't' },
              u => { 110 => 'u' },
-             4 => { 110 => '4' },
     },
     711 => { a => { 111 => 'a' },
              c => { 111 => 'c' },
@@ -341,7 +329,6 @@ my %controllees = (
              q => { 111 => 'q' },
              t => { 111 => 't' },
              u => { 111 => 'u' },
-             4 => { 111 => '4' },
     },
     730 => { a => { 130 => 'a' },
              d => { 130 => 'd' },
@@ -364,6 +351,23 @@ my %controllees = (
              y => { 151 => 'y' },
              z => { 151 => 'z' },
     },
+    800 => { a => { 100 => 'a' },
+             b => { 100 => 'b' },
+             c => { 100 => 'c' },
+             d => { 100 => 'd' },
+             e => { 100 => 'e' },
+             f => { 100 => 'f' },
+             g => { 100 => 'g' },
+             j => { 100 => 'j' },
+             k => { 100 => 'k' },
+             l => { 100 => 'l' },
+             n => { 100 => 'n' },
+             p => { 100 => 'p' },
+             q => { 100 => 'q' },
+             t => { 100 => 't' },
+             u => { 100 => 'u' },
+             4 => { 100 => '4' },
+    },    
     830 => { a => { 130 => 'a' },
              d => { 130 => 'd' },
              f => { 130 => 'f' },
@@ -505,7 +509,8 @@ authority_control_fields.pl - Controls fields in bibliographic records with auth
 =head1 SYNOPSIS
 
 C<authority_control_fields.pl> [B<--configuration>=I<opensrf_core.conf>] [B<--refresh>]
-[[B<--record>=I<record>[ B<--record>=I<record>]]] | [B<--all>] | [B<--start_id>=I<start-ID> B<--end_id>=I<end-ID>]
+[[B<--record>=I<record>[ B<--record>=I<record>]]] | [B<--all>] | [B<--start_id>=I<start-ID> B<--end_id>=I<end-ID>] |
+[B<--days_back>=I<number-of-days>]
 
 =head1 DESCRIPTION
 
@@ -582,8 +587,15 @@ option.
 =item * B<-e> I<end-ID>, B<--end_id>=I<end-ID>
 
 Specifies the ending ID of the range of bibliographic records to process.
-This option is ignored unless it is accompanied by the B<-s> or B<--start>
+This option is ignored unless it is accompanied by the B<-s> or B<--start_id>
 option.
+
+=item * B<--days_back>=I<number-of-days>
+
+Specifies that only bibliographic records that have been created in the
+past few days should be processed.  You must specify how many days back
+to include.  This option is incompatible with the B<-s> and B<--start_id>
+options.
 
 =back
 

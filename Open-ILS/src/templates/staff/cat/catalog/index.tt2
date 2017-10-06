@@ -5,14 +5,52 @@
 %]
 
 [% BLOCK APP_JS %]
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/marcrecord.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/services/grid.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/services/eframe.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/cat/services/record.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/cat/services/tagtable.js"></script>
+[% INCLUDE 'staff/cat/share/marcedit_strings.tt2' %]
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/cat/services/marcedit.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/circ/services/circ.js"></script>
 [% INCLUDE 'staff/circ/share/circ_strings.tt2' %]
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/circ/services/holds.js"></script>
 [% INCLUDE 'staff/circ/share/hold_strings.tt2' %]
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/cat/services/holdings.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/cat/catalog/app.js"></script>
+<script>
+  angular.module('egCoreMod').run(['egStrings', function(s) {
+    s.CONFIRM_DELETE_COPIES_VOLUMES =
+      "[% l('Permanently delete selected copies and/or volumes from catalog?') %]";
+    s.CONFIRM_DELETE_COPIES_VOLUMES_MESSAGE =
+      "[% l('Will delete {{copies}} copies and {{volumes}} volumes') %]";
+    s.CONFIRM_DELETE_PEERS =
+      "[% l('Unlink selected conjoined copies?') %]";
+    s.CONFIRM_DELETE_PEERS_MESSAGE =
+      "[% l('Will unlink {{peers}} copies') %]";
+    s.CONFIRM_TRANSFER_COPIES_TO_MARKED_VOLUME =                                                                                                                  
+      "[% l('Are you sure you want to transfer selected items to the marked volume?') %]";                                                                                   
+    s.OVERRIDE_TRANSFER_COPIES_TO_MARKED_VOLUME_TITLE =                                                                                                           
+      "[% l('One or more items could not be transferred. Override?') %]";                                                                                                    
+    s.OVERRIDE_TRANSFER_COPIES_TO_MARKED_VOLUME_BODY =                                                                                                            
+      "[% l('Reason(s) include: [_1]', '{{evt_desc}}') %]";                
+    s.VOLS_TRANSFERED =                                                                                                            
+      "[% l('Volume(s) transfered') %]";                
+    s.ITEMS_TRANSFERED =                                                                                                            
+      "[% l('Item(s) transfered') %]";                
+    s.HOLD_TRANSFER_DEST_MARKED =                                                                                                            
+      "[% l('Hold Transfer Destination set') %]";                
+    s.MARK_CONJ_TARGET =                                                                                                            
+      "[% l('Conjoined Item Target set') %]";                
+    s.MARK_VOL_TARGET =                                                                                                            
+      "[% l('Volume Transfer Target set') %]";                
+    s.MARK_ITEM_TARGET =                                                                                                            
+      "[% l('Item Transfer Target set') %]";                
+    s.MARK_OVERLAY_TARGET =                                                                                                            
+      "[% l('Record Overlay Target set') %]";                
+  }])
+</script>
+
 [% END %]
 
 <div ng-view></div>

@@ -11,7 +11,7 @@
     [%-
         lib_url = ctx.get_org_setting(ctx.library.id, 'lib.info_url');
         IF lib_url;
-            '<div id="library-url"><a href="'; lib_url | url; '" property="url">'; l('Library web site'); '</a></div>';
+            '<div id="library-url"><a href="'; lib_url | html; '" property="url">'; l('Library web site'); '</a></div>';
         END;
     -%]
 
@@ -45,7 +45,7 @@
     [%- END; %]
 
     [%- IF ctx.library.parent_ou; %]
-    <h2>Branch relationship</h2>
+    <h2>[% l('Branch relationship') %]</h2>
     <div id="branch-info">[% l('Parent library: ') %]
         <a property="branchOf" href="[% mkurl(opac_root _ '/library/' _ ctx.parent.shortname, {}, 1) %]">[% ctx.parent.name | html %]</a>
     </div>

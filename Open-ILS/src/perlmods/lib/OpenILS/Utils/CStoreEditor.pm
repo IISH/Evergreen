@@ -48,6 +48,31 @@ use base qw/Exporter/;
 push @EXPORT_OK, ( 'new_editor', 'new_rstore_editor' );
 %EXPORT_TAGS = ( funcs => [ qw/ new_editor new_rstore_editor / ] );
 
+our $personality = 'open-ils.cstore';
+
+sub personality { 
+    my( $self, $app ) = @_;
+    $personality = $app if $app;
+    init() if $app; # rewrite if we changed personalities
+    return $personality;
+}
+
+sub import {
+    my $class = shift;
+
+    my @super_args = ();
+    while ( my $a = shift ) {
+        if ($a eq 'personality') {
+            $class->personality( shift );
+        } else {
+            push @super_args, $a;
+        }
+    }
+
+    # Exporter doesn't like you to call it's import() directly
+    return $class->export_to_level(1, $class, @super_args);
+}
+
 sub new_editor { return OpenILS::Utils::CStoreEditor->new(@_); }
 
 sub new_rstore_editor { 
@@ -90,7 +115,7 @@ sub DESTROY {
 sub app {
     my( $self, $app ) = @_;
     $self->{app} = $app if $app;
-    $self->{app} = 'open-ils.cstore' unless $self->{app};
+    $self->{app} = $self->personality unless $self->{app};
     return $self->{app};
 }
 
@@ -418,7 +443,7 @@ sub request {
     if( ($self->{xact} or $always_xact) and 
             $self->session->state != OpenSRF::AppSession::CONNECTED() ) {
         #$logger->error("CStoreEditor lost it's connection!!");
-        throw OpenSRF::EX::ERROR ("CStore connection timed out - transaction cannot continue");
+        throw OpenSRF::EX::ERROR ($self->app." connection timed out - transaction cannot continue");
     }
 
 
@@ -718,7 +743,7 @@ sub __arg_to_string {
 # return $e->event unless @$results; 
 # -----------------------------------------------------------------------------
 sub runmethod {
-    my( $self, $action, $type, $arg, $options ) = @_;
+    my( $self, $action, $type, $hint, $arg, $options ) = @_;
 
    $options ||= {};
 
@@ -735,7 +760,12 @@ sub runmethod {
     }
 
     my @arg = ( ref($arg) eq 'ARRAY' ) ? @$arg : ($arg);
-    my $method = $self->app.".direct.$type.$action";
+    my $method = '';
+    if ($self->personality eq 'open-ils.pcrud') {
+        $method = $self->app.".$action.$hint";
+    } else {
+        $method = $self->app.".direct.$type.$action";
+    }
 
     if( $action eq 'search' ) {
         $method .= '.atomic';
@@ -767,6 +797,8 @@ sub runmethod {
         $method .= '.atomic';
     }
 
+    local $ENV{TZ} = $$options{no_tz} ? undef : $ENV{TZ};
+
     $method =~ s/search/id_list/o if $options->{idlist};
 
     $method =~ s/\.atomic$//o if $self->substream($$options{substream} || 0);
@@ -784,7 +816,8 @@ sub runmethod {
         $self->log_activity($method, $type, $action, $arg);
     }
 
-    if($$options{checkperm}) {
+    # only check perms this way in non-pcrud mode
+    if($self->personality ne 'open-ils.pcrud' and $$options{checkperm}) {
         my $a = ($action eq 'search') ? 'retrieve' : $action;
         my $e = $self->_checkperm($type, $a, $$options{permorg});
         if($e) {
@@ -795,6 +828,10 @@ sub runmethod {
 
     my $obj; 
     my $err = '';
+
+    # in PCRUD mode, if no authtoken is set, fall back to anonymous.
+    unshift(@arg, ($self->authtoken || 'ANONYMOUS')) 
+        if ($self->personality eq 'open-ils.pcrud');
 
     try {
         $obj = $self->request($method, @arg);
@@ -812,13 +849,13 @@ sub runmethod {
             my $evt = OpenILS::Event->new(
                 'DATABASE_UPDATE_FAILED', payload => $arg, debug => "$err" );
             $self->event($evt);
+            return undef;
         }
 
         if( $err ) {
             $self->event( 
                 OpenILS::Event->new( 'DATABASE_QUERY_FAILED', 
                     payload => $arg, debug => "$err" ));
-            return undef;
         }
 
         return undef;
@@ -840,7 +877,7 @@ sub runmethod {
     }
 
     if( $action eq 'search' ) {
-        $self->log(I, "$type.$action : returned ".scalar(@$obj). " result(s)");
+        $self->log(I, "$method: returned ".scalar(@$obj). " result(s)");
         $self->event(_mk_not_found($type, $arg)) unless @$obj;
     }
 
@@ -885,8 +922,9 @@ sub init {
     for my $object (keys %$map) {
         my $obj  = __fm2meth($object, '_');
         my $type = __fm2meth($object, '.');
+        my $hint = $object->json_hint;
         foreach my $command (qw/ update retrieve search create delete batch_retrieve retrieve_all /) {
-            eval "sub ${command}_$obj {return shift()->runmethod('$command', '$type', \@_);}\n";
+            eval "sub ${command}_$obj {return shift()->runmethod('$command', '$type', '$hint', \@_);}\n";
         }
         # TODO: performance test against concatenating a big string of all the subs and eval'ing only ONCE.
     }
@@ -896,6 +934,21 @@ init();  # Add very many subs to this namespace
 
 sub json_query {
     my( $self, $arg, $options ) = @_;
+
+    if( $self->personality eq 'open-ils.pcrud' ) {
+        $self->log(E, "json_query is not allowed when using the ".
+            "open-ils.pcrud personality of CStoreEditor: " .Dumper($arg));
+
+        $self->event(
+            OpenILS::Event->new(
+                'JSON_QUERY_NOT_ALLOWED',
+                attempted_query => $arg,
+                debug => "json_query is not allowed when using the open-ils.pcrud personality of CStoreEditor" 
+            )
+        );
+        return undef;
+    }
+
     $options ||= {};
     my @arg = ( ref($arg) eq 'ARRAY' ) ? @$arg : ($arg);
     my $method = $self->app.'.json_query.atomic';

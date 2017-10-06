@@ -269,36 +269,31 @@ sub show_processing_template {
             var u = new openils.User({ authtoken: authtoken });
 
             dojo.addOnLoad(function () {
-                progress_dialog.show(true);
-                progress_dialog.update({maximum:$rec_string});
+                
+                progress_dialog.update({maximum: $rec_string});
+                progress_dialog.attr("title", "MARC Batch Editor Progress......");
+                progress_dialog.show();
 
                 var interval;
                 interval = setInterval( function() {
                     fieldmapper.standardRequest(
                         ['open-ils.actor','open-ils.actor.anon_cache.get_value'],
                         { async : false,
-                          params: [ u.authtoken, 'res_list' ],
+                          params: [ u.authtoken, 'batch_edit_progress' ],
                           onerror : function (r) { progress_dialog.hide(); },
                           onresponse : function (r) {
                             var counter = { success : 0, fail : 0, total : 0 };
-                            dojo.forEach( openils.Util.readResponse(r), function(x) {
+                            if (x = openils.Util.readResponse(r)) {
+                                counter.success = x.succeeded;
+                                counter.fail    = x.failed;
+                                counter.total = counter.success + counter.fail;
                                 if (x.complete) {
                                     clearInterval(interval);
                                     progress_dialog.hide();
                                     if (x.success == 't') dojo.byId('complete_msg').innerHTML = 'Overlay completed successfully';
                                     else dojo.byId('complete_msg').innerHTML = 'Overlay did not complet successfully';
-                                } else {
-                                    counter.total++;
-                                    switch (x.success) {
-                                        case 't':
-                                            counter.success++;
-                                            break;
-                                        default:
-                                            counter.fail++;
-                                            break;
-                                    }
                                 }
-                            });
+                            };
 
                             // update the progress dialog
                             progress_dialog.update({progress:counter.total});
@@ -312,30 +307,75 @@ sub show_processing_template {
 
             });
         </script>
+<style>
+table {
+    #width:100%;
+}
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 5px;
+    text-align: left;
+}
+table tr:nth-child(even) {
+    background-color: #eee;
+}
+table tr:nth-child(odd) {
+   background-color:#fff;
+}
+table th	{
+    background-color: black;
+    color: white;
+}
+tr#fail	{
+    color: red;
+}
+tr#processed	{
+    font-weight: bold;
+}
+div#complete_msg {
+    font-weight:bold;
+    color: green;
+    font-size: larger;
+    text-decoration: underline;
+}
+</style>
     </head>
+    
 
-    <body style="margin:10px;" class='tundra'>
+    <body style="margin:10px;font-size: 130%" class='tundra'>
         <div class="hide_me"><div dojoType="openils.widget.ProgressDialog" jsId="progress_dialog"></div></div>
 
-        <table style="width:100%; margin-top:100px;">
-            <th>
-                <td>Status</td>
-                <td>Record Count</td>
-            </th>
+        <h1>MARC Batch Editor Status</h1>
+
+        <table>
+            <tr>
+                <th>Status</th>
+                <th>Record Count</th>
+            </tr>
             <tr>
                 <td>Success</td>
                 <td id='success_count'></td>
             </tr>
-            <tr>
+            <tr id='fail'>
                 <td>Failure</td>
                 <td id='fail_count'></td>
             </tr>
-            <tr>
-                <td></td>
+            <tr id='processed' >
+                <td>Total Processed</td>
                 <td id='total_count'></td>
             </tr>
+            <tr>
+               <td></td>
+            </tr>
+            <tr>
+                <td>Total To Process</td>
+                <td>$rec_string</td>
+            </tr>
         </table>
-
+        <br>
         <div id='complete_msg'></div>
 
     </body>

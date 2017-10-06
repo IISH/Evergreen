@@ -21,6 +21,37 @@ BEGIN;
 
 CREATE SCHEMA search;
 
+CREATE OR REPLACE FUNCTION evergreen.pg_statistics (tab TEXT, col TEXT) RETURNS TABLE(element TEXT, frequency INT) AS $$
+BEGIN
+    -- This query will die on PG < 9.2, but the function can be created. We just won't use it where we can't.
+    RETURN QUERY
+        SELECT  e,
+                f
+          FROM  (SELECT ROW_NUMBER() OVER (),
+                        (f * 100)::INT AS f
+                  FROM  (SELECT UNNEST(most_common_elem_freqs) AS f
+                          FROM  pg_stats
+                          WHERE tablename = tab
+                                AND attname = col
+                        )x
+                ) AS f
+                JOIN (SELECT ROW_NUMBER() OVER (),
+                             e
+                       FROM (SELECT UNNEST(most_common_elems::text::text[]) AS e
+                              FROM  pg_stats
+                              WHERE tablename = tab
+                                    AND attname = col
+                            )y
+                ) AS elems USING (row_number);
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION evergreen.query_int_wrapper (INT[],TEXT) RETURNS BOOL AS $$
+BEGIN
+    RETURN $1 @@ $2::query_int;
+END;
+$$ LANGUAGE PLPGSQL STABLE;
+
 CREATE TABLE search.relevance_adjustment (
     id          SERIAL  PRIMARY KEY,
     active      BOOL    NOT NULL DEFAULT TRUE,
@@ -30,7 +61,7 @@ CREATE TABLE search.relevance_adjustment (
 );
 CREATE UNIQUE INDEX bump_once_per_field_idx ON search.relevance_adjustment ( field, bump_type );
 
-CREATE TYPE search.search_result AS ( id BIGINT, rel NUMERIC, record INT, total INT, checked INT, visible INT, deleted INT, excluded INT );
+CREATE TYPE search.search_result AS ( id BIGINT, rel NUMERIC, record INT, total INT, checked INT, visible INT, deleted INT, excluded INT, badges TEXT, popularity NUMERIC );
 CREATE TYPE search.search_args AS ( id INT, field_class TEXT, field_name TEXT, table_alias TEXT, term TEXT, term_type TEXT );
 
 CREATE OR REPLACE FUNCTION search.query_parser_fts (
@@ -159,6 +190,8 @@ BEGIN
 
                 current_res.id = core_result.id;
                 current_res.rel = core_result.rel;
+                current_res.badges = core_result.badges;
+                current_res.popularity = core_result.popularity;
 
                 tmp_int := 1;
                 IF metarecord THEN
@@ -194,6 +227,8 @@ BEGIN
 
                 current_res.id = core_result.id;
                 current_res.rel = core_result.rel;
+                current_res.badges = core_result.badges;
+                current_res.popularity = core_result.popularity;
 
                 tmp_int := 1;
                 IF metarecord THEN
@@ -362,6 +397,8 @@ BEGIN
 
         current_res.id = core_result.id;
         current_res.rel = core_result.rel;
+        current_res.badges = core_result.badges;
+        current_res.popularity = core_result.popularity;
 
         tmp_int := 1;
         IF metarecord THEN
@@ -385,6 +422,8 @@ BEGIN
     current_res.id = NULL;
     current_res.rel = NULL;
     current_res.record = NULL;
+    current_res.badges = NULL;
+    current_res.popularity = NULL;
     current_res.total = total_count;
     current_res.checked = check_count;
     current_res.deleted = deleted_count;
@@ -398,5 +437,42 @@ BEGIN
 END;
 $func$ LANGUAGE PLPGSQL;
 
- 
+CREATE OR REPLACE FUNCTION search.facets_for_record_set(ignore_facet_classes TEXT[], hits BIGINT[]) RETURNS TABLE (id INT, value TEXT, count BIGINT) AS $$
+    SELECT id, value, count FROM (
+        SELECT mfae.field AS id,
+               mfae.value,
+               COUNT(DISTINCT mmrsm.source),
+               row_number() OVER (
+                PARTITION BY mfae.field ORDER BY COUNT(distinct mmrsm.source) DESC
+               ) AS rownum
+        FROM metabib.facet_entry mfae
+        JOIN metabib.metarecord_source_map mmrsm ON (mfae.source = mmrsm.source)
+        JOIN config.metabib_field cmf ON (cmf.id = mfae.field)
+        WHERE mmrsm.source IN (SELECT * FROM unnest($2))
+        AND cmf.facet_field
+        AND cmf.field_class NOT IN (SELECT * FROM unnest($1))
+        GROUP by 1, 2
+    ) all_facets
+    WHERE rownum <= (SELECT COALESCE((SELECT value::INT FROM config.global_flag WHERE name = 'search.max_facets_per_field' AND enabled), 1000));
+$$ LANGUAGE SQL;
+
+CREATE OR REPLACE FUNCTION search.facets_for_metarecord_set(ignore_facet_classes TEXT[], hits BIGINT[]) RETURNS TABLE (id INT, value TEXT, count BIGINT) AS $$
+    SELECT id, value, count FROM (
+        SELECT mfae.field AS id,
+               mfae.value,
+               COUNT(DISTINCT mmrsm.metarecord),
+               row_number() OVER (
+                PARTITION BY mfae.field ORDER BY COUNT(distinct mmrsm.metarecord) DESC
+               ) AS rownum
+        FROM metabib.facet_entry mfae
+        JOIN metabib.metarecord_source_map mmrsm ON (mfae.source = mmrsm.source)
+        JOIN config.metabib_field cmf ON (cmf.id = mfae.field)
+        WHERE mmrsm.metarecord IN (SELECT * FROM unnest($2))
+        AND cmf.facet_field
+        AND cmf.field_class NOT IN (SELECT * FROM unnest($1))
+        GROUP by 1, 2
+    ) all_facets
+    WHERE rownum <= (SELECT COALESCE((SELECT value::INT FROM config.global_flag WHERE name = 'search.max_facets_per_field' AND enabled), 1000));
+$$ LANGUAGE SQL;
+
 COMMIT;

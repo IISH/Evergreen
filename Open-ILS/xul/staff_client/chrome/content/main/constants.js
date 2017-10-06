@@ -44,7 +44,8 @@ var my_constants = {
         '3' : { 'disable_in_copy_editor' : true, 'block_mark_item_damaged' : false, 'block_mark_item_action' : true }, /* | Lost           | f */
         '6' : { 'disable_in_copy_editor' : true, 'block_mark_item_damaged' : false, 'block_mark_item_action' : true }, /* | In transit     | t */
         '8' : { 'disable_in_copy_editor' : true, 'block_mark_item_damaged' : false, 'block_mark_item_action' : false }, /* | On holds shelf | t */
-	'16' : { 'disable_in_copy_editor' : true, 'block_mark_item_damaged' : false, 'block_mark_item_action' : true } /* | Long Overdue  | f */
+        '16' : { 'disable_in_copy_editor' : true, 'block_mark_item_damaged' : false, 'block_mark_item_action' : true }, /* | Long Overdue  | f */
+        '18' : { 'disable_in_copy_editor' : true, 'block_mark_item_damaged' : false, 'block_mark_item_action' : false} /* | Canceled Transit | t */
     }
 }
 
@@ -243,6 +244,7 @@ var api = {
     'FM_CIRC_RETRIEVE_VIA_USER.authoritative' : { 'app' : 'open-ils.actor', 'method' : 'open-ils.actor.user.checked_out.authoritative' },
     'FM_CIRC_RETRIEVE_VIA_COPY' : { 'app' : 'open-ils.circ', 'method' : 'open-ils.circ.copy_checkout_history.retrieve' },
     /*'FM_CIRC_COUNT_RETRIEVE_VIA_USER' : { 'app' : 'open-ils.actor', 'method' : 'open-ils.actor.user.checked_out.count' },*/
+    'FM_CIRC_HAS_HOLDS_COUNT_RETRIEVE_VIA_COPY' : { 'app' : 'open-ils.circ', 'method' : 'open-ils.circ.copy.has_holds_count', 'secure' : true },
     'FM_CIRC_COUNT_RETRIEVE_VIA_USER' : { 'app' : 'open-ils.actor', 'method' : 'open-ils.actor.user.checked_out.count', 'cacheable' : true, 'ttl' : 60000 },
     'FM_CIRC_COUNT_RETRIEVE_VIA_USER.authoritative' : { 'app' : 'open-ils.actor', 'method' : 'open-ils.actor.user.checked_out.count.authoritative', 'cacheable' : true, 'ttl' : 60000 },
     'FM_CIRC_COUNT_RETRIEVE_VIA_COPY' : { 'app' : 'open-ils.circ', 'method' : 'open-ils.circ.circulation.count' },
@@ -370,7 +372,8 @@ var api = {
     'USER_ORG_UNIT_OPT_IN_FEATURE' : { 'app' : 'open-ils.actor', 'method' : 'open-ils.actor.user.org_unit_opt_in.enabled' },
     'USER_ORG_UNIT_OPT_IN_CHECK' : { 'app' : 'open-ils.actor', 'method' : 'open-ils.actor.user.org_unit_opt_in.check' },
     'USER_ORG_UNIT_OPT_IN_CREATE' : { 'app' : 'open-ils.actor', 'method' : 'open-ils.actor.user.org_unit_opt_in.create' },
-    'GET_BARCODES' : { 'app' : 'open-ils.actor', 'method' : 'open-ils.actor.get_barcodes' }
+    'GET_BARCODES' : { 'app' : 'open-ils.actor', 'method' : 'open-ils.actor.get_barcodes' },
+    'ADJUST_BILLS_TO_ZERO' : { 'app' : 'open-ils.circ', 'method' : 'open-ils.circ.money.billable_xact.adjust_to_zero' }
 }
 
 var urls = {
@@ -520,6 +523,7 @@ var urls = {
     'SERIAL_PRINT_ROUTING_LIST_USERS' : 'oils://remote/eg/serial/print_routing_list_users',
     'XUL_SERIAL_BATCH_RECEIVE': 'oils://remote/xul/server/serial/batch_receive.xul',
     'EG_TRIGGER_EVENTS' : 'oils://remote/eg/actor/user/event_log',
+    'EG_PATRON_MESSAGE_CENTER' : 'oils://remote/eg/actor/user/message',
     'XUL_SEARCH_PREFS' : 'chrome://open_ils_staff_client/content/main/search_prefs.xul',
     'XUL_SERVER_ADDONS' : 'oils://remote/xul/server/addon/addons.xul'
 }

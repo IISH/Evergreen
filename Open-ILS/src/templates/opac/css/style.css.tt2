@@ -1,13 +1,17 @@
 [%-
     PROCESS "opac/parts/css/colors.tt2";
     PROCESS "opac/parts/css/fonts.tt2";
+    rtl = ctx.get_i18n_l(ctx.eg_locale).rtl;
 %]
 
 body {
     margin:0;
     font-family: Arial, Helvetica, sans-serif;
     font-size: [% css_fonts.size_base %];
-    background: [% css_colors.primary %];
+    background-color: [% css_colors.primary %];
+    [% IF rtl == 't' -%]
+    direction: rtl;
+    [%- END %]
 }
 
 button, input {
@@ -48,6 +52,15 @@ a {
 .searchbar {
     font-weight: bold;
     padding-top: 10px;
+    [% IF rtl == 't' -%]
+    margin-right: 1em;
+    [%- ELSE %]
+    margin-left: 1em;
+    [%- END %]
+}
+
+.refine_search {
+    padding-bottom: 7px;
     margin-left: 1em;
 }
 
@@ -55,7 +68,6 @@ a {
 #search-wrapper select {
     border:0px solid [% css_colors.border_dark %];
     filter:alpha(opacity=0);
-    -moz-opacity:0;
     -khtml-opacity:0;
     opacity:0;
     padding:0;
@@ -88,17 +100,26 @@ h2.graphic880 {
 div.select-box-wrapper {
     position:absolute;
     padding-top:2px;
-    padding-left:3px;
     overflow:hidden;
+    [% IF rtl == 't' -%]
+    padding-right: 3px;
+    text-align:right;
+    [%- ELSE %]
+    padding-left:3px;
     text-align:left;
+    [%- END %]
 }
 
 #dash_wrapper {
+    [% IF rtl == 't' -%]
+    margin-right: 0.5em;
+    [%- ELSE %]
     margin-left: 0.5em;
+    [%- END %]
 }
 
 #dash_wrapper div {
-    background: [% css_colors.primary %];
+    background-color: [% css_colors.primary %];
     border-radius: 5px;
     padding: 0em 1em;
 }
@@ -109,12 +130,12 @@ div.select-box-wrapper {
     display:inline-block;
 }
 
-#dashboard {
+#dashboard, #dashboard_e {
     margin-top: 1em;
     height: 3em;
 }
 
-#dashboard span.dash-align a {
+#dashboard span.dash-align a, #dashboard_e span.dash-align a {
     font-weight: bold;
     text-decoration: none;
 }
@@ -123,11 +144,17 @@ div.select-box-wrapper {
     font-weight: bold;
 }
 
-#logout_link { left: 1px; }
+#logout_link {
+    [% IF rtl == 't' -%]
+    right: 1px;
+    [%- ELSE %]
+    left: 1px;
+    [%- END %]
+}
 
-#dash_checked { color: [% css_colors.text_attention %]; }
-#dash_holds { color: [% css_colors.text_attention %]; }
-#dash_pickup { color: [% css_colors.text_goodnews %]; }
+#dash_checked, #dash_e_checked { color: [% css_colors.text_attention %]; }
+#dash_holds, #dash_e_holds { color: [% css_colors.text_attention %]; }
+#dash_pickup, #dash_e_pickup { color: [% css_colors.text_goodnews %]; }
 
 /*  
 #dash_fines { color: [% css_colors.text_badnews %]; }
@@ -137,12 +164,33 @@ for now until a better color is picked - if needed.
 */
 #dash_fines { color: [% css_colors.text_attention %]; }
 
+#dash_wrapper #dash_user_message_button_container {
+    display: inline;
+    padding: 0;
+}
+#dash_wrapper #unread_message_count_floater {
+    position: absolute;
+    background-color: [% css_colors.text_alert %];
+    padding-left: 0.2em;
+    padding-right: 0.2em;
+    display: inline-block;
+    font-size: 95%;
+    border-radius: 0;
+    z-index: 2;
+    margin-top: 0.2em;
+    [% IF rtl == 't' -%]
+    margin-right: -1.5em;
+    [%- ELSE %]
+    margin-left: -1.5em;
+    [%- END %]
+}
+
 #header-wrap {
-    background: linear-gradient([% css_colors.primary %], [% css_colors.primary_fade %]);
-    background: -moz-linear-gradient([% css_colors.primary %], [% css_colors.primary_fade %]);
-    background: -o-linear-gradient([% css_colors.primary %], [% css_colors.primary_fade %]);
-    background: -webkit-linear-gradient([% css_colors.primary %], [% css_colors.primary_fade %]);
     background-color: [% css_colors.primary_fade %];
+    background-image: -moz-linear-gradient([% css_colors.primary %], [% css_colors.primary_fade %]);
+    background-image: -o-linear-gradient([% css_colors.primary %], [% css_colors.primary_fade %]);
+    background-image: -webkit-linear-gradient([% css_colors.primary %], [% css_colors.primary_fade %]);
+    background-image: linear-gradient([% css_colors.primary %], [% css_colors.primary_fade %]);
 }
 #header {
     color: [% css_colors.background %];
@@ -172,9 +220,14 @@ for now until a better color is picked - if needed.
 #header-links a {
     color: [% css_colors.text_invert %];
     display: block;
+    text-decoration: none;
+    [% IF rtl == 't' -%]
+    float: right;
+    margin-left: 22px;
+    [%- ELSE %]
     float:left;
     margin-right:22px;
-    text-decoration: none;
+    [%- END %]
 }
 
 #header-links a:hover {
@@ -203,43 +256,66 @@ for now until a better color is picked - if needed.
 }
 
 #gold-links {
+    [% IF rtl == 't' -%]
+    margin-right: 1em;
+    padding-right: 0px;
+    [%- ELSE %]
     margin-left: 1em;
     padding-left:0px;
+    [%- END %]
 }
 
 #gold-links-home {
     margin:auto;
+    [% IF rtl == 't' -%]
+    padding-right: 0px;
+    [%- ELSE %]
     padding-left:0px;
+    [%- END %]
 }
 
 #gold-links-holder {
     height: 24px;
-    background: [% css_colors.background_invert %];
+    background-color: [% css_colors.background_invert %];
 }
 
 #util-bar {
+    [% IF rtl == 't' -%]
+    margin-right: 1em;
+    padding-right: 0px;
+    [%- ELSE %]
     margin-left: 1em;
     padding-left:0px;
+    [%- END %]
     height:0px;
 }
 
 #search-wrapper {
     border-bottom: 1px solid [% css_colors.border_standard %];
     padding-bottom: 5px;
-    background: [% css_colors.background %];
+    background-color: [% css_colors.background %];
 }
 
 #search-wrapper #breadcrumb {
     margin-top:0px;
     font-size: [% css_fonts.size_smaller %];
+    [% IF rtl == 't' -%]
+    float: right;
+    [%- ELSE %]
     float:left;
+    [%- END %]
 }
 
 #search-wrapper #search-within {
     margin-top:10px;
-    float:right;
     position:relative;
+    [% IF rtl == 't' -%]
+    float: left;
+    right: -173px;
+    [%- ELSE %]
+    float:right;
     left:-173px;
+    [%- END %]
 }
 
 #search-wrapper #breadcrumb a {
@@ -251,29 +327,43 @@ for now until a better color is picked - if needed.
 }
 
 #search-wrapper #search-box {
+    [% IF rtl == 't' -%]
+    margin-right: 1em;
+    padding-right: 0px;
+    [%- ELSE %]
     margin-left: 1em;
     padding-left: 0px;
+    [%- END %]
     padding-top: 10px;
     padding-bottom: 10px;
 }
 
 #adv_search_tabs, #acct_tabs, #acct_fines_tabs, #acct_checked_tabs, #acct_holds_tabs, #acct_prefs_tabs, #results_header_inner{
+    [% IF rtl == 't' -%]
+    margin-right:2px;
+    [%- ELSE %]
     margin-left: 2px;
+    [%- END %]
     overflow: auto;
 }
 
 #adv_search_tabs a, #acct_tabs a, #acct_fines_tabs a, #acct_checked_tabs a, #acct_holds_tabs a, #acct_prefs_tabs a {
+    [% IF rtl == 't' -%]
+    float: right;
+    margin: 10px 0px 0px 7px;
+    border-radius: 10px 10px 0px 0px;
+    [%- ELSE %]
     float: left;
+    margin: 10px 7px 0px 0px;
+    border-radius: 10px 10px 0px 0px;
+    [%- END %]
     text-align: center;
     vertical-align: middle;
     display: block;
-    margin: 10px 7px 0px 0px;
     padding: 10px 0px 10px 0px;
-    -moz-border-radius: 10px 10px 0px 0px; 
-    border-radius: 10px 10px 0px 0px;
     font-weight: bold;
     color: [% css_colors.text_invert %];
-    background: [% css_colors.control %];
+    background-color: [% css_colors.control %];
     font-weight: bold;
     text-decoration: none;
 }
@@ -283,7 +373,7 @@ for now until a better color is picked - if needed.
 }
 
 #adv_search_tabs a:hover, #acct_tabs a:hover, #acct_fines_tabs a:hover, #acct_checked_tabs a:hover, #acct_holds_tabs a:hover, #acct_prefs_tabs a:hover {
-    background: [% css_colors.primary %]; 
+    background-color: [% css_colors.primary %];
     color: [% css_colors.text_invert %];
     text-decoration: none;
 }
@@ -295,46 +385,65 @@ for now until a better color is picked - if needed.
     border-bottom: none;
 }
 .adv_filter_block {
-    padding: 15px;
+    [% IF rtl == 't' -%]
+    float: right;
+    [%- ELSE %]
     float: left;
+    [%- END %]
+    padding: 15px;
     clear: both;
 }
 .adv_filter_block_item {
+    [% IF rtl == 't' -%]
+    float: right;
+    [%- ELSE %]
     float: left;
+    [%- END %]
     padding: 5px;
 }
 
 #adv_special_block {
+    [% IF rtl == 't' -%]
+    float: right;
+    [%- ELSE %]
     float: left;
+    [%- END %]
     padding: 5px;
     margin-top: 5px;
 }
 
 #adv_search_submit {
-    position: relative;
+    [% IF rtl == 't' -%]
+    margin-right: 10px;
+    [%- ELSE %]
     margin-left: 10px;
-
+    [%- END %]
+    position: relative;
 }
 
 .checkbox_col {
     width: 1%;
+    [% IF rtl == 't' -%]
+    padding-right: 10px !important;
+    [%- ELSE %]
     padding-left: 10px !important;
+    [%- END %]
 }
 
 #adv_search.on, #num_search.on, #expert_search.on {
     color: [% css_colors.accent_darker %];
-    background: [% css_colors.background %];
+    background-color: [% css_colors.background %];
     text-decoration: none;
 }
 
 #adv_search_tabs a.acct-tab-on, #acct_tabs a.acct-tab-on, #acct_fines_tabs a.acct-tab-on {
     color: [% css_colors.accent_darker %];
-    background: [% css_colors.background %];
+    background-color: [% css_colors.background %];
     text-decoration: none;
 }
 
 .acct-tab-off {
-    background: [% css_colors.control %];
+    background-color: [% css_colors.control %];
 }
 
 #acct_checked_tabs a, #acct_holds_tabs a, #acct_prefs_tabs a {
@@ -345,7 +454,7 @@ for now until a better color is picked - if needed.
 }
 
 #acct_checked_tabs div.selected a, #acct_holds_tabs div.selected a, #acct_prefs_tabs div.selected a {
-    background: [% css_colors.accent_lightest %];
+    background-color: [% css_colors.accent_lightest %];
     color: [% css_colors.accent_darker %];
 }
 
@@ -359,12 +468,17 @@ for now until a better color is picked - if needed.
 }
 
 #mobile_acct_search_links {
-      background: [% css_colors.primary_fade %];
+      background-color: [% css_colors.primary_fade %];
 }
 
 .rdetail_header {
+    [% IF rtl == 't' -%]
+    padding: 5px 0px 6px 7px;
+    margin-right: 1em;
+    [%- ELSE %]
     padding: 5px 7px 6px 0px;
     margin-left: 1em;
+    [%- END %]
     border-bottom: 1px dotted [% css_colors.accent_light %];
 }
 
@@ -377,14 +491,22 @@ for now until a better color is picked - if needed.
 .rdetail_result_count {
     color: [% css_colors.text %];
     font-weight: normal;
-    padding-left: 1em;
     display: inline-block;
+    [% IF rtl == 't' -%]
+    padding-right: 1em;
+    [%- ELSE %]
+    padding-left: 1em;
+    [%- END %]
 }
 
 .rdetail_result_nav {
     font-weight:normal;
-    padding-left: 1em;
     display: inline-block;
+    [% IF rtl == 't' -%]
+    padding-right: 1em;
+    [%- ELSE %]
+    padding-left: 1em;
+    [%- END %]
 }
 
 #rdetail_details_table {
@@ -394,7 +516,11 @@ for now until a better color is picked - if needed.
 #rdetail_image { border: none; }
 #rdetail_image_cell {
     padding-top: 3px;
+    [% IF rtl == 't' -%]
+    padding-left: 10px;
+    [%- ELSE %]
     padding-right: 10px;
+    [%- END %]
 }
 
 h2.rdetail_uris {
@@ -406,7 +532,11 @@ div.rdetail_uris {
 }
 div.rdetail_uris ul li {
     position: relative;
+    [% IF rtl == 't' -%]
+    right: 1em;
+    [%- ELSE %]
     left: 1em;
+    [%- END %]
 }
 
 div.rdetail_show_copies {
@@ -414,16 +544,26 @@ div.rdetail_show_copies {
 }
 
 div#rdetail_actions_div {
+    background-color: [% css_colors.background %];
+    [% IF rtl == 't' -%]
+    float: left;
+    [%- ELSE %]
     float: right;
-    background: [% css_colors.background %];
+    [%- END %]
 }
 
 span#rdetail_copy_counts {
     display: inline-block;
-    border-right: thin;
     vertical-align: top;
+    [% IF rtl == 't' -%]
+    border-left: thin;
+    margin-left: 1em;
+    padding-left: 1em;
+    [%- ELSE %]
+    border-right: thin;
     margin-right: 1em;
     padding-right: 1em;
+    [%- END %]
 }
 
 span#rdetail_hold_counts {
@@ -431,19 +571,34 @@ span#rdetail_hold_counts {
     vertical-align: top;
 }
 span#rdetail_hold_counts p {
+    [% IF rtl == 't' -%]
+    padding-right: 2em;
+    [%- ELSE %]
     padding-left: 2em;
+    [%- END %]
 }
 
 #rdetail_image_div {
+    [% IF rtl == 't' -%]
+    float: right;
+    margin-left: 1em;
+    [%- ELSE %]
     float: left;
     margin-right: 1em;
+    [%- END %]
 }
 
 .rdetail_aux_utils {
+    padding-bottom: 6px;
+    [% IF rtl == 't' -%]
+    border-right: 1px dotted [% css_colors.accent_light %];
+    padding-right:17px;
+    padding-left:70px;
+    [%- ELSE %]
     border-left:1px dotted [% css_colors.accent_light %];
     padding-left: 17px;
-    padding-bottom: 6px;
     padding-right: 70px;
+    [%- END %]
 }
 
 div.place_hold {
@@ -453,14 +608,46 @@ div.place_hold {
 
 div.toggle_list { padding-top: 6px; }
 
-div.format_icon {
-    float: right;
-    margin-right: 17px;
+div.share_record {
+    padding-top: 6px;
+    border-top: 1px dotted [% css_colors.accent_light %];
 }
 
-.result_util {
-    border-bottom: 1px dotted [% css_colors.accent_light %];
-    padding-top: 6px;
+div.format_icon {
+    [% IF rtl == 't' -%]
+    float: left;
+    margin-left: 17px;
+    [%- ELSE %]
+    float: right;
+    margin-right: 17px;
+    [%- END %]
+}
+
+#metarecord_population {
+    overflow: hidden;
+    width: 40%;
+    padding-bottom: 10px;
+}
+
+.metarecord_population_span_link {
+    line-height: 20px;
+}
+
+.metarecord_population_format {
+    border-right: thin;
+    display: inline-block;
+    margin-right: 1em;
+    padding-right: 1em;
+    vertical-align: top;
+}
+
+.metarecord_population_item_lang {
+    display: inline-block;
+    vertical-align: top;
+}
+
+.metarecord_population_all {
+    padding-top:10px;
 }
 
 .results_aux_utils {
@@ -468,7 +655,13 @@ div.format_icon {
 }
 
 .result_util {
+    border-bottom: 1px dotted [% css_colors.accent_light %];
+    padding-top: 6px;
+    [% IF rtl == 't' -%]
+    padding-right: 1em;
+    [%- ELSE %]
     padding-left: 1em;
+    [%- END %]
 }
 
 .results_reviews {
@@ -480,8 +673,11 @@ div.format_icon {
 }
 
 #rdetails_status td {
+    [% IF rtl == 't' -%]
+    padding: 7px 13px 3px 0px;
+    [%- ELSE %]
     padding: 7px 0px 3px 13px;
-    white-space: nowrap;
+    [%- END %]
 }
 
 #rdetails_status td[headers=copy_header_library], 
@@ -490,16 +686,26 @@ div.format_icon {
 }
 
 #rdetails_status thead th {
-    background-color: [% css_colors.accent_lighter2 %];
+    [% IF rtl == 't' -%]
+    padding: 13px 13px 13px 0px;
+    text-align: right;
+    [%- ELSE %]
     padding: 13px 0px 13px 13px;
+    text-align: left;
+    [%- END %]
+    background-color: [% css_colors.accent_lighter2 %];
     font-size: [% css_fonts.size_smaller %];
     font-weight: bold;
-    text-align: left;
 }
 
 #rdetails_status tbody td {
+    [% IF rtl == 't' -%]
+    padding-right: 13px;
+    text-align: right;
+    [%- ELSE %]
     padding-left: 13px;
     text-align: left;
+    [%- END %]
 }
 #rdetails_status tbody td.copy_note {
     color: [% css_colors.primary %];
@@ -509,7 +715,7 @@ div.format_icon {
 }
 
 .rdetail_extras {
-    background: [% css_colors.primary_fade %];
+    background-color: [% css_colors.primary_fade %];
     border: 1px solid [% css_colors.primary %];
     padding-top:1px;
     clear:both;
@@ -520,10 +726,15 @@ div.format_icon {
 }
 
 .rdetail_extras_hr {
-    height: 1px;
-    background: [% css_colors.accent_light %];
+    [% IF rtl == 't' -%]
+    margin-right: 1px;
+    margin-left: 1px;
+    [%- ELSE %]
     margin-left: 1px;
     margin-right: 1px;
+    [%- END %]
+    height: 1px;
+    background-color: [% css_colors.accent_light %];
 }
 
 .rdetail_extras_link {
@@ -537,14 +748,22 @@ div.format_icon {
     text-decoration: none;
 }
 
-##rdetail_extras_expand, #rdetail_extras_collapse, #rdetail_locs_collapse {
+#rdetail_extras_expand, #rdetail_extras_collapse, #rdetail_locs_collapse {
+    [% IF rtl == 't' -%]
+    margin-right: 13px;
+    [%- ELSE %]
     margin-left: 13px;
+    [%- END %]
 }
 
 #rdetail_locs_expand, #rdetail_locs_collapse {
+    [% IF rtl == 't' -%]
+    margin-right: 13px;
+    [%- ELSE %]
+    margin-left:13px;
+    [%- END %]
     padding-bottom:3px;
     margin-top:15px;
-    margin-left:13px;
 }
 
 #rdetail_anotes_div .biography {
@@ -552,11 +771,11 @@ div.format_icon {
 }
 
 .almost-content-wrapper {
-    background: [% css_colors.background %];
+    background-color: [% css_colors.background %];
 }
 
 #content-wrapper {
-    background: [% css_colors.background %];
+    background-color: [% css_colors.background %];
     min-height: 260px;
     border-bottom: 1px solid [% css_colors.border_dark %];
 }
@@ -564,30 +783,54 @@ div.format_icon {
 .content-wrapper-record-page { top: -15px; position: relative; }
 
 #main-content-home {
+    [% IF rtl == 't' -%]
+    padding-right: 17px;
+    margin-right: 1em;
+    [%- ELSE %]
     padding-left: 17px;
     margin-left: 1em;
+    [%- END %]
 }
 #main-content {
+    [% IF rtl == 't' -%]
+    padding-right: 0px;
+    [%- ELSE %]
     padding-left: 0px;
+    [%- END %]
     margin: 0 1em;
     clear: both;
 }
 
 #main-content-after-bar {
+    [% IF rtl == 't' -%]
+    margin-right: 1em;
+    padding-right: 4px;
+    [%- ELSE %]
     margin-left: 1em;
     padding-left: 4px;
+    [%- END %]
 }
 
-#results-side-bar { float: left; width: 174px; margin-right: 5px; background: [% css_colors.background %]; }
+#results-side-bar {
+    [% IF rtl == 't' -%]
+    float: right; 
+    margin-left: 5px;
+    [%- ELSE %]
+    float: left;
+    margin-right: 5px; 
+    [%- END %]
+    width: 174px;
+    background-color: [% css_colors.background %];
+}
 
 #main-content .login_boxes {
     border: 1px solid [% css_colors.accent_lighter %];
-    background: linear-gradient(bottom, [% css_colors.accent_ultralight %] 15%, [% css_colors.accent_lightest %] 55%, [% css_colors.accent_ultralight %] 85%);
-    background: -moz-linear-gradient(bottom, [% css_colors.accent_ultralight %] 15%, [% css_colors.accent_lightest %] 55%, [% css_colors.accent_ultralight %] 85%);
-    background: -ms-linear-gradient(bottom, [% css_colors.accent_ultralight %] 15%, [% css_colors.accent_lightest %] 55%, [% css_colors.accent_ultralight %] 85%);
-    background: -o-linear-gradient(bottom, [% css_colors.accent_ultralight %] 15%, [% css_colors.accent_lightest %] 55%, [% css_colors.accent_ultralight %] 85%);
-    background: -webkit-linear-gradient(bottom, [% css_colors.accent_ultralight %] 15%, [% css_colors.accent_lightest %] 55%, [% css_colors.accent_ultralight %] 85%);
-
+    background-color: [% css_colors.accent_lightest %];
+    background-image: -moz-linear-gradient(bottom, [% css_colors.accent_ultralight %] 15%, [% css_colors.accent_lightest %] 55%, [% css_colors.accent_ultralight %] 85%);
+    background-image: -ms-linear-gradient(bottom, [% css_colors.accent_ultralight %] 15%, [% css_colors.accent_lightest %] 55%, [% css_colors.accent_ultralight %] 85%);
+    background-image: -o-linear-gradient(bottom, [% css_colors.accent_ultralight %] 15%, [% css_colors.accent_lightest %] 55%, [% css_colors.accent_ultralight %] 85%);
+    background-image: -webkit-linear-gradient(bottom, [% css_colors.accent_ultralight %] 15%, [% css_colors.accent_lightest %] 55%, [% css_colors.accent_ultralight %] 85%);
+    background-image: linear-gradient(to bottom, [% css_colors.accent_ultralight %] 15%, [% css_colors.accent_lightest %] 55%, [% css_colors.accent_ultralight %] 85%);
     color: [% css_colors.accent_darker %];
 }
 
@@ -598,7 +841,11 @@ div.format_icon {
 }
 
 #main-content .left_brain {
+    [% IF rtl == 't' -%]
+    padding-right: 28px;
+    [% ELSE -%]
     padding-left:28px;
+    [% END -%]
     padding-top:25px;
 }
 
@@ -606,22 +853,31 @@ div.format_icon {
     width:167px;
     margin:0;
     padding:0;
-    background: [% css_colors.background %];
+    background-color: [% css_colors.background %];
     font-size: [% css_fonts.size_bigger %];
     color: [% css_colors.text %];
 }
 
 #main-content .left_brain .input_bg {
+    [% IF rtl == 't' -%]
+    padding: 10px 13px 0px 10px;
+    [% ELSE -%]
     padding:10px 10px 0px 13px;
+    [% END -%]
     width:167px;
     height:29px;
 }
 
 .login-help-box {
+    [% IF rtl == 't' -%]
+    float: right;
+    margin-right: 2em;
+    [% ELSE -%]
     float: left;
+    margin-left: 2em;
+    [% END -%]
     width: 200px;
     text-align: center;
-    margin-left: 2em;
 }
 
 .login-help-button {
@@ -656,19 +912,23 @@ div.format_icon {
 }
 
 #results_header_bar {
-    background: [% css_colors.accent_medium %];
+    background-color: [% css_colors.accent_medium %];
     border-top:1px solid [% css_colors.accent_mediumdark %];
     border-bottom:1px solid [% css_colors.accent_mediumdark %];
 }
 
 .results_header_lbl {
-    font-weight: bold;
+    [% IF rtl == 't' -%]
+    float: right;
+    [% ELSE -%]
     float: left;
+    [% END -%]
+    font-weight: bold;
     color: [% css_colors.text %];
     /* this border is not visible, but it keeps these labels the same size
     as the buttons */
     border: 1px solid [% css_colors.accent_medium %];
-    background: [% css_colors.accent_medium %];
+    background-color: [% css_colors.accent_medium %];
     margin: 0.5em 0.3em;
     padding: 0.3em;
 }
@@ -685,13 +945,20 @@ collapse correctly when the window width decreases */
 }
 
 .results_header_sel {
-    /* width: 88px; */
+    [% IF rtl == 't' -%]
+    float: right;
+    [% ELSE -%]
     float:left;
+    [% END -%]
     margin:0;
 }
 
 .results_header_nav1 {
+    [% IF rtl == 't' -%]
+    padding: 5px 0px 6px 7px;
+    [% ELSE -%]
     padding: 5px 7px 6px 0px;
+    [% END -%]
     border-bottom: 1px dotted [% css_colors.accent_light %];
 }
 
@@ -726,9 +993,14 @@ tr.result_table_row > td.result_table_title_cell {
 }
 
 .result_metadata {
+    [% IF rtl == 't' -%]
+    float: right;
+    padding-left: 2em;
+    [% ELSE -%]
     float: left;
-    width: 30em;
     padding-right: 2em;
+    [% END -%]
+    width: 30em;
 }
 
 tr.result_table_row:nth-child(n+2) > td {
@@ -736,13 +1008,21 @@ tr.result_table_row:nth-child(n+2) > td {
 }
 
 tr.result_table_row > td.result_table_pic_header {
+    [% IF rtl == 't' -%]
+    padding-right: 1em;
+    [% ELSE -%]
+    padding-left: 1em;
+    [% END -%]
     white-space: nowrap;
     width: 78px;
-    padding-left: 1em;
 }
 
 .result_number {
+    [% IF rtl == 't' -%]
+    padding-right: 1em;
+    [% ELSE -%]
     padding-left: 1em;
+    [% END -%]
     white-space: nowrap;
 }
 
@@ -756,11 +1036,13 @@ tr.result_table_row > td.result_table_pic_header {
 }
 
 div.result_table_utils_cont {
+    [% IF rtl == 't' -%]
+    text-align: right;
+    float: right;
+    [% ELSE -%]
     text-align:left;
     float: left;
-}
-
-.icon_text {
+    [% END -%]
 }
 
 #myopac_summary_div p {
@@ -772,8 +1054,26 @@ div.result_table_utils_cont {
     padding-bottom:5px;
 }
 
-.zero_search_hits_main { float:left; width:300px; margin-top: 2ex; }
-.zero_search_hits_saved { float:left; width:200px; margin-top: 2ex; margin-right: 2em; }
+.zero_search_hits_main {
+    [% IF rtl == 't' -%]
+    float: right;
+    [% ELSE -%]
+    float:left;
+    [% END -%]
+    width:300px;
+    margin-top: 2ex;
+}
+.zero_search_hits_saved {
+    [% IF rtl == 't' -%]
+    float: right;
+    margin-left: 2em;
+    [% ELSE -%]
+    float:left;
+    margin-right: 2em;
+    [% END -%]
+    width:200px;
+    margin-top: 2ex;
+}
 
 #zero_search_hits p {
     margin-top:0;
@@ -790,15 +1090,23 @@ div.result_table_utils_cont {
 }
 
 #lowhits_help {
+    [% IF rtl == 't' -%]
+    float: left;
+    [% ELSE -%]
     float: right;
+    [% END-%]
     width: 353px;
-    background: [% css_colors.accent_light %];
+    background-color: [% css_colors.accent_light %];
     padding: 10px;
     margin-top: 7px;
 }
 
 .results_info_table td {
+    [% IF rtl == 't' -%]
+    padding-left: 10px;
+    [% ELSE -%]
     padding-right: 10px;
+    [% END-%]
 }
 
 #myopac_holds_main_table {
@@ -810,22 +1118,40 @@ div.result_table_utils_cont {
     
 }
 
+.myopac-hold-available {
+    color: [% css_colors.text_greatnews %];
+    font-weight: bold;
+}
+
+.myopac-hold-suspended {
+    color: [% css_colors.text_badnews %];
+    font-weight: bold;
+}
+
 #myopac_prefs_div .data_grid {
     border-collapse:collapse;
 }
 
 #myopac_prefs_div .data_grid td {
-    background:[% css_colors.accent_ultralight %];
-    border-bottom:3px solid [% css_colors.background %];
+    [% IF rtl == 't' -%]
+    padding: 6px 17px 7px 0px;
+    [% ELSE -%]
     padding:6px 0px 7px 17px;
+    [% END -%]
+    background-color:[% css_colors.accent_ultralight %];
+    border-bottom:3px solid [% css_colors.background %];
 }
 
 .header_middle {
+    [% IF rtl == 't' -%]
+    padding: 0px 0px 0px 7px;
+    [% ELSE -%]
+    padding: 0px 7px 0px 0px;
+    [% END -%]
     height:22px;
     font-size: [% css_fonts.size_bigger %];
     font-weight:bold;
     color:[% css_colors.primary_fade %];
-    padding: 0px 7px 0px 0px;
     border-bottom: 1px dotted [% css_colors.accent_light %];
     clear: both;
 }
@@ -835,13 +1161,18 @@ div.result_table_utils_cont {
 }
 
 #acct_sum_block {
-     float:left;
-     clear:left;
+    [% IF rtl == 't' -%]
+    float: right;
+    clear: right;
+    [% ELSE -%]
+    float: left;
+    clear: left;
+    [% END -%]
 }
 
 .acct_sum_table {
     border-collapse: collapse;
-    background: [% css_colors.accent_ultralight %];
+    background-color: [% css_colors.accent_ultralight %];
 }
 
 .acct_sum_table tr {
@@ -862,40 +1193,46 @@ div.result_table_utils_cont {
     font-weight: normal;
 }
 
-table.acct_notes {
-    border-collapse: collapse;
-    margin: -1em 0 0.5em 0;
-}
-
-table.acct_notes * {
-    border: solid thin;
-    padding: 0.5em; 
-}
-
-table.acct_notes th {
-    font-weight: bold;
-}
-
 #myopac_sum_fines {
+    [% IF rtl == 't' -%]
+    float: left;
+    padding: 15px 23px 0px 0px;
+    [% ELSE -%]
     float:right;
     padding: 15px 0px 0px 23px;
-    background: [% css_colors.accent_ultralight %];
+    [% END -%]
+    background-color: [% css_colors.accent_ultralight %];
     width: 177px;
     height: 166px;
 }
 
-#myopac_sum_fines_placehold { float: right; width: 177px; height: 166px; }
+#myopac_sum_fines_placehold {
+    [% IF rtl == 't' -%]
+    float: left;
+    [% ELSE -%]
+    float: right;
+    [% END -%]
+    width: 177px;
+    height: 166px;
+}
 
 .acct_holds_temp td {
+    [% IF rtl == 't' -%]
+    text-align: right;
+    [% ELSE -%]
     text-align: left;
+    [% END -%]
 }
 
 #acct_checked_tabs .align, #acct_holds_tabs .align, #acct_prefs_tabs .align {
+    [% IF rtl == 't' -%]
+    float: right;
+    [% ELSE -%]
     float:left;
-    /*padding-left:10px;*/
+    [% END -%]
 }
 
-#acct_checked_main_header, #acct_holds_main_header, #acct_checked_hist_header, #acct_list_header, #acct_list_header_anon, #temp_list_holds {
+#acct_checked_main_header, #acct_holds_main_header, #acct_checked_hist_header, #acct_holds_hist_header, #acct_list_header, #acct_list_header_anon, #temp_list_holds, #acct_messages_main_header, #ebook_circs_main_table, #ebook_holds_main_table {
     border-collapse: collapse;
 }
 
@@ -906,13 +1243,17 @@ table.acct_notes th {
 
 .hold_note_title { font-weight: bold; }
 
-#acct_checked_main_header td, #acct_holds_main_header td, #acct_checked_hist_header td, #acct_list_header td, #acct_list_header_anon td, #temp_list_holds td {
-    background: [% css_colors.accent_lighter2 %];
+#acct_checked_main_header td, #acct_holds_main_header td, #acct_checked_hist_header td, #acct_holds_hist_header td, #acct_list_header td, #acct_list_header_anon td, #temp_list_holds td, #acct_messages_main_header, #ebook_circs_main_table td, #ebook_holds_main_table td {
+    background-color: [% css_colors.accent_lighter2 %];
     padding: 10px;
 }
 
-#acct_checked_main_header th, #acct_holds_main_header th, #acct_checked_hist_header th, #acct_list_header th, #acct_list_header_anon th, #temp_list_holds th {
+#acct_checked_main_header th, #acct_holds_main_header th, #acct_checked_hist_header th, acct_holds_hist_header th, #acct_list_header th, #acct_list_header_anon th, #temp_list_holds th, #acct_messages_main_header, #ebook_circs_main_table th, #ebook_holds_main_table th {
+    [% IF rtl == 't' -%]
+    text-align: right;
+    [% ELSE -%]
     text-align: left;
+    [% END -%]
     padding: 0px 10px 0px 10px;
 }
 
@@ -946,7 +1287,7 @@ table.acct_notes th {
 }
 
 #myopac_tabs, #adv_search_parent, #fines_payments_wrapper {
-    background: [% css_colors.primary_fade %];
+    background-color: [% css_colors.primary_fade %];
     padding-top:5px;
     margin-bottom:20px;
 }
@@ -956,7 +1297,14 @@ table.acct_notes th {
     padding-right: 5px;
 }
 
-.myopac_payments_table th { text-align: left; }
+.myopac_payments_table th {
+    [% IF rtl == 't' -%]
+    text-align: right; }
+    [% ELSE -%]
+    text-align: left;
+    [% END -%]
+}
+
 .myopac_payments_table thead th { border-bottom: 1px dashed [% css_colors.accent_darker %]; }
 .myopac_payments_table thead th:first-child { width: 8em; }
 .myopac_payments_table tbody tr:nth-child(odd) { background-color: [% css_colors.accent_lighter %]; }
@@ -1004,6 +1352,78 @@ div.adv_search_available {
     margin: auto;
 }
 
+/* styling for advanced search filters that display with searchbar */
+
+#adv_filter_results_block h4 { display: inline; }
+
+#adv_filter_results_block {
+    margin-top: 6px;
+}
+
+.adv_filter_results_block_label {
+    font-weight:bold;
+    [% IF rtl == 't' -%]
+    padding: 4px 12px 4px 0px;
+    [% ELSE -%]
+    padding: 4px 0px 4px 12px;
+    [% END -%]
+}
+
+.adv_filter_results_group {
+    font-size: 12px;
+    display: inline-block;
+    background-color:  [% css_colors.accent_lighter2 %];
+    border-style: solid;
+    border-color: [% css_colors.accent_medium %];
+    border-width: 1px;
+    border-radius: 4px;
+    padding: 2px 4px 2px 4px;
+}
+
+.adv_filter_results_group_wrapper {
+    display: inline-block;
+    [% IF rtl == 't' -%]
+    margin-right: 1em;
+    [% ELSE -%]
+    margin-left: 1em;
+    [% END -%]
+    margin-bottom: 8px;
+}
+
+.adv_filter_results_group_header {
+    display: inline-block;
+}
+
+.adv_filter_results_group_values {
+    display: inline;
+}
+
+.adv_search_result_filter {
+    display: inline-block;
+}
+
+.remove_filter {
+    font-size: 16px;
+    [% IF rtl == 't' -%]
+    margin-right: 3px;
+    [% ELSE -%]
+    margin-left: 3px;
+    [% END -%]
+}
+
+a.remove_filter {
+    text-decoration: none;
+    color: [% css_colors.accent_dark %];
+}
+
+#filter_hits {
+     display: inline-block;
+}
+
+#refine_search_link {
+    display: inline-block;
+}
+
 [%- IF we_want_to_turn_on_facet_styling.defined; %]
 /* some facet styling */
 .facetClassContainer { margin: 2px; border: 1px solid [% css_colors.accent_light %]; }
@@ -1026,8 +1446,13 @@ div.adv_search_available {
 [%- END -%]
 
 div#facet_sidebar {
+    [% IF rtl == 't' -%]
+    float: right;
+    margin-left: 1em;
+    [% ELSE -%]
     float: left;
     margin-right: 1em;
+    [% END-%]
 }
 
 .facet_box_temp {
@@ -1036,20 +1461,35 @@ div#facet_sidebar {
 
 .facet_box_temp .header {
     height: 2.3em;
-    background:[% css_colors.primary %];
-    -moz-border-top-left-radius: 5px;
+    background-color:[% css_colors.primary %];
     border-top-left-radius: 5px;
-    -moz-border-top-right-radius: 5px;
     border-top-right-radius: 5px;
     font-weight:bold;
     color:[% css_colors.text_invert %];
     padding-top:4px;
 }
 
-.facet_box_temp .header .title {
-    float:left;
-    padding-top:6px;
+.facet_box_temp.filter_box_temp .header {
+    background-color: [% css_colors.background_invert %] !important;
+}
+
+.filter_box_label {
+    color: [% css_colors.background_invert %];
+    font-weight:bold;
+    padding-top:4px;
+    padding-bottom:4px;
     padding-left:12px;
+}
+
+.facet_box_temp .header .title {
+    [% IF rtl == 't' -%]
+    float: right;
+    padding-right: 12px;
+    [% ELSE -%]
+    float:left;
+    padding-left:12px;
+    [% END -%]
+    padding-top:6px;
 }
 
 /* in this context, where h4 is primarily for structure, 
@@ -1060,9 +1500,14 @@ div#facet_sidebar {
 }
 
 .facet_box_temp .header a.button {
+    [% IF rtl == 't' -%]
+    float: left;
+    padding-left: 6px;
+    [% ELSE -%]
     float:right;
-    padding-top:6px;
     padding-right:6px;
+    [% END -%]
+    padding-top:6px;
     color:[% css_colors.text_invert %];
 }
 
@@ -1073,6 +1518,15 @@ div#facet_sidebar {
     padding: 0 0.5em;
     width: 14em;
     overflow: hidden;
+}
+
+.filter_box_wrapper {
+    margin-bottom: 3px;
+    padding: 2px;
+    border: 1px solid [% css_colors.background_invert %];
+    border-radius: 3px;
+    font-weight:bold;
+    padding-top:4px;
 }
 
 .facet_template {
@@ -1088,6 +1542,10 @@ div#facet_sidebar {
     padding: 2px;
 }
 
+.facet_template.filter_template div {
+    padding: 0px !important;
+}
+
 .facet_template .count {
     text-align: right;
     color: [% css_colors.accent_mediumdark %];
@@ -1099,17 +1557,21 @@ div#facet_sidebar {
 }
 
 #footer-wrap {
-    background: linear-gradient([% css_colors.primary_fade %], [% css_colors.primary %]);
-    background: -moz-linear-gradient([% css_colors.primary_fade %], [% css_colors.primary %]);
-    background: -o-linear-gradient([% css_colors.primary_fade %], [% css_colors.primary %]);
-    background: -webkit-linear-gradient([% css_colors.primary_fade %], [% css_colors.primary %]);
     background-color: [% css_colors.primary %];
+    background-image: -moz-linear-gradient([% css_colors.primary_fade %], [% css_colors.primary %]);
+    background-image: -o-linear-gradient([% css_colors.primary_fade %], [% css_colors.primary %]);
+    background-image: -webkit-linear-gradient([% css_colors.primary_fade %], [% css_colors.primary %]);
+    background-image: linear-gradient([% css_colors.primary_fade %], [% css_colors.primary %]);
 }
 
 #footer {
+    [% IF rtl == 't' -%]
+    margin-right: 1em;
+    [% ELSE -%]
+    margin-left: 1em;
+    [% END -%]
     padding-top:5px;
     padding-bottom: 10px;
-    margin-left: 1em;
     font-size: [% css_fonts.size_small %];
 }
 
@@ -1131,25 +1593,52 @@ div#facet_sidebar {
 #adv_global_search { width: 100%; }
 #adv_global_search select { width: 13em; }
 #adv_global_addrow td { padding-top: 7px; }
+[% IF rtl == 't' -%]
+#adv_global_addrow.td-search-left{text-align:right;}
+[% END -%]
 #adv_global_input_table { width: 100%; }
 #adv_global_input_table select { width: 7em; }
 .adv_adv_link {
     font-size: [% css_fonts.size_smaller %];
     color: [% css_colors.text_alert %];
 }
-#acct_prefs_header { float: left; }
+#acct_prefs_header {
+    [% IF rtl == 't' -%]
+    float: right;
+    [% ELSE -%]
+    float: left;
+    [% END -%]
+}
 .search_page_nav_link {
     cursor: pointer;
+    [% IF rtl == 't' -%]
+    padding-right: 1em;
+    [% ELSE -%]
     padding-left: 1em;
+    [% END -%]
 }
 #opac.result.sort { width: 160px; }
-.renew-summary { font-size: [% css_fonts.size_bigger %]; font-style: italic; margin: 0.5ex 0; }
-.failure-text { margin-left: 4em; font-style: italic; color: [% css_colors.text_alert %]; }
+.renew-summary, .message-update-summary { font-size: [% css_fonts.size_bigger %]; font-style: italic; margin: 0.5ex 0; }
+.failure-text {
+    [% IF rtl == 't' -%]
+    margin-right: 4em;
+    [% ELSE -%]
+    margin-left: 4em;
+    [% END -%]
+    font-style: italic;
+    color: [% css_colors.text_alert %];
+}
 .refine-controls { font-size: [% css_fonts.size_bigger %]; padding: 0.5ex 0; }
 #adv_search_refine input[type=text] { border: 1px inset [% css_colors.accent_light %] !important; }
 #adv_search_refine select { border: 1px inset [% css_colors.accent_light %] !important; }
 #adv_search_refine {
-    padding-left: 5em; background-color: [% css_colors.accent_lighter2 %]; margin: 2ex 0;
+    [% IF rtl == 't' -%]
+    padding-right: 5em;
+    [% ELSE -%]
+    padding-left: 5em;
+    [% END -%]
+    background-color: [% css_colors.accent_lighter2 %];
+    margin: 2ex 0;
 }
 .row-remover { position: relative; top: 1px; vertical-align: middle; }
 .subtle-button {
@@ -1163,7 +1652,15 @@ div#facet_sidebar {
 .pending-addr td { background-color: [% css_colors.background_alert %] !important; border: 0 !important; }
 
 #account-update-email table { text-align: center; padding: 20px; margin-top: 18px; border-collapse: collapse; }
-#account-update-email table td { padding: 5px 15px 5px 15px; border-bottom: 1px solid [% css_colors.accent_lighter %]; text-align: left;}
+#account-update-email table td {
+    [% IF rtl == 't' -%]
+    text-align: right;
+    [% ELSE -%]
+    text-align: left;
+    [% END -%]
+    padding: 5px 15px 5px 15px;
+    border-bottom: 1px solid [% css_colors.accent_lighter %];
+}
 #account-update-email-error { font-size: [% css_fonts.size_biggest %]; padding: 10px; border:1px solid [% css_colors.border_standard %];}
 a.dash-link:hover { text-decoration: underline !important; }
 #list_create_table td { vertical-align: middle; padding: 0 8px; }
@@ -1172,6 +1669,13 @@ a.dash-link:hover { text-decoration: underline !important; }
     padding-bottom: 4px;
     margin-bottom: 10px;
     border-bottom: 1px dotted [% css_colors.accent_medium %];
+    width: 100%;
+}
+.list_create_table_label {
+    width: 30%;
+}
+#list_description, #list_create_name {
+        width: 500px;
 }
 .list-create-table-buttons input[type=image] { margin-top: 2px; }
 .result_table_format_cell { padding: 0px 10px; text-align: center; }
@@ -1180,14 +1684,41 @@ a.dash-link:hover { text-decoration: underline !important; }
 #hold_editor h2 { font-size: [% css_fonts.size_big %]; font-weight: normal; text-indent: 2em; font-style: italic; }
 #hold_editor h1, #hold_editor h2 { margin: 2px 0; }
 #hold_editor_table { background-color: [% css_colors.accent_lighter %]; padding: 0.5em; }
-#hold_editor_table th { text-align: right; padding-right: 1em; }
+#hold_editor_table th {
+    [% IF rtl == 't' -%]
+    text-align: left;
+    padding-left: 1em;
+    [% ELSE -%]
+    text-align: right;
+    padding-right: 1em;
+    [% END -%]
+}
 #hold_editor_table td { padding: 0.25em 0; }
-.fmt-note { vertical-align: middle; padding-left: 1em !important; }
+.fmt-note {
+    [% IF rtl == 't' -%]
+    padding-right: 1em !important;
+    [% ELSE -%]
+    padding-left: 1em !important;
+    [% END -%]
+    vertical-align: middle;
+}
 .hold-editor-controls { text-align: center; padding-top: 1em !important; }
 .hold-editor-controls a { padding-left: 2em; }
 
-.text-right { text-align: right; }
-.text-right-top { text-align: right; vertical-align: top; }
+.text-right {
+    [% IF rtl == 't' -%]
+    text-align: left;
+    [% ELSE -%]
+    text-align: right;
+    [% END -%]
+}
+.text-right-top {
+    [% IF rtl == 't' -%]
+    text-align: right;
+    [% ELSE -%]
+    vertical-align: top;
+    [% END -%]
+}
 .rdetail-author-div {
     padding-bottom: 10px;
     display: inline-block;
@@ -1196,30 +1727,66 @@ a.dash-link:hover { text-decoration: underline !important; }
 .invisible { visibility: hidden; }
 .rdetail-extras-summary { margin: 10px; }
 .staff-hold { background-color: [% css_colors.accent_lightest %]; }
-.expert-search tbody tr th { text-align: right; padding-left: 2em; }
+.expert-search tbody tr th {
+    [% IF rtl == 't' -%]
+    text-align: left;
+    padding-right: 2em;
+    [% ELSE -%]
+    text-align: right;
+    padding-left: 2em;
+    [% END -%]
+}
 .expert-search-row { padding-top: 10px; }
 #adv_expert_row label { font-weight: bold; }
 
-.bookshelf thead tr td {
+.bookshelf tr.browse_border td {
     border-bottom: 1px dashed [% css_colors.accent_dark %];
+    font-size: 1px;
+    height: 1px;
     padding-bottom: 1ex;
 }
 .cn_browse_item { padding: 2ex; }
-.results-paginator-list { padding-left: 1em; }
+.results-paginator-list {
+    [% IF rtl == 't' -%]
+    padding-right: 1em;
+    [% ELSE -%]
+    padding-left: 1em;
+    [% END -%]
+}
 .results-paginator-selected { color: [% css_colors.text_alert %]; }
-.inactive-hold { background: [% css_colors.accent_lightest %]; }
+.inactive-hold { background-color: [% css_colors.accent_lightest %]; }
+.unread-patron-message { font-weight: bold; }
 
 #hold-items-list td { padding: 5px; margin-bottom: 20px; }
-.hold-items-list-title { font-size: [% css_fonts.size_bigger %]; }
+.hold-items-list-title { 
+  font-size: [% css_fonts.size_bigger %];
+  margin-bottom: 20px;
+}
 .hold-items-list-problem { color: [% css_colors.text_alert %]; }
 
+.hold_success_links > span { margin: 0 2em; }
+
+.radio-parts-selection { 
+   width: 75%;
+   margin-bottom: 20px;
+}
+
+.parts-radio-option { 
+  display: inline-block;
+  width:15em;
+}
+
 .mr_holds_no_formats { 
-  padding: 5px;
+  [% IF rtl == 't' -%]
+  margin-right: 25px;
+  [% ELSE -%]
   margin-left: 25px;
+  [% END -%]
+  padding: 5px;
   font-size: 110%;
   font-weight: bold;
   color: [% css_colors.text_invert %]; 
-  background: [% css_colors.primary %];
+  background-color: [% css_colors.primary %];
 }
  
 .holds_item_row_separator td {
@@ -1229,7 +1796,11 @@ a.dash-link:hover { text-decoration: underline !important; }
 .big-strong {font-weight: bold; font-size: [% css_fonts.size_bigger %]; }
 
 .results_header_btns, .results_header_sel {
+    [% IF rtl == 't' -%]
+    float: right;
+    [% ELSE -%]
     float:left;
+    [% END -%]
 }
 
 /*
@@ -1243,10 +1814,9 @@ a.dash-link:hover { text-decoration: underline !important; }
     font-weight: bold; 
     text-decoration: none;
     cursor: pointer !important;
-    -moz-border-radius: 5px;
     border-radius: 5px;
     border: 1px solid [% css_colors.primary %];
-    background:  [% css_colors.primary_fade %];
+    background-color:  [% css_colors.primary_fade %];
     margin: 0.5em;
     padding: 0.3em;
     display: inline-block;
@@ -1254,7 +1824,7 @@ a.dash-link:hover { text-decoration: underline !important; }
 
 .opac-multiline-button > a:hover,
 .opac-button:hover, .results_header_btns a:hover, #simple-detail-view-links a:hover, #dash_wrapper a.opac-button:hover {
-    background: [% css_colors.primary %];
+    background-color: [% css_colors.primary %];
 }
 
 .opac-button:disabled {
@@ -1271,7 +1841,7 @@ button.opac-button::-moz-focus-inner, input.opac-button::-moz-focus-inner {
 }
 
 .opac-button-header, #dash_wrapper .opac-button {
-    background: [% css_colors.control %];
+    background-color: [% css_colors.control %];
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
     font-size: [% css_fonts.size_base %];
 }
@@ -1294,7 +1864,11 @@ a.opac-button-header:hover, #dash_wrapper a.opac-button:hover {
 }
 
 .rdetail-mfhd-type {
+    [% IF rtl == 't' -%]
+    padding-right: 1em;
+    [% ELSE -%]
     padding-left: 1em;
+    [% END -%]
 }
 
 .rdetail-mfhd-bottom {
@@ -1308,8 +1882,13 @@ a.opac-button-header:hover, #dash_wrapper a.opac-button:hover {
 }
 
 .rdetail_content {
+    [% IF rtl == 't' -%]
+    margin-right: 1.5em;
+    padding-right: 1.5em;
+    [% ELSE -%]
     margin-left: 1.5em;
     padding-left: 1.5em;
+    [% END -%]
 }
 
 .rdetail_content_type, .rdetail_subject_type {
@@ -1338,21 +1917,77 @@ a.opac-button-header:hover, #dash_wrapper a.opac-button:hover {
 }
 
 .rdetail_openurl_entry {
+    [% IF rtl == 't' -%]
+    margin-right: 1em;
+    padding-right: 1em;
+    [% ELSE -%]
     margin-left: 1em;
     padding-left: 1em;
+    [% END -%]
 }
 .bookbag-controls-holder { width: 100%; }
 .bookbag-controls-holder:nth-child(odd) { background-color: [% css_colors.accent_lighter2 %]; }
 .bookbag-controls-holder:nth-child(even) { background-color: [% css_colors.accent_lightest %]; }
 .bookbag-controls-holder .most {
+    [% IF rtl == 't' -%]
+    padding-right: 0;
+    margin-left: 5em;
+    [% ELSE -%]
     padding-left: 0;
     margin-right: 5em;
+    [% END -%]
+}
+.bookbag-controls-title-block {
+    [% IF rtl == 't' -%]
+    float:right;
+    [% ELSE -%]
+    float:left;
+    [% END -%]
+    width:40%;
+}
+.bookbag-controls-button-block {
+    [% IF rtl == 't' -%]
+    float:right;
+    [% ELSE -%]
+    float:left;
+    [% END -%]
+    width:50%;
 }
 h2.bookbag-name { margin-bottom: 0em; padding-bottom: 0em; }
 .bookbag-share .fixed { min-width: 4em; }
-.bookbag-specific { margin-left: 1em; }
-.bookbag-specific div.sort { float: left; width: 45%; text-align: left; }
-.bookbag-specific div.meta { float: right; width: 54%; text-align: right; }
+.bookbag-specific {
+    [% IF rtl == 't' -%]
+    margin-right: 1em;
+    [% ELSE -%]
+    margin-left: 1em;
+    [% END -%]
+}
+.bookbag-specific div.sort {
+    [% IF rtl == 't' -%]
+    float: right;
+    text-align: right;
+    margin-right: 15px;
+    [% ELSE -%]
+    float: left;
+    text-align: left;
+    margin-left: 15px;
+    [% END -%]
+    width: 40%;
+}
+.bookbag-specific div.meta {
+    background-color: [% css_colors.accent_light %];
+    [% IF rtl == 't' -%]
+    float: left;
+    text-align: left;
+    [% ELSE -%]
+    float: right;
+    text-align: right;
+    [% END -%]
+    width: 54%;
+    border: 1px solid [% css_colors.accent_light %];
+    padding: 5px;
+    margin-top: 5px;
+}
 #bbag-name-desc-form tr th { vertical-align: middle; }
 #bbag-name-desc-form .saver { vertical-align: middle; text-align: center; }
 .bookbag-description {
@@ -1360,29 +1995,99 @@ h2.bookbag-name { margin-bottom: 0em; padding-bottom: 0em; }
     font-style: italic;
     max-width: 40em;
 }
-#bbag-edit-description { width: 20em; }
-#bbag-edit-name { width: 20em; }
+.bbag-edit-desc-label {
+    [% IF rtl == 't' -%]
+    float:right;
+    [% ELSE -%]
+    float:left;
+    [% END -%]
+    width:8em;
+}
+.bbag-edit-desc-save {
+    clear:both;
+    margin-bottom:10px;
+}
+#bbag-edit-description {
+    width: 20em;
+    [% IF rtl == 't' -%]
+    float:right;
+    [% ELSE -%]
+    float:left;
+    [% END -%]
+}
+#bbag-edit-name {
+    width: 20em;
+    [% IF rtl == 't' -%]
+    float: right;
+    [% ELSE -%]
+    float: left;
+    [% END -%]
+}
+.bbag-action {
+    [% IF rtl == 't' -%]
+    margin-right: 15px;
+    [% ELSE -%]
+    margin-left: 15px;
+    [% END -%]
+}
+.bbag-navigate-list {
+    [% IF rtl == 't' -%]
+    padding-right: 32px;
+    float:right;
+    [% ELSE -%]
+    padding-left: 32px;
+    float:left;
+    [% END -%]
+}
+.bbag-navigate-list-pages {
+    [% IF rtl == 't' -%]
+    padding-right: 10px;
+    float:right;
+    [% ELSE -%]
+    padding-left: 10px;
+    float:left;
+    [% END -%]
+}
 textarea { font-family: sans-serif; }
 table.bookbag-specific {
     border-right: 1px solid [% css_colors.accent_dark %];
     border-bottom: 1px solid [% css_colors.accent_medium %];
     margin-bottom: 2ex;
+    width: 100%;
 }
 .bookbag-share {
+    [% IF rtl == 't' -%]
+    float: right;
+    padding: 0px 10px 0px 0px;
+    [% ELSE -%]
     float: left;
-    padding: 5px 0;
+    padding: 0px 0px 0px 10px;
+    [% END -%]
 }
+.bookbag-share .fixed { min-width: 6em; }
 .bookbag-controls {
+    [% IF rtl == 't' -%]
+    float: right;
+    padding: 0px 10px 0px 0px;
+    [% ELSE -%]
     float: left;
-    padding: 5px 0px 0px 10px;
+    padding: 0px 0px 0px 10px;
+    [% END -%]
 }
-
 .bookbag-specific td.list_checkbox {
+    [% IF rtl == 't' -%]
+    padding-right: 10px !important;
+    [% ELSE -%]
     padding-left: 10px !important;
+    [% END -%]
 }
 .bookbag-specific td.list_entry {
     min-width: 10em;
+    [% IF rtl == 't' -%]
+    padding-right: 5px !important;
+    [% ELSE -%]
     padding-left: 5px !important;
+    [% END -%]
 }
 .bookbag-specific td.list_actions {
     white-space: nowrap !important;
@@ -1428,16 +2133,48 @@ table.bookbag-specific {
     height: 15px;
 }
 .alert { color: [% css_colors.text_alert %]; }
-.float-left { float: left; }
-.float-right { float: right; }
+.float-left {
+    [% IF rtl == 't' -%]
+    float: right;
+    [% ELSE -%]
+    float: left;
+    [% END -%]
+}
+.float-right {
+    [% IF rtl == 't' -%]
+    float: left;
+    [% ELSE -%]
+    float: right;
+    [% END -%]
+}
 
 .saved-searches-header { width: 100%; font-weight: bold; font-size: [% css_fonts.size_bigger %]; }
-.saved-searches-header .button { float: right; width: 28px; }
-.saved-searches-header .text { float: left; padding-right: 1em; margin: 0.5ex 0;}
+.saved-searches-header .button {
+    [% IF rtl == 't' -%]
+    float: left;
+    [% ELSE -%]
+    float: right;
+    width: 28px;
+    [% END -%]
+}
+.saved-searches-header .text {
+    [% IF rtl == 't' -%]
+    float: right;
+    padding-left: 1em;
+    [% ELSE -%]
+    float: left;
+    padding-right: 1em;
+    [% END -%]
+    margin: 0.5ex 0;
+}
 .saved-searches-header {font-weight: bold; font-size: [% css_fonts.size_bigger %]; }
 .saved-searches { border-bottom: 1px solid [% css_colors.accent_medium %]; padding-right: 1em; }
 #staff-saved-search { /* wraps .saved-searches-header and .saved-searches on the record page */
+    [% IF rtl == 't' -%]
+    border-left: 1px solid [% css_colors.accent_darker %];
+    [% ELSE -%]
     border-right: 1px solid [% css_colors.accent_darker %];
+    [% END -%]
 }
 .result_item_circulated {
     padding-top: 4px;
@@ -1446,7 +2183,11 @@ table.bookbag-specific {
 .result_item_circulated span {
     position: relative;
     top:-3px;
+    [% IF rtl == 't' -%]
+    right: 3px;
+    [% ELSE -%]
     left:3px;
+    [% END -%]
 }
 
 #search-only-bookbag-container { margin: 2ex 0; font-weight: bold; }
@@ -1457,17 +2198,29 @@ table.bookbag-specific {
 .result-bookbag-item-note { font-style: italic; }
 .lowhits-bookbag-name { font-weight: bold; }
 .oils_AS { font-weight: bold; color: [% css_colors.text_match %]; }
-.oils_AS_match_term { text-align: left; color: [% css_colors.text %]; }
+.oils_AS_match_term {
+    [% IF rtl == 't' -%]
+    text-align: right;
+    [% ELSE -%]
+    text-align: left;
+    [% END -%]
+    color: [% css_colors.text %];
+}
 .oils_AS_match_field {
     font-size: [% css_fonts.size_smallest %]; padding: 0.65em 0;
-    text-align: right; color: [% css_colors.accent_medium %];
+    [% IF rtl == 't' -%]
+    text-align: left;
+    [% ELSE -%]
+    text-align: right;
+    [% END -%]
+    color: [% css_colors.accent_medium %];
 }
 table.result_holdings_table {
     margin-top: 1em;
     margin-bottom: 1em;
 }
 table.result_holdings_table thead tr {
-    background: [% css_colors.table_heading %];
+    background-color: [% css_colors.table_heading %];
 }
 table.result_holdings_table thead tr th {
     font-weight: bold;
@@ -1481,9 +2234,27 @@ a.preflib_change {
   line-height: normal;
   text-decoration: none;
 }
-.rdetail-holding-group { margin-left: 1.5em; }
-.rdetail-holding-group span { margin-left: 1.5em; }
-.rdetail-holding-group .paging { margin-left: 1.5em; }
+.rdetail-holding-group {
+    [% IF rtl == 't' -%]
+    margin-right: 1.5em;
+    [% ELSE -%]
+    margin-left: 1.5em;
+    [% END -%]
+}
+.rdetail-holding-group span {
+    [% IF rtl == 't' -%]
+    margin-right: 1.5em;
+    [% ELSE -%]
+    margin-left: 1.5em;
+    [% END -%]
+}
+.rdetail-holding-group .paging {
+    [% IF rtl == 't' -%]
+    margin-right: 1.5em;
+    [% ELSE -%]
+    margin-left: 1.5em;
+    [% END -%]
+}
 #rdetail_deleted_exp {
     font-weight: bold;
     padding: 1em;
@@ -1492,7 +2263,18 @@ a.preflib_change {
 }
 
 #ac_tab_wrapper { width : 100%; }
-.ac_tab { float: left; padding-right: 10px; font-size: [% css_fonts.size_big %]; padding: 5px; border: 1px solid [% css_colors.primary_offset %]; }
+.ac_tab {
+    [% IF rtl == 't' -%]
+    float: right;
+    padding-left: 10px;
+    [% ELSE -%]
+    float: left;
+    padding-right: 10px;
+    [% END -%]
+    font-size: [% css_fonts.size_big %];
+    padding: 5px;
+    border: 1px solid [% css_colors.primary_offset %];
+}
 .ac_tab_selected { background-color: [% css_colors.primary_offset %]; }
 .ac_tab_selected a { color: [% css_colors.text_invert %]; }
 #ac_content { clear: both; width: 100%; margin-top: 10px; }
@@ -1569,10 +2351,15 @@ a.preflib_change {
 }
     
 #locale_picker_form {
+    [% IF rtl == 't' -%]
+    float: left;
+    border-left: thin [% css_colors.control %] solid;
+    [% ELSE -%]
     float: right;
+    border-right: thin [% css_colors.control %] solid;
+    [% END -%]
     padding: 0.5em;
     margin-top: 2em;
-    border-right: thin [% css_colors.control %] solid;
 }
 
 #locale_picker_form * {
@@ -1615,7 +2402,11 @@ a.preflib_change {
     font-color: #c00;
 }
 .browse-result-sources, .browse-result-authority-bib-links {
+    [% IF rtl == 't' -%]
+    margin-right: 1em;
+    [% ELSE -%]
     margin-left: 1em;
+    [% END -%]
 }
 .browse-result-best-match {
     font-weight: bold;
@@ -1631,7 +2422,11 @@ a.preflib_change {
 }
 .browse-result-authority-field-name {
     font-style: italic;
+    [% IF rtl == 't' -%]
+    margin-left: 1em;
+    [% ELSE -%]
     margin-right: 1em;
+    [% END -%]
 }
 .browse-leading-article-warning {
     font-style: italic;
@@ -1654,7 +2449,11 @@ a.preflib_change {
 }
 
 #main-content-register {
+    [% IF rtl == 't' -%]
+    margin-right: 40px;
+    [% ELSE -%]
     margin-left: 40px;
+    [% END -%]
     font-size: [% css_fonts.size_bigger %];
 }
 
@@ -1665,24 +2464,36 @@ a.preflib_change {
 }
 
 #main-content-register td {
+    [% IF rtl == 't' -%]
+    text-align: right;
+    [% ELSE -%]
     text-align: left;
+    [% END -%]
 }
 
 #main-content-register td:not(:first-child) {
+    [% IF rtl == 't' -%]
+    padding-right: 20px;
+    [% ELSE -%]
     padding-left: 20px;
+    [% END -%]
 }
 
 .patron-reg-invalid {
     font-weight: bold;
     color: red;
+    [% IF rtl == 't' -%]
+    padding-left: 10px;
+    [% ELSE -%]
     padding-right: 10px;
+    [% END -%]
 }
 
 .result_footer_nav1 {
     clear: both;
 }
 
-.small_view_only, #refine_hits, #return_to_hits {
+.small_view_only, #filter_hits, #refine_hits, #return_to_hits {
     display: none;
 }
 
@@ -1704,8 +2515,30 @@ a.preflib_change {
     font-size: [% css_fonts.size_bigger %];
 }
 
+/* styling for sms text call number */
+.sms_text pre {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: [% css_fonts.size_medium %];
+    background-color: [% css_colors.accent_lightest %];
+    padding: .5%;
+    /* Allow text to wrap */
+    white-space: pre-wrap;       /* css-3 */
+    white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+    white-space: -pre-wrap;      /* Opera 4-6 */
+    white-space: -o-pre-wrap;    /* Opera 7 */
+    word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+
 .mobile_view {
    display:none;
+}
+
+/* patron message center */
+#myopac_message_tbody {
+    vertical-align: top;
+}
+.myopac_message_message {
+    white-space: pre-wrap;
 }
 
 @media only screen and (max-width: 800px) {
@@ -1718,9 +2551,13 @@ a.preflib_change {
     #acct_select, #acct_prefs_select {
         display: inline-block;
     }
-#acct_tabs, #acct_prefs_tabs {
+    #acct_tabs, #acct_prefs_tabs {
          display:none;
      }
+    .radio-parts-selection { width: 90%; }
+    #list_description, #list_create_name {
+        width: 300px;
+    }
 }
 
 @media only screen and (max-width: 600px) {
@@ -1764,15 +2601,139 @@ a.preflib_change {
         display: none;
     }
     #acct_tabs a, #acct_fines_tabs a {
-       padding: 2px 4px 3px 4px;
-       -moz-border-radius: 6px 6px 0px 0px;
+       [% IF rtl == 't' -%]
+       border-radius: 6px 0px 0px 6px;
+       margin: 0px 0px 0px 5px;
+       [% ELSE -%]
        border-radius: 6px 6px 0px 0px;
-       font-size: [% css_fonts.size_base %];
        margin: 0px 5px 0px 0px;
+       [% END -%]
+       padding: 2px 4px 3px 4px;
+       font-size: [% css_fonts.size_base %];
     }
-
+    .bookbag-controls-title-block {
+        [% IF rtl == 't' -%]
+        clear:right;
+        [% ELSE -%]
+        clear:left;
+        [% END -%]
+        width:90%;
+    }
+    .bookbag-controls-button-block {
+        [% IF rtl == 't' -%]
+        clear:right;
+        [% ELSE -%]
+        clear:left;
+        [% END -%]
+        width;90%;
+    }
+    .bookbag-specific {
+        [% IF rtl == 't' -%]
+        margin-right: 0px;
+        [% ELSE -%]
+        margin-left: 0px;
+        [% END -%]
+    }
+    .bookbag-specific div.sort {
+        [% IF rtl == 't' -%]
+        float: right;
+        text-align: right;
+        [% ELSE -%]
+        float: left;
+        text-align: left;
+        [% END -%]
+        width: 95%;
+        margin: 5px 0px 5px 0px;
+        border: 1px solid [% css_colors.accent_light %];
+        padding:5px;
+    }
+    .bookbag-specific div.meta {
+        [% IF rtl == 't' -%]
+        float: right;
+        margin-right:0px;
+        text-align: right;
+        [% ELSE -%]
+        float: left;
+        margin-left:0px;
+        text-align: left;
+        [% END -%]
+        width: 95%;
+        margin-bottom:5px;
+        padding:5px;
+    }
+    #bbag-edit-name {
+        [% IF rtl == 't' -%]
+        float: right;
+        [% ELSE -%]
+        float: left;
+        [% END -%]
+        width: 220px;
+    }
+    #bbag-edit-description {
+        width: 220px;
+        margin-top:5px;
+    }
+    .bbag-content {
+        padding:5px;
+        border:1px solid [% css_colors.accent_light %];
+    }
+    .bbag-action {
+        [% IF rtl == 't' -%]
+        margin-right:0px;
+        [% ELSE -%]
+        margin-left:0px;
+        [% END -%]
+        margin-bottom:5px;
+    }
+    .bbag-action-field {
+        width:230px;
+    }
+    .bookbag-specific div.sort select {
+        width:180px;
+    }
+    .bookbag-specific tr {
+        display: block;
+        border-bottom: 1px solid [% css_colors.border_standard %];
+    }
+    .bookbag-specific td.list_checkbox {
+        [% IF rtl == 't' -%]
+        padding-right: 0px !important;
+        [% ELSE -%]
+        padding-left: 0px !important;
+        [% END -%]
+    }
+    .bookbag-specific td.list_entry {
+        display: inline-block;
+        min-width: 5em;
+        [% IF rtl == 't' -%]
+        padding-right: 40% !important;
+        [% ELSE -%]
+        padding-left: 40% !important;
+        [% END -%]
+    }
+    .bookbag-specific td.list_entry:before {
+        content: attr(data-label);
+        position: absolute;
+        [% IF rtl == 't' -%]
+        right: 10px;
+        [% ELSE -%]
+        left: 10px;
+        [% END -%]
+    }
+    .bbag-navigate-list {
+        display: none;
+    }
+    .bbag-navigate-list-pages {
+        [% IF rtl == 't' -%]
+        text-align:left;
+        float:left;
+        [% ELSE -%]
+        text-align:right;
+        float:right;
+        [% END -%]
+    }
     #dash_wrapper div {
-        background: transparent;
+        background-color: transparent;
         padding: 0px;
     }
     #dash_wrapper {
@@ -1782,18 +2743,27 @@ a.preflib_change {
     #dash_wrapper .opac-button {
         top: 0px;
     }
-    .small_view_only {
+    .small_view_only, #filter_hits {
         display: inline !important;
     }
     #dash_identity a {
+        [% IF rtl == 't' -%]
+        float:right;
+        [% ELSE -%]
         float:left;
+        [% END -%]
     }
-    #dashboard {
+    #dashboard, #dashboard_e {
         display: none;
     }
     #holds_box form blockquote {
+        [% IF rtl == 't' -%]
+        margin-right: 10px;
+        margin-left: 2px;
+        [% ELSE -%]
         margin-left: 10px;
         margin-right: 2px;
+        [% END -%]
     }
     #holds_box form blockquote select {
         width: 100%;
@@ -1803,6 +2773,9 @@ a.preflib_change {
     }
     #myopac_sum_fines {
         display: none;
+    }
+    #list_description, #list_create_name {
+        width: 170px;
     }
     .results_header_lbl {
         display: none;
@@ -1820,8 +2793,13 @@ a.preflib_change {
         display: none;
     }
     .result_table_pic_header {
+        [% IF rtl == 't' -%]
+        padding-right: 0px !important;
+        padding-left: 5px;
+        [% ELSE -%]
         padding-left: 0px !important;
         padding-right: 5px;
+        [% END -%]
         width: 0px !important;
         margin: 0px;
     }
@@ -1845,6 +2823,18 @@ a.preflib_change {
     }
     .results_header_btns a {
         margin: 0.3em;
+    }
+    .adv_filter_results_hide {
+        display: none;
+    }
+    .adv_filter_results_show {
+        display: block;
+    }
+    .adv_filter_results_block_label {
+        display: block;
+    }
+    .adv_filter_results_group_wrapper {
+        display: block;
     }
     #main-content {
         margin: 0 1px;
@@ -1884,7 +2874,11 @@ a.preflib_change {
         width: inherit;
     }
     .facet_template .count {
+        [% IF rtl == 't' -%]
+        padding-right: 1em;
+        [% ELSE -%]
         padding-left: 1em;
+        [% END -%]
     }
     #facet_sidebar {
         margin-top: 0.5em;
@@ -1897,7 +2891,11 @@ a.preflib_change {
         width: 300px;
     }
     #format_actions {
+        [% IF rtl == 't' -%]
+        float: right;
+        [% ELSE -%]
         float: left;
+        [% END -%]
     }
     .rdetail_aux_utils {
         padding: 0px;
@@ -1912,8 +2910,21 @@ a.preflib_change {
     h2.rdetail_uris {
         clear: both;
     }
+    #metarecord_population {
+        overflow: hidden;
+        width: 100%;
+    }
+    .metarecord_population_span_link {
+    }
+    .metarecord_population_item_lang {
+        float: none;
+    }
     .search_catalog_lbl {
+        [% IF rtl == 't' -%]
+	margin-right: 0;
+        [% ELSE -%]
 	margin-left: 0;
+        [% END -%]
 	white-space: nowrap;
     }
     .adv_search_catalog_lbl { 
@@ -1953,8 +2964,11 @@ a.preflib_change {
         font-size: [% css_fonts.size_small %];
         margin: 2px 2px 0px 2px;
         padding: 2px 2px 5px 2px; 
-        -moz-border-radius: 10px 0px 0px 0px;
-        border-radius: 7px 7px 0px 0px;                                                                                                           
+        [% IF rtl == 't' -%]
+        border-radius: 7px 0px 0px 7px;
+        [% ELSE -%]
+        border-radius: 7px 7px 0px 0px;
+        [% END -%]
     }
     #adv_global_tbody td {
         border-bottom: thin solid [% css_colors.accent_light %];
@@ -1963,10 +2977,10 @@ a.preflib_change {
         border-bottom: none;
     }
         /* Force table to not be like tables anymore */
-        table#acct_checked_main_header thead tr th {
+        table#acct_checked_main_header thead tr th, table#acct_holds_main_header thead tr th, table#acct_checked_hist_header thead tr th, table#acct_holds_hist_header thead tr th, table#ebook_circs_main_table thead tr th, table#ebook_holds_main_table thead tr th {
                 display: block;
         }
-        table#acct_checked_main_header tbody tr td {
+        table#acct_checked_main_header tbody tr td, table#acct_holds_main_header tbody tr td, table#acct_checked_hist_header tbody tr td, table#acct_holds_hist_header tbody tr td, table#ebook_circs_main_table tbody tr td, table#ebook_holds_main_table tbody tr td {
                 display: block;
         }
 
@@ -1974,72 +2988,99 @@ a.preflib_change {
         thead tr {
                 position: absolute;
                 top: -9999px;
+                [% IF rtl == 't' -%]
+                right: -9999px;
+                [% ELSE -%]
                 left: -9999px;
+                [% END -%]
         }
 
-        table#acct_checked_main_header tr { border: 1px solid #ddd; }
+        table#acct_checked_main_header, table#acct_holds_main_header, table#acct_checked_hist_header, table#acct_holds_hist_header, table#ebook_circs_main_table, table#ebook_holds_main_table {
+                width: 90%;
+        }
 
-        table#acct_checked_main_header td {
+        table#acct_checked_main_header tr, table#acct_holds_main_header tr, table#acct_checked_hist_header tr { border: 1px solid #ddd; }
+
+        /* Holds history gets large white border to mimic header cell on other
+           account screens that provide visual cue for next title. We should do
+           the same for ebook tables too since we have no actions on those
+           tables. If actions get added, we should move those tables out of
+           here. */
+
+        table#acct_holds_hist_header tr, table#ebook_circs_main_table tr, table#ebook_holds_main_table tr { border-top: 25px solid #fff; }
+
+
+        table#acct_checked_main_header td, table#acct_holds_main_header td, table#acct_checked_hist_header td, table#acct_holds_hist_header td, table#ebook_circs_main_table td, table#ebook_holds_main_table td {
                 /* Behave  like a "row" */
                 border: none;
                 border-bottom: 1px solid #eee;
                 position: relative;
+                [% IF rtl == 't' -%]
+                padding-right: 40%;
+                [% ELSE -%]
                 padding-left: 40%;
+                [% END -%]
         }
 
-        table#acct_checked_main_header td:before {
+         table#acct_checked_main_header td:before, table#acct_holds_main_header td:before, table#acct_checked_hist_header td:before, table#acct_holds_hist_header td:before, table#ebook_circs_main_table td:before, table#ebook_holds_main_table td:before {
                 /* Now like a table header */
                 position: absolute;
                 /* Top/left values mimic padding */
-                left: 2px;
+                top: 2px;
                 width: 40%;
+                [% IF rtl == 't' -%]
+                right: 2px;
+                padding-left: 10px;
+                [% ELSE -%]
+                left: 2px;
                 padding-right: 10px;
+                [% END -%]
                 white-space: nowrap;
         }
 
         table#acct_checked_main_header td:nth-of-type(1) { border-top: 5px solid #aaa; padding-top: 15px; background-color: #fff;}
-        table#acct_checked_main_header td:nth-of-type(2):before { content: "[% l('Title / Author') %]";}
-        table#acct_checked_main_header td:nth-of-type(3):before { content: "[% l('Renewals Left') %]"; }
-        table#acct_checked_main_header td:nth-of-type(4):before { content: "[% l('Due Date') %]"; }
-        table#acct_checked_main_header td:nth-of-type(5):before { content: "[% l('Barcode') %]"; }
-        table#acct_checked_main_header td:nth-of-type(6):before { content: "[% l('Call number') %]"; }
+        table#acct_checked_main_header td:nth-of-type(2):before { content: "[% l('Title') %]";}
+        table#acct_checked_main_header td:nth-of-type(3):before { content: "[% l('Author') %]"; }
+        table#acct_checked_main_header td:nth-of-type(4):before { content: "[% l('Renewals Left') %]"; }
+        table#acct_checked_main_header td:nth-of-type(5):before { content: "[% l('Due Date') %]"; }
+        table#acct_checked_main_header td:nth-of-type(6):before { content: "[% l('Barcode') %]"; }
+        table#acct_checked_main_header td:nth-of-type(7):before { content: "[% l('Call number') %]"; }
 
-        table#acct_holds_main_header thead tr th {
-                display: block;
-        }
-        table#acct_holds_main_header tbody tr td {
-                display: block;
-        }
-
-        table#acct_holds_main_header td {
-                /* Behave  like a "row" */
-                border: none;
-                border-bottom: 1px solid #eee;
-                position: relative;
-                padding-left: 40%;
-        }
-
-
-        table#acct_holds_main_header td:before {
-                /* Now like a table header */
-                position: absolute;
-                /* Top/left values mimic padding */
-                left: 2px;
-                width: 40%;
-                padding-right: 10px;
-                white-space: nowrap;
-        }
+     table#acct_checked_hist_header td:nth-of-type(1) { border-top: 5px solid #aaa; padding-top: 15px; background-color: #fff;}
+        table#acct_checked_hist_header td:nth-of-type(2):before { content: "[% l('Title') %]";}
+        table#acct_checked_hist_header td:nth-of-type(3):before { content: "[% l('Author') %]"; }
+        table#acct_checked_hist_header td:nth-of-type(4):before { content: "[% l('Checkout Date') %]"; }
+        table#acct_checked_hist_header td:nth-of-type(5):before { content: "[% l('Due Date') %]"; }
+        table#acct_checked_hist_header td:nth-of-type(6):before { content: "[% l('Date Returned') %]"; }
+        table#acct_checked_hist_header td:nth-of-type(7):before { content: "[% l('Barcode') %]"; }
+        table#acct_checked_hist_header td:nth-of-type(8):before { content: "[% l('Call number') %]"; }
 
         table#acct_holds_main_header td:nth-of-type(1) { border-top: 5px solid #aaa; padding-top: 15px; background-color: #fff;}
         table#acct_holds_main_header td:nth-of-type(2):before { content: "[% l('Title') %]";}
         table#acct_holds_main_header td:nth-of-type(3):before { content: "[% l('Author') %]"; }
         table#acct_holds_main_header td:nth-of-type(4):before { content: "[% l('Format') %]"; }
         table#acct_holds_main_header td:nth-of-type(5):before { content: "[% l('Pickup Location') %]"; }
-        table#acct_holds_main_header td:nth-of-type(6):before { content: "[% l('Activate') %]"; }
-        table#acct_holds_main_header td:nth-of-type(7):before { content: "[% l('Cancel on') %]"; }
-        table#acct_holds_main_header td:nth-of-type(8):before { content: "[% l('Active') %]"; }
-        table#acct_holds_main_header td:nth-of-type(9):before { content: "[% l('Status') %]"; }
+        table#acct_holds_main_header td:nth-of-type(6):before { content: "[% l('Cancel on') %]"; }
+        table#acct_holds_main_header td:nth-of-type(7):before { content: "[% l('Status') %]"; }
         table#acct_holds_main_header td.hold_notes:before { content: "[% l('Notes') %]"; }
+
+        table#acct_holds_hist_header td:nth-of-type(1):before { content: "[% l('Title') %]";}
+        table#acct_holds_hist_header td:nth-of-type(2):before { content: "[% l('Author') %]"; }
+        table#acct_holds_hist_header td:nth-of-type(3):before { content: "[% l('Format') %]"; }
+        table#acct_holds_hist_header td:nth-of-type(4):before { content: "[% l('Pickup Location') %]"; }
+        table#acct_holds_hist_header td:nth-of-type(8):before { content: "[% l('Status') %]"; }
+
+        table#ebook_circs_main_table td:nth-of-type(1):before { content: "[% l('Title') %]"; }
+        table#ebook_circs_main_table td:nth-of-type(2):before { content: "[% l('Author') %]"; }
+        table#ebook_circs_main_table td:nth-of-type(3):before { content: "[% l('Due Date') %]"; }
+        table#ebook_circs_main_table td:nth-of-type(4):before { content: "[% l('Actions') %]"; }
+
+        table#ebook_holds_main_table td:nth-of-type(1):before { content: "[% l('Title') %]"; }
+        table#ebook_holds_main_table td:nth-of-type(2):before { content: "[% l('Author') %]"; }
+        table#ebook_holds_main_table td:nth-of-type(3):before { content: "[% l('Due Date') %]"; }
+        table#ebook_holds_main_table td:nth-of-type(4):before { content: "[% l('Actions') %]"; }
+
+
 
        /*Want to see these in mobile ONLY */
        .mobile_view{
@@ -2066,4 +3107,118 @@ See also http://webaim.org/techniques/css/invisiblecontent/
     overflow: hidden;                                                            
     clip: rect(0, 0, 0, 0);                                                      
     border: 0;                                                                   
-} 
+}
+
+/* Make added rows in Expert Search have bold labels like the initial row */
+label[for*=expert_]
+{
+    font-weight: bold;
+}  
+
+.sort_deemphasize {
+    font-weight: lighter;
+    font-size: 70%;
+}
+
+#results-page-depth-hint {
+    text-align: center;
+    font-style: italic;
+}
+
+#clear-history-confirm {
+  font-weight: bold;
+  color: [% css_colors.text_badnews %]; 
+  padding: 10px;
+}
+
+/*Inline rules from other templates files*/
+
+.td-left{
+    [% IF rtl == 't' -%]
+    text-align:right;
+    [% ELSE -%]
+    text-align:left;
+    [% END -%]
+    width:100%;
+}
+.td-search-left{
+    [% IF rtl == 't' -%]
+    text-align:right;
+    [% ELSE -%]
+    text-align:left;
+    [% END -%]
+}
+#myopac_summary_div{padding:0px;}
+.div-left{
+    [% IF rtl == 't' -%]
+    float: right;
+    [% ELSE -%]
+    float: left;
+    [% END -%]
+}
+.td-right{
+    [% IF rtl == 't' -%]
+    text-align:left;
+    [% ELSE -%]
+    text-align:right;
+    [% END -%]
+}
+.login-form-left{
+    [% IF rtl == 't' -%]
+    float: right;
+    margin-left: 40px;
+    [% ELSE -%]
+    float: left;
+    margin-right: 40px;
+    [% END -%]
+    padding-bottom: 10px;
+}
+.hold-div{
+    [% IF rtl == 't' -%]
+    padding-right: 10px;
+    [% ELSE -%]
+    padding-left: 10px;
+    [% END -%]
+    padding-bottom: 15px;
+}
+.hold-span{font-weight: bold;}
+.padding-left-6{
+    [% IF rtl == 't' -%]
+    padding-right: 6px;
+    [% ELSE -%]
+    padding-left: 6px;
+    [% END -%]
+}
+.padding-left-10{
+    [% IF rtl == 't' -%]
+    padding-right:10px;
+    [% ELSE -%]
+    padding-left:10px;
+    [% END -%]
+}
+.padding-left-5{
+    [% IF rtl == 't' -%]
+    padding-right: 5px;
+    [% ELSE -%]
+    padding-left: 5px;
+    [% END -%]
+}
+
+/* Rules from metarecord_hold_filters.tt2 */
+
+.metarecord_filters{
+      padding: 5px;
+      margin-top: 5px;
+      border-bottom: 1px solid #333;
+      border-top: 1px solid #333; }
+.metarecord_filter_container{
+    [% IF rtl == 't' -%]
+    float : right;
+    margin-left: 10px;
+    [% ELSE -%]
+    float : left;
+    margin-right: 10px;
+    [% END -%]
+}
+.metarecord_filter_container select{padding: 2px;width: 13em; /* consistent w/ adv search selectors */}
+.metarecord_filter_header{padding-bottom: 5px;}

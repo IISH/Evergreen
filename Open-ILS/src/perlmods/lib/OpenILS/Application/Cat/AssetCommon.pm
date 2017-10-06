@@ -55,6 +55,11 @@ sub create_copy {
     
     return OpenILS::Event->new('ITEM_BARCODE_EXISTS') if @$existing;
 
+    my $copy_loc = $editor->search_asset_copy_location(
+        { id => $copy->location, deleted => 'f' } );
+        
+    return OpenILS::Event->new('COPY_LOCATION_NOT_FOUND') unless @$copy_loc;
+    
    # see if the volume this copy references is marked as deleted
     return OpenILS::Event->new('VOLUME_DELETED', vol => $vol->id) 
         if $U->is_true($vol->deleted);
@@ -70,16 +75,23 @@ sub create_copy {
     $copy->call_number($vol->id);
     $class->fix_copy_price($copy);
 
-    $editor->create_asset_copy($copy) or return $editor->die_event;
+    my $cp = $editor->create_asset_copy($copy) or return $editor->die_event;
+    $copy->id($cp->id);
     return undef;
 }
 
 
-# if 'delete_stats' is true, the copy->stat_cat_entries data is 
-# treated as the authoritative list for the copy. existing entries
-# that are not in said list will be deleted from the DB
+# 'delete_stats' is somewhat of a misnomer.  With no flags set, this method
+# still deletes any existing maps not represented in $copy->stat_cat_entries,
+# but aborts when $copy->stat_cat_entries is empty or undefined.  If
+# 'delete_stats' is true, this method will delete all the maps when
+# $copy->stat_cat_entries is empty or undefined.
+#
+# The 'add_or_update_only' flag is more straightforward.  It adds missing
+# maps, updates present maps with any new values, and leaves the rest
+# alone.
 sub update_copy_stat_entries {
-    my($class, $editor, $copy, $delete_stats) = @_;
+    my($class, $editor, $copy, $delete_stats, $add_or_update_only) = @_;
 
     return undef if $copy->isdeleted;
     return undef unless $copy->ischanged or $copy->isnew;
@@ -99,13 +111,24 @@ sub update_copy_stat_entries {
         # if there is no stat cat entry on the copy who's id matches the
         # current map's id, remove the map from the database
         for my $map (@$maps) {
-            if(! grep { $_->id == $map->stat_cat_entry } @$entries ) {
+            if (!$add_or_update_only) {
+                if(! grep { $_->id == $map->stat_cat_entry } @$entries ) {
 
-                $logger->info("copy update found stale ".
-                    "stat cat entry map ".$map->id. " on copy ".$copy->id);
+                    $logger->info("copy update found stale ".
+                        "stat cat entry map ".$map->id. " on copy ".$copy->id);
 
-                $editor->delete_asset_stat_cat_entry_copy_map($map)
-                    or return $editor->event;
+                    $editor->delete_asset_stat_cat_entry_copy_map($map)
+                        or return $editor->event;
+                }
+            } else {
+                if( grep { $_->stat_cat == $map->stat_cat and $_->id != $map->stat_cat_entry } @$entries ) {
+
+                    $logger->info("copy update found ".
+                        "stat cat entry map ".$map->id. " needing update on copy ".$copy->id);
+
+                    $editor->delete_asset_stat_cat_entry_copy_map($map)
+                        or return $editor->event;
+                }
             }
         }
     }
@@ -138,7 +161,7 @@ sub update_copy_stat_entries {
 # authoritative list for the copy. existing part maps not targeting
 # these parts will be deleted from the DB
 sub update_copy_parts {
-    my($class, $editor, $copy, $delete_maps) = @_;
+    my($class, $editor, $copy, $delete_maps, $create_parts) = @_;
 
     return undef if $copy->isdeleted;
     return undef unless $copy->ischanged or $copy->isnew;
@@ -175,6 +198,15 @@ sub update_copy_parts {
 
         # if this link already exists in the DB, don't attempt to re-create it
         next if( grep{$_->part == $incoming_part->id} @$maps );
+
+        if ($incoming_part->isnew) {
+            next unless $create_parts;
+            my $new_part = Fieldmapper::biblio::monograph_part->new();
+            $new_part->record( $incoming_part->record );
+            $new_part->label( $incoming_part->label );
+            $incoming_part = $editor->create_biblio_monograph_part($new_part)
+                or return $editor->event;
+        }
     
         my $new_map = Fieldmapper::asset::copy_part_map->new();
 
@@ -192,12 +224,54 @@ sub update_copy_parts {
 
 
 
+sub update_copy_notes {
+    my($class, $editor, $copy) = @_;
+
+    return undef if $copy->isdeleted;
+
+    my $evt;
+    my $incoming_notes = $copy->notes;
+
+    for my $incoming_note (@$incoming_notes) { 
+        next unless $incoming_note;
+
+        if ($incoming_note->isnew) {
+            next if ($incoming_note->isdeleted); # if it was added and deleted in the same session
+
+            my $new_note = Fieldmapper::asset::copy_note->new();
+            $new_note->owning_copy( $copy->id );
+            $new_note->pub( $incoming_note->pub );
+            $new_note->title( $incoming_note->title );
+            $new_note->value( $incoming_note->value );
+            $new_note->creator( $incoming_note->creator || $editor->requestor->id );
+            $incoming_note = $editor->create_asset_copy_note($new_note)
+                or return $editor->event;
+
+        } elsif ($incoming_note->ischanged) {
+            $incoming_note = $editor->update_asset_copy_note($incoming_note)
+        } elsif ($incoming_note->isdeleted) {
+            $incoming_note = $editor->delete_asset_copy_note($incoming_note->id)
+        }
+    
+    }
+
+    return undef;
+}
+
+
+
 sub update_copy {
     my($class, $editor, $override, $vol, $copy, $retarget_holds, $force_delete_empty_bib) = @_;
 
     $override = { all => 1 } if($override && !ref $override);
     $override = { all => 0 } if(!ref $override);
 
+    # Duplicated check from create_copy in case a copy template with a deleted location is applied later
+    my $copy_loc = $editor->search_asset_copy_location(
+        { id => $copy->location, deleted => 'f' } );
+        
+    return OpenILS::Event->new('COPY_LOCATION_NOT_FOUND') unless @$copy_loc;
+    
     my $evt;
     my $org = (ref $copy->circ_lib) ? $copy->circ_lib->id : $copy->circ_lib;
     return $evt if ( $evt = $class->org_cannot_have_vols($editor, $org) );
@@ -256,7 +330,7 @@ sub check_hold_retarget {
 
 # this does the actual work
 sub update_fleshed_copies {
-    my($class, $editor, $override, $vol, $copies, $delete_stats, $retarget_holds, $force_delete_empty_bib) = @_;
+    my($class, $editor, $override, $vol, $copies, $delete_stats, $retarget_holds, $force_delete_empty_bib, $create_parts) = @_;
 
     $override = { all => 1 } if($override && !ref $override);
     $override = { all => 0 } if(!ref $override);
@@ -288,11 +362,14 @@ sub update_fleshed_copies {
         $copy->location( $copy->location->id ) if ref($copy->location);
         $copy->circ_lib( $copy->circ_lib->id ) if ref($copy->circ_lib);
         
+        my $parts = $copy->parts;
+        $copy->clear_parts;
+
         my $sc_entries = $copy->stat_cat_entries;
         $copy->clear_stat_cat_entries;
 
-        my $parts = $copy->parts;
-        $copy->clear_parts;
+        my $notes = $copy->notes;
+        $copy->clear_notes;
 
         if( $copy->isdeleted ) {
             $evt = $class->delete_copy($editor, $override, $vol, $copy, $retarget_holds, $force_delete_empty_bib);
@@ -310,9 +387,13 @@ sub update_fleshed_copies {
 
         $copy->stat_cat_entries( $sc_entries );
         $evt = $class->update_copy_stat_entries($editor, $copy, $delete_stats);
+
         $copy->parts( $parts );
         # probably okay to use $delete_stats here for simplicity
-        $evt = $class->update_copy_parts($editor, $copy, $delete_stats);
+        $evt = $class->update_copy_parts($editor, $copy, $delete_stats, $create_parts);
+
+        $copy->notes( $notes );
+        $evt = $class->update_copy_notes($editor, $copy);
         return $evt if $evt;
     }
 
@@ -404,13 +485,6 @@ sub cancel_hold_list {
         $hold->cancel_cause(1); # un-targeted expiration.  Do we need an alternate "target deleted" cause?
         $editor->update_action_hold_request($hold) or return $editor->die_event;
 
-        # delete the copy maps.  
-        my $maps = $editor->search_action_hold_copy_map({hold => $hold->id});
-        for(@$maps) {
-            $editor->delete_action_hold_copy_map($_) 
-                or return $editor->die_event;
-        }
-
         # tell A/T the hold was cancelled.  Don't wait for a response..
         my $at_ses = OpenSRF::AppSession->create('open-ils.trigger');
         $at_ses->request(
@@ -476,12 +550,10 @@ sub create_volume {
     if($label) {
         # now restore the label and merge into the existing record
         $vol->label($label);
-        (undef, $evt) = 
-            OpenILS::Application::Cat::Merge::merge_volumes($editor, [$vol], $$vols[0]);
-        return $evt if $evt;
+        return OpenILS::Application::Cat::Merge::merge_volumes($editor, [$vol], $$vols[0]);
     }
 
-    return undef;
+    return ($vol);
 }
 
 # returns the volume if it exists
@@ -523,10 +595,7 @@ sub find_or_create_volume {
     $vol->suffix($suffix);
     $vol->record($record_id);
 
-    my $evt = $class->create_volume(0, $e, $vol);
-    return (undef, $evt) if $evt;
-
-    return ($vol);
+    return $class->create_volume(0, $e, $vol);
 }
 
 
@@ -648,6 +717,7 @@ sub set_item_lost {
         $e, $copy_id,
         perm => 'SET_CIRC_LOST',
         status => OILS_COPY_STATUS_LOST,
+        alt_status => 16, #Long Overdue,
         ous_proc_fee => OILS_SETTING_LOST_PROCESSING_FEE,
         ous_void_od => OILS_SETTING_VOID_OVERDUE_ON_LOST,
         bill_type => 3,
@@ -667,6 +737,7 @@ sub set_item_long_overdue {
         $e, $copy_id,
         perm => 'SET_CIRC_LONG_OVERDUE',
         status => 16, # Long Overdue
+        alt_status => OILS_COPY_STATUS_LOST,
         ous_proc_fee => 'circ.longoverdue_materials_processing_fee',
         ous_void_od => 'circ.void_overdue_on_longoverdue',
         bill_type => 10,
@@ -700,7 +771,7 @@ sub set_item_lost_or_lod {
     $e->allowed($args{perm}, $circ->circ_lib) or return $e->die_event;
 
     return $e->die_event(OpenILS::Event->new($args{event}))
-	    if $copy->status == $args{status};
+	    if ($copy->status == $args{status} || $copy->status == $args{alt_status});
 
     # ---------------------------------------------------------------------
     # fetch the related org settings
@@ -739,9 +810,9 @@ sub set_item_lost_or_lod {
     $e->update_action_circulation($circ) or return $e->die_event;
 
     # ---------------------------------------------------------------------
-    # void all overdue fines on this circ if configured
+    # zero out overdue fines on this circ if configured
     if( $void_overdue ) {
-        my $evt = OpenILS::Application::Circ::CircCommon->void_overdues($e, $circ);
+        my $evt = OpenILS::Application::Circ::CircCommon->void_or_zero_overdues($e, $circ, {force_zero => 1, note => "System: OVERDUE REVERSED for " . $args{bill_note} . " Processing"});
         return $evt if $evt;
     }
 

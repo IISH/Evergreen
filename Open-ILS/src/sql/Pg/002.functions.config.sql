@@ -91,7 +91,7 @@ CREATE OR REPLACE FUNCTION evergreen.oils_xslt_process(TEXT, TEXT) RETURNS TEXT 
   $_SHARED{'_xslt_process'}{stylesheets}{$xslt} = $stylesheet
     unless ($_SHARED{'_xslt_process'}{stylesheets}{$xslt});
 
-  return $stylesheet->output_string(
+  return $stylesheet->output_as_chars(
     $stylesheet->transform(
       $parser->parse_string($doc)
     )
@@ -185,6 +185,48 @@ SELECT * FROM (
 END;
 $func$ LANGUAGE PLPGSQL IMMUTABLE;
 
+CREATE OR REPLACE FUNCTION oils_xpath_tag_to_table(marc text, tag text, xpaths text[]) RETURNS SETOF record AS $function$
+
+-- This function currently populates columns with the FIRST matching value
+-- of each XPATH.  It would be reasonable to add a 'return_arrays' option
+-- where each column is an array of all matching values for each path, but
+-- that remains as a TODO
+
+DECLARE
+    field RECORD;
+    output RECORD;
+    select_list TEXT[];
+    from_list TEXT[];
+    q TEXT;
+BEGIN
+    -- setup query select
+    FOR i IN 1 .. ARRAY_UPPER(xpaths,1) LOOP
+        IF xpaths[i] = 'null()' THEN
+            select_list := ARRAY_APPEND(select_list, 'NULL::TEXT AS c_' || i );
+        ELSE
+            select_list := ARRAY_APPEND(select_list, '(oils_xpath(' ||
+                quote_literal(
+                    CASE
+                        WHEN xpaths[i] ~ $re$/[^/[]*@[^/]+$$re$ -- attribute
+                            OR xpaths[i] ~ $re$text\(\)$$re$
+                        THEN xpaths[i]
+                        ELSE xpaths[i] || '//text()'
+                    END
+                ) || ', field_marc))[1] AS cl_' || i);
+                -- hardcoded to first value for each path
+        END IF;
+    END LOOP;
+
+    -- run query over tag set
+    q := 'SELECT ' || ARRAY_TO_STRING(select_list, ',')
+        || ' FROM UNNEST(oils_xpath(' || quote_literal('//*[@tag="' || tag
+        || '"]') || ', ' || quote_literal(marc) || ')) AS field_marc;';
+    --RAISE NOTICE '%', q;
+
+    RETURN QUERY EXECUTE q;
+END;
+
+$function$ LANGUAGE PLPGSQL;
 
 CREATE OR REPLACE FUNCTION extract_marc_field ( TEXT, BIGINT, TEXT, TEXT ) RETURNS TEXT AS $$
 DECLARE
@@ -351,6 +393,18 @@ if ($schema eq 'biblio') {
 
     if ($_TD->{new}{share_depth}) {
         $new_901->add_subfields("d" => $_TD->{new}{share_depth});
+    }
+
+    if ($_TD->{new}{source}) {
+        my $plan = spi_prepare('
+            SELECT source
+            FROM config.bib_source
+            WHERE id = $1
+        ', 'INTEGER');
+        my $source_name =
+            spi_exec_prepared($plan, {limit => 1}, $_TD->{new}{source})->{rows}[0]{source};
+        spi_freeplan($plan);
+        $new_901->add_subfields("s" => $source_name) if $source_name;
     }
 
     $marc->append_fields($new_901);
@@ -538,16 +592,11 @@ CREATE OR REPLACE FUNCTION oils_text_as_bytea (TEXT) RETURNS BYTEA AS $_$
 $_$ LANGUAGE SQL IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION evergreen.lpad_number_substrings( TEXT, TEXT, INT ) RETURNS TEXT AS $$
-    my $string = shift;
-    my $pad = shift;
-    my $len = shift;
-    my $find = $len - 1;
+    my $string = shift;            # Source string
+    my $pad = shift;               # string to fill. Typically '0'. This should be a single character.
+    my $len = shift;               # length of resultant padded field
 
-    while ($string =~ /(?:^|\D)(\d{1,$find})(?:$|\D)/) {
-        my $padded = $1;
-        $padded = $pad x ($len - length($padded)) . $padded;
-        $string =~ s/$1/$padded/sg;
-    }
+    $string =~ s/([0-9]+)/$pad x ($len - length($1)) . $1/eg;
 
     return $string;
 $$ LANGUAGE PLPERLU;
@@ -562,7 +611,7 @@ CREATE OR REPLACE FUNCTION public.naco_normalize( TEXT, TEXT ) RETURNS TEXT AS $
     my $sf = shift;
 
     # Apply NACO normalization to input string; based on
-    # http://www.loc.gov/catdir/pcc/naco/SCA_PccNormalization_Final_revised.pdf
+    # https://www.loc.gov/aba/pcc/naco/documents/SCA_PccNormalization_Final_revised.pdf
     #
     # Note that unlike a strict reading of the NACO normalization rules,
     # output is returned as lowercase instead of uppercase for compatibility
@@ -628,7 +677,7 @@ CREATE OR REPLACE FUNCTION public.search_normalize( TEXT, TEXT ) RETURNS TEXT AS
     my $sf = shift;
 
     # Apply NACO normalization to input string; based on
-    # http://www.loc.gov/catdir/pcc/naco/SCA_PccNormalization_Final_revised.pdf
+    # https://www.loc.gov/aba/pcc/naco/documents/SCA_PccNormalization_Final_revised.pdf
     #
     # Note that unlike a strict reading of the NACO normalization rules,
     # output is returned as lowercase instead of uppercase for compatibility

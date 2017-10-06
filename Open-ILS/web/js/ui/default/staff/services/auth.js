@@ -6,23 +6,44 @@
 angular.module('egCoreMod')
 
 .factory('egAuth', 
-       ['$q','$timeout','$rootScope','egNet','egHatch', 
-function($q , $timeout , $rootScope , egNet , egHatch) {
+       ['$q','$timeout','$rootScope','$window','$location','egNet','egHatch',
+function($q , $timeout , $rootScope , $window , $location , egNet , egHatch) {
 
     var service = {
         // the currently active user (au) object
-        user : function() {
+        user : function(u) {
+            if (u) {
+                this._user = u;
+            }
             return this._user;
+        },
+
+        // the user hidden by an operator change
+        OCuser : function(u) {
+            if (u) {
+                this._OCuser = u;
+            }
+            return this._OCuser;
+        },
+
+        // the Op Change hidden auth token string
+        OCtoken : function() {
+            return egHatch.getLoginSessionItem('eg.auth.token.oc');
+        },
+
+        // Op Change hidden authtime in seconds
+        OCauthtime : function() {
+            return egHatch.getLoginSessionItem('eg.auth.time.oc');
         },
 
         // the currently active auth token string
         token : function() {
-            return egHatch.getLocalItem('eg.auth.token');
+            return egHatch.getLoginSessionItem('eg.auth.token');
         },
 
         // authtime in seconds
         authtime : function() {
-            return egHatch.getLocalItem('eg.auth.time');
+            return egHatch.getLoginSessionItem('eg.auth.time');
         },
 
         // the currently active workstation name
@@ -47,77 +68,185 @@ function($q , $timeout , $rootScope , egNet , egHatch) {
             .then(function(user) {
                 if (user && user.classname) {
                     // authtoken test succeeded
-                    service._user = user;
+                    service.user(user);
                     service.poll();
-                   
-                    if (user.wsid()) {
-                        // user previously logged in with a workstation. 
-                        // Find the workstation name from the list 
-                        // of configured workstations
-                        egHatch.getItem('eg.workstation.all')
-                        .then(function(all) { 
-                            if (all) {
-                                var ws = all.filter(
-                                    function(w) {return w.id == user.wsid()})[0];
-                                if (ws) service.ws = ws.name;
-                            }
-                            deferred.resolve(); // found WS
-                        });
-                    } else {
-                        deferred.resolve(); // no WS
-                    }
+                    service.check_workstation(deferred);
+
                 } else {
                     // authtoken test failed
-                    egHatch.removeLocalItem('eg.auth.token');
+                    egHatch.clearLoginSessionItems();
                     deferred.reject(); 
                 }
             });
 
         } else {
             // no authtoken to test
-            deferred.reject();
+            deferred.reject('No authtoken found');
         }
 
         return deferred.promise;
     };
 
+    service.check_workstation = function(deferred) {
+
+        var user = service.user();
+        var ws_path = '/admin/workstation/workstations';
+
+        return egHatch.getItem('eg.workstation.all')
+        .then(function(workstations) { 
+            if (!workstations) workstations = [];
+
+            // If the user is authenticated with a workstation, get the
+            // name from the locally registered version of the workstation.
+
+            if (user.wsid()) {
+
+                var ws = workstations.filter(
+                    function(w) {return w.id == user.wsid()})[0];
+
+                if (ws) { // success
+                    service.ws = ws.name;
+                    deferred.resolve();
+                    return;
+                }
+            }
+
+            if ($location.path() == ws_path) {
+                // User is on the workstation admin page.  No need
+                // to redirect.
+                deferred.resolve();
+                return;
+            }
+
+            // At this point, the user is trying to access a page
+            // besides the workstation admin page without a valid
+            // registered workstation.  Send them back to the 
+            // workstation admin page.
+
+            // NOTE: egEnv also defines basePath, but we cannot import
+            // egEnv here becuase it creates a circular reference.
+            $window.location.href = '/eg/staff' + ws_path;
+            deferred.resolve();
+        });
+    }
+
     /**
      * Returns a promise, which is resolved on successful 
      * login and rejected on failed login.
      */
-    service.login = function(args) {
-        var deferred = $q.defer();
-        egNet.request(
-            'open-ils.auth',
-            'open-ils.auth.authenticate.init', args.username).then(
-            function(seed) {
-                args.password = hex_md5(seed + hex_md5(args.password))
-                egNet.request(
-                    'open-ils.auth',
-                    'open-ils.auth.authenticate.complete', args).then(
-                    function(evt) {
-                        if (evt.textcode == 'SUCCESS') {
-                            service.ws = args.workstation; 
-                            service.poll();
-                            egHatch.setLocalItem(
-                                'eg.auth.token', evt.payload.authtoken);
-                            egHatch.setLocalItem(
-                                'eg.auth.time', evt.payload.authtime);
-                            deferred.resolve();
-                        } else {
-                            // note: the likely outcome here is a NO_SESION
-                            // server event, which results in broadcasting an 
-                            // egInvalidAuth by egNet. 
-                            console.error('login failed ' + js2JSON(evt));
-                            deferred.reject();
-                        }
-                    }
-                )
+    service.login = function(args, ops) {
+        // avoid modifying the caller's data structure.
+        args = angular.copy(args);
+
+        if (!ops) { // only set on redo attempts.
+            ops = {deferred : $q.defer()};
+
+            // Clear old LoginSession keys that were left in localStorage
+            // when the previous user closed the browser without logging
+            // out.  Under normal circumstance, LoginSession data would
+            // have been cleared by now, either during logout or cookie
+            // expiration.  But, if for some reason the user manually
+            // removed the auth token cookie w/o closing the browser
+            // (say, for testing), then this serves double duty to ensure
+            // LoginSession data cannot persist across logins.
+            egHatch.clearLoginSessionItems();
+        }
+
+        service.login_api(args).then(function(evt) {
+
+            if (evt.textcode == 'SUCCESS') {
+                service.handle_login_ok(args, evt);
+                ops.deferred.resolve({
+                    invalid_workstation : ops.invalid_workstation
+                });
+
+            } else if (evt.textcode == 'WORKSTATION_NOT_FOUND') {
+                ops.invalid_workstation = true;
+                delete args.workstation;
+                service.login(args, ops); // redo w/o workstation
+
+            } else {
+                // note: the likely outcome here is a NO_SESION
+                // server event, which results in broadcasting an 
+                // egInvalidAuth by egNet. 
+                console.error('login failed ' + js2JSON(evt));
+                ops.deferred.reject();
             }
-        );
+        });
+
+        return ops.deferred.promise;
+    }
+
+    /**
+     * Returns a promise, which is resolved on successful 
+     * login and rejected on failed login.
+     */
+    service.opChange = function(args) {
+        // avoid modifying the caller's data structure.
+        args = angular.copy(args);
+        args.workstation = service.workstation();
+
+        var deferred = $q.defer();
+
+        service.login_api(args).then(function(evt) {
+
+            if (evt.textcode == 'SUCCESS') {
+                if (args.type != 'persist') {
+                    egHatch.setLoginSessionItem('eg.auth.token.oc', service.token());
+                    egHatch.setLoginSessionItem('eg.auth.time.oc', service.authtime());
+                    service.OCuser(service.user());
+                }
+                service.handle_login_ok(args, evt);
+                service.testAuthToken().then(
+                    deferred.resolve,
+                    function () { service.opChangeUndo().then(deferred.reject)  }
+                );
+            } else {
+                // note: the likely outcome here is a NO_SESION
+                // server event, which results in broadcasting an 
+                // egInvalidAuth by egNet. 
+                console.error('operator change failed ' + js2JSON(evt));
+                deferred.reject();
+            }
+        });
 
         return deferred.promise;
-    };
+    }
+
+    service.opChangeUndo = function() {
+        if (service.OCtoken()) {
+            service.user(service.OCuser());
+            egHatch.setLoginSessionItem('eg.auth.token', service.OCtoken());
+            egHatch.setLoginSessionItem('eg.auth.time', service.OCauthtime());
+            egHatch.removeLoginSessionItem('eg.auth.token.oc');
+            egHatch.removeLoginSessionItem('eg.auth.time.oc');
+        }
+        return service.testAuthToken();
+    }
+
+    service.login_api = function(args) {
+        return egNet.request(
+            'open-ils.auth',
+            'open-ils.auth.authenticate.init', args.username)
+        .then(function(seed) {
+                // avoid clobbering the bare password in case
+                // we need it for a login redo attempt.
+                var login_args = angular.copy(args);
+                login_args.password = hex_md5(seed + hex_md5(args.password));
+
+                return egNet.request(
+                    'open-ils.auth',
+                    'open-ils.auth.authenticate.complete', login_args)
+            }
+        );
+    }
+
+    service.handle_login_ok = function(args, evt) {
+        service.ws = args.workstation; 
+        egHatch.setLoginSessionItem('eg.auth.token', evt.payload.authtoken);
+        egHatch.setLoginSessionItem('eg.auth.time', evt.payload.authtime);
+        service.poll();
+    }
 
     /**
      * Force-check the validity of the authtoken on occasion. 
@@ -157,8 +286,7 @@ function($q , $timeout , $rootScope , egNet , egHatch) {
                 'open-ils.auth', 
                 'open-ils.auth.session.delete', 
                 service.token()); // fire and forget
-            egHatch.removeLocalItem('eg.auth.token');
-            egHatch.removeLocalItem('eg.auth.time');
+            egHatch.clearLoginSessionItems();
         }
         service._user = null;
     };

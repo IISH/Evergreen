@@ -1,22 +1,21 @@
-# extracted from ../../Open-ILS/xul/staff_client/server/locale/en-US/circ.properties
-#. extracted from ../../Open-ILS/xul/staff_client/server/locale/en-US/circ.properties
+# Finnish translation for evergreen
+# Copyright (c) 2017 Rosetta Contributors and Canonical Ltd 2017
+# This file is distributed under the same license as the evergreen package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-10-01 20:32+0300\n"
-"PO-Revision-Date: 2013-03-19 19:56+0000\n"
-"Last-Translator: Finnish <evergreen@jns.fi>\n"
-"Language-Team: Finnish <evergreen@jns.fi>\n"
-"Language: fi\n"
+"Project-Id-Version: evergreen\n"
+"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2017-08-25 14:21-0500\n"
+"PO-Revision-Date: 2017-04-09 07:00+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Finnish <fi@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Translate Toolkit 1.10.0\n"
-"X-Accelerator-Marker: &\n"
-"X-Merge-On: location\n"
-"X-Launchpad-Export-Date: 2013-03-20 04:44+0000\n"
-"X-Project-Style: mozilla\n"
+"X-Launchpad-Export-Date: 2017-08-28 05:33+0000\n"
+"X-Generator: Launchpad (build 18446)\n"
 
 #: staff.circ.alert
 msgid "Alert"
@@ -25,6 +24,14 @@ msgstr "Huomautus"
 #: staff.circ.item_no_circs
 msgid "Item %1$s has never circulated."
 msgstr "Nidettä %1$s ei ole koskaan lainattu."
+
+#: staff.circ.item_no_user
+msgid "Item %1$s circulation is an aged circulation and has no linked user."
+msgstr ""
+
+#: staff.circ.aged_circ
+msgid "<Aged Circulation>"
+msgstr ""
 
 #: staff.circ.invalid_date
 msgid "Invalid Date"
@@ -190,7 +197,8 @@ msgstr "Ei"
 
 #: staff.circ.checkout.cmd_checkout_submit.non_numeric.msg
 msgid "Error with non-cataloged checkout.  %1$s is not a valid number."
-msgstr "Virhe ei-luetteloidun niteen lainassa.  %1$s ei ole kelvollinen numero."
+msgstr ""
+"Virhe ei-luetteloidun niteen lainassa.  %1$s ei ole kelvollinen numero."
 
 #: staff.circ.checkout.cmd_checkout_submit.non_numeric.title
 msgctxt "staff.circ.checkout.cmd_checkout_submit.non_numeric.title"
@@ -394,6 +402,10 @@ msgstr "Tätä nidettä ei vielä ole lainattu."
 msgid "This item is not in transit."
 msgstr "Tämä nide ei ole kuljetettavana."
 
+#: staff.circ.copy_details.transit_caption
+msgid "In Transit"
+msgstr ""
+
 #: staff.circ.copy_details.desk_renewal
 msgid "Desk"
 msgstr "Tiski"
@@ -410,6 +422,10 @@ msgstr "Puhelin"
 #: staff.circ.copy_details.user_details
 msgid "%1$s, %2$s : %3$s"
 msgstr "%1$s, %2$s : %3$s"
+
+#: staff.circ.copy_details.hold_caption
+msgid "Captured for Hold"
+msgstr ""
 
 #: staff.circ.copy_details.bad_hold_status
 msgid ""
@@ -466,7 +482,8 @@ msgstr "%3$s on prosentti? %4$s"
 
 #. # From asset::copy_location: 1 - Can Circulate?  2 - Is Holdable?  3 - Hold Capture Requires Verification?  4 - Is OPAC Visible?
 #: staff.circ.copy_details.location_tooltip
-msgid "Circulate? %1$s  Holdable? %2$s  Hold Verify? %3$s  OPAC Visible? %4$s"
+msgid ""
+"Circulate? %1$s  Holdable? %2$s  Hold Verify? %3$s  OPAC Visible? %4$s"
 msgstr ""
 "Lainattavissa? %1$s  Varattavissa? %2$s  Varausvahvistus? %3$s  Näkyy "
 "verkkokirjastossa? %4$s"
@@ -656,7 +673,8 @@ msgstr "Rajoita valintaa"
 msgid ""
 "Please mark a library as the destination from within holdings maintenance "
 "and then try this again."
-msgstr "Merkitse kirjasto kohteeksi kokoelmien hallinnasta ja yritä uudelleen."
+msgstr ""
+"Merkitse kirjasto kohteeksi kokoelmien hallinnasta ja yritä uudelleen."
 
 #: staff.circ.copy_status.transfer_volume.confirm
 msgid "Transfer volumes %1$s to library %2$s on the following record?"
@@ -859,9 +877,9 @@ msgid ""
 "In House Use Failed.  If you wish to use the offline interface, in the top "
 "menubar select Circulation -> Offline Interface"
 msgstr ""
-"Kirjaston sisäinen käyttö epäonnistui. Jos haluat käyttää "
-"offline-käyttöliittymää, valitse yllä olevasta valikkopalkista Lainaus -> "
-"Offline-käyttöliittymä"
+"Kirjaston sisäinen käyttö epäonnistui. Jos haluat käyttää offline-"
+"käyttöliittymää, valitse yllä olevasta valikkopalkista Lainaus -> Offline-"
+"käyttöliittymä"
 
 #: staff.circ.in_house_use.failed
 msgid "In House Use Failed"
@@ -1095,6 +1113,10 @@ msgstr "Tuhottu?"
 msgid "Holdable?"
 msgstr "Varattavissa?"
 
+#: staff.circ.utils.age_protect
+msgid "Age-based Hold Protection"
+msgstr ""
+
 #: staff.circ.utils.floating
 msgid "Floating?"
 msgstr "Kelluva?"
@@ -1180,6 +1202,10 @@ msgstr "Palautustyöasema"
 #: staff.circ.utils.create_date
 msgid "Date Created"
 msgstr "Luomispäivä"
+
+#: staff.circ.utils.active_date
+msgid "Date Active"
+msgstr ""
 
 #: staff.circ.utils.edit_date
 msgid "Date Last Edited "
@@ -1370,10 +1396,9 @@ msgid "Suspended"
 msgstr "Ennakossa"
 
 #: staff.circ.utils.hold_status.8
-#, fuzzy
 msgctxt "staff.circ.utils.hold_status.8"
 msgid "Wrong Shelf"
-msgstr "Väärä hylly"
+msgstr ""
 
 #: staff.circ.utils.hold_post_clear_shelf_action.label
 msgid "Post-Clear"
@@ -1392,10 +1417,9 @@ msgid "Reshelve"
 msgstr "Hyllytä uudelleen"
 
 #: staff.circ.utils.hold_post_clear_shelf_action.pl_changed
-#, fuzzy
 msgctxt "staff.circ.utils.hold_post_clear_shelf_action.pl_changed"
 msgid "Wrong Shelf"
-msgstr "Väärä hylly"
+msgstr ""
 
 #: staff.circ.utils.frozen
 msgid "Frozen?"
@@ -1459,7 +1483,8 @@ msgid "Override Checkin Failure?"
 msgstr "Ohitetaanko palautuksen epäonnistuminen?"
 
 #: staff.circ.utils.checkin.override.item_deposit_paid.warning
-msgid "A paid deposit will be owed to this patron if this action is overrided."
+msgid ""
+"A paid deposit will be owed to this patron if this action is overrided."
 msgstr "Maksu jäädään velkaa tälle asiakkaalle, jos toiminto ohitetaan."
 
 #: staff.circ.utils.billable.amount
@@ -1746,7 +1771,8 @@ msgstr "%1$s uusi kohteen %4$s käyttäjälle %3$s (%2$s)"
 
 #. # 1 - Staff Username  2 - Patron Family  3 - Patron Barcode  4 - Item Barcode  5 - Route To text
 #: staff.circ.work_log_checkin_attempt.transit.message
-msgid "%1$s attempted checkin of %4$s, resulting in transit.  Route To = %5$s"
+msgid ""
+"%1$s attempted checkin of %4$s, resulting in transit.  Route To = %5$s"
 msgstr ""
 "%1$s yritti palauttaa kohteen %4$s, mikä johti kuljetukseen. Kuljetettava "
 "kohteeseen = %5$s"
@@ -1754,22 +1780,23 @@ msgstr ""
 #. # 1 - Staff Username  2 - Patron Family  3 - Patron Barcode  4 - Item Barcode  5 - Route To text
 #: staff.circ.work_log_checkin_attempt.transit_for_hold.message
 msgid ""
-"%1$s attempted checkin of %4$s, resulting in a hold-transit.  Route To = %"
-"5$s"
+"%1$s attempted checkin of %4$s, resulting in a hold-transit.  Route To = %5$s"
 msgstr ""
 "%1$s yritti palauttaa kohteen %4$s, mikä johti varauksen kuljetukseen. "
 "Kuljetettava kohteeseen = %5$s"
 
 #. # 1 - Staff Username  2 - Patron Family  3 - Patron Barcode  4 - Item Barcode  5 - Route To text
 #: staff.circ.work_log_checkin_attempt.no_change.message
-msgid "%1$s attempted checkin of %4$s, but nothing happened.  Route To = %5$s"
+msgid ""
+"%1$s attempted checkin of %4$s, but nothing happened.  Route To = %5$s"
 msgstr ""
 "%1$s yritti palauttaa kohteen %4$s, mutta mitään ei tapahtunut. Kuljetettava "
 "kohteeseen = %5$s"
 
 #. # 1 - Staff Username  2 - Patron Family  3 - Patron Barcode  4 - Item Barcode  5 - Route To text
 #: staff.circ.work_log_checkin_attempt.error.message
-msgid "%1$s attempted checkin of %4$s, and an error occurred.  Route To = %5$s"
+msgid ""
+"%1$s attempted checkin of %4$s, and an error occurred.  Route To = %5$s"
 msgstr ""
 "%1$s yritti palauttaa kohteen %4$s, ja tapahtui virhe. Kuljetettava "
 "kohteeseen = %5$s"
@@ -1778,8 +1805,8 @@ msgstr ""
 #: staff.circ.work_log_checkin_attempt.success.message
 msgid "%1$s attempted checkin of %4$s, which succeeded.  Route To = %5$s"
 msgstr ""
-"%1$s yritti palauttaa kohteen %4$s ja onnistui. Kuljetettava kohteeseen = %"
-"5$s"
+"%1$s yritti palauttaa kohteen %4$s ja onnistui. Kuljetettava kohteeseen = "
+"%5$s"
 
 #. # 1 - Staff Username  2 - Patron Family  3 - Patron Barcode  4 - Item Barcode  5 - Route To text
 #: staff.circ.work_log_checkin_attempt.hold_shelf.message
@@ -1859,6 +1886,12 @@ msgstr ""
 "Palautus epäonnistui. Jos haluat käyttää offline-käyttöliittymää, valitse "
 "Lainaus -> Offline-käyttöliittymä yllä olevasta valikkopalkista."
 
+#: staff.circ.checkin.possible_dupe_scan
+msgid ""
+"Check In May Have Failed.  Possible double-scan of the barcode.  Use Item "
+"Status to confirm Check In and possible Hold capture."
+msgstr ""
+
 #: staff.circ.checkin.renew_failed.error
 msgid "Renew Failed for %1$s"
 msgstr "Kohteen %1$s uusinta epäonnistui"
@@ -1917,16 +1950,16 @@ msgid ""
 "Please enter an Activation Date (or choose Remove to unset) for hold %1$s.  "
 "This will also Suspend the hold."
 msgstr ""
-"Syötä aktivointipäivä (tai valitse Poista, jos haluat nollata) varaukselle %"
-"1$s. Tämä myös tekee varauksesta ennakkovarauksen."
+"Syötä aktivointipäivä (tai valitse Poista, jos haluat nollata) varaukselle "
+"%1$s. Tämä myös tekee varauksesta ennakkovarauksen."
 
 #: staff.circ.holds.activation_date.prompt.plural
 msgid ""
-"Please enter an Activation Date (or choose Remove to unset) for holds %1$s. "
-" This will also Suspend the holds."
+"Please enter an Activation Date (or choose Remove to unset) for holds %1$s.  "
+"This will also Suspend the holds."
 msgstr ""
-"Syötä aktivointipäivä (tai valitse Poista, jos haluat nollata) varauksille %"
-"1$s. Tämä myös tekee varauksista ennakkovarauksia."
+"Syötä aktivointipäivä (tai valitse Poista, jos haluat nollata) varauksille "
+"%1$s. Tämä myös tekee varauksista ennakkovarauksia."
 
 #: staff.circ.holds.activation_date.dialog.description
 msgctxt "staff.circ.holds.activation_date.dialog.description"
@@ -2062,7 +2095,10 @@ msgstr "Osia puuttuu"
 msgid "No item with barcode \"%1$s\""
 msgstr "Ei nidettä tunnuksella \"%1$s\""
 
-#~ msgid "Mis-scan or non-cataloged item.  Checkout as a pre-cataloged item?"
-#~ msgstr ""
-#~ "Virheellinen luku tai ei-luetteloitu nide. Lainataanko ennakkoon "
-#~ "luetteloituna niteenä?"
+#: staff.circ.utils.transit.copy_status_message.label
+msgid "Transit Copy Status Message"
+msgstr ""
+
+#: staff.circ.utils.transit.copy_status_message
+msgid "This item is in status %1$s, additional staff action may be required."
+msgstr ""

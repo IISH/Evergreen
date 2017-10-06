@@ -12,7 +12,7 @@ my $U = 'OpenILS::Application::AppUtils';
 
 # return nothing on success, event on failure
 sub _prepare_fund_debit_for_inv_item {
-    my ($debit, $item, $e) = @_;
+    my ($debit, $item, $e, $inv_closing) = @_;
 
     $debit->fund($item->fund);
     $debit->amount($item->amount_paid);
@@ -22,7 +22,7 @@ sub _prepare_fund_debit_for_inv_item {
     my $fund = $e->retrieve_acq_fund($item->fund) or return $e->die_event;
 
     $debit->origin_currency_type($fund->currency_type);
-    $debit->encumbrance('f');
+    $debit->encumbrance($inv_closing ? 'f' : 't');
     $debit->debit_type('direct_charge');
 
     return;
@@ -38,6 +38,7 @@ __PACKAGE__->register_method(
             {desc => q/Invoice/, type => 'number'},
             {desc => q/Entries.  Array of 'acqie' objects/, type => 'array'},
             {desc => q/Items.  Array of 'acqii' objects/, type => 'array'},
+            {desc => q/Finalize PO's.  Array of 'acqpo' ID's/, type => 'array'},
         ],
         return => {desc => 'The invoice w/ entries and items attached', type => 'object', class => 'acqinv'}
     }
@@ -45,15 +46,32 @@ __PACKAGE__->register_method(
 
 
 sub build_invoice_impl {
-    my ($e, $invoice, $entries, $items, $do_commit) = @_;
+    my ($e, $invoice, $entries, $items, $do_commit, $finalize_pos) = @_;
+
+    $finalize_pos ||= [];
+
+    my $inv_closing = 0;
+    my $inv_reopening = 0;
 
     if ($invoice->isnew) {
         $invoice->recv_method('PPR') unless $invoice->recv_method;
         $invoice->recv_date('now') unless $invoice->recv_date;
+        $inv_closing = $U->is_true($invoice->complete);
         $e->create_acq_invoice($invoice) or return $e->die_event;
     } elsif ($invoice->isdeleted) {
         $e->delete_acq_invoice($invoice) or return $e->die_event;
     } else {
+        my $orig_inv = $e->retrieve_acq_invoice($invoice->id)
+            or return $e->die_event;
+
+        $inv_closing = (
+            !$U->is_true($orig_inv->complete) && 
+            $U->is_true($invoice->complete));
+
+        $inv_reopening = (
+            $U->is_true($orig_inv->complete) && 
+            !$U->is_true($invoice->complete));
+
         $e->update_acq_invoice($invoice) or return $e->die_event;
     }
 
@@ -66,7 +84,8 @@ sub build_invoice_impl {
             if ($entry->isnew) {
                 $e->create_acq_invoice_entry($entry) or return $e->die_event;
                 return $evt if $evt = uncancel_copies_as_needed($e, $entry);
-                return $evt if $evt = update_entry_debits($e, $entry);
+                return $evt if $evt = update_entry_debits(
+                    $e, $entry, 'unlinked', $inv_closing, $inv_reopening);
             } elsif ($entry->isdeleted) {
                 # XXX Deleting entries does not recancel anything previously
                 # uncanceled.
@@ -78,14 +97,19 @@ sub build_invoice_impl {
 
                 if ($orig_entry->amount_paid != $entry->amount_paid or
                     $entry->phys_item_count != $orig_entry->phys_item_count) {
-                    return $evt if $evt = rollback_entry_debits($e,$orig_entry);
+                    return $evt if $evt = rollback_entry_debits(
+                        $e, $orig_entry, $orig_entry);
 
                     # XXX Updates can only uncancel more LIDs when
                     # phys_item_count goes up, but cannot recancel them when
                     # phys_item_count goes down.
                     return $evt if $evt = uncancel_copies_as_needed($e, $entry);
 
-                    return $evt if $evt = update_entry_debits($e, $entry);
+                    # debits were rolled back (encumbrance=t) above, so now 
+                    # search for un-invoiced, potentially linked debits 
+                    # to (re-) invoice.
+                    return $evt if $evt = update_entry_debits(
+                        $e, $entry, 'all', $inv_closing, $inv_reopening);
                 }
 
                 $e->update_acq_invoice_entry($entry) or return $e->die_event;
@@ -96,13 +120,14 @@ sub build_invoice_impl {
     if ($items) {
         for my $item (@$items) {
             $item->invoice($invoice->id);
+                
+            # future: cache item types
+            my $item_type = $e->retrieve_acq_invoice_item_type(
+                $item->inv_item_type) or return $e->die_event;
 
             if ($item->isnew) {
                 $e->create_acq_invoice_item($item) or return $e->die_event;
 
-                # future: cache item types
-                my $item_type = $e->retrieve_acq_invoice_item_type(
-                    $item->inv_item_type) or return $e->die_event;
 
                 # This following complex conditional statement effecively means:
                 #   1) Items with item_types that are prorate are handled
@@ -124,13 +149,25 @@ sub build_invoice_impl {
                             or return $e->die_event;
                         $debit = $e->retrieve_acq_fund_debit($po_item->fund_debit)
                             or return $e->die_event;
-                    } else {
+
+                        if ($U->is_true($item_type->blanket)) {
+                            # Each payment toward a blanket charge results
+                            # in a new debit to track the payment and a 
+                            # decrease in the original encumbrance by 
+                            # the amount paid on this invoice item
+                            $debit->amount($debit->amount - $item->amount_paid);
+                            $e->update_acq_fund_debit($debit) or return $e->die_event;
+                            $debit = undef; # new debit created below
+                        }
+                    }
+
+                    if (!$debit) {
                         $debit = Fieldmapper::acq::fund_debit->new;
                         $debit->isnew(1);
                     }
 
-                    return $evt if
-                        $evt = _prepare_fund_debit_for_inv_item($debit, $item, $e);
+                    return $evt if $evt = _prepare_fund_debit_for_inv_item(
+                        $debit, $item, $e, $inv_closing);
 
                     if ($debit->isnew) {
                         $e->create_acq_fund_debit($debit)
@@ -157,12 +194,31 @@ sub build_invoice_impl {
                     # so when that happens, just delete the extraneous
                     # debit (in the else block).
                     my $debit = $e->retrieve_acq_fund_debit($item->fund_debit);
-                    $debit->encumbrance('t');
-                    $e->update_acq_fund_debit($debit) or return $e->die_event;
+                    if (!$U->us_true($debit->encumbrance)) {
+                        $debit->encumbrance('t');
+                        $e->update_acq_fund_debit($debit) 
+                            or return $e->die_event;
+                    }
+
                 } elsif ($item->fund_debit) {
-                    $e->delete_acq_fund_debit($e->retrieve_acq_fund_debit($item->fund_debit))
-                        or return $e->die_event;
+
+                    my $inv_debit = $e->retrieve_acq_fund_debit($item->fund_debit);
+
+                    if ($U->is_true($item_type->blanket)) {
+                        # deleting a payment against a blanket charge means
+                        # we have to re-encumber the paid amount by adding
+                        # it back to the debit linked to the source po_item.
+
+                        my $po_debit = $e->retrieve_acq_fund_debit($item->po_item->fund_debit);
+                        $po_debit->amount($po_debit->amount + $inv_debit->amount);
+
+                        $e->update_acq_fund_debit($po_debit) 
+                            or return $e->die_event;
+                    }
+
+                    $e->delete_acq_fund_debit($inv_debit) or return $e->die_event;
                 }
+
             } elsif ($item->ischanged) {
                 my $debit;
 
@@ -172,11 +228,26 @@ sub build_invoice_impl {
                     $debit->isnew(1);
 
                     return $evt if
-                        $evt = _prepare_fund_debit_for_inv_item($debit, $item, $e);
+                        $evt = _prepare_fund_debit_for_inv_item(
+                            $debit, $item, $e, $inv_closing);
                 } else {
                     $debit = $e->retrieve_acq_fund_debit($item->fund_debit) or
                         return $e->die_event;
                 }
+
+                if ($U->is_true($item_type->blanket)) {
+                    # modifying a payment against a blanket charge means
+                    # modifying the amount encumbered on the source debit
+                    # by the same (but opposite) amount.
+
+                    my $po_debit = $e->retrieve_acq_fund_debit(
+                        $item->po_item->fund_debit);
+
+                    my $delta = $debit->amount - $item->amount_paid;
+                    $po_debit->amount($po_debit->amount + $delta);
+                    $e->update_acq_fund_debit($po_debit) or return $e->die_event;
+                }
+
 
                 $debit->amount($item->amount_paid);
                 $debit->fund($item->fund);
@@ -194,7 +265,27 @@ sub build_invoice_impl {
         }
     }
 
+    for my $po_id (@$finalize_pos) {
+        my $po = $e->retrieve_acq_purchase_order($po_id) 
+            or return $e->die_event;
+        
+        my $evt = finalize_blanket_po($e, $po);
+        return $evt if $evt;
+    }
+
     $invoice = fetch_invoice_impl($e, $invoice->id);
+
+    # entries and items processed above may not represent every item or
+    # entry in the invoice.  This will synchronize any remaining debits.
+    if ($inv_closing || $inv_reopening) {
+
+        # inv_closing=false implies inv_reopening=true
+        $evt = handle_invoice_state_change($e, $invoice, $inv_closing);
+        return $evt if $evt;
+
+        $invoice = fetch_invoice_impl($e, $invoice->id);
+    }
+
     if ($do_commit) {
         $e->commit or return $e->die_event;
     }
@@ -202,8 +293,37 @@ sub build_invoice_impl {
     return $invoice;
 }
 
+# When an invoice opens or closes, ensure all linked debits match 
+# the open/close state of the invoice.
+# If $closing is false, code assumes the invoice is reopening.
+sub handle_invoice_state_change {
+    my ($e, $invoice, $closing) = @_;
+
+    my $enc_find = $closing ? 't' : 'f'; # debits to process
+    my $enc_set  = $closing ? 'f' : 't'; # new encumbrance value
+
+    my @debits;
+    for my $entry (@{$invoice->entries}) {
+        push(@debits, @{find_linked_entry_debits($e, $entry, $enc_find)});
+    }
+
+    for my $item (@{$invoice->items}) {
+        push(@debits, $item->fund_debit) if
+            $item->fund_debit && 
+            $item->fund_debit->encumbrance eq $enc_find;
+    }
+
+    # udpate all linked debits to match the state of the invoice
+    for my $debit (@debits) {
+        $debit->encumbrance($enc_set);
+        $e->update_acq_fund_debit($debit) or return $e->die_event;
+    }
+
+    return undef;
+}
+
 sub build_invoice_api {
-    my($self, $conn, $auth, $invoice, $entries, $items) = @_;
+    my($self, $conn, $auth, $invoice, $entries, $items, $finalize_pos) = @_;
 
     my $e = new_editor(xact => 1, authtoken=>$auth);
     return $e->die_event unless $e->checkauth;
@@ -220,19 +340,39 @@ sub build_invoice_api {
     return $e->die_event unless
         $e->allowed('CREATE_INVOICE', $invoice->receiver);
 
-    return build_invoice_impl($e, $invoice, $entries, $items, 1);
+    return build_invoice_impl($e, $invoice, $entries, $items, 1, $finalize_pos);
 }
 
 
+# 1. set encumbrance=true
+# 2. unlink debit entries.
 sub rollback_entry_debits {
-    my($e, $entry) = @_;
-    my $debits = find_entry_debits($e, $entry, 'f', entry_amount_per_item($entry));
-    my $lineitem = $e->retrieve_acq_lineitem($entry->lineitem) or return $e->die_event;
+    my($e, $entry, $orig_entry) = @_;
+
+    # when modifying an entry, roll back all debits that were 
+    # affected given the previous state of the entry.
+    my $need_count = $orig_entry ? 
+        $orig_entry->phys_item_count : $entry->phys_item_count;
+
+    # Un-link all linked debits when rolling back
+    my $debits = find_linked_entry_debits($e, $entry);
+
+    # Additionally, find legacy dis-encumbered debits that link 
+    # to this entry via lineitem.
+    push (@$debits, @{find_non_linked_debits(
+        $e, $entry->lineitem, $need_count, undef, 'f')});
+
+    my $lineitem = $e->retrieve_acq_lineitem($entry->lineitem) 
+        or return $e->die_event;
 
     for my $debit (@$debits) {
         # revert to the original estimated amount re-encumber
         $debit->encumbrance('t');
         $debit->amount($lineitem->estimated_unit_price());
+
+        # debit is no longer "invoiced"; detach it from the entry;
+        $debit->clear_invoice_entry;
+
         $e->update_acq_fund_debit($debit) or return $e->die_event;
         update_copy_cost($e, $debit) or return $e->die_event; # clear the cost
     }
@@ -240,10 +380,14 @@ sub rollback_entry_debits {
     return undef;
 }
 
+# invoiced -- debits already linked to this invoice
+# inv_closing -- invoice is going from complete=f to t.
+# inv_reopening -- invoice is going from complete=t to f.
 sub update_entry_debits {
-    my($e, $entry) = @_;
+    my($e, $entry, $link_state, $inv_closing, $inv_reopening) = @_;
 
-    my $debits = find_entry_debits($e, $entry, 't');
+    my $debits = find_entry_debits(
+        $e, $entry, $link_state, $inv_reopening ? 'f' : 't');
     return undef unless @$debits;
 
     if($entry->phys_item_count > @$debits) {
@@ -257,7 +401,12 @@ sub update_entry_debits {
     for my $debit (@$debits) {
         my $amount = entry_amount_per_item($entry);
         $debit->amount($amount);
-        $debit->encumbrance('f');
+        $debit->encumbrance($inv_closing ? 'f' : 't');
+
+        # debit always reports the invoice_entry responsible
+        # for its most recent modification.
+        $debit->invoice_entry($entry->id);
+
         $e->update_acq_fund_debit($debit) or return $e->die_event;
 
         # TODO: this does not reflect ancillary charges, like taxes, etc.
@@ -300,7 +449,7 @@ sub uncancel_copies_as_needed {
         },
         where => {
             '+acqlid' => {lineitem => $li->id},
-            '+acqfdeb' => {encumbrance => 't'}  # not-yet invoiced copies
+            '+acqfdeb' => {invoice_entry => undef}  # not-yet invoiced copies
         },
         order_by => [{
             class => 'acqcr',
@@ -394,7 +543,7 @@ sub amounts_spent_per_fund {
 
     my %totals_by_fund;
     foreach my $entry (@$entries) {
-        my $debits = find_entry_debits($e, $entry, "f") or return 0;
+        my $debits = find_entry_debits($e, $entry, 'linked', "f") or return 0;
         foreach (@$debits) {
             $totals_by_fund{$_->fund} ||= 0.0;
             $totals_by_fund{$_->fund} += $_->amount;
@@ -419,38 +568,106 @@ sub amounts_spent_per_fund {
     return \@totals;
 }
 
-# there is no direct link between invoice_entry and fund debits.
-# when we need to retrieve the related debits, we have to do some searching
-sub find_entry_debits {
-    my($e, $entry, $encumbrance, $amount) = @_;
+# Returns all debits linked to the provided invoice entry.
+# If an encumbrance value is provided, only debits matching the
+# encumbrance state are returned.
+sub find_linked_entry_debits {
+    my($e, $entry, $encumbrance) = @_;
 
     my $query = {
         select => {acqfdeb => ['id']},
+        order_by => {'acqlid' => ['recv_time']},
+        from => {acqfdeb => 'acqlid'},
+        where => {'+acqfdeb' => {invoice_entry => $entry->id}}
+    };
+
+    $query->{where}->{'+acqfdeb'}->{encumbrance} 
+        = $encumbrance if $encumbrance;
+
+    my $debits = $e->json_query($query);
+
+    return [] unless @$debits;
+
+    my $debit_ids = [map { $_->{id} } @$debits];
+    return $e->search_acq_fund_debit({id => $debit_ids});
+}
+
+# Returns all debits for the requested lineitem
+# that are not yet linked to an invoice entry.
+# If an encumbrance value is provided, only debits matching the
+# encumbrance state are returned.
+# note: only legacy debits can exist in a state where 
+# encumbrance=false and the debit is not linked to an entry.
+sub find_non_linked_debits {
+    my($e, $li_id, $count, $amount, $encumbrance) = @_;
+
+    my $query = {
+        select => {acqfdeb => ['id']},
+        order_by => {'acqlid' => ['recv_time']},
+        where => {'+acqfdeb' => {invoice_entry => undef}},
         from => {
             acqfdeb => {
                 acqlid => {
                     join => {
-                        jub =>  {
-                            join => {
-                                acqie => {
-                                    filter => {id => $entry->id}
-                                }
-                            }
+                        jub => {
+                            filter => {id => $li_id}
                         }
                     }
                 }
             }
-        },
-        where => {'+acqfdeb' => {encumbrance => $encumbrance}},
-        order_by => {'acqlid' => ['recv_time']}, # un-received items will sort to the end
-        limit => $entry->phys_item_count
+        }
     };
 
+    $query->{where}->{'+acqfdeb'}->{encumbrance} = $encumbrance if $encumbrance;
     $query->{where}->{'+acqfdeb'}->{amount} = $amount if $amount;
+    $query->{limit} = $count if defined $count;
 
     my $debits = $e->json_query($query);
+
+    return [] unless @$debits;
+
     my $debit_ids = [map { $_->{id} } @$debits];
-    return (@$debit_ids) ? $e->search_acq_fund_debit({id => $debit_ids}) : [];
+    return $e->search_acq_fund_debit({id => $debit_ids});
+}
+
+# find fund debits related to an invoice entry.
+# link_state -- 'linked', 'unlinked', 'all'
+# When link_state==undef, start with linked debits, then add unlinked debits.
+sub find_entry_debits {
+    my($e, $entry, $link_state, $encumbrance, $amount, $count) = @_;
+
+    my $need_count = $count || $entry->phys_item_count;
+    my $debits = [];
+
+    if ($link_state eq 'all' || $link_state eq 'linked') {
+        $debits = find_linked_entry_debits($e, $entry, $encumbrance);
+        return $debits if @$debits && scalar(@$debits) == $need_count;
+    }
+
+    # either we don't have enough linked debits to cover the need_count
+    # or we are not looking for linked debits.  Keep looking.
+
+    if ($link_state eq 'all' || $link_state eq 'unlinked') {
+
+        # If we found linked debits above, reduce the number of
+        # required debits remaining by the number already found.
+        $need_count = $need_count - scalar(@$debits);
+
+        push (@$debits, @{find_non_linked_debits(
+            $e, $entry->lineitem, $need_count, $amount, $encumbrance)});
+
+    } elsif (scalar(@$debits) == 0) {
+
+        # if a lookup for previously invoiced debits returns zero
+        # results, it may be becuase the debits were created before
+        # the presence of the acq.fund_debit.invoice_entry column.
+        # Fall back to using the old-style lookup.
+
+        push (@$debits, @{find_non_linked_debits(
+            $e, $entry->lineitem, $need_count, $amount, $encumbrance)});
+    }
+
+    return $debits;
 }
 
 
@@ -528,7 +745,9 @@ sub prorate_invoice {
     return $e->die_event unless $e->allowed('CREATE_INVOICE', $invoice->receiver);
 
     my @lid_debits;
-    push(@lid_debits, @{find_entry_debits($e, $_, 'f', entry_amount_per_item($_))}) for @{$invoice->entries};
+    push(@lid_debits, 
+        @{find_entry_debits($e, $_, 'linked', undef, entry_amount_per_item($_))})
+        for @{$invoice->entries};
 
     my $inv_items = $e->search_acq_invoice_item([
         {"invoice" => $invoice_id, "fund_debit" => {"!=" => undef}},
@@ -587,7 +806,7 @@ sub prorate_invoice {
             $debit->amount($prorated_amount);
             $debit->origin_amount($prorated_amount);
             $debit->origin_currency_type($e->retrieve_acq_fund($fund_id)->currency_type); # future: cache funds locally
-            $debit->encumbrance('f');
+            $debit->encumbrance('t'); # Set to 'f' when invoice is closed
             $debit->debit_type('prorated_charge');
 
             if($debit->isnew) {
@@ -701,6 +920,104 @@ sub print_html_invoice {
 
     $e->disconnect;
     undef;
+}
+
+__PACKAGE__->register_method(
+    method => 'finalize_blanket_po_api',
+    api_name    => 'open-ils.acq.purchase_order.blanket.finalize',
+    signature => {
+        desc => q/
+            1. Set encumbered amount to zero for all blanket po_item's
+            2. If the PO does not have any outstanding lineitems, mark
+               the PO as 'received'.
+        /,
+        params => [
+            {desc => 'Authentication token', type => 'string'},
+            {desc => q/PO ID/, type => 'number'}
+        ],
+        return => {desc => '1 on success, event on error'}
+    }
+);
+
+sub finalize_blanket_po_api {
+    my ($self, $client, $auth, $po_id) = @_;
+
+    my $e = new_editor(xact => 1, authtoken=>$auth);
+    return $e->die_event unless $e->checkauth;
+
+    my $po = $e->retrieve_acq_purchase_order($po_id) or return $e->die_event;
+
+    return $e->die_event unless
+        $e->allowed('CREATE_PURCHASE_ORDER', $po->ordering_agency);
+
+    my $evt = finalize_blanket_po($e, $po);
+    return $evt if $evt;
+
+    $e->commit;
+    return 1;
+}
+
+
+# 1. set any remaining blanket encumbrances to $0.
+# 2. mark the PO as received if there are no pending lineitems.
+sub finalize_blanket_po {
+    my ($e, $po) = @_;
+
+    my $po_id = $po->id;
+
+    # blanket po_items on this PO
+    my $blanket_items = $e->json_query({
+        select => {acqpoi => ['id']},
+        from => {acqpoi => {aiit => {}}},
+        where => {
+            '+aiit' => {blanket => 't'},
+            '+acqpoi' => {purchase_order => $po_id}
+        }
+    });
+
+    for my $item_id (map { $_->{id} } @$blanket_items) {
+
+        my $item = $e->retrieve_acq_po_item([
+            $item_id, {
+                flesh => 1,
+                flesh_fields => {acqpoi => ['fund_debit']}
+            }
+        ]); 
+
+        my $debit = $item->fund_debit or next;
+
+        next if $debit->amount == 0;
+
+        $debit->amount(0);
+        $e->update_acq_fund_debit($debit) or return $e->die_event;
+    }
+
+    # Number of pending lineitems on this PO. 
+    # If there are any, we don't mark 'received'
+    my $li_count = $e->json_query({
+        select => {jub => [{column => 'id', transform => 'count'}]},
+        from => 'jub',
+        where => {
+            '+jub' => {
+                purchase_order => $po_id,
+                state => 'on-order'
+            }
+        }
+    })->[0];
+    
+    if ($li_count->{count} > 0) {
+        $logger->info("skipping 'received' state change for po $po_id ".
+            "during finalization, because PO has pending lineitems");
+        return undef;
+    }
+
+    $po->state('received');
+    $po->edit_time('now');
+    $po->editor($e->requestor->id);
+
+    $e->update_acq_purchase_order($po) or return $e->die_event;
+
+    return undef;
 }
 
 1;

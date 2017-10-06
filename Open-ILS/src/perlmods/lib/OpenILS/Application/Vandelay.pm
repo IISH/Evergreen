@@ -123,6 +123,7 @@ sub create_auth_queue {
     $queue->name( $name );
     $queue->owner( $owner );
     $queue->queue_type( $type ) if ($type);
+    $queue->match_set($match_set) if $match_set;
 
     my $new_q = $e->create_vandelay_authority_queue( $queue );
     $e->die_event unless ($new_q);
@@ -238,6 +239,8 @@ sub process_spool {
     my $filename = shift;
     my $bib_source = shift;
 
+    $client->max_chunk_count($self->{max_bundle_count}) if (!$client->can('max_bundle_count') && $self->{max_bundle_count});
+
     my $e = new_editor(authtoken => $auth, xact => 1);
     return $e->die_event unless $e->checkauth;
 
@@ -329,7 +332,7 @@ __PACKAGE__->register_method(
     method      => "process_spool",
     api_level   => 1,
     argc        => 3,
-    max_chunk_size => 0,
+    max_bundle_count => 1,
     record_type => 'bib'
 );                      
 __PACKAGE__->register_method(  
@@ -337,7 +340,7 @@ __PACKAGE__->register_method(
     method      => "process_spool",
     api_level   => 1,
     argc        => 3,
-    max_chunk_size => 0,
+    max_bundle_count => 1,
     record_type => 'auth'
 );                      
 
@@ -347,7 +350,7 @@ __PACKAGE__->register_method(
     api_level   => 1,
     argc        => 3,
     stream      => 1,
-    max_chunk_size => 0,
+    max_bundle_count => 1,
     record_type => 'bib'
 );                      
 __PACKAGE__->register_method(  
@@ -356,7 +359,7 @@ __PACKAGE__->register_method(
     api_level   => 1,
     argc        => 3,
     stream      => 1,
-    max_chunk_size => 0,
+    max_bundle_count => 1,
     record_type => 'auth'
 );
 
@@ -778,7 +781,7 @@ __PACKAGE__->register_method(
     api_level   => 1,
     argc        => 2,
     stream      => 1,
-    max_chunk_size => 0,
+    max_bundle_count => 1,
     record_type => 'bib',
     signature => {
         desc => q/
@@ -794,12 +797,14 @@ __PACKAGE__->register_method(
     api_level   => 1,
     argc        => 2,
     stream      => 1,
-    max_chunk_size => 0,
+    max_bundle_count => 1,
     record_type => 'auth'
 );
 
 sub import_queue {
     my($self, $conn, $auth, $q_id, $options) = @_;
+    $conn->max_chunk_count($self->{max_bundle_count}) if (!$conn->can('max_bundle_count') && $self->{max_bundle_count});
+
     my $e = new_editor(authtoken => $auth, xact => 1);
     return $e->die_event unless $e->checkauth;
     $options ||= {};
@@ -900,7 +905,7 @@ sub import_record_list_impl {
         report_all => $$args{report_all}
     };
 
-    $conn->max_chunk_count(1) if $$args{report_all};
+    $conn->max_chunk_count(1) if (!$conn->can('max_bundle_size') && $conn->can('max_chunk_size') && $$args{report_all});
 
     my $auto_overlay_exact = $$args{auto_overlay_exact};
     my $auto_overlay_1match = $$args{auto_overlay_1match};
@@ -914,7 +919,7 @@ sub import_record_list_impl {
 
     my $overlay_func = 'vandelay.overlay_bib_record';
     my $auto_overlay_func = 'vandelay.auto_overlay_bib_record';
-    my $auto_overlay_best_func = 'vandelay.auto_overlay_bib_record_with_best'; # XXX bib-only
+    my $auto_overlay_best_func = 'vandelay.auto_overlay_bib_record_with_best';
     my $retrieve_func = 'retrieve_vandelay_queued_bib_record';
     my $update_func = 'update_vandelay_queued_bib_record';
     my $search_func = 'search_vandelay_queued_bib_record';
@@ -932,6 +937,7 @@ sub import_record_list_impl {
     if($type eq 'auth') {
         $overlay_func =~ s/bib/authority/o; 
         $auto_overlay_func =~ s/bib/authority/o; 
+        $auto_overlay_best_func =~ s/bib/authority/o;
         $retrieve_func =~ s/bib/authority/o;
         $retrieve_queue_func =~ s/bib/authority/o;
         $update_queue_func =~ s/bib/authority/o;
@@ -988,12 +994,17 @@ sub import_record_list_impl {
 
             my $marcdoc = XML::LibXML->new->parse_string($rec->marc);
             $rec->marc($U->strip_marc_fields($e, $marcdoc, $strip_grps));
+        }
 
-            unless ($e->$update_func($rec)) {
-                $$report_args{evt} = $e->die_event;
-                finish_rec_import_attempt($report_args);
-                next;
-            }
+        # Set the imported record's 905$u, so
+        # editor/edit_date are set correctly.
+        my $marcdoc = XML::LibXML->new->parse_string($rec->marc);
+        $rec->marc($U->set_marc_905u($marcdoc, $requestor->usrname));
+
+        unless ($e->$update_func($rec)) {
+            $$report_args{evt} = $e->die_event;
+            finish_rec_import_attempt($report_args);
+            next;
         }
 
         if(defined $overlay_target) {
@@ -1909,6 +1920,84 @@ sub import_record_asset_list_impl {
                 }
             }
 
+            if ($item->stat_cat_data) {
+                $logger->info("vl: parsing stat cat data: " . $item->stat_cat_data);
+                my @stat_cat_pairs = split('\|\|', $item->stat_cat_data);
+                my $stat_cat_entries = [];
+                # lookup stat cats
+                foreach my $stat_cat_pair (@stat_cat_pairs) {
+                    my ($stat_cat, $stat_cat_entry);
+                    my @pair_pieces = split('\|', $stat_cat_pair);
+                    if (@pair_pieces == 2) {
+                        $stat_cat = $e->search_asset_stat_cat({name=>$pair_pieces[0]})->[0];
+                        if ($stat_cat) {
+                            $stat_cat_entry = $e->search_asset_stat_cat_entry({'value' => $pair_pieces[1], 'stat_cat' => $stat_cat->id})->[0];
+                            push (@$stat_cat_entries, $stat_cat_entry) if $stat_cat_entry;
+                        }
+                    } else {
+                        $$report_args{import_error} = "import.item.invalid.stat_cat_format";
+                        last;
+                    }
+
+                    if (!$stat_cat or !$stat_cat_entry) {
+                        $$report_args{import_error} = "import.item.invalid.stat_cat_data";
+                        last;
+                    }
+                }
+                if ($$report_args{import_error}) {
+                    $logger->error("vl: invalid stat cat data: " . $item->stat_cat_data);
+                    respond_with_status($report_args);
+                    next;
+                }
+                $copy->stat_cat_entries( $stat_cat_entries );
+                $copy->ischanged(1);
+                $evt = OpenILS::Application::Cat::AssetCommon->update_copy_stat_entries($e, $copy, 0, 1); #delete_stats=0, add_or_update_only=1
+                if($evt) {
+                    $$report_args{evt} = $evt;
+                    respond_with_status($report_args);
+                    next;
+                }
+            }
+
+            if ($item->parts_data) {
+                $logger->info("vl: parsing parts data: " . $item->parts_data);
+                my @parts = split('\|', $item->parts_data);
+                my $part_objs = [];
+                foreach my $part_label (@parts) {
+                    my $part_obj = $e->search_biblio_monograph_part(
+                        {
+                            label=>$part_label,
+                            record=>$rec->imported_as
+                        }
+                    )->[0];
+
+                    if (!$part_obj) {
+                        $part_obj = Fieldmapper::biblio::monograph_part->new();
+                        $part_obj->label( $part_label );
+                        $part_obj->record( $rec->imported_as );
+                        unless($e->create_biblio_monograph_part($part_obj)) {
+                            $$report_args{evt} = $e->die_event;
+                            last;
+                        }
+                    }
+                    push @$part_objs, $part_obj;
+                }
+
+                if ($$report_args{evt}) {
+                    respond_with_status($report_args);
+                    next;
+                } else {
+                    $copy->parts( $part_objs );
+                    $copy->ischanged(1);
+                    $evt = OpenILS::Application::Cat::AssetCommon->update_copy_parts($e, $copy, 0); #delete_parts=0
+                    if($evt) {
+                        $$report_args{evt} = $evt;
+                        respond_with_status($report_args);
+                        next;
+                    }
+                }
+            }
+
             # set the import data on the import item
             $item->imported_as($copy->id); # $copy->id is set by create_copy() ^--
             $item->import_time('now');
@@ -2080,7 +2169,8 @@ sub _walk_new_vmsp {
     my $point = new Fieldmapper::vandelay::match_set_point;
     $point->parent($parent_id);
     $point->match_set($match_set_id);
-    $point->$_($node->$_) for (qw/bool_op svf tag subfield negate quality/);
+    $point->$_($node->$_) 
+        for (qw/bool_op svf tag subfield negate quality heading/);
 
     $e->create_vandelay_match_set_point($point) or return $e->die_event;
 

@@ -10,8 +10,20 @@
   [% INCLUDE 'staff/cat/bucket/record/t_grid_menu.tt2' %]
 
   <!-- actions drop-down -->
-  <eg-grid-action label="[% l('Remove Selected Records') %]" 
+  <eg-grid-action label="[% l('Show Selected Records in Catalog') %]"
+    handler="showRecords"></eg-grid-action>
+
+  <eg-grid-action label="[% l('Remove Selected Records from Bucket') %]" 
     handler="detachRecords"></eg-grid-action>
+
+  <eg-grid-action label="[% l('Delete Selected Records from Catalog') %]" 
+    handler="deleteRecordsFromCatalog"></eg-grid-action>
+
+  <eg-grid-action handler="transfer_holds_to_marked"
+    label="[% l('Transfer Title Holds') %]"></eg-grid-action>
+
+  <eg-grid-action label="[% l('Merge Selected Records') %]" 
+    handler="openRecordMergeDialog"></eg-grid-action>
 
   <eg-grid-action label="[% l('Export Records') %]" 
     handler="openExportBucketDialog"></eg-grid-action>

@@ -136,14 +136,14 @@ INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, 
 INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, facet_xpath, facet_field, authority_xpath, browse_xpath ) VALUES 
     (10, 'author', 'other', oils_i18n_gettext(10, 'Other Author', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:name[@type='personal' and not(mods32:role/mods32:roleTerm[text()='creator'])]$$, $$//*[local-name()='namePart']$$, TRUE, '//@xlink:href',$$//*[local-name()='namePart']$$ ); -- /* to fool vim */;
 
-INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, facet_field, authority_xpath ) VALUES 
-    (11, 'subject', 'geographic', oils_i18n_gettext(11, 'Geographic Subject', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:subject/mods32:geographic$$, TRUE, '//@xlink:href' );
+INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, facet_field, authority_xpath, browse_field ) VALUES 
+    (11, 'subject', 'geographic', oils_i18n_gettext(11, 'Geographic Subject', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:subject/mods32:geographic$$, TRUE, '//@xlink:href', FALSE );
 INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, facet_xpath, facet_field, authority_xpath ) VALUES 
     (12, 'subject', 'name', oils_i18n_gettext(12, 'Name Subject', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:subject/mods32:name$$, $$//*[local-name()='namePart']$$, TRUE, '//@xlink:href' ); -- /* to fool vim */;
-INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, facet_field, authority_xpath ) VALUES 
-    (13, 'subject', 'temporal', oils_i18n_gettext(13, 'Temporal Subject', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:subject/mods32:temporal$$, TRUE, '//@xlink:href' );
-INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, facet_field, authority_xpath ) VALUES 
-    (14, 'subject', 'topic', oils_i18n_gettext(14, 'Topic Subject', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:subject/mods32:topic$$, TRUE, '//@xlink:href' );
+INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, facet_field, authority_xpath, browse_field ) VALUES 
+    (13, 'subject', 'temporal', oils_i18n_gettext(13, 'Temporal Subject', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:subject/mods32:temporal$$, TRUE, '//@xlink:href', FALSE );
+INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, facet_field, authority_xpath, browse_field ) VALUES 
+    (14, 'subject', 'topic', oils_i18n_gettext(14, 'Topic Subject', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:subject/mods32:topic$$, TRUE, '//@xlink:href', FALSE );
 --INSERT INTO config.metabib_field ( id, field_class, name, format, xpath ) VALUES 
 --  ( id, field_class, name, xpath ) VALUES ( 'subject', 'genre', 'mods32', $$//mods32:mods/mods32:genre$$ );
 INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, browse_field ) VALUES 
@@ -184,7 +184,33 @@ INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, 
 INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, search_field, authority_xpath, browse_field, browse_sort_xpath ) VALUES
     (32, 'series', 'browse', oils_i18n_gettext(32, 'Series Title (Browse)', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:relatedItem[@type="series"]/mods32:titleInfo[@type="nfi"]$$, FALSE, '//@xlink:href', TRUE, $$*[local-name() != "nonSort"]$$ );
 
+INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, browse_field, facet_field, facet_xpath, joiner ) VALUES
+    (33, 'identifier', 'genre', oils_i18n_gettext(33, 'Genre', 'cmf', 'label'), 'marcxml', $$//marc:datafield[@tag='655']$$, FALSE, TRUE, $$//*[local-name()='subfield' and contains('abvxyz',@code)]$$, ' -- ' ); -- /* to fool vim */;
+
 UPDATE config.metabib_field SET joiner = ' -- ' WHERE field_class = 'subject' AND name NOT IN ('name', 'complete');
+
+INSERT INTO config.metabib_field ( id, field_class, name, label, 
+     format, xpath, search_field, browse_field, authority_xpath, joiner ) VALUES
+    (34, 'subject', 'topic_browse', oils_i18n_gettext(34, 'Topic Browse', 'cmf', 'label'), 
+     'mods32', $$//mods32:mods/mods32:subject[local-name(./*[1]) = "topic"]$$, FALSE, TRUE, '//@xlink:href', ' -- ' ); -- /* to fool vim */;
+
+INSERT INTO config.metabib_field ( id, field_class, name, label, 
+     format, xpath, search_field, browse_field, authority_xpath, joiner ) VALUES
+    (35, 'subject', 'geographic_browse', oils_i18n_gettext(35, 'Geographic Name Browse', 'cmf', 'label'), 
+     'mods32', $$//mods32:mods/mods32:subject[local-name(./*[1]) = "geographic"]$$, FALSE, TRUE, '//@xlink:href', ' -- ' ); -- /* to fool vim */;
+
+INSERT INTO config.metabib_field ( id, field_class, name, label, 
+     format, xpath, search_field, browse_field, authority_xpath, joiner ) VALUES
+    (36, 'subject', 'temporal_browse', oils_i18n_gettext(36, 'Temporal Term Browse', 'cmf', 'label'), 
+     'mods32', $$//mods32:mods/mods32:subject[local-name(./*[1]) = "temporal"]$$, FALSE, TRUE, '//@xlink:href', ' -- ' ); -- /* to fool vim */;
+
+INSERT INTO config.metabib_field_index_norm_map (field,norm)
+    SELECT  m.id,
+            i.id
+      FROM  config.metabib_field m,
+        config.index_normalizer i
+      WHERE i.func IN ('naco_normalize')
+            AND m.id IN (34, 35, 36);
 
 SELECT SETVAL('config.metabib_field_id_seq', GREATEST(1000, (SELECT MAX(id) FROM config.metabib_field)));
 
@@ -246,8 +272,6 @@ SELECT SETVAL('config.non_cataloged_type_id_seq'::TEXT, 100);
 INSERT INTO config.identification_type ( id, name ) VALUES 
     ( 1, oils_i18n_gettext(1, 'Drivers License', 'cit', 'name') );
 INSERT INTO config.identification_type ( id, name ) VALUES 
-    ( 2, oils_i18n_gettext(2, 'SSN', 'cit', 'name') );
-INSERT INTO config.identification_type ( id, name ) VALUES 
     ( 3, oils_i18n_gettext(3, 'Other', 'cit', 'name') );
 SELECT SETVAL('config.identification_type_id_seq'::TEXT, 100);
 
@@ -305,14 +329,14 @@ INSERT INTO config.rule_age_hold_protect VALUES
 	(2, oils_i18n_gettext(2, '6month', 'crahp', 'name'), '6 months', 2);
 SELECT SETVAL('config.rule_age_hold_protect_id_seq'::TEXT, 100);
 
-INSERT INTO config.copy_status (id,name,holdable,opac_visible,copy_active) VALUES (0,oils_i18n_gettext(0, 'Available', 'ccs', 'name'),'t','t','t');
+INSERT INTO config.copy_status (id,name,holdable,opac_visible,copy_active,is_available) VALUES (0,oils_i18n_gettext(0, 'Available', 'ccs', 'name'),'t','t','t','t');
 INSERT INTO config.copy_status (id,name,holdable,opac_visible,copy_active,restrict_copy_delete) VALUES (1,oils_i18n_gettext(1, 'Checked out', 'ccs', 'name'),'t','t','t','t');
 INSERT INTO config.copy_status (id,name) VALUES (2,oils_i18n_gettext(2, 'Bindery', 'ccs', 'name'));
 INSERT INTO config.copy_status (id,name,restrict_copy_delete) VALUES (3,oils_i18n_gettext(3, 'Lost', 'ccs', 'name'),'t');
 INSERT INTO config.copy_status (id,name) VALUES (4,oils_i18n_gettext(4, 'Missing', 'ccs', 'name'));
 INSERT INTO config.copy_status (id,name,holdable,opac_visible) VALUES (5,oils_i18n_gettext(5, 'In process', 'ccs', 'name'),'t','t');
 INSERT INTO config.copy_status (id,name,holdable,opac_visible,restrict_copy_delete) VALUES (6,oils_i18n_gettext(6, 'In transit', 'ccs', 'name'),'t','t','t');
-INSERT INTO config.copy_status (id,name,holdable,opac_visible,copy_active) VALUES (7,oils_i18n_gettext(7, 'Reshelving', 'ccs', 'name'),'t','t','t');
+INSERT INTO config.copy_status (id,name,holdable,opac_visible,copy_active,is_available) VALUES (7,oils_i18n_gettext(7, 'Reshelving', 'ccs', 'name'),'t','t','t','t');
 INSERT INTO config.copy_status (id,name,holdable,opac_visible,copy_active,restrict_copy_delete) VALUES (8,oils_i18n_gettext(8, 'On holds shelf', 'ccs', 'name'),'t','t','t','t');
 INSERT INTO config.copy_status (id,name,holdable,opac_visible) VALUES (9,oils_i18n_gettext(9, 'On order', 'ccs', 'name'),'t','t');
 INSERT INTO config.copy_status (id,name,copy_active) VALUES (10,oils_i18n_gettext(10, 'ILL', 'ccs', 'name'),'t');
@@ -327,6 +351,7 @@ INSERT INTO config.copy_status
 INSERT INTO config.copy_status
 (id, name, holdable, opac_visible, copy_active, restrict_copy_delete)
 VALUES (17, 'Lost and Paid', FALSE, FALSE, FALSE, TRUE);
+INSERT INTO config.copy_status(id,name,holdable,opac_visible) VALUES (18,oils_i18n_gettext(18, 'Canceled Transit', 'ccs', 'name'),'t','t');
 
 
 SELECT SETVAL('config.copy_status_id_seq'::TEXT, 100);
@@ -358,6 +383,9 @@ INSERT INTO config.i18n_locale (code,marc_code,name,description)
 INSERT INTO config.i18n_locale (code,marc_code,name,description)
     VALUES ('hy-AM', 'arm', oils_i18n_gettext('hy-AM', 'Armenian', 'i18n_l', 'name'),
 	oils_i18n_gettext('hy-AM', 'Armenian', 'i18n_l', 'description'));
+INSERT INTO config.i18n_locale (code,marc_code,name,description)
+    VALUES ('es-ES', 'spa', oils_i18n_gettext('es-ES', 'Spanish', 'i18n_l', 'name'),
+	oils_i18n_gettext('es-ES', 'Spanish', 'i18n_l', 'description'));
 --INSERT INTO config.i18n_locale (code,marc_code,name,description)
 --    VALUES ('es-US', 'spa', oils_i18n_gettext('es-US', 'Spanish (US)', 'i18n_l', 'name'),
 --	oils_i18n_gettext('es-US', 'American Spanish', 'i18n_l', 'description'));
@@ -367,6 +395,9 @@ INSERT INTO config.i18n_locale (code,marc_code,name,description)
 INSERT INTO config.i18n_locale (code,marc_code,name,description)
     VALUES ('ru-RU', 'rus', oils_i18n_gettext('ru-RU', 'Russian', 'i18n_l', 'name'),
 	oils_i18n_gettext('ru-RU', 'Russian', 'i18n_l', 'description'));
+INSERT INTO config.i18n_locale (code,marc_code,name,description,rtl)
+    VALUES ('ar-JO', 'ara', oils_i18n_gettext('ar-JO', 'Arabic (Jordan)', 'i18n_l', 'name'),
+	oils_i18n_gettext('ar-JO', 'Arabic (Jordan)', 'i18n_l', 'description'), 'true');
 
 -- Z39.50 server attributes
 
@@ -374,8 +405,6 @@ INSERT INTO config.z3950_source (name, label, host, port, db, auth)
 	VALUES ('loc', oils_i18n_gettext('loc', 'Library of Congress', 'czs', 'label'), 'lx2.loc.gov', 210, 'LCDB', FALSE);
 INSERT INTO config.z3950_source (name, label, host, port, db, auth)
 	VALUES ('oclc', oils_i18n_gettext('oclc', 'OCLC', 'czs', 'label'), 'zcat.oclc.org', 210, 'OLUCWorldCat', TRUE);
-INSERT INTO config.z3950_source (name, label, host, port, db, auth)
-	VALUES ('biblios', oils_i18n_gettext('biblios','‡biblios.net', 'czs', 'label'), 'z3950.biblios.net', 210, 'bibliographic', FALSE);
 
 INSERT INTO config.z3950_attr (id, source, name, label, code, format)
 	VALUES (1, 'loc','tcn', oils_i18n_gettext(1, 'Title Control Number', 'cza', 'label'), 12, 1);
@@ -416,27 +445,6 @@ INSERT INTO config.z3950_attr (id, source, name, label, code, format)
 	VALUES (17, 'oclc', 'pubdate', oils_i18n_gettext(17, 'Publication Date', 'cza', 'label'), 31, 1);
 INSERT INTO config.z3950_attr (id, source, name, label, code, format)
 	VALUES (18, 'oclc', 'item_type', oils_i18n_gettext(18, 'Item Type', 'cza', 'label'), 1001, 1);
-
-INSERT INTO config.z3950_attr (id, source, name, label, code, format)
-	VALUES (19, 'biblios','tcn', oils_i18n_gettext(19, 'Title Control Number', 'cza', 'label'), 12, 1);
-INSERT INTO config.z3950_attr (id, source, name, label, code, format)
-	VALUES (20, 'biblios', 'isbn', oils_i18n_gettext(20, 'ISBN', 'cza', 'label'), 7, 6);
-INSERT INTO config.z3950_attr (id, source, name, label, code, format)
-	VALUES (21, 'biblios', 'lccn', oils_i18n_gettext(21, 'LCCN', 'cza', 'label'), 9, 1);
-INSERT INTO config.z3950_attr (id, source, name, label, code, format)
-	VALUES (22, 'biblios', 'author', oils_i18n_gettext(22, 'Author', 'cza', 'label'), 1003, 6);
-INSERT INTO config.z3950_attr (id, source, name, label, code, format)
-	VALUES (23, 'biblios', 'title', oils_i18n_gettext(23, 'Title', 'cza', 'label'), 4, 6);
-INSERT INTO config.z3950_attr (id, source, name, label, code, format)
-	VALUES (24, 'biblios', 'issn', oils_i18n_gettext(24, 'ISSN', 'cza', 'label'), 8, 1);
-INSERT INTO config.z3950_attr (id, source, name, label, code, format)
-	VALUES (25, 'biblios', 'publisher', oils_i18n_gettext(25, 'Publisher', 'cza', 'label'), 1018, 6);
-INSERT INTO config.z3950_attr (id, source, name, label, code, format)
-	VALUES (26, 'biblios', 'pubdate', oils_i18n_gettext(26, 'Publication Date', 'cza', 'label'), 31, 1);
-INSERT INTO config.z3950_attr (id, source, name, label, code, format)
-	VALUES (27, 'biblios', 'item_type', oils_i18n_gettext(27, 'Item Type', 'cza', 'label'), 1001, 1);
-
-UPDATE config.z3950_attr SET truncation = 1 WHERE source = 'biblios';
 
 SELECT SETVAL('config.z3950_attr_id_seq'::TEXT, 100);
 
@@ -1173,8 +1181,6 @@ INSERT INTO permission.perm_list ( id, code, description ) VALUES
     'UPDATE_ORG_UNIT_SETTING.circ.selfcheck.patron_login_timeout', 'ppl', 'description' )),
  ( 338, 'UPDATE_ORG_UNIT_SETTING.circ.selfcheck.alert_on_checkout_event', oils_i18n_gettext( 338, 
     'UPDATE_ORG_UNIT_SETTING.circ.selfcheck.alert_on_checkout_event', 'ppl', 'description' )),
- ( 339, 'UPDATE_ORG_UNIT_SETTING.circ.selfcheck.require_patron_password', oils_i18n_gettext( 339, 
-    'UPDATE_ORG_UNIT_SETTING.circ.selfcheck.require_patron_password', 'ppl', 'description' )),
  ( 340, 'UPDATE_ORG_UNIT_SETTING.global.juvenile_age_threshold', oils_i18n_gettext( 340, 
     'UPDATE_ORG_UNIT_SETTING.global.juvenile_age_threshold', 'ppl', 'description' )),
  ( 341, 'UPDATE_ORG_UNIT_SETTING.cat.bib.keep_on_empty', oils_i18n_gettext( 341, 
@@ -1591,7 +1597,7 @@ INSERT INTO permission.perm_list ( id, code, description ) VALUES
         'When granted, newly added lineitem identifiers will propagate to linked bib records', 'ppl', 'description')),
  ( 548, 'ACQ_SET_LINEITEM_IDENTIFIER', oils_i18n_gettext(548,
         'Allows staff to change the lineitem identifier', 'ppl', 'description')),
- ( 549, 'COPY_STATUS_LONGOVERDUE.override', oils_i18n_gettext(549,
+ ( 549, 'COPY_STATUS_LONG_OVERDUE.override', oils_i18n_gettext(549,
         'Allows the user to check-in long-overdue items, prompting ' ||
             'long-overdue check-in processing', 'ppl', 'code')), 
  ( 550, 'SET_CIRC_LONG_OVERDUE', oils_i18n_gettext(550,
@@ -1613,7 +1619,65 @@ INSERT INTO permission.perm_list ( id, code, description ) VALUES
  ( 558, 'group_application.user.staff.data_review', oils_i18n_gettext( 558, 
     'Allow a user to add/remove users to/from the "Data Review" group', 'ppl', 'description' )),
  ( 559, 'group_application.user.staff.volunteers', oils_i18n_gettext( 559, 
-    'Allow a user to add/remove users to/from the "Volunteers" group', 'ppl', 'description' ))
+    'Allow a user to add/remove users to/from the "Volunteers" group', 'ppl', 'description' )),
+ (  560, 'TOTAL_HOLD_COPY_RATIO_EXCEEDED.override', oils_i18n_gettext( 560,
+    'Override the TOTAL_HOLD_COPY_RATIO_EXCEEDED event', 'ppl', 'description')),
+ (  561, 'AVAIL_HOLD_COPY_RATIO_EXCEEDED.override', oils_i18n_gettext( 561,
+    'Override the AVAIL_HOLD_COPY_RATIO_EXCEEDED event', 'ppl', 'description')),
+ ( 562, 'ADMIN_TAG_TABLE', oils_i18n_gettext( 562, 
+    'Allow administration of MARC tag tables', 'ppl', 'description' )),
+ ( 563, 'ADJUST_BILLS', oils_i18n_gettext( 563,
+    'Allow a user to adjust a bill (generally to zero)', 'ppl', 'description' )),
+ ( 564, 'MARK_ITEM_CATALOGING', oils_i18n_gettext( 564,
+    'Allow a user to mark an item status as ''cataloging''', 'ppl', 'description' )),
+ ( 565, 'MARK_ITEM_DAMAGED', oils_i18n_gettext( 565,
+    'Allow a user to mark an item status as ''damaged''', 'ppl', 'description' )),
+ ( 566, 'MARK_ITEM_DISCARD', oils_i18n_gettext( 566,
+    'Allow a user to mark an item status as ''discard''', 'ppl', 'description' )),
+ ( 567, 'MARK_ITEM_RESERVES', oils_i18n_gettext( 567,
+    'Allow a user to mark an item status as ''reserves''', 'ppl', 'description' )),
+ ( 568, 'ADMIN_ORG_UNIT_SETTING_TYPE_LOG', oils_i18n_gettext( 568,
+    'Allow a user to modify the org unit settings log', 'ppl', 'description' )),
+ ( 570, 'CREATE_POP_BADGE', oils_i18n_gettext( 570,
+    'Allow a user to create a new popularity badge', 'ppl', 'description' )),
+ ( 571, 'DELETE_POP_BADGE', oils_i18n_gettext( 571,
+    'Allow a user to delete a popularity badge', 'ppl', 'description' )),
+ ( 572, 'UPDATE_POP_BADGE', oils_i18n_gettext( 572,
+    'Allow a user to modify a popularity badge', 'ppl', 'description' )),
+ ( 573, 'CREATE_POP_PARAMETER', oils_i18n_gettext( 573,
+    'Allow a user to create a popularity badge parameter', 'ppl', 'description' )),
+ ( 574, 'DELETE_POP_PARAMETER', oils_i18n_gettext( 574,
+    'Allow a user to delete a popularity badge parameter', 'ppl', 'description' )),
+ ( 575, 'UPDATE_POP_PARAMETER', oils_i18n_gettext( 575,
+    'Allow a user to modify a popularity badge parameter', 'ppl', 'description' )),
+ ( 576, 'CREATE_AUTHORITY_RECORD', oils_i18n_gettext( 576,
+    'Allow a user to create an authority record', 'ppl', 'description' )),
+ ( 577, 'DELETE_AUTHORITY_RECORD', oils_i18n_gettext( 577,
+    'Allow a user to delete an authority record', 'ppl', 'description' )),
+ ( 578, 'UPDATE_AUTHORITY_RECORD', oils_i18n_gettext( 578,
+    'Allow a user to modify an authority record', 'ppl', 'description' )),
+ ( 579, 'CREATE_AUTHORITY_CONTROL_SET', oils_i18n_gettext( 579,
+    'Allow a user to create an authority control set', 'ppl', 'description' )),
+ ( 580, 'DELETE_AUTHORITY_CONTROL_SET', oils_i18n_gettext( 580,
+    'Allow a user to delete an authority control set', 'ppl', 'description' )),
+ ( 581, 'UPDATE_AUTHORITY_CONTROL_SET', oils_i18n_gettext( 581,
+    'Allow a user to modify an authority control set', 'ppl', 'description' )),
+ ( 582, 'ACTOR_USER_DELETE_OPEN_XACTS.override', oils_i18n_gettext( 582,
+    'Override the ACTOR_USER_DELETE_OPEN_XACTS event', 'ppl', 'description' )),
+ ( 583, 'PATRON_EXCEEDS_LOST_COUNT.override', oils_i18n_gettext( 583,
+    'Override the PATRON_EXCEEDS_LOST_COUNT event', 'ppl', 'description' )),
+ ( 584, 'MAX_HOLDS.override', oils_i18n_gettext( 584,
+    'Override the MAX_HOLDS event', 'ppl', 'description' )),
+ ( 585, 'ITEM_DEPOSIT_REQUIRED.override', oils_i18n_gettext( 585,
+    'Override the ITEM_DEPOSIT_REQUIRED event', 'ppl', 'description' )),
+ ( 586, 'ITEM_DEPOSIT_PAID.override', oils_i18n_gettext( 586,
+    'Override the ITEM_DEPOSIT_PAID event', 'ppl', 'description' )),
+ ( 587, 'COPY_STATUS_LOST_AND_PAID.override', oils_i18n_gettext( 587,
+    'Override the COPY_STATUS_LOST_AND_PAID event', 'ppl', 'description' )),
+ ( 588, 'ITEM_NOT_HOLDABLE.override', oils_i18n_gettext( 588,
+    'Override the ITEM_NOT_HOLDABLE event', 'ppl', 'description' )),
+ ( 589, 'ITEM_RENTAL_FEE_REQUIRED.override', oils_i18n_gettext( 589,
+    'Override the ITEM_RENTAL_FEE_REQUIRED event', 'ppl', 'description' ))
 ;
 
 SELECT SETVAL('permission.perm_list_id_seq'::TEXT, 1000);
@@ -1862,7 +1926,10 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 			'UPDATE_MARC',
 			'UPDATE_RECORD',
 			'user_request.view',
-			'VIEW_AUTHORITY_RECORD_NOTES');
+			'VIEW_AUTHORITY_RECORD_NOTES',
+			'CREATE_AUTHORITY_RECORD',
+			'DELETE_AUTHORITY_RECORD',
+			'UPDATE_AUTHORITY_RECORD');
 
 INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 	SELECT
@@ -1903,7 +1970,14 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 			'UPDATE_MFHD_RECORD',
 			'UPDATE_VOLUME',
 			'UPDATE_VOLUME_NOTE',
-			'VIEW_SERIAL_SUBSCRIPTION');
+			'VIEW_SERIAL_SUBSCRIPTION',
+			'MARK_ITEM_CATALOGING',
+			'MARK_ITEM_DAMAGED',
+			'MARK_ITEM_DISCARD',
+			'MARK_ITEM_RESERVES',
+			'',
+			'',
+			'');
 
 
 -- Add advanced cataloguing permissions to the Cataloging Admin group
@@ -1949,8 +2023,10 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 			'UPDATE_MERGE_PROFILE',
 			'UPDATE_MONOGRAPH_PART',
 			'UPDATE_VOLUME_PREFIX',
-			'UPDATE_VOLUME_SUFFIX'
-		);
+			'UPDATE_VOLUME_SUFFIX',
+			'CREATE_AUTHORITY_CONTROL_SET',
+			'DELETE_AUTHORITY_CONTROL_SET',
+			'UPDATE_AUTHORITY_CONTROL_SET');
 
 INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 	SELECT
@@ -1972,7 +2048,13 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 			'UPDATE_COPY_LOCATION',
 			'UPDATE_COPY_STAT_CAT',
 			'UPDATE_COPY_STAT_CAT_ENTRY',
-			'VIEW_REPORT_OUTPUT');
+			'VIEW_REPORT_OUTPUT'
+			'CREATE_POP_BADGE',
+			'DELETE_POP_BADGE',
+			'UPDATE_POP_BADGE',
+			'CREATE_POP_PARAMETER',
+			'DELETE_POP_PARAMETER',
+			'UPDATE_POP_PARAMETER');
 
 
 -- Add basic circulation permissions to the Circulators group
@@ -1988,6 +2070,7 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 		pgt.name = 'Circulators' AND
 		aout.name = 'Branch' AND
 		perm.code IN (
+			'ADJUST_BILLS',
 			'ADMIN_BOOKING_RESERVATION',
 			'ADMIN_BOOKING_RESOURCE',
 			'ADMIN_BOOKING_RESOURCE_ATTR',
@@ -2118,6 +2201,7 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 		pgt.name = 'Circulation Administrator' AND
 		aout.name = 'System' AND
 		perm.code IN (
+			'ADJUST_BILLS',
 			'ADMIN_BOOKING_RESERVATION',
 			'ADMIN_BOOKING_RESERVATION_ATTR_MAP',
 			'ADMIN_BOOKING_RESERVATION_ATTR_VALUE_MAP',
@@ -2183,7 +2267,15 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 			'VIEW_STANDING_PENALTY',
 			'VOID_BILLING',
             'TRANSIT_CHECKIN_INTERVAL_BLOCK.override',
-			'VOLUME_HOLDS');
+			'VOLUME_HOLDS',
+			'ACTOR_USER_DELETE_OPEN_XACTS.override',
+			'PATRON_EXCEEDS_LOST_COUNT.override',
+			'MAX_HOLDS.override',
+			'ITEM_DEPOSIT_REQUIRED.override',
+			'ITEM_RENTAL_FEE_REQUIRED.override',
+			'ITEM_DEPOSIT_PAID.override',
+			'COPY_STATUS_LOST_AND_PAID.override',
+			'ITEM_NOT_HOLDABLE.override');
 
 
 -- Add basic sys admin permissions to the Local Administrator group
@@ -2448,6 +2540,10 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 
 
 -- Admin user account
+INSERT INTO actor.passwd_type 
+    (code, name, login, crypt_algo, iter_count) 
+    VALUES ('main', 'Main Login Password', TRUE, 'bf', 10);
+
 INSERT INTO actor.usr ( profile, card, usrname, passwd, first_given_name, family_name, dob, master_account, super_user, ident_type, ident_value, home_ou ) VALUES ( 1, 1, md5(random()::text), md5(random()::text), 'Administrator', 'System Account', '1979-01-22', TRUE, TRUE, 1, 'identification', 1 );
 
 -- Admin user barcode
@@ -2599,7 +2695,7 @@ INSERT INTO config.usr_setting_type (name,opac_visible,label,description,datatyp
 
 -- Add groups for org_unit settings
 INSERT INTO config.settings_group (name, label) VALUES
-('acq', oils_i18n_gettext('config.settings_group.system', 'Acquisitions', 'coust', 'label')),
+('acq', oils_i18n_gettext('config.settings_group.acquisitions', 'Acquisitions', 'coust', 'label')),
 ('sys', oils_i18n_gettext('config.settings_group.system', 'System', 'coust', 'label')),
 ('gui', oils_i18n_gettext('config.settings_group.gui', 'GUI', 'coust', 'label')),
 ('lib', oils_i18n_gettext('config.settings_group.lib', 'Library', 'coust', 'label')),
@@ -2644,7 +2740,14 @@ INSERT into config.org_unit_setting_type
         'When receiving a copy in acquisitions, set the copy "creator" to be the staff that received the copy',
         'coust', 'description'),
     'bool', null)
-
+,( 'acq.copy_status_on_receiving', 'acq',
+    oils_i18n_gettext('acq.copy_status_on_receiving',
+        'Initial status for received items',
+        'coust', 'label'),
+    oils_i18n_gettext('acq.copy_status_on_receiving',
+        'Allows staff to designate a custom copy status on received lineitems.  Default status is "In Process".',
+        'coust', 'description'),
+    'link', 'ccs')
 ,( 'acq.default_circ_modifier', 'acq',
     oils_i18n_gettext('acq.default_circ_modifier',
         'Default circulation modifier',
@@ -3549,15 +3652,6 @@ INSERT into config.org_unit_setting_type
         'coust', 'description'),
     'bool', null)
 
-,( 'circ.selfcheck.require_patron_password', 'self',
-    oils_i18n_gettext('circ.selfcheck.require_patron_password',
-        'Require patron password',
-        'coust', 'label'),
-    oils_i18n_gettext('circ.selfcheck.require_patron_password',
-        'If true, patrons will be required to enter their password in addition to their username/barcode to log into the selfcheck interface',
-        'coust', 'description'),
-    'bool', null)
-
 ,( 'circ.selfcheck.workstation_required', 'self',
     oils_i18n_gettext('circ.selfcheck.workstation_required',
         'Workstation Required',
@@ -3941,7 +4035,7 @@ INSERT into config.org_unit_setting_type
         'Password format',
         'coust', 'label'),
     oils_i18n_gettext('global.password_regex',
-        'Regular expression defining the password format',
+        'Regular expression defining the password format.  Note: Be sure to update the update_password_msg.tt2 TPAC template with a user-friendly description of your password strength requirements.',
         'coust', 'description'),
     'string', null)
 
@@ -4979,7 +5073,24 @@ INSERT into config.org_unit_setting_type
         'coust',
         'description'
     ),
-    'string', null)
+    'link', 'vms')
+,(
+    'cat.default_merge_profile', 'cat',
+    oils_i18n_gettext(
+        'cat.default_merge_profile',
+        'Default Merge Profile (Z39.50 and Record Buckets)',
+        'coust',
+        'label'
+    ),
+     oils_i18n_gettext(
+        'cat.default_merge_profile',
+        'Default merge profile to use during Z39.50 imports and record bucket merges',
+        'coust',
+        'description'
+    ),
+    'link',
+    'vmp'
+)
 ,( 'opac.browse.pager_shortcuts', 'opac',
     oils_i18n_gettext(
         'opac.browse.pager_shortcuts',
@@ -5016,6 +5127,96 @@ INSERT into config.org_unit_setting_type
      'Use Lost and Paid copy status when lost or long overdue billing is paid',
      'coust', 'description'),
  'bool', null)
+
+,( 'circ.checkin.lost_zero_balance.do_not_change', 'circ',
+    oils_i18n_gettext('circ.checkin.lost_zero_balance.do_not_change',
+        'Do not change fines/fees on zero-balance LOST transaction',
+        'coust', 'label'),
+    oils_i18n_gettext('circ.checkin.lost_zero_balance.do_not_change',
+        'When an item has been marked lost and all fines/fees have been completely paid on the transaction, do not void or reinstate any fines/fees EVEN IF circ.void_lost_on_checkin and/or circ.void_lost_proc_fee_on_checkin are enabled',
+        'coust', 'description'),
+    'bool', null)
+
+,(  'bill.prohibit_negative_balance_default', 'finance',
+    oils_i18n_gettext(
+        'bill.prohibit_negative_balance_default',
+        'Prohibit negative balance on bills (DEFAULT)',
+        'coust', 'label'),
+    oils_i18n_gettext(
+        'bill.prohibit_negative_balance_default',
+        'Default setting to prevent negative balances (refunds) on circulation related bills. Set to "true" to prohibit negative balances at all times or, when used in conjunction with an interval setting, to prohibit negative balances after a set period of time. ',
+        'coust', 'description'),
+    'bool', null)
+,(  'bill.prohibit_negative_balance_on_overdues', 'finance',
+    oils_i18n_gettext(
+        'bill.prohibit_negative_balance_on_overdues',
+        'Prohibit negative balance on bills for overdue materials',
+        'coust', 'label'),
+    oils_i18n_gettext(
+        'bill.prohibit_negative_balance_on_overdues',
+        'Prevent negative balances (refunds) on bills for overdue materials. Set to "true" to prohibit negative balances at all times or, when used in conjunction with an interval setting, to prohibit negative balances after a set period of time.',
+        'coust', 'description'),
+    'bool', null)
+,(  'bill.prohibit_negative_balance_on_lost', 'finance',
+    oils_i18n_gettext(
+        'bill.prohibit_negative_balance_on_lost',
+        'Prohibit negative balance on bills for lost materials',
+        'coust', 'label'),
+    oils_i18n_gettext(
+        'bill.prohibit_negative_balance_on_lost',
+        'Prevent negative balances (refunds) on bills for lost/long overdue materials. Set to "true" to prohibit negative balances at all times or, when used in conjunction with an interval setting, to prohibit negative balances after an interval of time.',
+        'coust', 'description'),
+    'bool', null)
+,(  'bill.negative_balance_interval_default', 'finance',
+    oils_i18n_gettext(
+        'bill.negative_balance_interval_default',
+        'Negative Balance Interval (DEFAULT)',
+        'coust', 'label'),
+    oils_i18n_gettext(
+        'bill.negative_balance_interval_default',
+        'Amount of time after which no negative balances (refunds) are allowed on circulation bills. The "Prohibit negative balance on bills" setting must also be set to "true".',
+        'coust', 'description'),
+    'interval', null)
+,(  'bill.negative_balance_interval_on_overdues', 'finance',
+    oils_i18n_gettext(
+        'bill.negative_balance_interval_on_overdues',
+        'Negative Balance Interval for Overdues',
+        'coust', 'label'),
+    oils_i18n_gettext(
+        'bill.negative_balance_interval_on_overdues',
+        'Amount of time after which no negative balances (refunds) are allowed on bills for overdue materials. The "Prohibit negative balance on bills for overdue materials" setting must also be set to "true".',
+        'coust', 'description'),
+    'interval', null)
+,(  'bill.negative_balance_interval_on_lost', 'finance',
+    oils_i18n_gettext(
+        'bill.negative_balance_interval_on_lost',
+        'Negative Balance Interval for Lost',
+        'coust', 'label'),
+    oils_i18n_gettext(
+        'bill.negative_balance_interval_on_lost',
+        'Amount of time after which no negative balances (refunds) are allowed on bills for lost/long overdue materials. The "Prohibit negative balance on bills for lost materials" setting must also be set to "true".',
+        'coust', 'description'),
+    'interval', null)
+,(  'ui.circ.billing.amount_limit', 'gui',
+    oils_i18n_gettext(
+      'ui.circ.billing.amount_limit',
+      'Maximum payment amount allowed.',
+      'coust', 'label'),
+    oils_i18n_gettext(
+      'ui.circ.billing.amount_limit',
+      'The payment amount in the Patron Bills interface may not exceed the value of this setting.',
+      'coust', 'description'),
+    'currency',null)
+,(  'ui.circ.billing.amount_warn', 'gui',
+    oils_i18n_gettext(
+      'ui.circ.billing.amount_warn',
+      'Payment amount threshold for Are You Sure? dialog.',
+      'coust', 'label'),
+    oils_i18n_gettext(
+      'ui.circ.billing.amount_warn',
+      'In the Patron Bills interface, a payment attempt will warn if the amount exceeds the value of this setting.',
+      'coust', 'description'),
+    'currency', null)
 ;
 
 UPDATE config.org_unit_setting_type
@@ -5046,6 +5247,10 @@ INSERT INTO actor.org_unit_setting (org_unit, name, value) VALUES (
     ,(1, 'cat.label.font.weight', '"normal"')
     ,(1, 'circ.grace.extend', 'true')
 ;
+
+--220.schema.rating.sql (Default badge for popularity ranking)
+INSERT INTO rating.badge (name, description, scope, weight, horizon_age, importance_age, importance_interval, importance_scale, recalc_interval, popularity_parameter, percentile)
+  VALUES('Top Holds Over Last 5 Years', 'The top 97th percentile for holds requested over the past five years on all materials. More weight is given to holds requested over the last year, with importance decreasing for every year after that.', 1, 3, '5 years', '5 years', '1 year', 2, '1 day', 2, 97);
 
 
 -- Staged Search (for default matchpoints)
@@ -5935,13 +6140,11 @@ INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, leng
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Audn', '006', 'COM', 5, 1, ' ');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Audn', '006', 'REC', 5, 1, ' ');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Audn', '006', 'SCO', 5, 1, ' ');
-INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Audn', '006', 'SER', 5, 1, ' ');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Audn', '006', 'VIS', 5, 1, ' ');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Audn', '008', 'BKS', 22, 1, ' ');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Audn', '008', 'COM', 22, 1, ' ');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Audn', '008', 'REC', 22, 1, ' ');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Audn', '008', 'SCO', 22, 1, ' ');
-INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Audn', '008', 'SER', 22, 1, ' ');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Audn', '008', 'VIS', 22, 1, ' ');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('BLvl', 'ldr', 'BKS', 7, 1, 'm');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('BLvl', 'ldr', 'COM', 7, 1, 'm');
@@ -6082,6 +6285,26 @@ INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, leng
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Type', 'ldr', 'VIS', 6, 1, 'g');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Subj', '008', 'AUT', 11, 1, '|');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('RecStat', 'ldr', 'AUT', 5, 1, 'n');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Type', 'ldr', 'AUT', 6, 1, 'z');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('GeoDiv', '008', 'AUT', 6, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Roman', '008', 'AUT', 7, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('CatLang', '008', 'AUT', 8, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Kind', '008', 'AUT', 9, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Rules', '008', 'AUT', 10, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Subj', '008', 'AUT', 11, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Series', '008', 'AUT', 12, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('SerNum', '008', 'AUT', 13, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('NameUse', '008', 'AUT', 14, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('SubjUse', '008', 'AUT', 15, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('SerUse', '008', 'AUT', 16, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('TypeSubd', '008', 'AUT', 17, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('GovtAgn', '008', 'AUT', 28, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('RefStatus', '008', 'AUT', 29, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('UpdStatus', '008', 'AUT', 31, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Name', '008', 'AUT', 32, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Status', '008', 'AUT', 33, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('ModRec', '008', 'AUT', 38, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Source', '008', 'AUT', 39, 1, ' ');
 
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('File', '008', 'COM', 26, 1, 'u');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('File', '006', 'COM', 9, 1, 'u');
@@ -6090,10 +6313,131 @@ INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, leng
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Regl', '008', 'SER', 19, 1, ' ');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Regl', '006', 'SER', 2, 1, ' ');
 
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM', '006', 'REC', 7, 6, '      ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM', '006', 'SCO', 7, 6, '      ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM', '008', 'REC', 24, 6, '      ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM', '008', 'SCO', 24, 6, '      ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Comp', '006', 'REC', 1, 2, 'uu');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Comp', '006', 'SCO', 1, 2, 'uu');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Comp', '008', 'REC', 18, 2, 'uu');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Comp', '008', 'SCO', 18, 2, 'uu');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('CrTp', '006', 'MAP', 8, 1, 'a');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('CrTp', '008', 'MAP', 25, 1, 'a');
+
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('EntW', '006', 'SER', 7, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('EntW', '008', 'SER', 24, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('FMus', '006', 'REC', 3, 1, 'n');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('FMus', '006', 'SCO', 3, 1, 'u');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('FMus', '008', 'REC', 20, 1, 'n');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('FMus', '008', 'SCO', 20, 1, 'u');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Form', '006', 'COM', 6, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Form', '008', 'COM', 23, 1, ' ');
+
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('LTxt', '006', 'REC', 13, 2, '  ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('LTxt', '008', 'REC', 30, 2, '  ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('LTxt', '006', 'SCO', 13, 2, 'n ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('LTxt', '008', 'SCO', 30, 2, 'n ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Orig', '006', 'SER', 5, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Orig', '008', 'SER', 22, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Part', '006', 'REC', 4, 1, 'n');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Part', '006', 'SCO', 4, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Part', '008', 'REC', 21, 1, 'n');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Part', '008', 'SCO', 21, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Proj', '006', 'MAP', 5, 2, '  ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Proj', '008', 'MAP', 22, 2, '  ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Relf', '006', 'MAP', 1, 4, '    ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Relf', '008', 'MAP', 18, 4, '    ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('SpFm', '006', 'MAP', 16, 2, '  ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('SpFm', '008', 'MAP', 33, 2, '  ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('SrTp', '006', 'SER', 4, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('SrTp', '008', 'SER', 21, 1, ' ');
+
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Tech', '006', 'VIS', 17, 1, 'n');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Tech', '008', 'VIS', 34, 1, 'n');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Time', '006', 'VIS', 1, 3, '   ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Time', '008', 'VIS', 18, 3, '   ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('TrAr', '006', 'SCO', 16, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('TrAr', '006', 'REC', 16, 1, 'n');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('TrAr', '008', 'SCO', 33, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('TrAr', '008', 'REC', 33, 1, 'n');
+
+
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM1', '006', 'REC', 7, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM1', '006', 'SCO', 7, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM1', '008', 'REC', 24, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM1', '008', 'SCO', 24, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM2', '006', 'REC', 8, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM2', '006', 'SCO', 8, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM2', '008', 'REC', 25, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM2', '008', 'SCO', 25, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM3', '006', 'REC', 9, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM3', '006', 'SCO', 9, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM3', '008', 'REC', 26, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM3', '008', 'SCO', 26, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM4', '006', 'REC', 10, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM4', '006', 'SCO', 10, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM4', '008', 'REC', 27, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM4', '008', 'SCO', 27, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM5', '006', 'REC', 11, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM5', '006', 'SCO', 11, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM5', '008', 'REC', 28, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM5', '008', 'SCO', 28, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM6', '006', 'REC', 12, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM6', '006', 'SCO', 12, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM6', '008', 'REC', 29, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('AccM6', '008', 'SCO', 29, 1, ' ');
+
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Cont1', '006', 'BKS', 7, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Cont1', '006', 'SER', 8, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Cont1', '008', 'BKS', 24, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Cont1', '008', 'SER', 25, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Cont2', '006', 'BKS', 8, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Cont2', '006', 'SER', 9, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Cont2', '008', 'BKS', 25, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Cont2', '008', 'SER', 26, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Cont3', '006', 'BKS', 9, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Cont3', '006', 'SER', 10, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Cont3', '008', 'BKS', 26, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Cont3', '008', 'SER', 27, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Cont4', '006', 'BKS', 10, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Cont4', '008', 'BKS', 27, 1, ' ');
+
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Ills1', '006', 'BKS', 1, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Ills1', '008', 'BKS', 18, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Ills2', '006', 'BKS', 2, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Ills2', '008', 'BKS', 19, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Ills3', '006', 'BKS', 3, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Ills3', '008', 'BKS', 20, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Ills4', '006', 'BKS', 4, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Ills4', '008', 'BKS', 21, 1, ' ');
+
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('LTxt1', '006', 'REC', 13, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('LTxt1', '006', 'SCO', 13, 1, 'n');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('LTxt1', '008', 'REC', 30, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('LTxt1', '008', 'SCO', 30, 1, 'n');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('LTxt2', '006', 'REC', 14, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('LTxt2', '006', 'SCO', 14, 1, 'n');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('LTxt2', '008', 'REC', 31, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('LTxt2', '008', 'SCO', 31, 1, 'n');
+
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Relf1', '006', 'MAP', 1, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Relf1', '008', 'MAP', 18, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Relf2', '006', 'MAP', 2, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Relf2', '008', 'MAP', 19, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Relf3', '006', 'MAP', 3, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Relf3', '008', 'MAP', 20, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Relf4', '006', 'MAP', 4, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Relf4', '008', 'MAP', 21, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('SpFm1', '006', 'MAP', 16, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('SpFm1', '008', 'MAP', 33, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('SpFm2', '006', 'MAP', 17, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('SpFm2', '008', 'MAP', 34, 1, ' ');
+
+
 -- record attributes
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('alph','Alph','Alph');
-INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('audience','Audn','Audn');
-INSERT INTO config.record_attr_definition (name,label,fixed_field,multi) values ('bib_level','BLvl','BLvl',FALSE);
+INSERT INTO config.record_attr_definition (name,label,fixed_field,description) values ('audience','Audn','Audn', oils_i18n_gettext('audience', 'Audience', 'crad', 'label'));
+INSERT INTO config.record_attr_definition (name,label,fixed_field,multi,description) values ('bib_level','BLvl','BLvl',FALSE,oils_i18n_gettext('bib_level', 'Bib Level', 'crad', 'label'));
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('biog','Biog','Biog');
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('conf','Conf','Conf');
 INSERT INTO config.record_attr_definition (name,label,fixed_field,multi) values ('control_type','Ctrl','Ctrl',FALSE);
@@ -6105,18 +6449,18 @@ INSERT INTO config.record_attr_definition (name,label,fixed_field,multi) values 
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('pub_status','DtSt','DtSt');
 INSERT INTO config.record_attr_definition (name,label,fixed_field,multi) values ('enc_level','ELvl','ELvl',FALSE);
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('fest','Fest','Fest');
-INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('item_form','Form','Form');
+INSERT INTO config.record_attr_definition (name,label,fixed_field,description) values ('item_form','Form','Form',oils_i18n_gettext('item_form', 'Item Form', 'crad', 'label'));
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('gpub','GPub','GPub');
-INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('ills','Ills','Ills');
+INSERT INTO config.record_attr_definition (name,label,fixed_field,composite) values ('ills','Ills','Ills',TRUE);
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('indx','Indx','Indx');
-INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('item_lang','Lang','Lang');
+INSERT INTO config.record_attr_definition (name,label,fixed_field,description) values ('item_lang','Lang','Lang',oils_i18n_gettext('item_lang', 'Language', 'crad', 'label'));
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('language','Language (2.0 compat version)','Lang');
-INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('lit_form','LitF','LitF');
+INSERT INTO config.record_attr_definition (name,label,fixed_field,description) values ('lit_form','LitF','LitF',oils_i18n_gettext('lit_form', 'Literary Form', 'crad', 'label'));
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('mrec','MRec','MRec');
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('ff_sl','S/L','S/L');
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('type_mat','TMat','TMat');
-INSERT INTO config.record_attr_definition (name,label,fixed_field,multi) values ('item_type','Type','Type',FALSE);
-INSERT INTO config.record_attr_definition (name,label,phys_char_sf) values ('vr_format','Videorecording format',72);
+INSERT INTO config.record_attr_definition (name,label,fixed_field,multi,description) values ('item_type','Type','Type',FALSE,oils_i18n_gettext('item_type', 'Item Type', 'crad', 'label'));
+INSERT INTO config.record_attr_definition (name,label,phys_char_sf,description) values ('vr_format','Videorecording format',72,oils_i18n_gettext('vr_format', 'Video Format', 'crad', 'label'));
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('file','File','File');
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('freq','Freq','Freq');
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('regl','Regl','Regl');
@@ -6135,6 +6479,63 @@ INSERT INTO config.record_attr_definition
         oils_i18n_gettext('search_format', 'Search Formats', 'crad', 'label'),
         TRUE, TRUE, TRUE
     );
+
+INSERT INTO config.record_attr_definition (name, label, format, xpath, vocabulary) VALUES (
+    'content_type', oils_i18n_gettext('content_type', 'Content Type', 'ccvm', 'label'),
+    'marcxml',
+    $$//marc:datafield[@tag='336']/marc:subfield[@code='a']$$,
+    'http://rdaregistry.info/termList/RDAContentType'
+);
+INSERT INTO config.record_attr_definition (name, label, format, xpath, vocabulary) VALUES (
+    'media_type', oils_i18n_gettext('media_type', 'Media Type', 'ccvm', 'label'),
+    'marcxml',
+    $$//marc:datafield[@tag='337']/marc:subfield[@code='a']$$,
+    'http://rdaregistry.info/termList/RDAMediaType'
+);
+INSERT INTO config.record_attr_definition (name, label, format, xpath, vocabulary) VALUES (
+    'carrier_type', oils_i18n_gettext('carrier_type', 'Carrier Type', 'ccvm', 'label'),
+    'marcxml',
+    $$//marc:datafield[@tag='338']/marc:subfield[@code='a']$$,
+    'http://rdaregistry.info/termList/RDACarrierType'
+);
+
+INSERT INTO config.record_attr_definition (name,label,fixed_field,composite) VALUES ('accm','AccM','AccM',TRUE);
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('comp','Comp','Comp');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('crtp','CrTp','CrTp');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('entw','EntW','EntW');
+INSERT INTO config.record_attr_definition (name,label,fixed_field,composite) VALUES ('cont','Cont','Cont',TRUE);
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('fmus','FMus','FMus');
+INSERT INTO config.record_attr_definition (name,label,fixed_field,composite) VALUES ('ltxt','LTxt','LTxt',TRUE);
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('orig','Orig','Orig');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('part','Part','Part');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('proj','Proj','Proj');
+INSERT INTO config.record_attr_definition (name,label,fixed_field,composite) VALUES ('relf','Relf','Relf',TRUE);
+INSERT INTO config.record_attr_definition (name,label,fixed_field,composite) VALUES ('spfm','SpFm','SpFm',TRUE);
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('srtp','SrTp','SrTp');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('tech','Tech','Tech');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('trar','TrAr','TrAr');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('accm1','AccM(1)','AccM1');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('accm2','AccM(2)','AccM2');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('accm3','AccM(3)','AccM3');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('accm4','AccM(4)','AccM4');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('accm5','AccM(5)','AccM5');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('accm6','AccM(6)','AccM6');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('cont1','Cont(1)','Cont1');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('cont2','Cont(2)','Cont2');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('cont3','Cont(3)','Cont3');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('cont4','Cont(4)','Cont4');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('ills1','Ills(1)','Ills1');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('ills2','Ills(2)','Ills2');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('ills3','Ills(3)','Ills3');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('ills4','Ills(4)','Ills4');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('ltxt1','LTxt(1)','LTxt1');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('ltxt2','LTxt(2)','LTxt2');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('relf1','Relf(1)','Relf1');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('relf2','Relf(2)','Relf2');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('relf3','Relf(3)','Relf3');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('relf4','Relf(4)','Relf4');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('spfm1','SpFm(1)','SpFm1');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) VALUES ('spfm2','SpFm(2)','SpFm2');
 
 
 -- TO-DO: Auto-generate these values from CLDR
@@ -6952,6 +7353,1413 @@ INSERT INTO config.coded_value_map
     oils_i18n_gettext(633, 'Blu-ray', 'ccvm', 'value'),
     oils_i18n_gettext(633, 'Blu-ray', 'ccvm', 'search_label'));
 
+-- Electronic search format, not opac_visible
+INSERT INTO config.coded_value_map
+    (id, ctype, code, opac_visible, value, search_label) VALUES
+(712, 'search_format', 'electronic', FALSE,
+    oils_i18n_gettext(712, 'Electronic', 'ccvm', 'value'),
+    oils_i18n_gettext(712, 'Electronic', 'ccvm', 'search_label'));
+
+-- RDA content type, media type, and carrier type
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (634, 'content_type', 'two-dimensional moving image',
+  oils_i18n_gettext(634, 'two-dimensional moving image', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1023');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (635, 'content_type', 'three-dimensional moving image',
+  oils_i18n_gettext(635, 'three-dimensional moving image', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1022');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (636, 'content_type', 'three-dimensional form',
+  oils_i18n_gettext(636, 'three-dimensional form', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1021');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (637, 'content_type', 'text',
+  oils_i18n_gettext(637, 'text', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1020');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (638, 'content_type', 'tactile three-dimensional form',
+  oils_i18n_gettext(638, 'tactile three-dimensional form', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1019');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (639, 'content_type', 'tactile text',
+  oils_i18n_gettext(639, 'tactile text', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1018');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (640, 'content_type', 'tactile notated movement',
+  oils_i18n_gettext(640, 'tactile notated movement', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1017');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (641, 'content_type', 'tactile notated music',
+  oils_i18n_gettext(641, 'tactile notated music', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1016');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (642, 'content_type', 'tactile image',
+  oils_i18n_gettext(642, 'tactile image', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1015');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (643, 'content_type', 'still image',
+  oils_i18n_gettext(643, 'still image', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1014');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (644, 'content_type', 'spoken word',
+  oils_i18n_gettext(644, 'spoken word', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1013');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (645, 'content_type', 'sounds',
+  oils_i18n_gettext(645, 'sounds', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1012');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (646, 'content_type', 'performed music',
+  oils_i18n_gettext(646, 'performed music', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1011');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (647, 'content_type', 'notated music',
+  oils_i18n_gettext(647, 'notated music', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1010');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (648, 'content_type', 'notated movement',
+  oils_i18n_gettext(648, 'notated movement', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1009');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (649, 'content_type', 'computer program',
+  oils_i18n_gettext(649, 'computer program', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1008');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (650, 'content_type', 'computer dataset',
+  oils_i18n_gettext(650, 'computer dataset', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1007');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (651, 'content_type', 'cartographic three-dimensional form',
+  oils_i18n_gettext(651, 'cartographic three-dimensional form', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1006');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (652, 'content_type', 'cartographic tactile three-dimensional form',
+  oils_i18n_gettext(652, 'cartographic tactile three-dimensional form', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1005');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (653, 'content_type', 'cartographic tactile image',
+  oils_i18n_gettext(653, 'cartographic tactile image', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1004');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (654, 'content_type', 'cartographic moving image',
+  oils_i18n_gettext(654, 'cartographic moving image', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1003');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (655, 'content_type', 'cartographic image',
+  oils_i18n_gettext(655, 'cartographic image', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1002');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (656, 'content_type', 'cartographic dataset',
+  oils_i18n_gettext(656, 'cartographic dataset', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAContentType/1001');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (657, 'media_type', 'video',
+  oils_i18n_gettext(657, 'video', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAMediaType/1008');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (658, 'media_type', 'unmediated',
+  oils_i18n_gettext(658, 'unmediated', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAMediaType/1007');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (659, 'media_type', 'stereographic',
+  oils_i18n_gettext(659, 'stereographic', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAMediaType/1006');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (660, 'media_type', 'projected',
+  oils_i18n_gettext(660, 'projected', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAMediaType/1005');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (661, 'media_type', 'microscopic',
+  oils_i18n_gettext(661, 'microscopic', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAMediaType/1004');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (662, 'media_type', 'computer',
+  oils_i18n_gettext(662, 'computer', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAMediaType/1003');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (663, 'media_type', 'microform',
+  oils_i18n_gettext(663, 'microform', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAMediaType/1002');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (664, 'media_type', 'audio',
+  oils_i18n_gettext(664, 'audio', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDAMediaType/1001');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (665, 'media_type', 'Published',
+  oils_i18n_gettext(665, 'Published', 'ccvm', 'value'),
+  'http://metadataregistry.org/uri/RegStatus/1001');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (666, 'carrier_type', 'film roll',
+  oils_i18n_gettext(666, 'film roll', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1069');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (667, 'carrier_type', 'videodisc',
+  oils_i18n_gettext(667, 'videodisc', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1060');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (668, 'carrier_type', 'object',
+  oils_i18n_gettext(668, 'object', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1059');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (669, 'carrier_type', 'microfilm roll',
+  oils_i18n_gettext(669, 'microfilm roll', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1056');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (670, 'carrier_type', 'videotape reel',
+  oils_i18n_gettext(670, 'videotape reel', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1053');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (671, 'carrier_type', 'videocassette',
+  oils_i18n_gettext(671, 'videocassette', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1052');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (672, 'carrier_type', 'video cartridge',
+  oils_i18n_gettext(672, 'video cartridge', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1051');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (673, 'carrier_type', 'volume',
+  oils_i18n_gettext(673, 'volume', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1049');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (674, 'carrier_type', 'sheet',
+  oils_i18n_gettext(674, 'sheet', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1048');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (675, 'carrier_type', 'roll',
+  oils_i18n_gettext(675, 'roll', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1047');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (676, 'carrier_type', 'flipchart',
+  oils_i18n_gettext(676, 'flipchart', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1046');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (677, 'carrier_type', 'card',
+  oils_i18n_gettext(677, 'card', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1045');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (678, 'carrier_type', 'stereograph disc',
+  oils_i18n_gettext(678, 'stereograph disc', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1043');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (679, 'carrier_type', 'stereograph card',
+  oils_i18n_gettext(679, 'stereograph card', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1042');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (680, 'carrier_type', 'slide',
+  oils_i18n_gettext(680, 'slide', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1040');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (681, 'carrier_type', 'overhead transparency',
+  oils_i18n_gettext(681, 'overhead transparency', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1039');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (682, 'carrier_type', 'filmstrip cartridge',
+  oils_i18n_gettext(682, 'filmstrip cartridge', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1037');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (683, 'carrier_type', 'filmstrip',
+  oils_i18n_gettext(683, 'filmstrip', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1036');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (684, 'carrier_type', 'filmslip',
+  oils_i18n_gettext(684, 'filmslip', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1035');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (685, 'carrier_type', 'film reel',
+  oils_i18n_gettext(685, 'film reel', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1034');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (686, 'carrier_type', 'film cassette',
+  oils_i18n_gettext(686, 'film cassette', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1033');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (687, 'carrier_type', 'film cartridge',
+  oils_i18n_gettext(687, 'film cartridge', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1032');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (688, 'carrier_type', 'microscope slide',
+  oils_i18n_gettext(688, 'microscope slide', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1030');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (689, 'carrier_type', 'microopaque',
+  oils_i18n_gettext(689, 'microopaque', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1028');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (690, 'carrier_type', 'microfilm slip',
+  oils_i18n_gettext(690, 'microfilm slip', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1027');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (691, 'carrier_type', 'microfilm reel',
+  oils_i18n_gettext(691, 'microfilm reel', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1026');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (692, 'carrier_type', 'microfilm cassette',
+  oils_i18n_gettext(692, 'microfilm cassette', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1025');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (693, 'carrier_type', 'microfilm cartridge',
+  oils_i18n_gettext(693, 'microfilm cartridge', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1024');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (694, 'carrier_type', 'microfiche cassette',
+  oils_i18n_gettext(694, 'microfiche cassette', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1023');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (695, 'carrier_type', 'microfiche',
+  oils_i18n_gettext(695, 'microfiche', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1022');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (696, 'carrier_type', 'aperture card',
+  oils_i18n_gettext(696, 'aperture card', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1021');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (697, 'carrier_type', 'online resource',
+  oils_i18n_gettext(697, 'online resource', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1018');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (698, 'carrier_type', 'computer tape reel',
+  oils_i18n_gettext(698, 'computer tape reel', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1017');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (699, 'carrier_type', 'computer tape cassette',
+  oils_i18n_gettext(699, 'computer tape cassette', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1016');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (700, 'carrier_type', 'computer tape cartridge',
+  oils_i18n_gettext(700, 'computer tape cartridge', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1015');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (701, 'carrier_type', 'computer disc cartridge',
+  oils_i18n_gettext(701, 'computer disc cartridge', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1014');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (702, 'carrier_type', 'computer disc',
+  oils_i18n_gettext(702, 'computer disc', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1013');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (703, 'carrier_type', 'computer chip cartridge',
+  oils_i18n_gettext(703, 'computer chip cartridge', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1012');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (704, 'carrier_type', 'computer card',
+  oils_i18n_gettext(704, 'computer card', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1011');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (705, 'carrier_type', 'audiotape reel',
+  oils_i18n_gettext(705, 'audiotape reel', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1008');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (706, 'carrier_type', 'audiocassette',
+  oils_i18n_gettext(706, 'audiocassette', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1007');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (707, 'carrier_type', 'audio roll',
+  oils_i18n_gettext(707, 'audio roll', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1006');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (708, 'carrier_type', 'sound-track reel',
+  oils_i18n_gettext(708, 'sound-track reel', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1005');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (709, 'carrier_type', 'audio disc',
+  oils_i18n_gettext(709, 'audio disc', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1004');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (710, 'carrier_type', 'audio cylinder',
+  oils_i18n_gettext(710, 'audio cylinder', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1003');
+INSERT INTO config.coded_value_map (id, ctype, code, value, concept_uri)
+  VALUES (711, 'carrier_type', 'audio cartridge',
+  oils_i18n_gettext(711, 'audio cartridge', 'ccvm', 'value'),
+  'http://rdaregistry.info/termList/RDACarrierType/1002');
+
+-- Accompanying Matter
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1735, 'accm', ' ', oils_i18n_gettext('1735', 'No accompanying matter', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (713, 'accm', 'a', oils_i18n_gettext('713', 'Discography', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (714, 'accm', 'b', oils_i18n_gettext('714', 'Bibliography', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (715, 'accm', 'c', oils_i18n_gettext('715', 'Thematic index', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (716, 'accm', 'd', oils_i18n_gettext('716', 'Libretto or text', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (717, 'accm', 'e', oils_i18n_gettext('717', 'Biography of composer or author', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (718, 'accm', 'f', oils_i18n_gettext('718', 'Biography or performer or history of ensemble', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (719, 'accm', 'g', oils_i18n_gettext('719', 'Technical and/or historical information on instruments', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (720, 'accm', 'h', oils_i18n_gettext('720', 'Technical information on music', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (721, 'accm', 'i', oils_i18n_gettext('721', 'Historical information', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (722, 'accm', 'k', oils_i18n_gettext('722', 'Ethnological information', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (723, 'accm', 'r', oils_i18n_gettext('723', 'Instructional materials', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (724, 'accm', 's', oils_i18n_gettext('724', 'Music', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (725, 'accm', 'z', oils_i18n_gettext('725', 'Other accompanying matter', 'ccvm', 'value'));
+
+-- Form of Composition
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (726, 'comp', '  ', oils_i18n_gettext('726', 'No information supplied', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (727, 'comp', 'an', oils_i18n_gettext('727', 'Anthems', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (728, 'comp', 'bd', oils_i18n_gettext('728', 'Ballads', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (729, 'comp', 'bt', oils_i18n_gettext('729', 'Ballets', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (730, 'comp', 'bg', oils_i18n_gettext('730', 'Bluegrass music', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (731, 'comp', 'bl', oils_i18n_gettext('731', 'Blues', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (732, 'comp', 'cn', oils_i18n_gettext('732', 'Canons and rounds', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (733, 'comp', 'ct', oils_i18n_gettext('733', 'Cantatas', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (734, 'comp', 'cz', oils_i18n_gettext('734', 'Canzonas', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (735, 'comp', 'cr', oils_i18n_gettext('735', 'Carols', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (736, 'comp', 'ca', oils_i18n_gettext('736', 'Chaconnes', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (737, 'comp', 'cs', oils_i18n_gettext('737', 'Chance compositions', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (738, 'comp', 'cp', oils_i18n_gettext('738', 'Chansons, Polyphonic', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (739, 'comp', 'cc', oils_i18n_gettext('739', 'Chant, Christian', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (740, 'comp', 'cb', oils_i18n_gettext('740', 'Chants, other', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (741, 'comp', 'cl', oils_i18n_gettext('741', 'Chorale preludes', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (742, 'comp', 'ch', oils_i18n_gettext('742', 'Chorales', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (743, 'comp', 'cg', oils_i18n_gettext('743', 'Concerti grossi', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (744, 'comp', 'co', oils_i18n_gettext('744', 'Concertos', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (745, 'comp', 'cy', oils_i18n_gettext('745', 'Country music', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (746, 'comp', 'df', oils_i18n_gettext('746', 'Dance forms', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (747, 'comp', 'dv', oils_i18n_gettext('747', 'Divertimentos, serenades, cassations, divertissements, and notturni', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (748, 'comp', 'ft', oils_i18n_gettext('748', 'Fantasias', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (749, 'comp', 'fl', oils_i18n_gettext('749', 'Flamenco', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (750, 'comp', 'fm', oils_i18n_gettext('750', 'Folk music', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (751, 'comp', 'fg', oils_i18n_gettext('751', 'Fugues', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (752, 'comp', 'gm', oils_i18n_gettext('752', 'Gospel music', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (753, 'comp', 'hy', oils_i18n_gettext('753', 'Hymns', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (754, 'comp', 'jz', oils_i18n_gettext('754', 'Jazz', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (755, 'comp', 'md', oils_i18n_gettext('755', 'Madrigals', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (756, 'comp', 'mr', oils_i18n_gettext('756', 'Marches', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (757, 'comp', 'ms', oils_i18n_gettext('757', 'Masses', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (758, 'comp', 'mz', oils_i18n_gettext('758', 'Mazurkas', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (759, 'comp', 'mi', oils_i18n_gettext('759', 'Minuets', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (760, 'comp', 'mo', oils_i18n_gettext('760', 'Motets', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (761, 'comp', 'mp', oils_i18n_gettext('761', 'Motion picture music', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (762, 'comp', 'mu', oils_i18n_gettext('762', 'Multiple forms', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (763, 'comp', 'mc', oils_i18n_gettext('763', 'Musical reviews and comedies', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (764, 'comp', 'nc', oils_i18n_gettext('764', 'Nocturnes', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (765, 'comp', 'nn', oils_i18n_gettext('765', 'Not applicable', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (766, 'comp', 'op', oils_i18n_gettext('766', 'Operas', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (767, 'comp', 'or', oils_i18n_gettext('767', 'Oratorios', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (768, 'comp', 'ov', oils_i18n_gettext('768', 'Overtures', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (769, 'comp', 'pt', oils_i18n_gettext('769', 'Part-songs', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (770, 'comp', 'ps', oils_i18n_gettext('770', 'Passacaglias', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (771, 'comp', 'pm', oils_i18n_gettext('771', 'Passion music', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (772, 'comp', 'pv', oils_i18n_gettext('772', 'Pavans', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (773, 'comp', 'po', oils_i18n_gettext('773', 'Polonaises', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (774, 'comp', 'pp', oils_i18n_gettext('774', 'Popular music', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (775, 'comp', 'pr', oils_i18n_gettext('775', 'Preludes', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (776, 'comp', 'pg', oils_i18n_gettext('776', 'Program music', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (777, 'comp', 'rg', oils_i18n_gettext('777', 'Ragtime music', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (778, 'comp', 'rq', oils_i18n_gettext('778', 'Requiems', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (779, 'comp', 'rp', oils_i18n_gettext('779', 'Rhapsodies', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (780, 'comp', 'ri', oils_i18n_gettext('780', 'Ricercars', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (781, 'comp', 'rc', oils_i18n_gettext('781', 'Rock music', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (782, 'comp', 'rd', oils_i18n_gettext('782', 'Rondos', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (783, 'comp', 'sn', oils_i18n_gettext('783', 'Sonatas', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (784, 'comp', 'sg', oils_i18n_gettext('784', 'Songs', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (785, 'comp', 'sd', oils_i18n_gettext('785', 'Square dance music', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (786, 'comp', 'st', oils_i18n_gettext('786', 'Studies and exercises', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (787, 'comp', 'su', oils_i18n_gettext('787', 'Suites', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (788, 'comp', 'sp', oils_i18n_gettext('788', 'Symphonic poems', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (789, 'comp', 'sy', oils_i18n_gettext('789', 'Symphonies', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (790, 'comp', 'tl', oils_i18n_gettext('790', 'Teatro lirico', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (791, 'comp', 'tc', oils_i18n_gettext('791', 'Toccatas', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (792, 'comp', 'ts', oils_i18n_gettext('792', 'Trio-sonatas', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (793, 'comp', 'uu', oils_i18n_gettext('793', 'Unknown', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (794, 'comp', 'vi', oils_i18n_gettext('794', 'Villancicos', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (795, 'comp', 'vr', oils_i18n_gettext('795', 'Variations', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (796, 'comp', 'wz', oils_i18n_gettext('796', 'Waltzes', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (797, 'comp', 'za', oils_i18n_gettext('797', 'Zarzuelas', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (798, 'comp', 'zz', oils_i18n_gettext('798', 'Other forms', 'ccvm', 'value'));
+
+-- Type of Cartographic Material
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (799, 'crtp', 'a', oils_i18n_gettext('799', 'Single map', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (800, 'crtp', 'b', oils_i18n_gettext('800', 'Map series', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (801, 'crtp', 'c', oils_i18n_gettext('801', 'Map serial', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (802, 'crtp', 'd', oils_i18n_gettext('802', 'Globe', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (803, 'crtp', 'e', oils_i18n_gettext('803', 'Atlas', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (804, 'crtp', 'f', oils_i18n_gettext('804', 'Separate supplement to another work', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (805, 'crtp', 'g', oils_i18n_gettext('805', 'Bound as part of another work', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (806, 'crtp', 'u', oils_i18n_gettext('806', 'Unknown', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (807, 'crtp', 'z', oils_i18n_gettext('807', 'Other', 'ccvm', 'value'));
+
+-- Nature of Entire Work
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (808, 'entw', ' ', oils_i18n_gettext('808', 'Not specified', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (809, 'entw', 'a', oils_i18n_gettext('809', 'Abstracts/summaries', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (810, 'entw', 'b', oils_i18n_gettext('810', 'Bibliographies', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (811, 'entw', 'c', oils_i18n_gettext('811', 'Catalogs', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (812, 'entw', 'd', oils_i18n_gettext('812', 'Dictionaries', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (813, 'entw', 'e', oils_i18n_gettext('813', 'Encyclopedias', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (814, 'entw', 'f', oils_i18n_gettext('814', 'Handbooks', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (815, 'entw', 'g', oils_i18n_gettext('815', 'Legal articles', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (816, 'entw', 'h', oils_i18n_gettext('816', 'Biography', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (817, 'entw', 'i', oils_i18n_gettext('817', 'Indexes', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (818, 'entw', 'k', oils_i18n_gettext('818', 'Discographies', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (819, 'entw', 'l', oils_i18n_gettext('819', 'Legislation', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (820, 'entw', 'm', oils_i18n_gettext('820', 'Theses', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (821, 'entw', 'n', oils_i18n_gettext('821', 'Surveys of the literature in a subject area', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (822, 'entw', 'o', oils_i18n_gettext('822', 'Reviews', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (823, 'entw', 'p', oils_i18n_gettext('823', 'Programmed texts', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (824, 'entw', 'q', oils_i18n_gettext('824', 'Filmographies', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (825, 'entw', 'r', oils_i18n_gettext('825', 'Directories', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (826, 'entw', 's', oils_i18n_gettext('826', 'Statistics', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (827, 'entw', 't', oils_i18n_gettext('827', 'Technical reports', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (828, 'entw', 'u', oils_i18n_gettext('828', 'Standards/specifications', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (829, 'entw', 'v', oils_i18n_gettext('829', 'Legal cases and case notes', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (830, 'entw', 'w', oils_i18n_gettext('830', 'Law reports and digests', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (831, 'entw', 'y', oils_i18n_gettext('831', 'Yearbooks', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (832, 'entw', 'z', oils_i18n_gettext('832', 'Treaties', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (833, 'entw', '5', oils_i18n_gettext('833', 'Calendars', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (834, 'entw', '6', oils_i18n_gettext('834', 'Comics/graphic novels', 'ccvm', 'value'));
+
+-- Nature of Contents
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (835, 'cont', ' ', oils_i18n_gettext('835', 'Not specified', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (836, 'cont', 'a', oils_i18n_gettext('836', 'Abstracts/summaries', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (837, 'cont', 'b', oils_i18n_gettext('837', 'Bibliographies', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (838, 'cont', 'c', oils_i18n_gettext('838', 'Catalogs', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (839, 'cont', 'd', oils_i18n_gettext('839', 'Dictionaries', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (840, 'cont', 'e', oils_i18n_gettext('840', 'Encyclopedias', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (841, 'cont', 'f', oils_i18n_gettext('841', 'Handbooks', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (842, 'cont', 'g', oils_i18n_gettext('842', 'Legal articles', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (843, 'cont', 'h', oils_i18n_gettext('843', 'Biography', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (844, 'cont', 'i', oils_i18n_gettext('844', 'Indexes', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (845, 'cont', 'j', oils_i18n_gettext('845', 'Patent document', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (846, 'cont', 'k', oils_i18n_gettext('846', 'Discographies', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (847, 'cont', 'l', oils_i18n_gettext('847', 'Legislation', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (848, 'cont', 'm', oils_i18n_gettext('848', 'Theses', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (849, 'cont', 'n', oils_i18n_gettext('849', 'Surveys of the literature in a subject area', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (850, 'cont', 'o', oils_i18n_gettext('850', 'Reviews', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (851, 'cont', 'p', oils_i18n_gettext('851', 'Programmed texts', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (852, 'cont', 'q', oils_i18n_gettext('852', 'Filmographies', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (853, 'cont', 'r', oils_i18n_gettext('853', 'Directories', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (854, 'cont', 's', oils_i18n_gettext('854', 'Statistics', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (855, 'cont', 't', oils_i18n_gettext('855', 'Technical reports', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (856, 'cont', 'u', oils_i18n_gettext('856', 'Standards/specifications', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (857, 'cont', 'v', oils_i18n_gettext('857', 'Legal cases and case notes', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (858, 'cont', 'w', oils_i18n_gettext('858', 'Law reports and digests', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (859, 'cont', 'x', oils_i18n_gettext('859', 'Other reports', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (860, 'cont', 'y', oils_i18n_gettext('860', 'Yearbooks', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (861, 'cont', 'z', oils_i18n_gettext('861', 'Treaties', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (862, 'cont', '2', oils_i18n_gettext('862', 'Offprints', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (863, 'cont', '5', oils_i18n_gettext('863', 'Calendars', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (864, 'cont', '6', oils_i18n_gettext('864', 'Comics/graphic novels', 'ccvm', 'value'));
+
+-- Format of Music
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (865, 'fmus', ' ', oils_i18n_gettext('865', 'Information not supplied', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (866, 'fmus', 'a', oils_i18n_gettext('866', 'Full score', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (867, 'fmus', 'b', oils_i18n_gettext('867', 'Full score, miniature or study size', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (868, 'fmus', 'c', oils_i18n_gettext('868', 'Accompaniment reduced for keyboard', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (869, 'fmus', 'd', oils_i18n_gettext('869', 'Voice score with accompaniment omitted', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (870, 'fmus', 'e', oils_i18n_gettext('870', 'Condensed score or piano-conductor score', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (871, 'fmus', 'g', oils_i18n_gettext('871', 'Close score', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (872, 'fmus', 'h', oils_i18n_gettext('872', 'Chorus score', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (873, 'fmus', 'i', oils_i18n_gettext('873', 'Condensed score', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (874, 'fmus', 'j', oils_i18n_gettext('874', 'Performer-conductor part', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (875, 'fmus', 'k', oils_i18n_gettext('875', 'Vocal score', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (876, 'fmus', 'l', oils_i18n_gettext('876', 'Score', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (877, 'fmus', 'm', oils_i18n_gettext('877', 'Multiple score formats', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (878, 'fmus', 'n', oils_i18n_gettext('878', 'Not applicable', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (879, 'fmus', 'u', oils_i18n_gettext('879', 'Unknown', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (880, 'fmus', 'z', oils_i18n_gettext('880', 'Other', 'ccvm', 'value'));
+
+-- Literary Text for Sound Recordings
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (881, 'ltxt', ' ', oils_i18n_gettext('881', 'Item is a music sound recording', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (882, 'ltxt', 'a', oils_i18n_gettext('882', 'Autobiography', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (883, 'ltxt', 'b', oils_i18n_gettext('883', 'Biography', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (884, 'ltxt', 'c', oils_i18n_gettext('884', 'Conference proceedings', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (885, 'ltxt', 'd', oils_i18n_gettext('885', 'Drama', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (886, 'ltxt', 'e', oils_i18n_gettext('886', 'Essays', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (887, 'ltxt', 'f', oils_i18n_gettext('887', 'Fiction', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (888, 'ltxt', 'g', oils_i18n_gettext('888', 'Reporting', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (889, 'ltxt', 'h', oils_i18n_gettext('889', 'History', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (890, 'ltxt', 'i', oils_i18n_gettext('890', 'Instruction', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (891, 'ltxt', 'j', oils_i18n_gettext('891', 'Language instruction', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (892, 'ltxt', 'k', oils_i18n_gettext('892', 'Comedy', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (893, 'ltxt', 'l', oils_i18n_gettext('893', 'Lectures, speeches', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (894, 'ltxt', 'm', oils_i18n_gettext('894', 'Memoirs', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (895, 'ltxt', 'n', oils_i18n_gettext('895', 'Not applicable', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (896, 'ltxt', 'o', oils_i18n_gettext('896', 'Folktales', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (897, 'ltxt', 'p', oils_i18n_gettext('897', 'Poetry', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (898, 'ltxt', 'r', oils_i18n_gettext('898', 'Rehearsals', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (899, 'ltxt', 's', oils_i18n_gettext('899', 'Sounds', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (900, 'ltxt', 't', oils_i18n_gettext('900', 'Interviews', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (901, 'ltxt', 'z', oils_i18n_gettext('901', 'Other', 'ccvm', 'value'));
+
+-- Form of Original Item
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (902, 'orig', ' ', oils_i18n_gettext('902', 'None of the following', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (903, 'orig', 'a', oils_i18n_gettext('903', 'Microfilm', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (904, 'orig', 'b', oils_i18n_gettext('904', 'Microfiche', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (905, 'orig', 'c', oils_i18n_gettext('905', 'Microopaque', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (906, 'orig', 'd', oils_i18n_gettext('906', 'Large print', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (907, 'orig', 'e', oils_i18n_gettext('907', 'Newspaper format', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (908, 'orig', 'f', oils_i18n_gettext('908', 'Braille', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (909, 'orig', 'o', oils_i18n_gettext('909', 'Online', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (910, 'orig', 'q', oils_i18n_gettext('910', 'Direct electronic', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (911, 'orig', 's', oils_i18n_gettext('911', 'Electronic', 'ccvm', 'value'));
+
+-- Music Parts
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (912, 'part', ' ', oils_i18n_gettext('912', 'No parts in hand or not specified', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (913, 'part', 'd', oils_i18n_gettext('913', 'Instrumental and vocal parts', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (914, 'part', 'e', oils_i18n_gettext('914', 'Instrumental parts', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (915, 'part', 'f', oils_i18n_gettext('915', 'Vocal parts', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (916, 'part', 'n', oils_i18n_gettext('916', 'Not Applicable', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (917, 'part', 'u', oils_i18n_gettext('917', 'Unknown', 'ccvm', 'value'));
+
+-- Projection
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (918, 'proj', '  ', oils_i18n_gettext('918', 'Project not specified', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (919, 'proj', 'aa', oils_i18n_gettext('919', 'Aitoff', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (920, 'proj', 'ab', oils_i18n_gettext('920', 'Gnomic', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (921, 'proj', 'ac', oils_i18n_gettext('921', 'Lambert''s azimuthal equal area', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (922, 'proj', 'ad', oils_i18n_gettext('922', 'Orthographic', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (923, 'proj', 'ae', oils_i18n_gettext('923', 'Azimuthal equidistant', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (924, 'proj', 'af', oils_i18n_gettext('924', 'Stereographic', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (925, 'proj', 'ag', oils_i18n_gettext('925', 'General vertical near-sided', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (926, 'proj', 'am', oils_i18n_gettext('926', 'Modified stereographic for Alaska', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (927, 'proj', 'an', oils_i18n_gettext('927', 'Chamberlin trimetric', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (928, 'proj', 'ap', oils_i18n_gettext('928', 'Polar stereographic', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (929, 'proj', 'au', oils_i18n_gettext('929', 'Azimuthal, specific type unknown', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (930, 'proj', 'az', oils_i18n_gettext('930', 'Azimuthal, other', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (931, 'proj', 'ba', oils_i18n_gettext('931', 'Gall', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (932, 'proj', 'bb', oils_i18n_gettext('932', 'Goode''s homolographic', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (933, 'proj', 'bc', oils_i18n_gettext('933', 'Lambert''s cylindrical equal area', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (934, 'proj', 'bd', oils_i18n_gettext('934', 'Mercator', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (935, 'proj', 'be', oils_i18n_gettext('935', 'Miller', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (936, 'proj', 'bf', oils_i18n_gettext('936', 'Mollweide', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (937, 'proj', 'bg', oils_i18n_gettext('937', 'Sinusoidal', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (938, 'proj', 'bh', oils_i18n_gettext('938', 'Transverse Mercator', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (939, 'proj', 'bi', oils_i18n_gettext('939', 'Gauss-Kruger', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (940, 'proj', 'bj', oils_i18n_gettext('940', 'Equirectangular', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (941, 'proj', 'bk', oils_i18n_gettext('941', 'Krovak', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (942, 'proj', 'bl', oils_i18n_gettext('942', 'Cassini-Soldner', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (943, 'proj', 'bo', oils_i18n_gettext('943', 'Oblique Mercator', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (944, 'proj', 'br', oils_i18n_gettext('944', 'Robinson', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (945, 'proj', 'bs', oils_i18n_gettext('945', 'Space oblique Mercator', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (946, 'proj', 'bu', oils_i18n_gettext('946', 'Cylindrical, specific type unknown', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (947, 'proj', 'bz', oils_i18n_gettext('947', 'Cylindrical, other', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (948, 'proj', 'ca', oils_i18n_gettext('948', 'Alber''s equal area', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (949, 'proj', 'cb', oils_i18n_gettext('949', 'Bonne', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (950, 'proj', 'cc', oils_i18n_gettext('950', 'Lambert''s conformal conic', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (951, 'proj', 'ce', oils_i18n_gettext('951', 'Equidistant conic', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (952, 'proj', 'cp', oils_i18n_gettext('952', 'Polyconic', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (953, 'proj', 'cu', oils_i18n_gettext('953', 'Conic, specific type unknown', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (954, 'proj', 'cz', oils_i18n_gettext('954', 'Conic, other', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (955, 'proj', 'da', oils_i18n_gettext('955', 'Armadillo', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (956, 'proj', 'db', oils_i18n_gettext('956', 'Butterfly', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (957, 'proj', 'dc', oils_i18n_gettext('957', 'Eckert', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (958, 'proj', 'dd', oils_i18n_gettext('958', 'Goode''s homolosine', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (959, 'proj', 'de', oils_i18n_gettext('959', 'Miller''s bipolar oblique conformal conic', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (960, 'proj', 'df', oils_i18n_gettext('960', 'Van Der Grinten', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (961, 'proj', 'dg', oils_i18n_gettext('961', 'Dymaxion', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (962, 'proj', 'dh', oils_i18n_gettext('962', 'Cordiform', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (963, 'proj', 'dl', oils_i18n_gettext('963', 'Lambert conformal', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (964, 'proj', 'zz', oils_i18n_gettext('964', 'Other', 'ccvm', 'value'));
+
+-- Relief
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (965, 'relf', ' ', oils_i18n_gettext('965', 'No relief shown', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (966, 'relf', 'a', oils_i18n_gettext('966', 'Contours', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (967, 'relf', 'b', oils_i18n_gettext('967', 'Shading', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (968, 'relf', 'c', oils_i18n_gettext('968', 'Gradient and bathymetric tints', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (969, 'relf', 'd', oils_i18n_gettext('969', 'Hachures', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (970, 'relf', 'e', oils_i18n_gettext('970', 'Bathymetry, soundings', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (971, 'relf', 'f', oils_i18n_gettext('971', 'Form lines', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (972, 'relf', 'g', oils_i18n_gettext('972', 'Spot heights', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (973, 'relf', 'i', oils_i18n_gettext('973', 'Pictorially', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (974, 'relf', 'j', oils_i18n_gettext('974', 'Land forms', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (975, 'relf', 'k', oils_i18n_gettext('975', 'Bathymetry, isolines', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (976, 'relf', 'm', oils_i18n_gettext('976', 'Rock drawings', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (977, 'relf', 'z', oils_i18n_gettext('977', 'Other', 'ccvm', 'value'));
+
+-- Special Format Characteristics
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (978, 'spfm', ' ', oils_i18n_gettext('978', 'No specified special format characteristics', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (979, 'spfm', 'e', oils_i18n_gettext('979', 'Manuscript', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (980, 'spfm', 'j', oils_i18n_gettext('980', 'Picture card, post card', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (981, 'spfm', 'k', oils_i18n_gettext('981', 'Calendar', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (982, 'spfm', 'l', oils_i18n_gettext('982', 'Puzzle', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (983, 'spfm', 'n', oils_i18n_gettext('983', 'Game', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (984, 'spfm', 'o', oils_i18n_gettext('984', 'Wall map', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (985, 'spfm', 'p', oils_i18n_gettext('985', 'Playing cards', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (986, 'spfm', 'r', oils_i18n_gettext('986', 'Loose-leaf', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (987, 'spfm', 'z', oils_i18n_gettext('987', 'Other', 'ccvm', 'value'));
+
+-- Type of Continuing Resource
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (988, 'srtp', ' ', oils_i18n_gettext('988', 'None of the following', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (989, 'srtp', 'd', oils_i18n_gettext('989', 'Updating database', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (990, 'srtp', 'l', oils_i18n_gettext('990', 'Updating loose-leaf', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (991, 'srtp', 'm', oils_i18n_gettext('991', 'Monographic series', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (992, 'srtp', 'n', oils_i18n_gettext('992', 'Newspaper', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (993, 'srtp', 'p', oils_i18n_gettext('993', 'Periodical', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (994, 'srtp', 'w', oils_i18n_gettext('994', 'Updating Web site', 'ccvm', 'value'));
+
+-- Technique
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (995, 'tech', 'a', oils_i18n_gettext('995', 'Animation', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (996, 'tech', 'c', oils_i18n_gettext('996', 'Animation and live action', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (997, 'tech', 'l', oils_i18n_gettext('997', 'Live action', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (998, 'tech', 'n', oils_i18n_gettext('998', 'Not applicable', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (999, 'tech', 'u', oils_i18n_gettext('999', 'Unknown', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1000, 'tech', 'z', oils_i18n_gettext('1000', 'Other', 'ccvm', 'value'));
+
+-- Transposition and Arrangement
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1001, 'trar', ' ', oils_i18n_gettext('1001', 'Not arrangement or transposition or not specified', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1002, 'trar', 'a', oils_i18n_gettext('1002', 'Transposition', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1003, 'trar', 'b', oils_i18n_gettext('1003', 'Arrangement', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1004, 'trar', 'c', oils_i18n_gettext('1004', 'Both transposed and arranged', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1005, 'trar', 'n', oils_i18n_gettext('1005', 'Not applicable', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1006, 'trar', 'u', oils_i18n_gettext('1006', 'Unknown', 'ccvm', 'value'));
+
+-- Country of Publication, etc.
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1007, 'ctry', 'aa ', oils_i18n_gettext('1007', 'Albania ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1008, 'ctry', 'abc', oils_i18n_gettext('1008', 'Alberta ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1009, 'ctry', 'aca', oils_i18n_gettext('1009', 'Australian Capital Territory ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1010, 'ctry', 'ae ', oils_i18n_gettext('1010', 'Algeria ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1011, 'ctry', 'af ', oils_i18n_gettext('1011', 'Afghanistan ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1012, 'ctry', 'ag ', oils_i18n_gettext('1012', 'Argentina ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1013, 'ctry', 'ai ', oils_i18n_gettext('1013', 'Armenia (Republic) ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1014, 'ctry', 'aj ', oils_i18n_gettext('1014', 'Azerbaijan ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1015, 'ctry', 'aku', oils_i18n_gettext('1015', 'Alaska ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1016, 'ctry', 'alu', oils_i18n_gettext('1016', 'Alabama ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1017, 'ctry', 'am ', oils_i18n_gettext('1017', 'Anguilla ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1018, 'ctry', 'an ', oils_i18n_gettext('1018', 'Andorra ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1019, 'ctry', 'ao ', oils_i18n_gettext('1019', 'Angola ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1020, 'ctry', 'aq ', oils_i18n_gettext('1020', 'Antigua and Barbuda ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1021, 'ctry', 'aru', oils_i18n_gettext('1021', 'Arkansas ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1022, 'ctry', 'as ', oils_i18n_gettext('1022', 'American Samoa ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1023, 'ctry', 'at ', oils_i18n_gettext('1023', 'Australia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1024, 'ctry', 'au ', oils_i18n_gettext('1024', 'Austria ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1025, 'ctry', 'aw ', oils_i18n_gettext('1025', 'Aruba ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1026, 'ctry', 'ay ', oils_i18n_gettext('1026', 'Antarctica ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1027, 'ctry', 'azu', oils_i18n_gettext('1027', 'Arizona ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1028, 'ctry', 'ba ', oils_i18n_gettext('1028', 'Bahrain ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1029, 'ctry', 'bb ', oils_i18n_gettext('1029', 'Barbados ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1030, 'ctry', 'bcc', oils_i18n_gettext('1030', 'British Columbia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1031, 'ctry', 'bd ', oils_i18n_gettext('1031', 'Burundi ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1032, 'ctry', 'be ', oils_i18n_gettext('1032', 'Belgium ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1033, 'ctry', 'bf ', oils_i18n_gettext('1033', 'Bahamas ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1034, 'ctry', 'bg ', oils_i18n_gettext('1034', 'Bangladesh ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1035, 'ctry', 'bh ', oils_i18n_gettext('1035', 'Belize ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1036, 'ctry', 'bi ', oils_i18n_gettext('1036', 'British Indian Ocean Territory ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1037, 'ctry', 'bl ', oils_i18n_gettext('1037', 'Brazil ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1038, 'ctry', 'bm ', oils_i18n_gettext('1038', 'Bermuda Islands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1039, 'ctry', 'bn ', oils_i18n_gettext('1039', 'Bosnia and Herzegovina ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1040, 'ctry', 'bo ', oils_i18n_gettext('1040', 'Bolivia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1041, 'ctry', 'bp ', oils_i18n_gettext('1041', 'Solomon Islands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1042, 'ctry', 'br ', oils_i18n_gettext('1042', 'Burma ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1043, 'ctry', 'bs ', oils_i18n_gettext('1043', 'Botswana ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1044, 'ctry', 'bt ', oils_i18n_gettext('1044', 'Bhutan ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1045, 'ctry', 'bu ', oils_i18n_gettext('1045', 'Bulgaria ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1046, 'ctry', 'bv ', oils_i18n_gettext('1046', 'Bouvet Island ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1047, 'ctry', 'bw ', oils_i18n_gettext('1047', 'Belarus ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1048, 'ctry', 'bx ', oils_i18n_gettext('1048', 'Brunei ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1049, 'ctry', 'ca ', oils_i18n_gettext('1049', 'Caribbean Netherlands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1050, 'ctry', 'cau', oils_i18n_gettext('1050', 'California ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1051, 'ctry', 'cb ', oils_i18n_gettext('1051', 'Cambodia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1052, 'ctry', 'cc ', oils_i18n_gettext('1052', 'China ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1053, 'ctry', 'cd ', oils_i18n_gettext('1053', 'Chad ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1054, 'ctry', 'ce ', oils_i18n_gettext('1054', 'Sri Lanka ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1055, 'ctry', 'cf ', oils_i18n_gettext('1055', 'Congo (Brazzaville) ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1056, 'ctry', 'cg ', oils_i18n_gettext('1056', 'Congo (Democratic Republic) ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1057, 'ctry', 'ch ', oils_i18n_gettext('1057', 'China (Republic : 1949', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1058, 'ctry', 'ci ', oils_i18n_gettext('1058', 'Croatia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1059, 'ctry', 'cj ', oils_i18n_gettext('1059', 'Cayman Islands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1060, 'ctry', 'ck ', oils_i18n_gettext('1060', 'Colombia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1061, 'ctry', 'cl ', oils_i18n_gettext('1061', 'Chile ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1062, 'ctry', 'cm ', oils_i18n_gettext('1062', 'Cameroon ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1063, 'ctry', 'co ', oils_i18n_gettext('1063', 'Curaçao ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1064, 'ctry', 'cou', oils_i18n_gettext('1064', 'Colorado ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1065, 'ctry', 'cq ', oils_i18n_gettext('1065', 'Comoros ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1066, 'ctry', 'cr ', oils_i18n_gettext('1066', 'Costa Rica ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1067, 'ctry', 'ctu', oils_i18n_gettext('1067', 'Connecticut ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1068, 'ctry', 'cu ', oils_i18n_gettext('1068', 'Cuba ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1069, 'ctry', 'cv ', oils_i18n_gettext('1069', 'Cabo Verde ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1070, 'ctry', 'cw ', oils_i18n_gettext('1070', 'Cook Islands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1071, 'ctry', 'cx ', oils_i18n_gettext('1071', 'Central African Republic ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1072, 'ctry', 'cy ', oils_i18n_gettext('1072', 'Cyprus ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1073, 'ctry', 'dcu', oils_i18n_gettext('1073', 'District of Columbia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1074, 'ctry', 'deu', oils_i18n_gettext('1074', 'Delaware ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1075, 'ctry', 'dk ', oils_i18n_gettext('1075', 'Denmark ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1076, 'ctry', 'dm ', oils_i18n_gettext('1076', 'Benin ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1077, 'ctry', 'dq ', oils_i18n_gettext('1077', 'Dominica ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1078, 'ctry', 'dr ', oils_i18n_gettext('1078', 'Dominican Republic ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1079, 'ctry', 'ea ', oils_i18n_gettext('1079', 'Eritrea ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1080, 'ctry', 'ec ', oils_i18n_gettext('1080', 'Ecuador ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1081, 'ctry', 'eg ', oils_i18n_gettext('1081', 'Equatorial Guinea ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1082, 'ctry', 'em ', oils_i18n_gettext('1082', 'Timor', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1083, 'ctry', 'enk', oils_i18n_gettext('1083', 'England ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1084, 'ctry', 'er ', oils_i18n_gettext('1084', 'Estonia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1085, 'ctry', 'es ', oils_i18n_gettext('1085', 'El Salvador ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1086, 'ctry', 'et ', oils_i18n_gettext('1086', 'Ethiopia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1087, 'ctry', 'fa ', oils_i18n_gettext('1087', 'Faroe Islands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1088, 'ctry', 'fg ', oils_i18n_gettext('1088', 'French Guiana ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1089, 'ctry', 'fi ', oils_i18n_gettext('1089', 'Finland ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1090, 'ctry', 'fj ', oils_i18n_gettext('1090', 'Fiji ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1091, 'ctry', 'fk ', oils_i18n_gettext('1091', 'Falkland Islands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1092, 'ctry', 'flu', oils_i18n_gettext('1092', 'Florida ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1093, 'ctry', 'fm ', oils_i18n_gettext('1093', 'Micronesia (Federated States) ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1094, 'ctry', 'fp ', oils_i18n_gettext('1094', 'French Polynesia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1095, 'ctry', 'fr ', oils_i18n_gettext('1095', 'France ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1096, 'ctry', 'fs ', oils_i18n_gettext('1096', 'Terres australes et antarctiques françaises ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1097, 'ctry', 'ft ', oils_i18n_gettext('1097', 'Djibouti ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1098, 'ctry', 'gau', oils_i18n_gettext('1098', 'Georgia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1099, 'ctry', 'gb ', oils_i18n_gettext('1099', 'Kiribati ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1100, 'ctry', 'gd ', oils_i18n_gettext('1100', 'Grenada ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1101, 'ctry', 'gh ', oils_i18n_gettext('1101', 'Ghana ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1102, 'ctry', 'gi ', oils_i18n_gettext('1102', 'Gibraltar ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1103, 'ctry', 'gl ', oils_i18n_gettext('1103', 'Greenland ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1104, 'ctry', 'gm ', oils_i18n_gettext('1104', 'Gambia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1105, 'ctry', 'go ', oils_i18n_gettext('1105', 'Gabon ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1106, 'ctry', 'gp ', oils_i18n_gettext('1106', 'Guadeloupe ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1107, 'ctry', 'gr ', oils_i18n_gettext('1107', 'Greece ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1108, 'ctry', 'gs ', oils_i18n_gettext('1108', 'Georgia (Republic) ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1109, 'ctry', 'gt ', oils_i18n_gettext('1109', 'Guatemala ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1110, 'ctry', 'gu ', oils_i18n_gettext('1110', 'Guam ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1111, 'ctry', 'gv ', oils_i18n_gettext('1111', 'Guinea ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1112, 'ctry', 'gw ', oils_i18n_gettext('1112', 'Germany ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1113, 'ctry', 'gy ', oils_i18n_gettext('1113', 'Guyana ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1114, 'ctry', 'gz ', oils_i18n_gettext('1114', 'Gaza Strip ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1115, 'ctry', 'hiu', oils_i18n_gettext('1115', 'Hawaii ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1116, 'ctry', 'hm ', oils_i18n_gettext('1116', 'Heard and McDonald Islands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1117, 'ctry', 'ho ', oils_i18n_gettext('1117', 'Honduras ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1118, 'ctry', 'ht ', oils_i18n_gettext('1118', 'Haiti ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1119, 'ctry', 'hu ', oils_i18n_gettext('1119', 'Hungary ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1120, 'ctry', 'iau', oils_i18n_gettext('1120', 'Iowa ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1121, 'ctry', 'ic ', oils_i18n_gettext('1121', 'Iceland ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1122, 'ctry', 'idu', oils_i18n_gettext('1122', 'Idaho ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1123, 'ctry', 'ie ', oils_i18n_gettext('1123', 'Ireland ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1124, 'ctry', 'ii ', oils_i18n_gettext('1124', 'India ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1125, 'ctry', 'ilu', oils_i18n_gettext('1125', 'Illinois ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1126, 'ctry', 'inu', oils_i18n_gettext('1126', 'Indiana ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1127, 'ctry', 'io ', oils_i18n_gettext('1127', 'Indonesia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1128, 'ctry', 'iq ', oils_i18n_gettext('1128', 'Iraq ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1129, 'ctry', 'ir ', oils_i18n_gettext('1129', 'Iran ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1130, 'ctry', 'is ', oils_i18n_gettext('1130', 'Israel ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1131, 'ctry', 'it ', oils_i18n_gettext('1131', 'Italy ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1132, 'ctry', 'iv ', oils_i18n_gettext('1132', 'Côte d''Ivoire ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1133, 'ctry', 'iy ', oils_i18n_gettext('1133', 'Iraq', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1134, 'ctry', 'ja ', oils_i18n_gettext('1134', 'Japan ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1135, 'ctry', 'ji ', oils_i18n_gettext('1135', 'Johnston Atoll ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1136, 'ctry', 'jm ', oils_i18n_gettext('1136', 'Jamaica ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1137, 'ctry', 'jo ', oils_i18n_gettext('1137', 'Jordan ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1138, 'ctry', 'ke ', oils_i18n_gettext('1138', 'Kenya ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1139, 'ctry', 'kg ', oils_i18n_gettext('1139', 'Kyrgyzstan ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1140, 'ctry', 'kn ', oils_i18n_gettext('1140', 'Korea (North) ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1141, 'ctry', 'ko ', oils_i18n_gettext('1141', 'Korea (South) ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1142, 'ctry', 'ksu', oils_i18n_gettext('1142', 'Kansas ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1143, 'ctry', 'ku ', oils_i18n_gettext('1143', 'Kuwait ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1144, 'ctry', 'kv ', oils_i18n_gettext('1144', 'Kosovo ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1145, 'ctry', 'kyu', oils_i18n_gettext('1145', 'Kentucky ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1146, 'ctry', 'kz ', oils_i18n_gettext('1146', 'Kazakhstan ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1147, 'ctry', 'lau', oils_i18n_gettext('1147', 'Louisiana ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1148, 'ctry', 'lb ', oils_i18n_gettext('1148', 'Liberia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1149, 'ctry', 'le ', oils_i18n_gettext('1149', 'Lebanon ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1150, 'ctry', 'lh ', oils_i18n_gettext('1150', 'Liechtenstein ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1151, 'ctry', 'li ', oils_i18n_gettext('1151', 'Lithuania ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1152, 'ctry', 'lo ', oils_i18n_gettext('1152', 'Lesotho ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1153, 'ctry', 'ls ', oils_i18n_gettext('1153', 'Laos ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1154, 'ctry', 'lu ', oils_i18n_gettext('1154', 'Luxembourg ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1155, 'ctry', 'lv ', oils_i18n_gettext('1155', 'Latvia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1156, 'ctry', 'ly ', oils_i18n_gettext('1156', 'Libya ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1157, 'ctry', 'mau', oils_i18n_gettext('1157', 'Massachusetts ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1158, 'ctry', 'mbc', oils_i18n_gettext('1158', 'Manitoba ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1159, 'ctry', 'mc ', oils_i18n_gettext('1159', 'Monaco ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1160, 'ctry', 'mdu', oils_i18n_gettext('1160', 'Maryland ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1161, 'ctry', 'meu', oils_i18n_gettext('1161', 'Maine ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1162, 'ctry', 'mf ', oils_i18n_gettext('1162', 'Mauritius ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1163, 'ctry', 'mg ', oils_i18n_gettext('1163', 'Madagascar ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1164, 'ctry', 'miu', oils_i18n_gettext('1164', 'Michigan ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1165, 'ctry', 'mj ', oils_i18n_gettext('1165', 'Montserrat ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1166, 'ctry', 'mk ', oils_i18n_gettext('1166', 'Oman ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1167, 'ctry', 'ml ', oils_i18n_gettext('1167', 'Mali ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1168, 'ctry', 'mm ', oils_i18n_gettext('1168', 'Malta ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1169, 'ctry', 'mnu', oils_i18n_gettext('1169', 'Minnesota ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1170, 'ctry', 'mo ', oils_i18n_gettext('1170', 'Montenegro ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1171, 'ctry', 'mou', oils_i18n_gettext('1171', 'Missouri ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1172, 'ctry', 'mp ', oils_i18n_gettext('1172', 'Mongolia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1173, 'ctry', 'mq ', oils_i18n_gettext('1173', 'Martinique ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1174, 'ctry', 'mr ', oils_i18n_gettext('1174', 'Morocco ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1175, 'ctry', 'msu', oils_i18n_gettext('1175', 'Mississippi ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1176, 'ctry', 'mtu', oils_i18n_gettext('1176', 'Montana ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1177, 'ctry', 'mu ', oils_i18n_gettext('1177', 'Mauritania ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1178, 'ctry', 'mv ', oils_i18n_gettext('1178', 'Moldova ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1179, 'ctry', 'mw ', oils_i18n_gettext('1179', 'Malawi ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1180, 'ctry', 'mx ', oils_i18n_gettext('1180', 'Mexico ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1181, 'ctry', 'my ', oils_i18n_gettext('1181', 'Malaysia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1182, 'ctry', 'mz ', oils_i18n_gettext('1182', 'Mozambique ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1183, 'ctry', 'nbu', oils_i18n_gettext('1183', 'Nebraska ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1184, 'ctry', 'ncu', oils_i18n_gettext('1184', 'North Carolina ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1185, 'ctry', 'ndu', oils_i18n_gettext('1185', 'North Dakota ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1186, 'ctry', 'ne ', oils_i18n_gettext('1186', 'Netherlands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1187, 'ctry', 'nfc', oils_i18n_gettext('1187', 'Newfoundland and Labrador ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1188, 'ctry', 'ng ', oils_i18n_gettext('1188', 'Niger ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1189, 'ctry', 'nhu', oils_i18n_gettext('1189', 'New Hampshire ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1190, 'ctry', 'nik', oils_i18n_gettext('1190', 'Northern Ireland ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1191, 'ctry', 'nju', oils_i18n_gettext('1191', 'New Jersey ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1192, 'ctry', 'nkc', oils_i18n_gettext('1192', 'New Brunswick ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1193, 'ctry', 'nl ', oils_i18n_gettext('1193', 'New Caledonia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1194, 'ctry', 'nmu', oils_i18n_gettext('1194', 'New Mexico ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1195, 'ctry', 'nn ', oils_i18n_gettext('1195', 'Vanuatu ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1196, 'ctry', 'no ', oils_i18n_gettext('1196', 'Norway ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1197, 'ctry', 'np ', oils_i18n_gettext('1197', 'Nepal ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1198, 'ctry', 'nq ', oils_i18n_gettext('1198', 'Nicaragua ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1199, 'ctry', 'nr ', oils_i18n_gettext('1199', 'Nigeria ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1200, 'ctry', 'nsc', oils_i18n_gettext('1200', 'Nova Scotia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1201, 'ctry', 'ntc', oils_i18n_gettext('1201', 'Northwest Territories ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1202, 'ctry', 'nu ', oils_i18n_gettext('1202', 'Nauru ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1203, 'ctry', 'nuc', oils_i18n_gettext('1203', 'Nunavut ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1204, 'ctry', 'nvu', oils_i18n_gettext('1204', 'Nevada ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1205, 'ctry', 'nw ', oils_i18n_gettext('1205', 'Northern Mariana Islands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1206, 'ctry', 'nx ', oils_i18n_gettext('1206', 'Norfolk Island ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1207, 'ctry', 'nyu', oils_i18n_gettext('1207', 'New York (State) ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1208, 'ctry', 'nz ', oils_i18n_gettext('1208', 'New Zealand ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1209, 'ctry', 'ohu', oils_i18n_gettext('1209', 'Ohio ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1210, 'ctry', 'oku', oils_i18n_gettext('1210', 'Oklahoma ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1211, 'ctry', 'onc', oils_i18n_gettext('1211', 'Ontario ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1212, 'ctry', 'oru', oils_i18n_gettext('1212', 'Oregon ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1213, 'ctry', 'ot ', oils_i18n_gettext('1213', 'Mayotte ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1214, 'ctry', 'pau', oils_i18n_gettext('1214', 'Pennsylvania ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1215, 'ctry', 'pc ', oils_i18n_gettext('1215', 'Pitcairn Island ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1216, 'ctry', 'pe ', oils_i18n_gettext('1216', 'Peru ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1217, 'ctry', 'pf ', oils_i18n_gettext('1217', 'Paracel Islands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1218, 'ctry', 'pg ', oils_i18n_gettext('1218', 'Guinea', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1219, 'ctry', 'ph ', oils_i18n_gettext('1219', 'Philippines ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1220, 'ctry', 'pic', oils_i18n_gettext('1220', 'Prince Edward Island ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1221, 'ctry', 'pk ', oils_i18n_gettext('1221', 'Pakistan ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1222, 'ctry', 'pl ', oils_i18n_gettext('1222', 'Poland ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1223, 'ctry', 'pn ', oils_i18n_gettext('1223', 'Panama ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1224, 'ctry', 'po ', oils_i18n_gettext('1224', 'Portugal ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1225, 'ctry', 'pp ', oils_i18n_gettext('1225', 'Papua New Guinea ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1226, 'ctry', 'pr ', oils_i18n_gettext('1226', 'Puerto Rico ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1227, 'ctry', 'pw ', oils_i18n_gettext('1227', 'Palau ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1228, 'ctry', 'py ', oils_i18n_gettext('1228', 'Paraguay ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1229, 'ctry', 'qa ', oils_i18n_gettext('1229', 'Qatar ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1230, 'ctry', 'qea', oils_i18n_gettext('1230', 'Queensland ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1231, 'ctry', 'quc', oils_i18n_gettext('1231', 'Québec (Province) ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1232, 'ctry', 'rb ', oils_i18n_gettext('1232', 'Serbia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1233, 'ctry', 're ', oils_i18n_gettext('1233', 'Réunion ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1234, 'ctry', 'rh ', oils_i18n_gettext('1234', 'Zimbabwe ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1235, 'ctry', 'riu', oils_i18n_gettext('1235', 'Rhode Island ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1236, 'ctry', 'rm ', oils_i18n_gettext('1236', 'Romania ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1237, 'ctry', 'ru ', oils_i18n_gettext('1237', 'Russia (Federation) ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1238, 'ctry', 'rw ', oils_i18n_gettext('1238', 'Rwanda ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1239, 'ctry', 'sa ', oils_i18n_gettext('1239', 'South Africa ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1240, 'ctry', 'sc ', oils_i18n_gettext('1240', 'Saint', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1241, 'ctry', 'scu', oils_i18n_gettext('1241', 'South Carolina ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1242, 'ctry', 'sd ', oils_i18n_gettext('1242', 'South Sudan ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1243, 'ctry', 'sdu', oils_i18n_gettext('1243', 'South Dakota ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1244, 'ctry', 'se ', oils_i18n_gettext('1244', 'Seychelles ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1245, 'ctry', 'sf ', oils_i18n_gettext('1245', 'Sao Tome and Principe ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1246, 'ctry', 'sg ', oils_i18n_gettext('1246', 'Senegal ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1247, 'ctry', 'sh ', oils_i18n_gettext('1247', 'Spanish North Africa ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1248, 'ctry', 'si ', oils_i18n_gettext('1248', 'Singapore ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1249, 'ctry', 'sj ', oils_i18n_gettext('1249', 'Sudan ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1250, 'ctry', 'sl ', oils_i18n_gettext('1250', 'Sierra Leone ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1251, 'ctry', 'sm ', oils_i18n_gettext('1251', 'San Marino ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1252, 'ctry', 'sn ', oils_i18n_gettext('1252', 'Sint Maarten ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1253, 'ctry', 'snc', oils_i18n_gettext('1253', 'Saskatchewan ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1254, 'ctry', 'so ', oils_i18n_gettext('1254', 'Somalia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1255, 'ctry', 'sp ', oils_i18n_gettext('1255', 'Spain ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1256, 'ctry', 'sq ', oils_i18n_gettext('1256', 'Swaziland ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1257, 'ctry', 'sr ', oils_i18n_gettext('1257', 'Surinam ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1258, 'ctry', 'ss ', oils_i18n_gettext('1258', 'Western Sahara ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1259, 'ctry', 'st ', oils_i18n_gettext('1259', 'Saint', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1260, 'ctry', 'stk', oils_i18n_gettext('1260', 'Scotland ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1261, 'ctry', 'su ', oils_i18n_gettext('1261', 'Saudi Arabia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1262, 'ctry', 'sw ', oils_i18n_gettext('1262', 'Sweden ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1263, 'ctry', 'sx ', oils_i18n_gettext('1263', 'Namibia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1264, 'ctry', 'sy ', oils_i18n_gettext('1264', 'Syria ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1265, 'ctry', 'sz ', oils_i18n_gettext('1265', 'Switzerland ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1266, 'ctry', 'ta ', oils_i18n_gettext('1266', 'Tajikistan ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1267, 'ctry', 'tc ', oils_i18n_gettext('1267', 'Turks and Caicos Islands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1268, 'ctry', 'tg ', oils_i18n_gettext('1268', 'Togo ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1269, 'ctry', 'th ', oils_i18n_gettext('1269', 'Thailand ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1270, 'ctry', 'ti ', oils_i18n_gettext('1270', 'Tunisia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1271, 'ctry', 'tk ', oils_i18n_gettext('1271', 'Turkmenistan ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1272, 'ctry', 'tl ', oils_i18n_gettext('1272', 'Tokelau ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1273, 'ctry', 'tma', oils_i18n_gettext('1273', 'Tasmania ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1274, 'ctry', 'tnu', oils_i18n_gettext('1274', 'Tennessee ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1275, 'ctry', 'to ', oils_i18n_gettext('1275', 'Tonga ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1276, 'ctry', 'tr ', oils_i18n_gettext('1276', 'Trinidad and Tobago ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1277, 'ctry', 'ts ', oils_i18n_gettext('1277', 'United Arab Emirates ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1278, 'ctry', 'tu ', oils_i18n_gettext('1278', 'Turkey ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1279, 'ctry', 'tv ', oils_i18n_gettext('1279', 'Tuvalu ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1280, 'ctry', 'txu', oils_i18n_gettext('1280', 'Texas ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1281, 'ctry', 'tz ', oils_i18n_gettext('1281', 'Tanzania ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1282, 'ctry', 'ua ', oils_i18n_gettext('1282', 'Egypt ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1283, 'ctry', 'uc ', oils_i18n_gettext('1283', 'United States Misc. Caribbean Islands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1284, 'ctry', 'ug ', oils_i18n_gettext('1284', 'Uganda ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1285, 'ctry', 'uik', oils_i18n_gettext('1285', 'United Kingdom Misc. Islands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1286, 'ctry', 'un ', oils_i18n_gettext('1286', 'Ukraine ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1287, 'ctry', 'up ', oils_i18n_gettext('1287', 'United States Misc. Pacific Islands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1288, 'ctry', 'utu', oils_i18n_gettext('1288', 'Utah ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1289, 'ctry', 'uv ', oils_i18n_gettext('1289', 'Burkina Faso ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1290, 'ctry', 'uy ', oils_i18n_gettext('1290', 'Uruguay ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1291, 'ctry', 'uz ', oils_i18n_gettext('1291', 'Uzbekistan ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1292, 'ctry', 'vau', oils_i18n_gettext('1292', 'Virginia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1293, 'ctry', 'vb ', oils_i18n_gettext('1293', 'British Virgin Islands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1294, 'ctry', 'vc ', oils_i18n_gettext('1294', 'Vatican City ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1295, 'ctry', 've ', oils_i18n_gettext('1295', 'Venezuela ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1296, 'ctry', 'vi ', oils_i18n_gettext('1296', 'Virgin Islands of the United States ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1297, 'ctry', 'vm ', oils_i18n_gettext('1297', 'Vietnam ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1298, 'ctry', 'vp ', oils_i18n_gettext('1298', 'Various places ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1299, 'ctry', 'vra', oils_i18n_gettext('1299', 'Victoria ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1300, 'ctry', 'vtu', oils_i18n_gettext('1300', 'Vermont ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1301, 'ctry', 'wau', oils_i18n_gettext('1301', 'Washington (State) ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1302, 'ctry', 'wea', oils_i18n_gettext('1302', 'Western Australia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1303, 'ctry', 'wf ', oils_i18n_gettext('1303', 'Wallis and Futuna ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1304, 'ctry', 'wiu', oils_i18n_gettext('1304', 'Wisconsin ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1305, 'ctry', 'wj ', oils_i18n_gettext('1305', 'West Bank of the Jordan River ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1306, 'ctry', 'wk ', oils_i18n_gettext('1306', 'Wake Island ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1307, 'ctry', 'wlk', oils_i18n_gettext('1307', 'Wales ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1308, 'ctry', 'ws ', oils_i18n_gettext('1308', 'Samoa ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1309, 'ctry', 'wvu', oils_i18n_gettext('1309', 'West Virginia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1310, 'ctry', 'wyu', oils_i18n_gettext('1310', 'Wyoming ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1311, 'ctry', 'xa ', oils_i18n_gettext('1311', 'Christmas Island (Indian Ocean) ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1312, 'ctry', 'xb ', oils_i18n_gettext('1312', 'Cocos (Keeling) Islands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1313, 'ctry', 'xc ', oils_i18n_gettext('1313', 'Maldives ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1314, 'ctry', 'xd ', oils_i18n_gettext('1314', 'Saint Kitts', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1315, 'ctry', 'xe ', oils_i18n_gettext('1315', 'Marshall Islands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1316, 'ctry', 'xf ', oils_i18n_gettext('1316', 'Midway Islands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1317, 'ctry', 'xga', oils_i18n_gettext('1317', 'Coral Sea Islands Territory ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1318, 'ctry', 'xh ', oils_i18n_gettext('1318', 'Niue ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1319, 'ctry', 'xj ', oils_i18n_gettext('1319', 'Saint Helena ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1320, 'ctry', 'xk ', oils_i18n_gettext('1320', 'Saint Lucia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1321, 'ctry', 'xl ', oils_i18n_gettext('1321', 'Saint Pierre and Miquelon ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1322, 'ctry', 'xm ', oils_i18n_gettext('1322', 'Saint Vincent and the Grenadines ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1323, 'ctry', 'xn ', oils_i18n_gettext('1323', 'Macedonia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1324, 'ctry', 'xna', oils_i18n_gettext('1324', 'New South Wales ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1325, 'ctry', 'xo ', oils_i18n_gettext('1325', 'Slovakia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1326, 'ctry', 'xoa', oils_i18n_gettext('1326', 'Northern Territory ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1327, 'ctry', 'xp ', oils_i18n_gettext('1327', 'Spratly Island ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1328, 'ctry', 'xr ', oils_i18n_gettext('1328', 'Czech Republic ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1329, 'ctry', 'xra', oils_i18n_gettext('1329', 'South Australia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1330, 'ctry', 'xs ', oils_i18n_gettext('1330', 'South Georgia and the South Sandwich Islands ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1331, 'ctry', 'xv ', oils_i18n_gettext('1331', 'Slovenia ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1332, 'ctry', 'xx ', oils_i18n_gettext('1332', 'No place, unknown, or undetermined ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1333, 'ctry', 'xxc', oils_i18n_gettext('1333', 'Canada ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1334, 'ctry', 'xxk', oils_i18n_gettext('1334', 'United Kingdom ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1335, 'ctry', 'xxu', oils_i18n_gettext('1335', 'United States ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1336, 'ctry', 'ye ', oils_i18n_gettext('1336', 'Yemen ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1337, 'ctry', 'ykc', oils_i18n_gettext('1337', 'Yukon Territory ', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1338, 'ctry', 'za ', oils_i18n_gettext('1338', 'Zambia ', 'ccvm', 'value'));
+
+-- Type of Date/Publication Status
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1339, 'pub_status', 'b', oils_i18n_gettext('1339', 'No dates given; B.C. date involved', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1340, 'pub_status', 'c', oils_i18n_gettext('1340', 'Continuing resource currently published', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1341, 'pub_status', 'd', oils_i18n_gettext('1341', 'Continuing resource ceased publication', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1342, 'pub_status', 'e', oils_i18n_gettext('1342', 'Detailed date', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1343, 'pub_status', 'i', oils_i18n_gettext('1343', 'Inclusive dates of collection', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1344, 'pub_status', 'k', oils_i18n_gettext('1344', 'Range of years of bulk of collection', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1345, 'pub_status', 'm', oils_i18n_gettext('1345', 'Multiple dates', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1346, 'pub_status', 'n', oils_i18n_gettext('1346', 'Dates unknown', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1347, 'pub_status', 'p', oils_i18n_gettext('1347', 'Date of distribution/release/issue and production/recording session when different', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1348, 'pub_status', 'q', oils_i18n_gettext('1348', 'Questionable date', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1349, 'pub_status', 'r', oils_i18n_gettext('1349', 'Reprint/reissue date and original date', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1350, 'pub_status', 's', oils_i18n_gettext('1350', 'Single known date/probable date', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1351, 'pub_status', 't', oils_i18n_gettext('1351', 'Publication date and copyright date', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1352, 'pub_status', 'u', oils_i18n_gettext('1352', 'Continuing resource status unknown', 'ccvm', 'value'));
+
+
+-- These are fixed fields that are made up of multiple single-character codes. These are the actual fields used for the individual positions,
+-- the "unnumbered" version of these fields are used for the MARC editor and as composite attributes for use in the OPAC if desired.
+-- i18n ids are left as-is because they are exactly the same value.
+-- The ' ' codes only apply to the first position because if there's anything in pos 1 then additional spaces are just filler.
+-- There's also no need for them to be opac visible because there are composite attributes that OR these numbered attributes together.
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1353, 'accm1', ' ', oils_i18n_gettext('1353', 'No accompanying matter', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1354, 'accm1', 'a', oils_i18n_gettext('1354', 'Discography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1355, 'accm1', 'b', oils_i18n_gettext('1355', 'Bibliography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1356, 'accm1', 'c', oils_i18n_gettext('1356', 'Thematic index', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1357, 'accm1', 'd', oils_i18n_gettext('1357', 'Libretto or text', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1358, 'accm1', 'e', oils_i18n_gettext('1358', 'Biography of composer or author', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1359, 'accm1', 'f', oils_i18n_gettext('1359', 'Biography or performer or history of ensemble', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1360, 'accm1', 'g', oils_i18n_gettext('1360', 'Technical and/or historical information on instruments', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1361, 'accm1', 'h', oils_i18n_gettext('1361', 'Technical information on music', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1362, 'accm1', 'i', oils_i18n_gettext('1362', 'Historical information', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1363, 'accm1', 'k', oils_i18n_gettext('1363', 'Ethnological information', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1364, 'accm1', 'r', oils_i18n_gettext('1364', 'Instructional materials', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1365, 'accm1', 's', oils_i18n_gettext('1365', 'Music', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1366, 'accm1', 'z', oils_i18n_gettext('1366', 'Other accompanying matter', 'ccvm', 'value'), FALSE);
+
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1367, 'accm2', 'a', oils_i18n_gettext('1367', 'Discography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1368, 'accm2', 'b', oils_i18n_gettext('1368', 'Bibliography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1369, 'accm2', 'c', oils_i18n_gettext('1369', 'Thematic index', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1370, 'accm2', 'd', oils_i18n_gettext('1370', 'Libretto or text', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1371, 'accm2', 'e', oils_i18n_gettext('1371', 'Biography of composer or author', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1372, 'accm2', 'f', oils_i18n_gettext('1372', 'Biography or performer or history of ensemble', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1373, 'accm2', 'g', oils_i18n_gettext('1373', 'Technical and/or historical information on instruments', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1374, 'accm2', 'h', oils_i18n_gettext('1374', 'Technical information on music', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1375, 'accm2', 'i', oils_i18n_gettext('1375', 'Historical information', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1376, 'accm2', 'k', oils_i18n_gettext('1376', 'Ethnological information', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1377, 'accm2', 'r', oils_i18n_gettext('1377', 'Instructional materials', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1378, 'accm2', 's', oils_i18n_gettext('1378', 'Music', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1379, 'accm2', 'z', oils_i18n_gettext('1379', 'Other accompanying matter', 'ccvm', 'value'), FALSE);
+
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1380, 'accm3', 'a', oils_i18n_gettext('1380', 'Discography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1381, 'accm3', 'b', oils_i18n_gettext('1381', 'Bibliography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1382, 'accm3', 'c', oils_i18n_gettext('1382', 'Thematic index', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1383, 'accm3', 'd', oils_i18n_gettext('1383', 'Libretto or text', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1384, 'accm3', 'e', oils_i18n_gettext('1384', 'Biography of composer or author', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1385, 'accm3', 'f', oils_i18n_gettext('1385', 'Biography or performer or history of ensemble', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1386, 'accm3', 'g', oils_i18n_gettext('1386', 'Technical and/or historical information on instruments', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1387, 'accm3', 'h', oils_i18n_gettext('1387', 'Technical information on music', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1388, 'accm3', 'i', oils_i18n_gettext('1388', 'Historical information', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1389, 'accm3', 'k', oils_i18n_gettext('1389', 'Ethnological information', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1390, 'accm3', 'r', oils_i18n_gettext('1390', 'Instructional materials', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1391, 'accm3', 's', oils_i18n_gettext('1391', 'Music', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1392, 'accm3', 'z', oils_i18n_gettext('1392', 'Other accompanying matter', 'ccvm', 'value'), FALSE);
+
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1393, 'accm4', 'a', oils_i18n_gettext('1393', 'Discography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1394, 'accm4', 'b', oils_i18n_gettext('1394', 'Bibliography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1395, 'accm4', 'c', oils_i18n_gettext('1395', 'Thematic index', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1396, 'accm4', 'd', oils_i18n_gettext('1396', 'Libretto or text', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1397, 'accm4', 'e', oils_i18n_gettext('1397', 'Biography of composer or author', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1398, 'accm4', 'f', oils_i18n_gettext('1398', 'Biography or performer or history of ensemble', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1399, 'accm4', 'g', oils_i18n_gettext('1399', 'Technical and/or historical information on instruments', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1400, 'accm4', 'h', oils_i18n_gettext('1400', 'Technical information on music', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1401, 'accm4', 'i', oils_i18n_gettext('1401', 'Historical information', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1402, 'accm4', 'k', oils_i18n_gettext('1402', 'Ethnological information', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1403, 'accm4', 'r', oils_i18n_gettext('1403', 'Instructional materials', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1404, 'accm4', 's', oils_i18n_gettext('1404', 'Music', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1405, 'accm4', 'z', oils_i18n_gettext('1405', 'Other accompanying matter', 'ccvm', 'value'), FALSE);
+
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1406, 'accm5', 'a', oils_i18n_gettext('1406', 'Discography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1407, 'accm5', 'b', oils_i18n_gettext('1407', 'Bibliography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1408, 'accm5', 'c', oils_i18n_gettext('1408', 'Thematic index', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1409, 'accm5', 'd', oils_i18n_gettext('1409', 'Libretto or text', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1410, 'accm5', 'e', oils_i18n_gettext('1410', 'Biography of composer or author', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1411, 'accm5', 'f', oils_i18n_gettext('1411', 'Biography or performer or history of ensemble', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1412, 'accm5', 'g', oils_i18n_gettext('1412', 'Technical and/or historical information on instruments', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1413, 'accm5', 'h', oils_i18n_gettext('1413', 'Technical information on music', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1414, 'accm5', 'i', oils_i18n_gettext('1414', 'Historical information', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1415, 'accm5', 'k', oils_i18n_gettext('1415', 'Ethnological information', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1416, 'accm5', 'r', oils_i18n_gettext('1416', 'Instructional materials', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1417, 'accm5', 's', oils_i18n_gettext('1417', 'Music', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1418, 'accm5', 'z', oils_i18n_gettext('1418', 'Other accompanying matter', 'ccvm', 'value'), FALSE);
+
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1419, 'accm6', 'a', oils_i18n_gettext('1419', 'Discography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1420, 'accm6', 'b', oils_i18n_gettext('1420', 'Bibliography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1421, 'accm6', 'c', oils_i18n_gettext('1421', 'Thematic index', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1422, 'accm6', 'd', oils_i18n_gettext('1422', 'Libretto or text', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1423, 'accm6', 'e', oils_i18n_gettext('1423', 'Biography of composer or author', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1424, 'accm6', 'f', oils_i18n_gettext('1424', 'Biography or performer or history of ensemble', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1425, 'accm6', 'g', oils_i18n_gettext('1425', 'Technical and/or historical information on instruments', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1426, 'accm6', 'h', oils_i18n_gettext('1426', 'Technical information on music', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1427, 'accm6', 'i', oils_i18n_gettext('1427', 'Historical information', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1428, 'accm6', 'k', oils_i18n_gettext('1428', 'Ethnological information', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1429, 'accm6', 'r', oils_i18n_gettext('1429', 'Instructional materials', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1430, 'accm6', 's', oils_i18n_gettext('1430', 'Music', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1431, 'accm6', 'z', oils_i18n_gettext('1431', 'Other accompanying matter', 'ccvm', 'value'), FALSE);
+
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1432, 'cont1', ' ', oils_i18n_gettext('1432', 'Not specified', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1433, 'cont1', 'a', oils_i18n_gettext('1433', 'Abstracts/summaries', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1434, 'cont1', 'b', oils_i18n_gettext('1434', 'Bibliographies', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1435, 'cont1', 'c', oils_i18n_gettext('1435', 'Catalogs', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1436, 'cont1', 'd', oils_i18n_gettext('1436', 'Dictionaries', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1437, 'cont1', 'e', oils_i18n_gettext('1437', 'Encyclopedias', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1438, 'cont1', 'f', oils_i18n_gettext('1438', 'Handbooks', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1439, 'cont1', 'g', oils_i18n_gettext('1439', 'Legal articles', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1440, 'cont1', 'h', oils_i18n_gettext('1440', 'Biography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1441, 'cont1', 'i', oils_i18n_gettext('1441', 'Indexes', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1442, 'cont1', 'j', oils_i18n_gettext('1442', 'Patent document', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1443, 'cont1', 'k', oils_i18n_gettext('1443', 'Discographies', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1444, 'cont1', 'l', oils_i18n_gettext('1444', 'Legislation', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1445, 'cont1', 'm', oils_i18n_gettext('1445', 'Theses', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1446, 'cont1', 'n', oils_i18n_gettext('1446', 'Surveys of the literature in a subject area', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1447, 'cont1', 'o', oils_i18n_gettext('1447', 'Reviews', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1448, 'cont1', 'p', oils_i18n_gettext('1448', 'Programmed texts', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1449, 'cont1', 'q', oils_i18n_gettext('1449', 'Filmographies', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1450, 'cont1', 'r', oils_i18n_gettext('1450', 'Directories', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1451, 'cont1', 's', oils_i18n_gettext('1451', 'Statistics', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1452, 'cont1', 't', oils_i18n_gettext('1452', 'Technical reports', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1453, 'cont1', 'u', oils_i18n_gettext('1453', 'Standards/specifications', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1454, 'cont1', 'v', oils_i18n_gettext('1454', 'Legal cases and case notes', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1455, 'cont1', 'w', oils_i18n_gettext('1455', 'Law reports and digests', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1456, 'cont1', 'x', oils_i18n_gettext('1456', 'Other reports', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1457, 'cont1', 'y', oils_i18n_gettext('1457', 'Yearbooks', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1458, 'cont1', 'z', oils_i18n_gettext('1458', 'Treaties', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1459, 'cont1', '2', oils_i18n_gettext('1459', 'Offprints', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1460, 'cont1', '5', oils_i18n_gettext('1460', 'Calendars', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1461, 'cont1', '6', oils_i18n_gettext('1461', 'Comics/graphic novels', 'ccvm', 'value'), FALSE);
+
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1462, 'cont2', 'a', oils_i18n_gettext('1462', 'Abstracts/summaries', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1463, 'cont2', 'b', oils_i18n_gettext('1463', 'Bibliographies', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1464, 'cont2', 'c', oils_i18n_gettext('1464', 'Catalogs', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1465, 'cont2', 'd', oils_i18n_gettext('1465', 'Dictionaries', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1466, 'cont2', 'e', oils_i18n_gettext('1466', 'Encyclopedias', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1467, 'cont2', 'f', oils_i18n_gettext('1467', 'Handbooks', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1468, 'cont2', 'g', oils_i18n_gettext('1468', 'Legal articles', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1469, 'cont2', 'h', oils_i18n_gettext('1469', 'Biography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1470, 'cont2', 'i', oils_i18n_gettext('1470', 'Indexes', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1471, 'cont2', 'j', oils_i18n_gettext('1471', 'Patent document', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1472, 'cont2', 'k', oils_i18n_gettext('1472', 'Discographies', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1473, 'cont2', 'l', oils_i18n_gettext('1473', 'Legislation', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1474, 'cont2', 'm', oils_i18n_gettext('1474', 'Theses', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1475, 'cont2', 'n', oils_i18n_gettext('1475', 'Surveys of the literature in a subject area', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1476, 'cont2', 'o', oils_i18n_gettext('1476', 'Reviews', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1477, 'cont2', 'p', oils_i18n_gettext('1477', 'Programmed texts', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1478, 'cont2', 'q', oils_i18n_gettext('1478', 'Filmographies', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1479, 'cont2', 'r', oils_i18n_gettext('1479', 'Directories', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1480, 'cont2', 's', oils_i18n_gettext('1480', 'Statistics', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1481, 'cont2', 't', oils_i18n_gettext('1481', 'Technical reports', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1482, 'cont2', 'u', oils_i18n_gettext('1482', 'Standards/specifications', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1483, 'cont2', 'v', oils_i18n_gettext('1483', 'Legal cases and case notes', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1484, 'cont2', 'w', oils_i18n_gettext('1484', 'Law reports and digests', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1485, 'cont2', 'x', oils_i18n_gettext('1485', 'Other reports', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1486, 'cont2', 'y', oils_i18n_gettext('1486', 'Yearbooks', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1487, 'cont2', 'z', oils_i18n_gettext('1487', 'Treaties', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1488, 'cont2', '2', oils_i18n_gettext('1488', 'Offprints', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1489, 'cont2', '5', oils_i18n_gettext('1489', 'Calendars', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1490, 'cont2', '6', oils_i18n_gettext('1490', 'Comics/graphic novels', 'ccvm', 'value'), FALSE);
+
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1491, 'cont3', 'a', oils_i18n_gettext('1491', 'Abstracts/summaries', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1492, 'cont3', 'b', oils_i18n_gettext('1492', 'Bibliographies', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1493, 'cont3', 'c', oils_i18n_gettext('1493', 'Catalogs', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1494, 'cont3', 'd', oils_i18n_gettext('1494', 'Dictionaries', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1495, 'cont3', 'e', oils_i18n_gettext('1495', 'Encyclopedias', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1496, 'cont3', 'f', oils_i18n_gettext('1496', 'Handbooks', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1497, 'cont3', 'g', oils_i18n_gettext('1497', 'Legal articles', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1498, 'cont3', 'h', oils_i18n_gettext('1498', 'Biography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1499, 'cont3', 'i', oils_i18n_gettext('1499', 'Indexes', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1500, 'cont3', 'j', oils_i18n_gettext('1500', 'Patent document', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1501, 'cont3', 'k', oils_i18n_gettext('1501', 'Discographies', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1502, 'cont3', 'l', oils_i18n_gettext('1502', 'Legislation', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1503, 'cont3', 'm', oils_i18n_gettext('1503', 'Theses', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1504, 'cont3', 'n', oils_i18n_gettext('1504', 'Surveys of the literature in a subject area', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1505, 'cont3', 'o', oils_i18n_gettext('1505', 'Reviews', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1506, 'cont3', 'p', oils_i18n_gettext('1506', 'Programmed texts', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1507, 'cont3', 'q', oils_i18n_gettext('1507', 'Filmographies', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1508, 'cont3', 'r', oils_i18n_gettext('1508', 'Directories', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1509, 'cont3', 's', oils_i18n_gettext('1509', 'Statistics', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1510, 'cont3', 't', oils_i18n_gettext('1510', 'Technical reports', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1511, 'cont3', 'u', oils_i18n_gettext('1511', 'Standards/specifications', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1512, 'cont3', 'v', oils_i18n_gettext('1512', 'Legal cases and case notes', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1513, 'cont3', 'w', oils_i18n_gettext('1513', 'Law reports and digests', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1514, 'cont3', 'x', oils_i18n_gettext('1514', 'Other reports', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1515, 'cont3', 'y', oils_i18n_gettext('1515', 'Yearbooks', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1516, 'cont3', 'z', oils_i18n_gettext('1516', 'Treaties', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1517, 'cont3', '2', oils_i18n_gettext('1517', 'Offprints', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1518, 'cont3', '5', oils_i18n_gettext('1518', 'Calendars', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1519, 'cont3', '6', oils_i18n_gettext('1519', 'Comics/graphic novels', 'ccvm', 'value'), FALSE);
+
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1520, 'cont4', 'a', oils_i18n_gettext('1520', 'Abstracts/summaries', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1521, 'cont4', 'b', oils_i18n_gettext('1521', 'Bibliographies', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1522, 'cont4', 'c', oils_i18n_gettext('1522', 'Catalogs', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1523, 'cont4', 'd', oils_i18n_gettext('1523', 'Dictionaries', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1524, 'cont4', 'e', oils_i18n_gettext('1524', 'Encyclopedias', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1525, 'cont4', 'f', oils_i18n_gettext('1525', 'Handbooks', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1526, 'cont4', 'g', oils_i18n_gettext('1526', 'Legal articles', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1527, 'cont4', 'h', oils_i18n_gettext('1527', 'Biography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1528, 'cont4', 'i', oils_i18n_gettext('1528', 'Indexes', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1529, 'cont4', 'j', oils_i18n_gettext('1529', 'Patent document', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1530, 'cont4', 'k', oils_i18n_gettext('1530', 'Discographies', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1531, 'cont4', 'l', oils_i18n_gettext('1531', 'Legislation', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1532, 'cont4', 'm', oils_i18n_gettext('1532', 'Theses', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1533, 'cont4', 'n', oils_i18n_gettext('1533', 'Surveys of the literature in a subject area', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1534, 'cont4', 'o', oils_i18n_gettext('1534', 'Reviews', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1535, 'cont4', 'p', oils_i18n_gettext('1535', 'Programmed texts', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1536, 'cont4', 'q', oils_i18n_gettext('1536', 'Filmographies', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1537, 'cont4', 'r', oils_i18n_gettext('1537', 'Directories', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1538, 'cont4', 's', oils_i18n_gettext('1538', 'Statistics', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1539, 'cont4', 't', oils_i18n_gettext('1539', 'Technical reports', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1540, 'cont4', 'u', oils_i18n_gettext('1540', 'Standards/specifications', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1541, 'cont4', 'v', oils_i18n_gettext('1541', 'Legal cases and case notes', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1542, 'cont4', 'w', oils_i18n_gettext('1542', 'Law reports and digests', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1543, 'cont4', 'x', oils_i18n_gettext('1543', 'Other reports', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1544, 'cont4', 'y', oils_i18n_gettext('1544', 'Yearbooks', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1545, 'cont4', 'z', oils_i18n_gettext('1545', 'Treaties', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1546, 'cont4', '2', oils_i18n_gettext('1546', 'Offprints', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1547, 'cont4', '5', oils_i18n_gettext('1547', 'Calendars', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1548, 'cont4', '6', oils_i18n_gettext('1548', 'Comics/graphic novels', 'ccvm', 'value'), FALSE);
+
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1549, 'ltxt1', ' ', oils_i18n_gettext('1549', 'Item is a music sound recording', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1550, 'ltxt1', 'a', oils_i18n_gettext('1550', 'Autobiography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1551, 'ltxt1', 'b', oils_i18n_gettext('1551', 'Biography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1552, 'ltxt1', 'c', oils_i18n_gettext('1552', 'Conference proceedings', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1553, 'ltxt1', 'd', oils_i18n_gettext('1553', 'Drama', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1554, 'ltxt1', 'e', oils_i18n_gettext('1554', 'Essays', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1555, 'ltxt1', 'f', oils_i18n_gettext('1555', 'Fiction', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1556, 'ltxt1', 'g', oils_i18n_gettext('1556', 'Reporting', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1557, 'ltxt1', 'h', oils_i18n_gettext('1557', 'History', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1558, 'ltxt1', 'i', oils_i18n_gettext('1558', 'Instruction', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1559, 'ltxt1', 'j', oils_i18n_gettext('1559', 'Language instruction', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1560, 'ltxt1', 'k', oils_i18n_gettext('1560', 'Comedy', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1561, 'ltxt1', 'l', oils_i18n_gettext('1561', 'Lectures, speeches', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1562, 'ltxt1', 'm', oils_i18n_gettext('1562', 'Memoirs', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1563, 'ltxt1', 'n', oils_i18n_gettext('1563', 'Not applicable', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1564, 'ltxt1', 'o', oils_i18n_gettext('1564', 'Folktales', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1565, 'ltxt1', 'p', oils_i18n_gettext('1565', 'Poetry', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1566, 'ltxt1', 'r', oils_i18n_gettext('1566', 'Rehearsals', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1567, 'ltxt1', 's', oils_i18n_gettext('1567', 'Sounds', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1568, 'ltxt1', 't', oils_i18n_gettext('1568', 'Interviews', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1569, 'ltxt1', 'z', oils_i18n_gettext('1569', 'Other', 'ccvm', 'value'), FALSE);
+
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1570, 'ltxt2', 'a', oils_i18n_gettext('1570', 'Autobiography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1571, 'ltxt2', 'b', oils_i18n_gettext('1571', 'Biography', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1572, 'ltxt2', 'c', oils_i18n_gettext('1572', 'Conference proceedings', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1573, 'ltxt2', 'd', oils_i18n_gettext('1573', 'Drama', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1574, 'ltxt2', 'e', oils_i18n_gettext('1574', 'Essays', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1575, 'ltxt2', 'f', oils_i18n_gettext('1575', 'Fiction', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1576, 'ltxt2', 'g', oils_i18n_gettext('1576', 'Reporting', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1577, 'ltxt2', 'h', oils_i18n_gettext('1577', 'History', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1578, 'ltxt2', 'i', oils_i18n_gettext('1578', 'Instruction', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1579, 'ltxt2', 'j', oils_i18n_gettext('1579', 'Language instruction', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1580, 'ltxt2', 'k', oils_i18n_gettext('1580', 'Comedy', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1581, 'ltxt2', 'l', oils_i18n_gettext('1581', 'Lectures, speeches', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1582, 'ltxt2', 'm', oils_i18n_gettext('1582', 'Memoirs', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1583, 'ltxt2', 'n', oils_i18n_gettext('1583', 'Not applicable', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1584, 'ltxt2', 'o', oils_i18n_gettext('1584', 'Folktales', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1585, 'ltxt2', 'p', oils_i18n_gettext('1585', 'Poetry', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1586, 'ltxt2', 'r', oils_i18n_gettext('1586', 'Rehearsals', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1587, 'ltxt2', 's', oils_i18n_gettext('1587', 'Sounds', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1588, 'ltxt2', 't', oils_i18n_gettext('1588', 'Interviews', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1589, 'ltxt2', 'z', oils_i18n_gettext('1589', 'Other', 'ccvm', 'value'), FALSE);
+
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1590, 'relf1', ' ', oils_i18n_gettext('1590', 'No relief shown', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1591, 'relf1', 'a', oils_i18n_gettext('1591', 'Contours', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1592, 'relf1', 'b', oils_i18n_gettext('1592', 'Shading', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1593, 'relf1', 'c', oils_i18n_gettext('1593', 'Gradient and bathymetric tints', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1594, 'relf1', 'd', oils_i18n_gettext('1594', 'Hachures', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1595, 'relf1', 'e', oils_i18n_gettext('1595', 'Bathymetry, soundings', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1596, 'relf1', 'f', oils_i18n_gettext('1596', 'Form lines', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1597, 'relf1', 'g', oils_i18n_gettext('1597', 'Spot heights', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1598, 'relf1', 'i', oils_i18n_gettext('1598', 'Pictorially', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1599, 'relf1', 'j', oils_i18n_gettext('1599', 'Land forms', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1600, 'relf1', 'k', oils_i18n_gettext('1600', 'Bathymetry, isolines', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1601, 'relf1', 'm', oils_i18n_gettext('1601', 'Rock drawings', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1602, 'relf1', 'z', oils_i18n_gettext('1602', 'Other', 'ccvm', 'value'), FALSE);
+
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1603, 'relf2', 'a', oils_i18n_gettext('1603', 'Contours', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1604, 'relf2', 'b', oils_i18n_gettext('1604', 'Shading', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1605, 'relf2', 'c', oils_i18n_gettext('1605', 'Gradient and bathymetric tints', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1606, 'relf2', 'd', oils_i18n_gettext('1606', 'Hachures', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1607, 'relf2', 'e', oils_i18n_gettext('1607', 'Bathymetry, soundings', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1608, 'relf2', 'f', oils_i18n_gettext('1608', 'Form lines', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1609, 'relf2', 'g', oils_i18n_gettext('1609', 'Spot heights', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1610, 'relf2', 'i', oils_i18n_gettext('1610', 'Pictorially', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1611, 'relf2', 'j', oils_i18n_gettext('1611', 'Land forms', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1612, 'relf2', 'k', oils_i18n_gettext('1612', 'Bathymetry, isolines', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1613, 'relf2', 'm', oils_i18n_gettext('1613', 'Rock drawings', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1614, 'relf2', 'z', oils_i18n_gettext('1614', 'Other', 'ccvm', 'value'), FALSE);
+
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1615, 'relf3', 'a', oils_i18n_gettext('1615', 'Contours', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1616, 'relf3', 'b', oils_i18n_gettext('1616', 'Shading', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1617, 'relf3', 'c', oils_i18n_gettext('1617', 'Gradient and bathymetric tints', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1618, 'relf3', 'd', oils_i18n_gettext('1618', 'Hachures', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1619, 'relf3', 'e', oils_i18n_gettext('1619', 'Bathymetry, soundings', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1620, 'relf3', 'f', oils_i18n_gettext('1620', 'Form lines', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1621, 'relf3', 'g', oils_i18n_gettext('1621', 'Spot heights', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1622, 'relf3', 'i', oils_i18n_gettext('1622', 'Pictorially', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1623, 'relf3', 'j', oils_i18n_gettext('1623', 'Land forms', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1624, 'relf3', 'k', oils_i18n_gettext('1624', 'Bathymetry, isolines', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1625, 'relf3', 'm', oils_i18n_gettext('1625', 'Rock drawings', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1626, 'relf3', 'z', oils_i18n_gettext('1626', 'Other', 'ccvm', 'value'), FALSE);
+
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1627, 'relf4', 'a', oils_i18n_gettext('1627', 'Contours', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1628, 'relf4', 'b', oils_i18n_gettext('1628', 'Shading', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1629, 'relf4', 'c', oils_i18n_gettext('1629', 'Gradient and bathymetric tints', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1630, 'relf4', 'd', oils_i18n_gettext('1630', 'Hachures', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1631, 'relf4', 'e', oils_i18n_gettext('1631', 'Bathymetry, soundings', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1632, 'relf4', 'f', oils_i18n_gettext('1632', 'Form lines', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1633, 'relf4', 'g', oils_i18n_gettext('1633', 'Spot heights', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1634, 'relf4', 'i', oils_i18n_gettext('1634', 'Pictorially', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1635, 'relf4', 'j', oils_i18n_gettext('1635', 'Land forms', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1636, 'relf4', 'k', oils_i18n_gettext('1636', 'Bathymetry, isolines', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1637, 'relf4', 'm', oils_i18n_gettext('1637', 'Rock drawings', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1638, 'relf4', 'z', oils_i18n_gettext('1638', 'Other', 'ccvm', 'value'), FALSE);
+
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1639, 'spfm1', ' ', oils_i18n_gettext('1639', 'No specified special format characteristics', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1640, 'spfm1', 'e', oils_i18n_gettext('1640', 'Manuscript', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1641, 'spfm1', 'j', oils_i18n_gettext('1641', 'Picture card, post card', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1642, 'spfm1', 'k', oils_i18n_gettext('1642', 'Calendar', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1643, 'spfm1', 'l', oils_i18n_gettext('1643', 'Puzzle', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1644, 'spfm1', 'n', oils_i18n_gettext('1644', 'Game', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1645, 'spfm1', 'o', oils_i18n_gettext('1645', 'Wall map', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1646, 'spfm1', 'p', oils_i18n_gettext('1646', 'Playing cards', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1647, 'spfm1', 'r', oils_i18n_gettext('1647', 'Loose-leaf', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1648, 'spfm1', 'z', oils_i18n_gettext('1648', 'Other', 'ccvm', 'value'), FALSE);
+
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1649, 'spfm2', 'e', oils_i18n_gettext('1649', 'Manuscript', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1650, 'spfm2', 'j', oils_i18n_gettext('1650', 'Picture card, post card', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1651, 'spfm2', 'k', oils_i18n_gettext('1651', 'Calendar', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1652, 'spfm2', 'l', oils_i18n_gettext('1652', 'Puzzle', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1653, 'spfm2', 'n', oils_i18n_gettext('1653', 'Game', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1654, 'spfm2', 'o', oils_i18n_gettext('1654', 'Wall map', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1655, 'spfm2', 'p', oils_i18n_gettext('1655', 'Playing cards', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1656, 'spfm2', 'r', oils_i18n_gettext('1656', 'Loose-leaf', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1657, 'spfm2', 'z', oils_i18n_gettext('1657', 'Other', 'ccvm', 'value'), FALSE);
+
+-- Illustrations
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1658, 'ills', ' ', oils_i18n_gettext('1658', 'No Illustrations', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1659, 'ills', 'a', oils_i18n_gettext('1659', 'Illustrations', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1660, 'ills', 'b', oils_i18n_gettext('1660', 'Maps', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1661, 'ills', 'c', oils_i18n_gettext('1661', 'Portraits', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1662, 'ills', 'd', oils_i18n_gettext('1662', 'Charts', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1663, 'ills', 'e', oils_i18n_gettext('1663', 'Plans', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1664, 'ills', 'f', oils_i18n_gettext('1664', 'Plates', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1665, 'ills', 'g', oils_i18n_gettext('1665', 'Music', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1666, 'ills', 'h', oils_i18n_gettext('1666', 'Facsimiles', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1667, 'ills', 'i', oils_i18n_gettext('1667', 'Coats of arms', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1668, 'ills', 'j', oils_i18n_gettext('1668', 'Genealogical tables', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1669, 'ills', 'k', oils_i18n_gettext('1669', 'Forms', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1670, 'ills', 'l', oils_i18n_gettext('1670', 'Samples', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1671, 'ills', 'm', oils_i18n_gettext('1671', 'Phonodisc, phonowire, etc.', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1672, 'ills', 'o', oils_i18n_gettext('1672', 'Photographs', 'ccvm', 'value'));
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES (1673, 'ills', 'p', oils_i18n_gettext('1673', 'Illuminations', 'ccvm', 'value'));
+	
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1674, 'ills1', ' ', oils_i18n_gettext('1674', 'No Illustrations', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1675, 'ills1', 'a', oils_i18n_gettext('1675', 'Illustrations', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1676, 'ills1', 'b', oils_i18n_gettext('1676', 'Maps', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1677, 'ills1', 'c', oils_i18n_gettext('1677', 'Portraits', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1678, 'ills1', 'd', oils_i18n_gettext('1678', 'Charts', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1679, 'ills1', 'e', oils_i18n_gettext('1679', 'Plans', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1680, 'ills1', 'f', oils_i18n_gettext('1680', 'Plates', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1681, 'ills1', 'g', oils_i18n_gettext('1681', 'Music', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1682, 'ills1', 'h', oils_i18n_gettext('1682', 'Facsimiles', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1683, 'ills1', 'i', oils_i18n_gettext('1683', 'Coats of arms', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1684, 'ills1', 'j', oils_i18n_gettext('1684', 'Genealogical tables', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1685, 'ills1', 'k', oils_i18n_gettext('1685', 'Forms', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1686, 'ills1', 'l', oils_i18n_gettext('1686', 'Samples', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1687, 'ills1', 'm', oils_i18n_gettext('1687', 'Phonodisc, phonowire, etc.', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1688, 'ills1', 'o', oils_i18n_gettext('1688', 'Photographs', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1689, 'ills1', 'p', oils_i18n_gettext('1689', 'Illuminations', 'ccvm', 'value'), FALSE);
+	
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1690, 'ills2', 'a', oils_i18n_gettext('1690', 'Illustrations', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1691, 'ills2', 'b', oils_i18n_gettext('1691', 'Maps', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1692, 'ills2', 'c', oils_i18n_gettext('1692', 'Portraits', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1693, 'ills2', 'd', oils_i18n_gettext('1693', 'Charts', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1694, 'ills2', 'e', oils_i18n_gettext('1694', 'Plans', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1695, 'ills2', 'f', oils_i18n_gettext('1695', 'Plates', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1696, 'ills2', 'g', oils_i18n_gettext('1696', 'Music', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1697, 'ills2', 'h', oils_i18n_gettext('1697', 'Facsimiles', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1698, 'ills2', 'i', oils_i18n_gettext('1698', 'Coats of arms', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1699, 'ills2', 'j', oils_i18n_gettext('1699', 'Genealogical tables', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1700, 'ills2', 'k', oils_i18n_gettext('1700', 'Forms', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1701, 'ills2', 'l', oils_i18n_gettext('1701', 'Samples', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1702, 'ills2', 'm', oils_i18n_gettext('1702', 'Phonodisc, phonowire, etc.', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1703, 'ills2', 'o', oils_i18n_gettext('1703', 'Photographs', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1704, 'ills2', 'p', oils_i18n_gettext('1704', 'Illuminations', 'ccvm', 'value'), FALSE);
+	
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1705, 'ills3', 'a', oils_i18n_gettext('1705', 'Illustrations', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1706, 'ills3', 'b', oils_i18n_gettext('1706', 'Maps', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1707, 'ills3', 'c', oils_i18n_gettext('1707', 'Portraits', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1708, 'ills3', 'd', oils_i18n_gettext('1708', 'Charts', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1709, 'ills3', 'e', oils_i18n_gettext('1709', 'Plans', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1710, 'ills3', 'f', oils_i18n_gettext('1710', 'Plates', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1711, 'ills3', 'g', oils_i18n_gettext('1711', 'Music', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1712, 'ills3', 'h', oils_i18n_gettext('1712', 'Facsimiles', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1713, 'ills3', 'i', oils_i18n_gettext('1713', 'Coats of arms', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1714, 'ills3', 'j', oils_i18n_gettext('1714', 'Genealogical tables', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1715, 'ills3', 'k', oils_i18n_gettext('1715', 'Forms', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1716, 'ills3', 'l', oils_i18n_gettext('1716', 'Samples', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1717, 'ills3', 'm', oils_i18n_gettext('1717', 'Phonodisc, phonowire, etc.', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1718, 'ills3', 'o', oils_i18n_gettext('1718', 'Photographs', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1719, 'ills3', 'p', oils_i18n_gettext('1719', 'Illuminations', 'ccvm', 'value'), FALSE);
+	
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1720, 'ills4', 'a', oils_i18n_gettext('1720', 'Illustrations', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1721, 'ills4', 'b', oils_i18n_gettext('1721', 'Maps', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1722, 'ills4', 'c', oils_i18n_gettext('1722', 'Portraits', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1723, 'ills4', 'd', oils_i18n_gettext('1723', 'Charts', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1724, 'ills4', 'e', oils_i18n_gettext('1724', 'Plans', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1725, 'ills4', 'f', oils_i18n_gettext('1725', 'Plates', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1726, 'ills4', 'g', oils_i18n_gettext('1726', 'Music', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1727, 'ills4', 'h', oils_i18n_gettext('1727', 'Facsimiles', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1728, 'ills4', 'i', oils_i18n_gettext('1728', 'Coats of arms', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1729, 'ills4', 'j', oils_i18n_gettext('1729', 'Genealogical tables', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1730, 'ills4', 'k', oils_i18n_gettext('1730', 'Forms', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1731, 'ills4', 'l', oils_i18n_gettext('1731', 'Samples', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1732, 'ills4', 'm', oils_i18n_gettext('1732', 'Phonodisc, phonowire, etc.', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1733, 'ills4', 'o', oils_i18n_gettext('1733', 'Photographs', 'ccvm', 'value'), FALSE);
+INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1734, 'ills4', 'p', oils_i18n_gettext('1734', 'Illuminations', 'ccvm', 'value'), FALSE);
 
 
 -- carve out a slot of 10k IDs for stock CCVMs
@@ -7037,6 +8845,11 @@ INSERT INTO config.composite_attr_entry_definition
 INSERT INTO config.composite_attr_entry_definition 
     (coded_value, definition) VALUES (608, '{"_attr":"vr_format","_val":"s"}');
 
+-- electronic
+INSERT INTO config.composite_attr_entry_definition
+    (coded_value, definition) VALUES
+(712, '[{"_attr":"item_form","_val":"s"},{"_attr":"item_form","_val":"o"}]');
+
 -- use the definitions from the icon_format as the basis for the MR hold format definitions
 DO $$
     DECLARE format TEXT;
@@ -7091,6 +8904,128 @@ UPDATE config.composite_attr_entry_definition
     WHERE coded_value = 632;
 
 
+-- Composite coded value maps for multi-position single-character fields that allow the "primary" fixed field to be used in advanced searches or other composite definitions without a ton of ORs and extra work.
+-- Space is used as a filler for any position other than the first, so for something to actually have "No accompanying matter," for example, specifically accm1 must = ' '.
+-- Any other value has the same meaning in any position.
+
+-- Accompanying Matter
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (1735, '{"_attr":"accm1","_val":" "}');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (713, '[{"_attr":"accm6","_val":"a"},{"_attr":"accm5","_val":"a"},{"_attr":"accm4","_val":"a"},{"_attr":"accm3","_val":"a"},{"_attr":"accm2","_val":"a"},{"_attr":"accm1","_val":"a"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (714, '[{"_attr":"accm6","_val":"b"},{"_attr":"accm5","_val":"b"},{"_attr":"accm4","_val":"b"},{"_attr":"accm3","_val":"b"},{"_attr":"accm2","_val":"b"},{"_attr":"accm1","_val":"b"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (715, '[{"_attr":"accm6","_val":"c"},{"_attr":"accm5","_val":"c"},{"_attr":"accm4","_val":"c"},{"_attr":"accm3","_val":"c"},{"_attr":"accm2","_val":"c"},{"_attr":"accm1","_val":"c"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (716, '[{"_attr":"accm6","_val":"d"},{"_attr":"accm5","_val":"d"},{"_attr":"accm4","_val":"d"},{"_attr":"accm3","_val":"d"},{"_attr":"accm2","_val":"d"},{"_attr":"accm1","_val":"d"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (717, '[{"_attr":"accm6","_val":"e"},{"_attr":"accm5","_val":"e"},{"_attr":"accm4","_val":"e"},{"_attr":"accm3","_val":"e"},{"_attr":"accm2","_val":"e"},{"_attr":"accm1","_val":"e"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (718, '[{"_attr":"accm6","_val":"f"},{"_attr":"accm5","_val":"f"},{"_attr":"accm4","_val":"f"},{"_attr":"accm3","_val":"f"},{"_attr":"accm2","_val":"f"},{"_attr":"accm1","_val":"f"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (719, '[{"_attr":"accm6","_val":"g"},{"_attr":"accm5","_val":"g"},{"_attr":"accm4","_val":"g"},{"_attr":"accm3","_val":"g"},{"_attr":"accm2","_val":"g"},{"_attr":"accm1","_val":"g"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (720, '[{"_attr":"accm6","_val":"h"},{"_attr":"accm5","_val":"h"},{"_attr":"accm4","_val":"h"},{"_attr":"accm3","_val":"h"},{"_attr":"accm2","_val":"h"},{"_attr":"accm1","_val":"h"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (721, '[{"_attr":"accm6","_val":"i"},{"_attr":"accm5","_val":"i"},{"_attr":"accm4","_val":"i"},{"_attr":"accm3","_val":"i"},{"_attr":"accm2","_val":"i"},{"_attr":"accm1","_val":"i"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (722, '[{"_attr":"accm6","_val":"k"},{"_attr":"accm5","_val":"k"},{"_attr":"accm4","_val":"k"},{"_attr":"accm3","_val":"k"},{"_attr":"accm2","_val":"k"},{"_attr":"accm1","_val":"k"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (723, '[{"_attr":"accm6","_val":"r"},{"_attr":"accm5","_val":"r"},{"_attr":"accm4","_val":"r"},{"_attr":"accm3","_val":"r"},{"_attr":"accm2","_val":"r"},{"_attr":"accm1","_val":"r"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (724, '[{"_attr":"accm6","_val":"s"},{"_attr":"accm5","_val":"s"},{"_attr":"accm4","_val":"s"},{"_attr":"accm3","_val":"s"},{"_attr":"accm2","_val":"s"},{"_attr":"accm1","_val":"s"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (725, '[{"_attr":"accm6","_val":"z"},{"_attr":"accm5","_val":"z"},{"_attr":"accm4","_val":"z"},{"_attr":"accm3","_val":"z"},{"_attr":"accm2","_val":"z"},{"_attr":"accm1","_val":"z"}]');
+
+-- Nature of Contents
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (835, '{"_attr":"cont1","_val":" "}');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (836, '[{"_attr":"cont4","_val":"a"},{"_attr":"cont3","_val":"a"},{"_attr":"cont2","_val":"a"},{"_attr":"cont1","_val":"a"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (837, '[{"_attr":"cont4","_val":"b"},{"_attr":"cont3","_val":"b"},{"_attr":"cont2","_val":"b"},{"_attr":"cont1","_val":"b"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (838, '[{"_attr":"cont4","_val":"c"},{"_attr":"cont3","_val":"c"},{"_attr":"cont2","_val":"c"},{"_attr":"cont1","_val":"c"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (839, '[{"_attr":"cont4","_val":"d"},{"_attr":"cont3","_val":"d"},{"_attr":"cont2","_val":"d"},{"_attr":"cont1","_val":"d"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (840, '[{"_attr":"cont4","_val":"e"},{"_attr":"cont3","_val":"e"},{"_attr":"cont2","_val":"e"},{"_attr":"cont1","_val":"e"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (841, '[{"_attr":"cont4","_val":"f"},{"_attr":"cont3","_val":"f"},{"_attr":"cont2","_val":"f"},{"_attr":"cont1","_val":"f"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (842, '[{"_attr":"cont4","_val":"g"},{"_attr":"cont3","_val":"g"},{"_attr":"cont2","_val":"g"},{"_attr":"cont1","_val":"g"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (843, '[{"_attr":"cont4","_val":"h"},{"_attr":"cont3","_val":"h"},{"_attr":"cont2","_val":"h"},{"_attr":"cont1","_val":"h"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (844, '[{"_attr":"cont4","_val":"i"},{"_attr":"cont3","_val":"i"},{"_attr":"cont2","_val":"i"},{"_attr":"cont1","_val":"i"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (845, '[{"_attr":"cont4","_val":"j"},{"_attr":"cont3","_val":"j"},{"_attr":"cont2","_val":"j"},{"_attr":"cont1","_val":"j"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (846, '[{"_attr":"cont4","_val":"k"},{"_attr":"cont3","_val":"k"},{"_attr":"cont2","_val":"k"},{"_attr":"cont1","_val":"k"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (847, '[{"_attr":"cont4","_val":"l"},{"_attr":"cont3","_val":"l"},{"_attr":"cont2","_val":"l"},{"_attr":"cont1","_val":"l"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (848, '[{"_attr":"cont4","_val":"m"},{"_attr":"cont3","_val":"m"},{"_attr":"cont2","_val":"m"},{"_attr":"cont1","_val":"m"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (849, '[{"_attr":"cont4","_val":"n"},{"_attr":"cont3","_val":"n"},{"_attr":"cont2","_val":"n"},{"_attr":"cont1","_val":"n"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (850, '[{"_attr":"cont4","_val":"o"},{"_attr":"cont3","_val":"o"},{"_attr":"cont2","_val":"o"},{"_attr":"cont1","_val":"o"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (851, '[{"_attr":"cont4","_val":"p"},{"_attr":"cont3","_val":"p"},{"_attr":"cont2","_val":"p"},{"_attr":"cont1","_val":"p"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (852, '[{"_attr":"cont4","_val":"q"},{"_attr":"cont3","_val":"q"},{"_attr":"cont2","_val":"q"},{"_attr":"cont1","_val":"q"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (853, '[{"_attr":"cont4","_val":"r"},{"_attr":"cont3","_val":"r"},{"_attr":"cont2","_val":"r"},{"_attr":"cont1","_val":"r"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (854, '[{"_attr":"cont4","_val":"s"},{"_attr":"cont3","_val":"s"},{"_attr":"cont2","_val":"s"},{"_attr":"cont1","_val":"s"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (855, '[{"_attr":"cont4","_val":"t"},{"_attr":"cont3","_val":"t"},{"_attr":"cont2","_val":"t"},{"_attr":"cont1","_val":"t"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (856, '[{"_attr":"cont4","_val":"u"},{"_attr":"cont3","_val":"u"},{"_attr":"cont2","_val":"u"},{"_attr":"cont1","_val":"u"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (857, '[{"_attr":"cont4","_val":"v"},{"_attr":"cont3","_val":"v"},{"_attr":"cont2","_val":"v"},{"_attr":"cont1","_val":"v"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (858, '[{"_attr":"cont4","_val":"w"},{"_attr":"cont3","_val":"w"},{"_attr":"cont2","_val":"w"},{"_attr":"cont1","_val":"w"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (859, '[{"_attr":"cont4","_val":"x"},{"_attr":"cont3","_val":"x"},{"_attr":"cont2","_val":"x"},{"_attr":"cont1","_val":"x"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (860, '[{"_attr":"cont4","_val":"y"},{"_attr":"cont3","_val":"y"},{"_attr":"cont2","_val":"y"},{"_attr":"cont1","_val":"y"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (861, '[{"_attr":"cont4","_val":"z"},{"_attr":"cont3","_val":"z"},{"_attr":"cont2","_val":"z"},{"_attr":"cont1","_val":"z"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (862, '[{"_attr":"cont4","_val":"2"},{"_attr":"cont3","_val":"2"},{"_attr":"cont2","_val":"2"},{"_attr":"cont1","_val":"2"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (863, '[{"_attr":"cont4","_val":"5"},{"_attr":"cont3","_val":"5"},{"_attr":"cont2","_val":"5"},{"_attr":"cont1","_val":"5"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (864, '[{"_attr":"cont4","_val":"6"},{"_attr":"cont3","_val":"6"},{"_attr":"cont2","_val":"6"},{"_attr":"cont1","_val":"6"}]');
+
+-- Literary Text for Sound Recordings
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (881, '{"_attr":"ltxt1","_val":" "}');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (882, '[{"_attr":"ltxt2","_val":"a"},{"_attr":"ltxt1","_val":"a"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (883, '[{"_attr":"ltxt2","_val":"b"},{"_attr":"ltxt1","_val":"b"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (884, '[{"_attr":"ltxt2","_val":"c"},{"_attr":"ltxt1","_val":"c"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (885, '[{"_attr":"ltxt2","_val":"d"},{"_attr":"ltxt1","_val":"d"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (886, '[{"_attr":"ltxt2","_val":"e"},{"_attr":"ltxt1","_val":"e"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (887, '[{"_attr":"ltxt2","_val":"f"},{"_attr":"ltxt1","_val":"f"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (888, '[{"_attr":"ltxt2","_val":"g"},{"_attr":"ltxt1","_val":"g"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (889, '[{"_attr":"ltxt2","_val":"h"},{"_attr":"ltxt1","_val":"h"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (890, '[{"_attr":"ltxt2","_val":"i"},{"_attr":"ltxt1","_val":"i"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (891, '[{"_attr":"ltxt2","_val":"j"},{"_attr":"ltxt1","_val":"j"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (892, '[{"_attr":"ltxt2","_val":"k"},{"_attr":"ltxt1","_val":"k"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (893, '[{"_attr":"ltxt2","_val":"l"},{"_attr":"ltxt1","_val":"l"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (894, '[{"_attr":"ltxt2","_val":"m"},{"_attr":"ltxt1","_val":"m"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (895, '[{"_attr":"ltxt2","_val":"n"},{"_attr":"ltxt1","_val":"n"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (896, '[{"_attr":"ltxt2","_val":"o"},{"_attr":"ltxt1","_val":"o"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (897, '[{"_attr":"ltxt2","_val":"p"},{"_attr":"ltxt1","_val":"p"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (898, '[{"_attr":"ltxt2","_val":"r"},{"_attr":"ltxt1","_val":"r"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (899, '[{"_attr":"ltxt2","_val":"s"},{"_attr":"ltxt1","_val":"s"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (900, '[{"_attr":"ltxt2","_val":"t"},{"_attr":"ltxt1","_val":"t"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (901, '[{"_attr":"ltxt2","_val":"z"},{"_attr":"ltxt1","_val":"z"}]');
+
+-- Relief
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (965, '{"_attr":"relf1","_val":" "}');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (966, '[{"_attr":"relf4","_val":"a"},{"_attr":"relf3","_val":"a"},{"_attr":"relf2","_val":"a"},{"_attr":"relf1","_val":"a"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (967, '[{"_attr":"relf4","_val":"b"},{"_attr":"relf3","_val":"b"},{"_attr":"relf2","_val":"b"},{"_attr":"relf1","_val":"b"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (968, '[{"_attr":"relf4","_val":"c"},{"_attr":"relf3","_val":"c"},{"_attr":"relf2","_val":"c"},{"_attr":"relf1","_val":"c"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (969, '[{"_attr":"relf4","_val":"d"},{"_attr":"relf3","_val":"d"},{"_attr":"relf2","_val":"d"},{"_attr":"relf1","_val":"d"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (970, '[{"_attr":"relf4","_val":"e"},{"_attr":"relf3","_val":"e"},{"_attr":"relf2","_val":"e"},{"_attr":"relf1","_val":"e"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (971, '[{"_attr":"relf4","_val":"f"},{"_attr":"relf3","_val":"f"},{"_attr":"relf2","_val":"f"},{"_attr":"relf1","_val":"f"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (972, '[{"_attr":"relf4","_val":"g"},{"_attr":"relf3","_val":"g"},{"_attr":"relf2","_val":"g"},{"_attr":"relf1","_val":"g"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (973, '[{"_attr":"relf4","_val":"i"},{"_attr":"relf3","_val":"i"},{"_attr":"relf2","_val":"i"},{"_attr":"relf1","_val":"i"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (974, '[{"_attr":"relf4","_val":"j"},{"_attr":"relf3","_val":"j"},{"_attr":"relf2","_val":"j"},{"_attr":"relf1","_val":"j"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (975, '[{"_attr":"relf4","_val":"k"},{"_attr":"relf3","_val":"k"},{"_attr":"relf2","_val":"k"},{"_attr":"relf1","_val":"k"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (976, '[{"_attr":"relf4","_val":"m"},{"_attr":"relf3","_val":"m"},{"_attr":"relf2","_val":"m"},{"_attr":"relf1","_val":"m"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (977, '[{"_attr":"relf4","_val":"z"},{"_attr":"relf3","_val":"z"},{"_attr":"relf2","_val":"z"},{"_attr":"relf1","_val":"z"}]');
+
+-- Special Format Characteristics
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (978, '{"_attr":"spfm1","_val":" "}');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (979, '[{"_attr":"spfm2","_val":"e"},{"_attr":"spfm1","_val":"e"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (980, '[{"_attr":"spfm2","_val":"j"},{"_attr":"spfm1","_val":"j"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (981, '[{"_attr":"spfm2","_val":"k"},{"_attr":"spfm1","_val":"k"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (982, '[{"_attr":"spfm2","_val":"l"},{"_attr":"spfm1","_val":"l"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (983, '[{"_attr":"spfm2","_val":"n"},{"_attr":"spfm1","_val":"n"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (984, '[{"_attr":"spfm2","_val":"o"},{"_attr":"spfm1","_val":"o"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (985, '[{"_attr":"spfm2","_val":"p"},{"_attr":"spfm1","_val":"p"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (986, '[{"_attr":"spfm2","_val":"r"},{"_attr":"spfm1","_val":"r"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (987, '[{"_attr":"spfm2","_val":"z"},{"_attr":"spfm1","_val":"z"}]');
+
+-- Illustrations
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (1658, '{"_attr":"ills1","_val":" "}');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (1659, '[{"_attr":"ills4","_val":"a"},{"_attr":"ills3","_val":"a"},{"_attr":"ills2","_val":"a"},{"_attr":"ills1","_val":"a"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (1660, '[{"_attr":"ills4","_val":"b"},{"_attr":"ills3","_val":"b"},{"_attr":"ills2","_val":"b"},{"_attr":"ills1","_val":"b"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (1661, '[{"_attr":"ills4","_val":"c"},{"_attr":"ills3","_val":"c"},{"_attr":"ills2","_val":"c"},{"_attr":"ills1","_val":"c"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (1662, '[{"_attr":"ills4","_val":"d"},{"_attr":"ills3","_val":"d"},{"_attr":"ills2","_val":"d"},{"_attr":"ills1","_val":"d"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (1663, '[{"_attr":"ills4","_val":"e"},{"_attr":"ills3","_val":"e"},{"_attr":"ills2","_val":"e"},{"_attr":"ills1","_val":"e"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (1664, '[{"_attr":"ills4","_val":"f"},{"_attr":"ills3","_val":"f"},{"_attr":"ills2","_val":"f"},{"_attr":"ills1","_val":"f"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (1665, '[{"_attr":"ills4","_val":"g"},{"_attr":"ills3","_val":"g"},{"_attr":"ills2","_val":"g"},{"_attr":"ills1","_val":"g"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (1666, '[{"_attr":"ills4","_val":"h"},{"_attr":"ills3","_val":"h"},{"_attr":"ills2","_val":"h"},{"_attr":"ills1","_val":"h"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (1667, '[{"_attr":"ills4","_val":"i"},{"_attr":"ills3","_val":"i"},{"_attr":"ills2","_val":"i"},{"_attr":"ills1","_val":"i"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (1668, '[{"_attr":"ills4","_val":"j"},{"_attr":"ills3","_val":"j"},{"_attr":"ills2","_val":"j"},{"_attr":"ills1","_val":"j"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (1669, '[{"_attr":"ills4","_val":"k"},{"_attr":"ills3","_val":"k"},{"_attr":"ills2","_val":"k"},{"_attr":"ills1","_val":"k"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (1670, '[{"_attr":"ills4","_val":"l"},{"_attr":"ills3","_val":"l"},{"_attr":"ills2","_val":"l"},{"_attr":"ills1","_val":"l"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (1671, '[{"_attr":"ills4","_val":"m"},{"_attr":"ills3","_val":"m"},{"_attr":"ills2","_val":"m"},{"_attr":"ills1","_val":"m"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (1672, '[{"_attr":"ills4","_val":"o"},{"_attr":"ills3","_val":"o"},{"_attr":"ills2","_val":"o"},{"_attr":"ills1","_val":"o"}]');
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (1673, '[{"_attr":"ills4","_val":"p"},{"_attr":"ills3","_val":"p"},{"_attr":"ills2","_val":"p"},{"_attr":"ills1","_val":"p"}]');
+
+
+
 -- Trigger Event Definitions -------------------------------------------------
 
 -- Sample Overdue Notice --
@@ -7102,7 +9037,9 @@ $$
 [%- user = target.0.usr -%]
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Overdue Notification
+Auto-Submitted: auto-generated
 
 Dear [% user.family_name %], [% user.first_given_name %]
 Our records indicate the following items are overdue.
@@ -7146,7 +9083,9 @@ $$
 [%- user = target.0.usr -%]
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Overdue Items Marked Lost
+Auto-Submitted: auto-generated
 
 Dear [% user.family_name %], [% user.first_given_name %]
 The following items are 90 days overdue and have been marked LOST.
@@ -7330,7 +9269,9 @@ $$
 [%- user = target.0.usr -%]
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Hold Available Notification
+Auto-Submitted: auto-generated
 
 Dear [% user.family_name %], [% user.first_given_name %]
 The item(s) you requested are available for pickup from the Library.
@@ -7395,7 +9336,9 @@ $$
 [%- user = target.0.usr -%]
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Hold Available Notification
+Auto-Submitted: auto-generated
 
 Dear [% user.family_name %], [% user.first_given_name %]
 You requested holds on the following item(s), which are available for
@@ -7472,7 +9415,9 @@ $$
 [%- user = target.0.usr -%]
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Long Wait Hold Notification
+Auto-Submitted: auto-generated
 
 Dear [% user.family_name %], [% user.first_given_name %]
 
@@ -7610,7 +9555,9 @@ $$
 
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Acquisition Request Notification
+Auto-Submitted: auto-generated
 
 Dear [% user.family_name %], [% user.first_given_name %]
 Our records indicate the following acquisition request has been placed on order.
@@ -7644,7 +9591,9 @@ $$
 
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Acquisition Request Notification
+Auto-Submitted: auto-generated
 
 Dear [% user.family_name %], [% user.first_given_name %]
 Our records indicate the materials for the following acquisition request have been received.
@@ -7678,7 +9627,9 @@ $$
 
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Acquisition Request Notification
+Auto-Submitted: auto-generated
 
 Dear [% user.family_name %], [% user.first_given_name %]
 Our records indicate the following acquisition request has been cancelled.
@@ -7710,7 +9661,9 @@ $$
 
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Acquisition Request Notification
+Auto-Submitted: auto-generated
 
 Dear [% user.family_name %], [% user.first_given_name %]
 Our records indicate that you have made the following acquisition request:
@@ -7742,7 +9695,9 @@ $$
 
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Acquisition Request Notification
+Auto-Submitted: auto-generated
 
 Dear [% user.family_name %], [% user.first_given_name %]
 Our records indicate the following acquisition request has been rejected for this reason: [% cancel_reason %]
@@ -7786,7 +9741,9 @@ $$
 [%- user = target.usr -%]
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || user.home_ou.email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: [% user.home_ou.name %]: library account password reset request
+Auto-Submitted: auto-generated
 
 You have received this message because you, or somebody else, requested a reset
 of your library system password. If you did not request a reset of your library
@@ -8066,7 +10023,7 @@ INSERT INTO action_trigger.hook (key,core_type,description) VALUES (
 -- in-db indexing normalizers
 INSERT INTO config.index_normalizer (name, description, func, param_count) VALUES (
 	'NACO Normalize',
-	'Apply NACO normalization rules to the extracted text.  See http://www.loc.gov/catdir/pcc/naco/normrule-2.html for details.',
+	'Apply NACO normalization rules to the extracted text.  See https://www.loc.gov/aba/pcc/naco/normrule-2.html for details.',
 	'naco_normalize',
 	0
 );
@@ -8080,7 +10037,7 @@ INSERT INTO config.index_normalizer (name, description, func, param_count) VALUE
 
 INSERT INTO config.index_normalizer (name, description, func, param_count) VALUES (
 	'NACO Normalize -- retain first comma',
-	'Apply NACO normalization rules to the extracted text, retaining the first comma.  See http://www.loc.gov/catdir/pcc/naco/normrule-2.html for details.',
+	'Apply NACO normalization rules to the extracted text, retaining the first comma.  See https://www.loc.gov/aba/pcc/naco/normrule-2.html for details.',
 	'naco_normalize_keep_comma',
 	0
 );
@@ -8183,6 +10140,34 @@ INSERT INTO config.index_normalizer (name, description, func, param_count) VALUE
 	0
 );
 
+INSERT INTO config.index_normalizer (name, description, func, param_count) VALUES (
+	'Number or NULL Normalize',
+	'Normalize the value to NULL if it is not a number',
+	'integer_or_null',
+	0
+);
+
+INSERT INTO config.index_normalizer (name, description, func, param_count) VALUES (
+	'Approximate Low Date Normalize',
+	'Normalize the value to the nearest date-ish value, rounding down',
+	'approximate_low_date',
+	0
+);
+
+INSERT INTO config.index_normalizer (name, description, func, param_count) VALUES (
+	'Approximate High Date Normalize',
+	'Normalize the value to the nearest date-ish value, rounding up',
+	'approximate_high_date',
+	0
+);
+
+INSERT INTO config.index_normalizer (name, description, func, param_count) VALUES (
+	'Trim Trailing Punctuation',
+	'Eliminate extraneous trailing commas and periods in text',
+	'metabib.trim_trailing_punctuation',
+	0
+);
+
 -- make use of the index normalizers
 
 INSERT INTO config.metabib_field_index_norm_map (field,norm)
@@ -8240,6 +10225,16 @@ INSERT INTO config.metabib_field_index_norm_map (field,norm,pos)
       WHERE i.func = 'remove_paren_substring'
             AND m.id IN (28);
 
+INSERT INTO config.metabib_field_index_norm_map (field,norm,pos)
+    SELECT  m.id,
+            i.id,
+            -1
+      FROM  config.metabib_field m,
+            config.index_normalizer i
+      WHERE i.func = 'metabib.trim_trailing_punctuation'
+            AND m.id IN (7,8,9,10);
+
+
 INSERT INTO config.record_attr_index_norm_map (attr,norm,pos)
     SELECT  m.name, i.id, 0
       FROM  config.record_attr_definition m,
@@ -8252,14 +10247,14 @@ INSERT INTO config.record_attr_index_norm_map (attr,norm,pos)
       FROM  config.record_attr_definition m,
             config.index_normalizer i
       WHERE i.func IN ('integer_or_null')
-            AND m.name IN ('date1', 'date2', 'pubdate');
+            AND m.name IN ('pubdate');
 
 INSERT INTO config.record_attr_index_norm_map (attr,norm,pos)
     SELECT  m.name, i.id, 0
       FROM  config.record_attr_definition m,
             config.index_normalizer i
       WHERE i.func IN ('approximate_low_date')
-            AND m.name IN ('date1', 'pubdate');
+            AND m.name IN ('date1');
 
 INSERT INTO config.record_attr_index_norm_map (attr,norm,pos)
     SELECT  m.name, i.id, 0
@@ -8277,7 +10272,9 @@ $$
 [%- user = target.0.usr -%]
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Courtesy Notice
+Auto-Submitted: auto-generated
 
 Dear [% user.family_name %], [% user.first_given_name %]
 As a reminder, the following items are due in 3 days.
@@ -8355,7 +10352,7 @@ $$
     <div>[% date.format %]</div>
     <div>[% lib.name %]</div>
     <div>[% lib_addr.street1 %] [% lib_addr.street2 %]</div>
-    <div>[% lib_addr.city %], [% lib_addr.state %] [% lb_addr.post_code %]</div>
+    <div>[% lib_addr.city %], [% lib_addr.state %] [% lib_addr.post_code %]</div>
     <div>[% lib.phone %]</div>
     <br/>
 
@@ -8505,8 +10502,9 @@ $$
     <style> li { padding: 8px; margin 5px; }</style>
     <div>[% date.format %]</div>
     <br/>
-
-    [% user.family_name %], [% user.first_given_name %]
+    Holds for:<br/>
+	[% user.family_name %], [% user.first_given_name %]
+	
     <ol>
     [% FOR hold IN target %]
         [%-
@@ -8514,9 +10512,9 @@ $$
             SET udata =  user_data.$idx
         -%]
         <li>
-            <div>Title: [% hold.bib_rec.bib_record.simple_record.title %]</div>
-            <div>Author: [% hold.bib_rec.bib_record.simple_record.author %]</div>
-            <div>Pickup Location: [% hold.pickup_lib.name %]</div>
+            <div>Title: [% udata.item_title %]</div>
+            <div>Author: [% udata.item_author %]</div>
+            <div>Pickup Location: [% udata.pickup_lib %]</b></div>
             <div>Status: 
                 [%- IF udata.ready -%]
                     Ready for pickup
@@ -8565,21 +10563,24 @@ $$
     <div>[% date.format %]</div>
     <br/>
 
+	Fines for:<br/>
     [% user.family_name %], [% user.first_given_name %]
     <ol>
     [% FOR xact IN user.open_billable_transactions_summary %]
-        <li>
-            <div>Details: 
-                [% IF xact.xact_type == 'circulation' %]
-                    [%- helpers.get_copy_bib_basics(xact.circulation.target_copy).title -%]
-                [% ELSE %]
-                    [%- xact.last_billing_type -%]
-                [% END %]
-            </div>
-            <div>Total Billed: [% xact.total_owed %]</div>
-            <div>Total Paid: [% xact.total_paid %]</div>
-            <div>Balance Owed : [% xact.balance_owed %]</div>
-        </li>
+        [% IF xact.balance_owed > 0 %]
+            <li>
+                <div>Details: 
+                    [% IF xact.xact_type == 'circulation' %]
+                        [%- helpers.get_copy_bib_basics(xact.circulation.target_copy).title -%]
+                    [% ELSE %]
+                        [%- xact.last_billing_type -%]
+                    [% END %]
+                </div>
+                <div>Total Billed: [% xact.total_owed %]</div>
+                <div>Total Paid: [% xact.total_paid %]</div>
+                <div>Balance Owed : [% xact.balance_owed %]</div>
+            </li>
+        [% END %]
     [% END %]
     </ol>
 </div>
@@ -9035,7 +11036,7 @@ INSERT INTO
 
 INSERT INTO action_trigger.hook (key,core_type,description,passive) VALUES (
         'circ.format.history.email',
-        'circ', 
+        'auch', 
         oils_i18n_gettext(
             'circ.format.history.email',
             'An email has been requested for a circ history.',
@@ -9046,7 +11047,7 @@ INSERT INTO action_trigger.hook (key,core_type,description,passive) VALUES (
     )
     ,(
         'circ.format.history.print',
-        'circ', 
+        'auch', 
         oils_i18n_gettext(
             'circ.format.history.print',
             'A circ history needs to be formatted for printing.',
@@ -9106,14 +11107,20 @@ $$
 [%- SET user = target.0.usr -%]
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Circulation History
+Auto-Submitted: auto-generated
 
     [% FOR circ IN target %]
             [% helpers.get_copy_bib_basics(circ.target_copy.id).title %]
             Barcode: [% circ.target_copy.barcode %]
             Checked Out: [% date.format(helpers.format_date(circ.xact_start), '%Y-%m-%d') %]
             Due Date: [% date.format(helpers.format_date(circ.due_date), '%Y-%m-%d') %]
-            Returned: [% date.format(helpers.format_date(circ.checkin_time), '%Y-%m-%d') %]
+            Returned: [%
+                date.format(
+                    helpers.format_date(circ.checkin_time), '%Y-%m-%d') 
+                    IF circ.checkin_time; 
+            %]
     [% END %]
 $$
     )
@@ -9142,7 +11149,11 @@ $$
             <div>Barcode: [% circ.target_copy.barcode %]</div>
             <div>Checked Out: [% date.format(helpers.format_date(circ.xact_start), '%Y-%m-%d') %]</div>
             <div>Due Date: [% date.format(helpers.format_date(circ.due_date), '%Y-%m-%d') %]</div>
-            <div>Returned: [% date.format(helpers.format_date(circ.checkin_time), '%Y-%m-%d') %]</div>
+            <div>Returned: [%
+                date.format(
+                    helpers.format_date(circ.checkin_time), '%Y-%m-%d') 
+                    IF circ.checkin_time; -%]
+            </div>
         </li>
     [% END %]
     </ol>
@@ -9164,7 +11175,9 @@ $$
 [%- SET user = target.0.usr -%]
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Hold Request History
+Auto-Submitted: auto-generated
 
     [% FOR hold IN target %]
             [% helpers.get_copy_bib_basics(hold.current_copy.id).title %]
@@ -9273,7 +11286,9 @@ $$
 [%- SET user = target.0.xact.usr -%]
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Payment Receipt
+Auto-Submitted: auto-generated
 
 [% date.format -%]
 [%- SET xact_mp_hash = {} -%]
@@ -9316,12 +11331,8 @@ Transaction ID: [% xact_id %]
                 Paid [% mp.amount %] via [% SWITCH mp.payment_type -%]
                     [% CASE "cash_payment" %]cash
                     [% CASE "check_payment" %]check
-                    [% CASE "credit_card_payment" %]credit card (
-                        [%- SET cc_chunks = mp.credit_card_payment.cc_number.replace(' ','').chunk(4); -%]
-                        [%- cc_chunks.slice(0, -1+cc_chunks.max).join.replace('\S','X') -%] 
-                        [% cc_chunks.last -%]
-                        exp [% mp.credit_card_payment.expire_month %]/[% mp.credit_card_payment.expire_year -%]
-                    )
+                    [% CASE "credit_card_payment" %]credit card
+                    [%- IF mp.credit_card_payment.cc_number %] ([% mp.credit_card_payment.cc_number %])[% END %]
                     [% CASE "credit_payment" %]credit
                     [% CASE "forgive_payment" %]forgiveness
                     [% CASE "goods_payment" %]goods
@@ -9387,12 +11398,8 @@ $$
                         Paid [% mp.amount %] via [% SWITCH mp.payment_type -%]
                             [% CASE "cash_payment" %]cash
                             [% CASE "check_payment" %]check
-                            [% CASE "credit_card_payment" %]credit card (
-                                [%- SET cc_chunks = mp.credit_card_payment.cc_number.replace(' ','').chunk(4); -%]
-                                [%- cc_chunks.slice(0, -1+cc_chunks.max).join.replace('\S','X') -%] 
-                                [% cc_chunks.last -%]
-                                exp [% mp.credit_card_payment.expire_month %]/[% mp.credit_card_payment.expire_year -%]
-                            )
+                            [% CASE "credit_card_payment" %]credit card
+                            [%- IF mp.credit_card_payment.cc_number %] ([% mp.credit_card_payment.cc_number %])[% END %]
                             [% CASE "credit_payment" %]credit
                             [% CASE "forgive_payment" %]forgiveness
                             [% CASE "goods_payment" %]goods
@@ -9505,10 +11512,13 @@ INSERT INTO action_trigger.event_definition (
         NULL,
         '00:00:00',
 $$
+[%- USE date -%]
 [%- SET user = target.0.owner -%]
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Bibliographic Records
+Auto-Submitted: auto-generated
 
 [% FOR cbreb IN target %][% title = '' %]
 [% FOR item IN cbreb.items;
@@ -9612,6 +11622,9 @@ INSERT INTO acq.invoice_item_type (code,name) VALUES ('SHP',oils_i18n_gettext('S
 INSERT INTO acq.invoice_item_type (code,name) VALUES ('HND',oils_i18n_gettext('HND', 'Handling Charge', 'aiit', 'name'));
 INSERT INTO acq.invoice_item_type (code,name) VALUES ('ITM',oils_i18n_gettext('ITM', 'Non-library Item', 'aiit', 'name'));
 INSERT INTO acq.invoice_item_type (code,name) VALUES ('SUB',oils_i18n_gettext('SUB', 'Serial Subscription', 'aiit', 'name'));
+INSERT INTO acq.invoice_item_type (code, blanket, name) VALUES (
+    'BLA', TRUE, oils_i18n_gettext('BLA', 'Blanket Order', 'aiit', 'name'));
+
 
 INSERT INTO acq.invoice_method (code,name) VALUES ('EDI',oils_i18n_gettext('EDI', 'EDI', 'acqim', 'name'));
 INSERT INTO acq.invoice_method (code,name) VALUES ('PPR',oils_i18n_gettext('PPR', 'Paper', 'acqit', 'name'));
@@ -9648,7 +11661,9 @@ INSERT INTO acq.cancel_reason (org_unit, keep_debits, id, label, description) VA
 (1, 't', 1246, oils_i18n_gettext(1246, 'Delayed: Pieces Delivered', 'acqcr', 'label'),
     oils_i18n_gettext(1246, 'Number of pieces actually received at the final destination.', 'acqcr', 'description')),
 (1, 't', 1283, oils_i18n_gettext(1283, 'Delayed: Backorder', 'acqcr', 'label'),
-    oils_i18n_gettext(1283, 'The quantity of goods that is on back-order.', 'acqcr', 'description'));
+    oils_i18n_gettext(1283, 'The quantity of goods that is on back-order.', 'acqcr', 'description')),
+(1, 'f',( 85+1200), oils_i18n_gettext(1285, 'Canceled: By Vendor', 'acqcr', 'label'),
+    oils_i18n_gettext(1285, 'Line item canceled by vendor', 'acqcr', 'description'));
 
 INSERT INTO config.global_flag (name, label, enabled)
     VALUES (
@@ -9871,6 +11886,30 @@ INSERT INTO config.global_flag (name, label, value, enabled) VALUES (
         'label'
     ),
     'icon_format',
+    TRUE
+);
+
+INSERT INTO config.global_flag (name, label, value, enabled) VALUES (
+    'opac.default_sort',
+    oils_i18n_gettext(
+        'opac.default_sort',
+        'OPAC Default Sort (titlesort, authorsort, pubdate, popularity, poprel, or empty)',
+        'cgf',
+        'label'
+    ),
+    '',
+    TRUE
+);
+
+INSERT INTO config.global_flag (name, label, value, enabled) VALUES (
+    'search.max_popularity_importance_multiplier',
+    oils_i18n_gettext(
+        'search.max_popularity_importance_multiplier',
+        'Maximum popularity importance multiplier for popularity-adjusted relevance searches (decimal value between 1.0 and 2.0)',
+        'cgf',
+        'label'
+    ),
+    '1.1',
     TRUE
 );
 
@@ -10295,7 +12334,9 @@ $$
 [%- user = target.0.usr -%]
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || default_sender %]
-Subject: Item Recall Notification 
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
+Subject: Item Recall Notification
+Auto-Submitted: auto-generated 
 
 Dear [% user.family_name %], [% user.first_given_name %]
 
@@ -10325,7 +12366,7 @@ INSERT INTO vandelay.import_error ( code, description ) VALUES ( 'import.item.du
 INSERT INTO vandelay.import_error ( code, description ) VALUES ( 'import.item.invalid.circ_modifier', oils_i18n_gettext('import.item.invalid.circ_modifier', 'Import failed due to invalid circulation modifier', 'vie', 'description') );
 INSERT INTO vandelay.import_error ( code, description ) VALUES ( 'import.item.invalid.location', oils_i18n_gettext('import.item.invalid.location', 'Import failed due to invalid copy location', 'vie', 'description') );
 INSERT INTO vandelay.import_error ( code, description ) VALUES ( 'import.duplicate.sysid', oils_i18n_gettext('import.duplicate.sysid', 'Import failed due to system id collision', 'vie', 'description') );
-INSERT INTO vandelay.import_error ( code, description ) VALUES ( 'import.duplicate.tcn', oils_i18n_gettext('import.duplicate.sysid', 'Import failed due to system id collision', 'vie', 'description') );
+INSERT INTO vandelay.import_error ( code, description ) VALUES ( 'import.duplicate.tcn', oils_i18n_gettext('import.duplicate.tcn', 'Import failed due to system id collision', 'vie', 'description') );
 INSERT INTO vandelay.import_error ( code, description ) VALUES ( 'overlay.missing.sysid', oils_i18n_gettext('overlay.missing.sysid', 'Overlay failed due to missing system id', 'vie', 'description') );
 INSERT INTO vandelay.import_error ( code, description ) VALUES ( 'import.auth.duplicate.acn', oils_i18n_gettext('import.auth.duplicate.acn', 'Import failed due to Accession Number collision', 'vie', 'description') );
 INSERT INTO vandelay.import_error ( code, description ) VALUES ( 'import.xml.malformed', oils_i18n_gettext('import.xml.malformed', 'Malformed record cause Import failure', 'vie', 'description') );
@@ -10348,6 +12389,10 @@ INSERT INTO vandelay.import_error ( code, description ) VALUES (
     'import.item.invalid.circ_as_type', oils_i18n_gettext('import.item.invalid.circ_as_type', 'Invalid value for "circ_as_type"', 'vie', 'description') );
 INSERT INTO vandelay.import_error ( code, description ) VALUES ( 
     'import.record.perm_failure', oils_i18n_gettext('import.record.perm_failure', 'Perm failure creating a record', 'vie', 'description') );
+INSERT INTO vandelay.import_error ( code, description ) VALUES (
+    'import.item.invalid.stat_cat_format', oils_i18n_gettext('import.item.invalid.stat_cat_format', 'Bad format for stat cat data, should be like: CAT 1|VALUE 1', 'vie', 'description') );
+INSERT INTO vandelay.import_error ( code, description ) VALUES (
+    'import.item.invalid.stat_cat_data', oils_i18n_gettext('import.item.invalid.stat_cat_data', 'Invalid stat cat data', 'vie', 'description') );
 
 -- Event def for email notice for hold cancelled due to lack of target -----
 
@@ -10361,10 +12406,12 @@ $$
 [%- user = target.0.usr -%]
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Hold Request Cancelled
+Auto-Submitted: auto-generated
 
 Dear [% user.family_name %], [% user.first_given_name %]
-The following holds were cancelled because no items were found to fullfil the hold.
+The following holds were cancelled because no items were found to fulfill the hold.
 
 [% FOR hold IN target %]
     Title: [% hold.bib_rec.bib_record.simple_record.title %]
@@ -10612,7 +12659,9 @@ $$
 [%- SET user = target.0.queue.owner -%]
 To: [%- params.recipient_email || user.email || 'root@localhost' %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Bibs from Import Queue
+Auto-Submitted: auto-generated
 
 Queue ID: [% target.0.queue.id %]
 Queue Name: [% target.0.queue.name %]
@@ -10754,7 +12803,9 @@ $$
 [%- SET user = target.0.queue.owner -%]
 To: [%- params.recipient_email || user.email || 'root@localhost' %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Authorities from Import Queue
+Auto-Submitted: auto-generated
 
 Queue ID: [% target.0.queue.id %]
 Queue Name: [% target.0.queue.name %]
@@ -10910,7 +12961,9 @@ $$
 [%- SET user = target.0.record.queue.owner -%]
 To: [%- params.recipient_email || user.email || 'root@localhost' %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Import Items from Import Queue
+Auto-Submitted: auto-generated
 
 Queue ID: [% target.0.record.queue.id %]
 Queue Name: [% target.0.record.queue.name %]
@@ -11035,9 +13088,9 @@ INSERT INTO authority.control_set_authority_field (id, control_set, main_entry, 
 INSERT INTO authority.control_set_authority_field (id, control_set, main_entry, tag, sf_list, display_sf_list, name) VALUES
 
 -- Main entries
-    (1, 1, NULL, '100', 'abcdefklmnopqrstvxyz', 'abcdefklmnopqrstvxyz',
+    (1, 1, NULL, '100', 'abcdfklmnopqrstvxyz', 'abcdefklmnopqrstvxyz',
         oils_i18n_gettext('1','Heading -- Personal Name','acsaf','name')),
-    (2, 1, NULL, '110', 'abcdefgklmnoprstvxyz', 'abcdefgklmnoprstvxyz',
+    (2, 1, NULL, '110', 'abcdfgklmnoprstvxyz', 'abcdefgklmnoprstvxyz',
         oils_i18n_gettext('2','Heading -- Corporate Name','acsaf','name')),
     (3, 1, NULL, '111', 'acdefgklnpqstvxyz', 'acdefgklnpqstvxyz',
         oils_i18n_gettext('3','Heading -- Meeting Name','acsaf','name')),
@@ -11200,19 +13253,19 @@ INSERT INTO authority.control_set_bib_field_metabib_field_map (bib_field, metabi
 
     SELECT  DISTINCT b.id AS bib_field, m.id AS metabib_field
       FROM  authority.control_set_bib_field b JOIN authority.control_set_authority_field a ON (b.authority_field = a.id), config.metabib_field m
-      WHERE a.tag = '148' AND m.name = 'temporal'
+      WHERE a.tag = '148' AND m.name = 'temporal_browse'
 
         UNION
 
     SELECT  DISTINCT b.id AS bib_field, m.id AS metabib_field
       FROM  authority.control_set_bib_field b JOIN authority.control_set_authority_field a ON (b.authority_field = a.id), config.metabib_field m
-      WHERE a.tag = '150' AND m.name = 'topic'
+      WHERE a.tag = '150' AND m.name = 'topic_browse'
 
         UNION
 
     SELECT  DISTINCT b.id AS bib_field, m.id AS metabib_field
       FROM  authority.control_set_bib_field b JOIN authority.control_set_authority_field a ON (b.authority_field = a.id), config.metabib_field m
-      WHERE a.tag = '151' AND m.name = 'geographic'
+      WHERE a.tag = '151' AND m.name = 'geographic_browse'
 
         UNION
 
@@ -12481,6 +14534,42 @@ INSERT INTO config.sms_carrier VALUES
         ),
         '$number@myhelio.com',
         TRUE
+    ),
+
+    -- Republic Wireless and Google Fi
+    (
+        66,
+        oils_i18n_gettext(
+            66,
+            'USA',
+            'csc',
+            'region'
+        ),
+        oils_i18n_gettext(
+            66,
+            'Republic Wireless (must enable on device)',
+            'csc',
+            'name'
+        ),
+        '$number@text.republicwireless.com',
+        TRUE
+    ),
+    (
+        67,
+        oils_i18n_gettext(
+            67,
+            'USA',
+            'csc',
+            'region'
+        ),
+        oils_i18n_gettext(
+            67,
+            'Google Fi',
+            'csc',
+            'name'
+        ),
+        '$number@msg.fi.google.com',
+        TRUE
     )
 ;
 
@@ -12530,8 +14619,10 @@ INSERT INTO action_trigger.event_definition (
     '[%- USE date -%]
 [%- user = target.0.usr -%]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, ''%a, %d %b %Y %T -0000'', gmt => 1) %]
 To: [%- params.recipient_email || helpers.get_sms_gateway_email(target.0.sms_carrier,target.0.sms_notify) %]
 Subject: [% target.size %] hold(s) ready
+Auto-Submitted: auto-generated
 
 [% FOR hold IN target %][%-
   bibxml = helpers.xml_doc( hold.current_copy.call_number.record.marc );
@@ -12597,7 +14688,9 @@ INSERT INTO action_trigger.event_definition (
     '[%- USE date -%]
 From: [%- params.sender_email || default_sender %]
 To: [%- params.recipient_email || helpers.get_sms_gateway_email(user_data.sms_carrier,user_data.sms_notify) %]
+Date: [%- date.format(date.now, ''%a, %d %b %Y %T -0000'', gmt => 1) %]
 Subject: Call Number
+Auto-Submitted: auto-generated
 
 [%-
   bibxml = helpers.xml_doc( target.record.marc );
@@ -12630,11 +14723,13 @@ INSERT INTO action_trigger.environment (
     'owning_lib.billing_address'
 );
 
-INSERT INTO vandelay.merge_profile (owner, name, replace_spec) 
-    VALUES (1, 'Match-Only Merge', '901c');
+INSERT INTO vandelay.merge_profile (id, owner, name, replace_spec, update_bib_source) 
+    VALUES (1, 1, oils_i18n_gettext(1, 'Match-Only Merge', 'vmp', 'name'), '901c', false);
 
-INSERT INTO vandelay.merge_profile (owner, name, preserve_spec) 
-    VALUES (1, 'Full Overlay', '901c');
+INSERT INTO vandelay.merge_profile (id, owner, name, preserve_spec, update_bib_source)
+    VALUES (2, 1, oils_i18n_gettext(2, 'Full Overlay', 'vmp', 'name'), '901c', true);
+
+SELECT SETVAL('vandelay.merge_profile_id_seq'::TEXT, 100);
 
 -- user activity seed data --
 
@@ -12720,7 +14815,7 @@ INSERT INTO config.org_unit_setting_type
 INSERT INTO action_trigger.hook (key, core_type, description, passive)
 VALUES (
     'circ.format.history.csv',
-    'circ',
+    'auch',
     oils_i18n_gettext(
         'circ.format.history.csv',
         'Produce CSV of circulation history',
@@ -13801,7 +15896,9 @@ $$
 [%- user = target.0.usr -%]
 To: [%- params.recipient_email || user.email %]
 From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
 Subject: Overdue Items Marked Long Overdue
+Auto-Submitted: auto-generated
 
 Dear [% user.family_name %], [% user.first_given_name %]
 The following items are 6 months overdue and have been marked Long Overdue.
@@ -13828,6 +15925,203 @@ INSERT INTO action_trigger.environment (event_def, path) VALUES
     (50, 'billable_transaction.summary'),
     (50, 'circ_lib.billing_address'),
     (50, 'target_copy.location');
+
+
+-- Auto-cancelled, no target
+INSERT INTO action_trigger.event_definition (
+    id, active, owner, name, hook,
+    validator, reactor, delay, delay_field,
+    group_field, message_usr_path, message_library_path, message_title,
+    message_template
+) VALUES (
+    51, FALSE, 1, 'Hold Cancelled (No Target) User Message', 'hold_request.cancel.expire_no_target',
+    'HoldIsCancelled', 'NOOP_True', '30 minutes', 'cancel_time',
+    'usr', 'usr', 'usr.home_ou', 'Hold Request Cancelled',
+$$
+[%- USE date -%]
+[%- user = target.0.usr -%]
+The following holds were cancelled because no items were found to fulfill them.
+
+[% FOR hold IN target %]
+    Title: [% hold.bib_rec.bib_record.simple_record.title %]
+    Author: [% hold.bib_rec.bib_record.simple_record.author %]
+    Library: [% hold.pickup_lib.name %]
+    Request Date: [% date.format(helpers.format_date(hold.request_time), '%Y-%m-%d') %]
+[% END %]
+
+$$);
+
+INSERT INTO action_trigger.environment (event_def, path) VALUES
+    (51, 'usr'),
+    (51, 'pickup_lib'),
+    (51, 'bib_rec.bib_record.simple_record');
+
+
+-- Cancelled by staff
+INSERT INTO action_trigger.event_definition (
+    id, active, owner, name, hook,
+    validator, reactor, delay, delay_field,
+    group_field, message_usr_path, message_library_path, message_title,
+    message_template
+) VALUES (
+    52, FALSE, 1, 'Hold Cancelled (Staff) User Message', 'hold_request.cancel.staff',
+    'HoldIsCancelled', 'NOOP_True', '30 minutes', 'cancel_time',
+    'usr', 'usr', 'usr.home_ou', 'Hold Request Cancelled',
+$$
+[%- USE date -%]
+[%- user = target.0.usr -%]
+The following holds were cancelled by a staff member.
+
+[% FOR hold IN target %]
+    Title: [% hold.bib_rec.bib_record.simple_record.title %]
+    Author: [% hold.bib_rec.bib_record.simple_record.author %]
+    Library: [% hold.pickup_lib.name %]
+    Request Date: [% date.format(helpers.format_date(hold.request_time), '%Y-%m-%d') %]
+    Cancellation Note: [% hold.cancel_note %]
+[% END %]
+
+$$);
+
+INSERT INTO action_trigger.environment (event_def, path) VALUES
+    (52, 'usr'),
+    (52, 'pickup_lib'),
+    (52, 'bib_rec.bib_record.simple_record');
+
+
+-- Shelf expired
+INSERT INTO action_trigger.event_definition (
+    id, active, owner, name, hook,
+    validator, reactor, delay, delay_field,
+    group_field, message_usr_path, message_library_path, message_title,
+    message_template
+) VALUES (
+    53, TRUE, 1, 'Hold Cancelled (Shelf-expired) User Message', 'hold_request.cancel.expire_holds_shelf',
+    'HoldIsCancelled', 'NOOP_True', '30 minutes', 'cancel_time',
+    'usr', 'usr', 'usr.home_ou', 'Hold Request Cancelled',
+$$
+[%- USE date -%]
+[%- user = target.0.usr -%]
+The following holds were cancelled because they were never picked up.
+
+[% FOR hold IN target %]
+    Title: [% hold.bib_rec.bib_record.simple_record.title %]
+    Author: [% hold.bib_rec.bib_record.simple_record.author %]
+    Library: [% hold.pickup_lib.name %]
+    Request Date: [% date.format(helpers.format_date(hold.request_time), '%Y-%m-%d') %]
+    Pickup By: [% date.format(helpers.format_date(hold.shelf_expire_time), '%Y-%m-%d') %]
+[% END %]
+
+$$);
+
+INSERT INTO action_trigger.environment (event_def, path) VALUES
+    (53, 'usr'),
+    (53, 'pickup_lib'),
+    (53, 'bib_rec.bib_record.simple_record');
+
+-- 30 Day Pre Expire A/T Notice - Notify customers before their account expires
+
+INSERT INTO action_trigger.hook (key, core_type, description, passive)
+    VALUES ('au.expired', 'au', 'A user account has expired', 't');
+	
+INSERT INTO action_trigger.event_definition (
+    active, owner, name, hook,
+    validator, reactor, delay, delay_field,
+    max_delay, repeat_delay, template
+) VALUES (
+    'f', '1', '30 Day Account Expiration Courtesy Notice','au.expired',
+    'NOOP_True', 'SendEmail', '-30 days', 'expire_date', '-29 days', '30 days',
+$$
+[%- USE date -%]
+[%- user = target -%]
+[%- lib = target.home_ou -%]
+To: [%- params.recipient_email || user.email %]
+From: [%- helpers.get_org_setting(target.home_ou.id, 'org.bounced_emails') || lib.email || params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
+Reply-To: [%- helpers.get_org_setting(target.home_ou.id, 'org.bounced_emails') || lib.email || params.sender_email || default_sender %]
+Subject: Courtesy Notice - Library Account Expiration in 30 days
+Auto-Submitted: auto-generated
+
+Dear [% user.first_given_name %] [% user.family_name %],
+
+Our records indicate your library account is due to expire in 30 days.  Please visit your local library at your convenience to renew your account in order to avoid a disruption in access to library service.
+
+Sincerely,
+[% lib.name %]
+
+Contact your library for more information:
+
+[% lib.name %]
+[%- SET addr = lib.mailing_address -%]
+[%- IF !addr -%] [%- SET addr = lib.billing_address -%] [%- END %]
+[% addr.street1 %] [% addr.street2 %]
+[% addr.city %], [% addr.state %]
+[% addr.post_code %]
+[% lib.phone %]
+
+$$);
+
+INSERT INTO action_trigger.environment (event_def, path) VALUES
+    (currval('action_trigger.event_definition_id_seq'), 'home_ou.mailing_address'),
+    (currval('action_trigger.event_definition_id_seq'), 'home_ou.billing_address');
+
+--Start new patron welcome email notice/action -----------
+--create hook for actor.usr.create_date
+INSERT INTO action_trigger.hook (key, core_type, description, passive)
+    VALUES ('au.created', 'au', 'A user was created', 't');
+	
+--SQL to create event definition for new account creation notice
+--Inactive, owned by top of org tree by default.  Modify to suit needs.
+
+INSERT INTO action_trigger.event_definition (
+    active, owner, name, hook, 
+    validator, reactor, delay, delay_field,
+    max_delay, template
+)  VALUES (
+    'f', '1', 'New User Created Welcome Notice', 'au.created',
+    'NOOP_True', 'SendEmail', '10 seconds', 'create_date',
+    '1 day',
+$$
+[%- USE date -%]
+[%- user = target -%]
+[%- lib = target.home_ou -%]
+To: [%- params.recipient_email || user.email %]
+From: [%- helpers.get_org_setting(target.home_ou.id, 'org.bounced_emails') || lib.email || params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
+Reply-To: [%- helpers.get_org_setting(target.home_ou.id, 'org.bounced_emails') || lib.email || params.sender_email || default_sender %]
+Subject: New Library Account Sign-up - Welcome!
+Auto-Submitted: auto-generated
+
+Dear [% user.first_given_name %] [% user.family_name %],
+
+Thank you for signing up for an account with the [% lib.name %] on [% user.create_date.substr(0, 10) %].
+
+This email is your confirmation that your account is set up and ready as well as testing to see that we have your correct email address.
+
+If you did not sign up for an account at the library and have received this email in error, please reply and let us know.
+
+You can access your account online at http://catalog/eg/opac/login. From that site you can search the catalog, request materials, renew materials, leave comments, leave suggestions for titles you would like the library to purchase and update your account information.
+
+Sincerely,
+[% lib.name %]
+
+Contact your library for more information:
+
+[% lib.name %]
+[%- SET addr = lib.mailing_address -%]
+[%- IF !addr -%] [%- SET addr = lib.billing_address -%] [%- END %]
+[% addr.street1 %] [% addr.street2 %]
+[% addr.city %], [% addr.state %]
+[% addr.post_code %]
+[% lib.phone %]
+[% lib.email %]
+
+$$);
+       
+--insert environment values
+INSERT INTO action_trigger.environment (event_def, path) VALUES
+    (CURRVAL('action_trigger.event_definition_id_seq'), 'home_ou.mailing_address'),
+    (CURRVAL('action_trigger.event_definition_id_seq'), 'home_ou.billing_address');
+-- End new patron welcome message notice -----------
 
 -- OUS's for patron self-reg
 INSERT INTO config.org_unit_setting_type
@@ -13871,13 +16165,13 @@ VALUES (
     'gui',
     'bool',
     oils_i18n_gettext(
-        'ui.patron.edit.aua.county.require',
+        'ui.patron.edit.aua.county.show',
         'Show county field on patron registration',
         'coust',
         'label'
     ),
     oils_i18n_gettext(
-        'ui.patron.edit.aua.county.require',
+        'ui.patron.edit.aua.county.show',
         'The county field will be shown on the patron registration screen',
         'coust',
         'description'
@@ -13897,7 +16191,7 @@ VALUES (
     oils_i18n_gettext(
         'vandelay.item.barcode.auto',
         'Auto-generate deault item barcodes when no item barcode is present',
-        'coust', 'label'),
+        'coust', 'description'),
     'bool',
     NULL
 ), (
@@ -13910,7 +16204,7 @@ VALUES (
     oils_i18n_gettext(
         'vandelay.item.barcode.prefix',
         'Apply this prefix to any auto-generated item barcodes',
-        'coust', 'label'),
+        'coust', 'description'),
     'string',
     NULL
 ), (
@@ -13923,7 +16217,7 @@ VALUES (
     oils_i18n_gettext(
         'vandelay.item.call_number.auto',
         'Auto-generate default item call numbers when no item call number is present',
-        'coust', 'label'),
+        'coust', 'description'),
     'bool',
     NULL
 ), (
@@ -13936,7 +16230,7 @@ VALUES (
     oils_i18n_gettext(
         'vandelay.item.call_number.prefix',
         'Apply this prefix to any auto-generated item call numbers',
-        'coust', 'label'),
+        'coust', 'description'),
     'string',
     NULL
 ), (
@@ -13949,7 +16243,7 @@ VALUES (
     oils_i18n_gettext(
         'vandelay.item.copy_location.default',
         'Default copy location value for imported items',
-        'coust', 'label'),
+        'coust', 'description'),
     'link',
     'acpl'
 ), (
@@ -13962,7 +16256,7 @@ VALUES (
     oils_i18n_gettext(
         'vandelay.item.circ_modifier.default',
         'Default circulation modifier value for imported items',
-        'coust', 'label'),
+        'coust', 'description'),
     'link',
     'ccm'
 );
@@ -14134,5 +16428,427 @@ INSERT INTO config.global_flag (name, label, value, enabled) VALUES (
     TRUE
 );
 
+INSERT INTO config.global_flag (name, value, label, enabled)
+    VALUES (
+        'search.max_facets_per_field',
+        '1000',
+        oils_i18n_gettext(
+            'search.max_facets_per_field',
+            'Search: maximum number of facet values to retrieve for each facet field',
+            'cgf', 
+            'label'
+        ),
+        TRUE
+    );
 
+INSERT INTO config.org_unit_setting_type
+    (name, grp, label, description, datatype)
+    VALUES
+        ('circ.void_lost_on_claimsreturned',
+         'circ',
+         oils_i18n_gettext('circ.void_lost_on_claimsreturned',
+             'Void lost item billing when claims returned',
+             'coust', 'label'),
+         oils_i18n_gettext('circ.void_lost_on_claimsreturned',
+             'Void lost item billing when claims returned',
+             'coust', 'description'),
+         'bool'),
+        ('circ.void_lost_proc_fee_on_claimsreturned',
+         'circ',
+         oils_i18n_gettext('circ.void_lost_proc_fee_on_claimsreturned',
+             'Void lost item processing fee when claims returned',
+             'coust', 'label'),
+         oils_i18n_gettext('circ.void_lost_proc_fee_on_claimsreturned',
+             'Void lost item processing fee when claims returned',
+             'coust', 'description'),
+         'bool');
 
+INSERT INTO config.org_unit_setting_type
+    (name, grp, label, description, datatype)
+    VALUES
+        ('circ.void_longoverdue_on_claimsreturned',
+         'circ',
+         oils_i18n_gettext('circ.void_longoverdue_on_claimsreturned',
+             'Void longoverdue item billing when claims returned',
+             'coust', 'label'),
+         oils_i18n_gettext('circ.void_longoverdue_on_claimsreturned',
+             'Void long overdue item billing when claims returned',
+             'coust', 'description'),
+         'bool'),
+        ('circ.void_longoverdue_proc_fee_on_claimsreturned',
+         'circ',
+         oils_i18n_gettext('circ.void_longoverdue_proc_fee_on_claimsreturned',
+             'Void longoverdue item processing fee when claims returned',
+             'coust', 'label'),
+         oils_i18n_gettext('circ.void_longoverdue_proc_fee_on_claimsreturned',
+             'Void long overdue item processing fee when claims returned',
+             'coust', 'description'),
+         'bool');
+
+INSERT INTO config.org_unit_setting_type
+    (name, grp, label, description, datatype)
+    VALUES
+        ('org.restrict_opt_to_depth',
+         'sec',
+         oils_i18n_gettext('org.restrict_opt_to_depth',
+            'Restrict patron opt-in to home library and related orgs at specified depth',
+            'coust', 'label'),
+         oils_i18n_gettext('org.restrict_opt_to_depth',
+            'Patrons at this library can only be opted-in at org units which are within the '||
+            'library''s section of the org tree, at or below the depth specified by this setting. '||
+            'They cannot be opted in at any other libraries.',
+            'coust', 'description'),
+        'integer');
+
+INSERT INTO config.org_unit_setting_type
+( name, grp, label, description, datatype )
+VALUES
+('circ.patron_search.diacritic_insensitive',
+ 'circ',
+ oils_i18n_gettext('circ.patron_search.diacritic_insensitive',
+     'Patron search diacritic insensitive',
+     'coust', 'label'),
+ oils_i18n_gettext('circ.patron_search.diacritic_insensitive',
+     'Match patron last, first, and middle names irrespective of usage of diacritical marks or spaces. (e.g., Ines will match Inés; de la Cruz will match Delacruz)',
+     'coust', 'description'),
+  'bool');
+
+INSERT INTO actor.org_unit_setting (
+    org_unit, name, value
+) VALUES (
+    (SELECT id FROM actor.org_unit WHERE parent_ou IS NULL),
+    'circ.patron_search.diacritic_insensitive',
+    'true'
+);
+
+INSERT INTO config.global_flag (name, enabled, label) VALUES (
+    'ingest.disable_authority_auto_update_bib_meta',  FALSE, 
+    oils_i18n_gettext(
+        'ingest.disable_authority_auto_update_bib_meta',
+        'Authority Automation: Disable automatic authority updates ' ||
+            'from modifying bib record editor and edit_date',
+        'cgf',
+        'label'
+    )
+);
+
+-- email checkout receipts
+INSERT INTO config.usr_setting_type (
+    name,
+    opac_visible,
+    label,
+    description,
+    datatype
+) VALUES (
+    'circ.send_email_checkout_receipts',
+    TRUE,
+    oils_i18n_gettext('circ.send_email_checkout_receipts', 'Email checkout receipts by default?', 'cust', 'label'),
+    oils_i18n_gettext('circ.send_email_checkout_receipts', 'Email checkout receipts by default?', 'cust', 'description'),
+    'bool'
+);
+
+INSERT INTO action_trigger.hook (key, core_type, description, passive)
+VALUES (
+    'circ.checkout.batch_notify',
+    'circ',
+    oils_i18n_gettext(
+        'circ.checkout.batch_notify',
+        'Notification of a group of circs',
+        'ath',
+        'description'
+    ),
+    FALSE
+);
+
+INSERT INTO action_trigger.hook (key, core_type, description, passive)
+VALUES (
+    'circ.checkout.batch_notify.session',
+    'circ',
+    oils_i18n_gettext(
+        'circ.checkout.batch_notify.session',
+        'Notification of a group of circs at the end of a checkout session',
+        'ath',
+        'description'
+    ),
+    FALSE
+);
+
+INSERT INTO action_trigger.event_definition (
+    active,
+    owner,
+    name,
+    hook,
+    validator,
+    reactor,
+    usr_field,
+    opt_in_setting,
+    group_field,
+    template
+) VALUES (
+    TRUE,
+    1,
+    'Email Checkout Receipt',
+    'circ.checkout.batch_notify.session',
+    'NOOP_True',
+    'SendEmail',
+    'usr',
+    'circ.send_email_checkout_receipts',
+    'usr',
+    $$[%- USE date -%]
+[%- user = target.0.usr -%]
+To: [%- params.recipient_email || user.email %]
+From: [%- helpers.get_org_setting(target.0.circ_lib.id, 'org.bounced_emails') || params.sender_email || default_sender %]
+Subject: Checkout Receipt
+Auto-Submitted: auto-generated
+
+You checked out the following items:
+
+[% FOR circ IN target %]
+    [%- copy_details = helpers.get_copy_bib_basics(circ.target_copy.id) -%]
+    Title: [% copy_details.title %]
+    Author: [% copy_details.author %]
+    Call Number: [% circ.target_copy.call_number.label %]
+    Barcode: [% circ.target_copy.barcode %]
+    Due: [% date.format(helpers.format_date(circ.due_date), '%Y-%m-%d') %]
+    Library: [% circ.circ_lib.name %]
+
+[% END %]
+$$);
+
+INSERT INTO action_trigger.environment (
+    event_def,
+    path
+) VALUES (
+    currval('action_trigger.event_definition_id_seq'),
+    'target_copy.call_number'
+), (
+    currval('action_trigger.event_definition_id_seq'),
+    'target_copy.location'
+), (
+    currval('action_trigger.event_definition_id_seq'),
+    'usr'
+), (
+    currval('action_trigger.event_definition_id_seq'),
+    'circ_lib'
+);
+
+INSERT INTO config.org_unit_setting_type
+(name, grp, label, description, datatype)
+VALUES
+('circ.in_house_use.copy_alert',
+ 'circ',
+ oils_i18n_gettext('circ.in_house_use.copy_alert',
+     'Display copy alert for in-house-use',
+     'coust', 'label'),
+ oils_i18n_gettext('circ.in_house_use.copy_alert',
+     'Display copy alert for in-house-use',
+     'coust', 'description'),
+ 'bool'),
+('circ.in_house_use.checkin_alert',
+ 'circ',
+ oils_i18n_gettext('circ.in_house_use.checkin_alert',
+     'Display copy location checkin alert for in-house-use',
+     'coust', 'label'),
+ oils_i18n_gettext('circ.in_house_use.checkin_alert',
+     'Display copy location checkin alert for in-house-use',
+     'coust', 'description'),
+ 'bool');
+
+INSERT INTO config.global_flag (name, label, value, enabled) VALUES (
+    'circ.holds.retarget_interval',
+    oils_i18n_gettext(
+        'circ.holds.retarget_interval',
+        'Holds Retarget Interval', 
+        'cgf',
+        'label'
+    ),
+    '24h',
+    TRUE
+);
+
+INSERT INTO config.settings_group (name, label)
+    VALUES ('ebook_api', 'Ebook API Integration');
+
+INSERT INTO config.org_unit_setting_type
+    (name, label, description, grp, datatype) 
+VALUES (
+    'ebook_api.overdrive.discovery_base_uri',
+    oils_i18n_gettext(
+        'ebook_api.overdrive.discovery_base_uri',
+        'OverDrive Discovery API Base URI',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'ebook_api.overdrive.discovery_base_uri',
+        'Base URI for OverDrive Discovery API (defaults to https://api.overdrive.com/v1). Using HTTPS here is strongly encouraged.',
+        'coust',
+        'description'
+    ),
+    'ebook_api',
+    'string'
+),(
+    'ebook_api.overdrive.circulation_base_uri',
+    oils_i18n_gettext(
+        'ebook_api.overdrive.circulation_base_uri',
+        'OverDrive Circulation API Base URI',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'ebook_api.overdrive.circulation_base_uri',
+        'Base URI for OverDrive Circulation API (defaults to https://patron.api.overdrive.com/v1). Using HTTPS here is strongly encouraged.',
+        'coust',
+        'description'
+    ),
+    'ebook_api',
+    'string'
+),(
+    'ebook_api.overdrive.account_id',
+    oils_i18n_gettext(
+        'ebook_api.overdrive.account_id',
+        'OverDrive Account ID',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'ebook_api.overdrive.account_id',
+        'Account ID (a.k.a. Library ID) for this library, as assigned by OverDrive',
+        'coust',
+        'description'
+    ),
+    'ebook_api',
+    'string'
+),(
+    'ebook_api.overdrive.websiteid',
+    oils_i18n_gettext(
+        'ebook_api.overdrive.websiteid',
+        'OverDrive Website ID',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'ebook_api.overdrive.websiteid',
+        'Website ID for this library, as assigned by OverDrive',
+        'coust',
+        'description'
+    ),
+    'ebook_api',
+    'string'
+),(
+    'ebook_api.overdrive.authorizationname',
+    oils_i18n_gettext(
+        'ebook_api.overdrive.authorizationname',
+        'OverDrive Authorization Name',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'ebook_api.overdrive.authorizationname',
+        'Authorization name for this library, as assigned by OverDrive',
+        'coust',
+        'description'
+    ),
+    'ebook_api',
+    'string'
+),(
+    'ebook_api.overdrive.basic_token',
+    oils_i18n_gettext(
+        'ebook_api.overdrive.basic_token',
+        'OverDrive Basic Token',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'ebook_api.overdrive.basic_token',
+        'Basic token for client authentication with OverDrive API (supplied by OverDrive)',
+        'coust',
+        'description'
+    ),
+    'ebook_api',
+    'string'
+),(
+    'ebook_api.overdrive.granted_auth_redirect_uri',
+    oils_i18n_gettext(
+        'ebook_api.overdrive.granted_auth_redirect_uri',
+        'OverDrive Granted Authorization Redirect URI',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'ebook_api.overdrive.granted_auth_redirect_uri',
+        'URI provided to OverDrive for use with granted authorization',
+        'coust',
+        'description'
+    ),
+    'ebook_api',
+    'string'
+),(
+    'ebook_api.overdrive.password_required',
+    oils_i18n_gettext(
+        'ebook_api.overdrive.password_required',
+        'OverDrive Password Required',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'ebook_api.overdrive.password_required',
+        'Does this library require a password when authenticating patrons with the OverDrive API?',
+        'coust',
+        'description'
+    ),
+    'ebook_api',
+    'bool'
+);
+
+INSERT INTO config.org_unit_setting_type
+    (name, label, description, grp, datatype) 
+VALUES (
+    'ebook_api.oneclickdigital.base_uri',
+    oils_i18n_gettext(
+        'ebook_api.oneclickdigital.base_uri',
+        'OneClickdigital Base URI',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'ebook_api.oneclickdigital.base_uri',
+        'Base URI for OneClickdigital API (defaults to https://api.oneclickdigital.com/v1). Using HTTPS here is strongly encouraged.',
+        'coust',
+        'description'
+    ),
+    'ebook_api',
+    'string'
+),(
+    'ebook_api.oneclickdigital.library_id',
+    oils_i18n_gettext(
+        'ebook_api.oneclickdigital.library_id',
+        'OneClickdigital Library ID',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'ebook_api.oneclickdigital.library_id',
+        'Identifier assigned to this library by OneClickdigital',
+        'coust',
+        'description'
+    ),
+    'ebook_api',
+    'string'
+),(
+    'ebook_api.oneclickdigital.basic_token',
+    oils_i18n_gettext(
+        'ebook_api.oneclickdigital.basic_token',
+        'OneClickdigital Basic Token',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'ebook_api.oneclickdigital.basic_token',
+        'Basic token for client authentication with OneClickdigital API (supplied by OneClickdigital)',
+        'coust',
+        'description'
+    ),
+    'ebook_api',
+    'string'
+);

@@ -69,10 +69,10 @@ sub transit_receive {
     ($transit, $evt) = $U->fetch_open_transit_by_copy($copyid);
     return $evt if $evt;
 
-    if( $transit->dest != $requestor->home_ou ) {
+    if( $transit->dest != $requestor->ws_ou ) {
         $logger->activity("Fowarding transit on copy which is destined ".
             "for a different location. copy=$copyid,current ".
-            "location=".$requestor->home_ou.",destination location=".$transit->dest);
+            "location=".$requestor->ws_ou.",destination location=".$transit->dest);
 
         return OpenILS::Event->new('ROUTE_ITEM', org => $transit->dest );
     }
@@ -239,20 +239,32 @@ sub __abort_transit {
         return $e->die_event unless $e->allowed('ABORT_REMOTE_TRANSIT', $e->requestor->ws_ou);
     }
 
-    # recover the copy status
-    $copy->status( $transit->copy_status );
-    $copy->editor( $e->requestor->id );
-    $copy->edit_date('now');
-
     my $holdtransit = $e->retrieve_action_hold_transit_copy($transit->id);
 
-    if( $holdtransit ) {
-        $logger->info("setting copy to reshelving on hold transit abort");
-        $copy->status( OILS_COPY_STATUS_RESHELVING );
-    }
-
     return $e->die_event unless $e->delete_action_transit_copy($transit);
-    return $e->die_event unless $e->update_asset_copy($copy);
+
+    # Only change the copy status if the copy status is "In Transit."
+    if ($copy->status == OILS_COPY_STATUS_IN_TRANSIT) {
+        # if the status would normally result in 'Reshelving' once the item is checked in
+        if ($transit->copy_status == OILS_COPY_STATUS_AVAILABLE   ||
+            $transit->copy_status == OILS_COPY_STATUS_CHECKED_OUT ||
+            $transit->copy_status == OILS_COPY_STATUS_IN_PROCESS  ||
+            $transit->copy_status == OILS_COPY_STATUS_ON_HOLDS_SHELF  ||
+            $transit->copy_status == OILS_COPY_STATUS_IN_TRANSIT  ||
+            $transit->copy_status == OILS_COPY_STATUS_CATALOGING  ||
+            $transit->copy_status == OILS_COPY_STATUS_ON_RESV_SHELF  ||
+            $transit->copy_status == OILS_COPY_STATUS_RESHELVING) {
+            # set copy to Canceled Transit
+            $copy->status( OILS_COPY_STATUS_CANCELED_TRANSIT);
+        } else {
+            # recover the copy status
+            $copy->status($transit->copy_status);
+        }
+        $copy->editor( $e->requestor->id );
+        $copy->edit_date('now');
+
+        return $e->die_event unless $e->update_asset_copy($copy);
+    }
 
     $e->commit unless $no_commit;
 
