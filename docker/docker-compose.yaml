@@ -1,0 +1,93 @@
+version: '3'
+
+networks:
+  evergreen:
+    driver: overlay
+  proxy_proxy:
+    driver: external
+
+services:
+  memcached:
+    command: -m 3096
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    image: docker-engine-01.socialhistoryservices.org:5000/memcached
+    networks:
+      - evergreen
+
+  router:
+    build:
+      context: ./openils
+    command: router
+    depends_on:
+      - memcached
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    environment:
+      OPENILS_DATABASE_MASTER_HOST: 10.24.68.224
+      OPENILS_DATABASE_MASTER_PW: evergreen
+      OPENILS_DATABASE_MIRROR_HOST: 10.24.68.224
+      OPENILS_DATABASE_MIRROR_PW: evergreen
+      OPENILS_CUSTOM_SETTINGS: <handlesystem_naming_authority>10622</handlesystem_naming_authority>
+      OPENILS_HANDLE: 10622
+      OPENILS_PROXY: https://evergreen-docker.socialhistoryservices.org
+    image: docker-engine-01.socialhistoryservices.org:5000/lwo/evergreen-openils
+    networks:
+      evergreen:
+        aliases:
+          - private.realm
+          - public.realm
+
+  start-services:
+    build:
+      context: ./openils
+    command: start-services
+    depends_on:
+      - router
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    environment:
+      OPENILS_DATABASE_MASTER_HOST: 10.24.68.224
+      OPENILS_DATABASE_MASTER_PW: evergreen
+      OPENILS_DATABASE_MIRROR_HOST: 10.24.68.224
+      OPENILS_DATABASE_MIRROR_PW: evergreen
+      OPENILS_CUSTOM_SETTINGS: <handlesystem_naming_authority>10622</handlesystem_naming_authority>
+      OPENILS_HANDLE: 10622
+      OPENILS_PROXY: https://evergreen-docker.socialhistoryservices.org
+    image: docker-engine-01.socialhistoryservices.org:5000/lwo/evergreen-openils
+    networks:
+      - evergreen
+
+
+#  web:
+#    build:
+#      context: ./openils
+#    command: web
+#    depends_on:
+#      - openils
+#    deploy:
+#      mode: replicated
+#      replicas: 1
+#      restart_policy:
+#        condition: on-failure
+#    environment:
+#      OPENILS_DATABASE_MASTER_HOST: 10.24.68.224
+#      OPENILS_DATABASE_MASTER_PW: evergreen
+#      OPENILS_DATABASE_MIRROR_HOST: 10.24.68.224
+#      OPENILS_DATABASE_MIRROR_PW: evergreen
+#      OPENILS_CUSTOM_SETTINGS: <handlesystem_naming_authority>10622</handlesystem_naming_authority>
+#      OPENILS_HANDLE: 10622
+#      OPENILS_PROXY: https://evergreen-acc.iisg.nl
+#      VIRTUAL_HOST: evergreen-acc.iisg.nl
+#    image: docker-engine-01.socialhistoryservices.org:5000/lwo/evergreen-openils
+#    networks:
+#      - evergreen
