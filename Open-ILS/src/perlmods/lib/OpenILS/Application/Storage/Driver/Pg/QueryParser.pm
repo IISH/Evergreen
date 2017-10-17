@@ -688,6 +688,9 @@ __PACKAGE__->add_search_filter( 'record_list' );
 
 __PACKAGE__->add_search_filter( 'has_browse_entry' );
 
+# copy_tag(copy_tag_code,copy_tag_search)
+__PACKAGE__->add_search_filter( 'copy_tag' );
+
 # used internally, but generally not user-settable
 __PACKAGE__->add_search_filter( 'preferred_language' );
 __PACKAGE__->add_search_filter( 'preferred_language_weight' );
@@ -713,6 +716,7 @@ use OpenSRF::Utils::Logger qw($logger);
 use OpenSRF::Utils qw/:datetime/;
 use Data::Dumper;
 use OpenILS::Application::AppUtils;
+use OpenILS::Utils::Normalize qw/search_normalize/;
 my $apputils = "OpenILS::Application::AppUtils";
 
 our %_dfilter_controlled_cache = ();
@@ -837,10 +841,10 @@ sub toSQL {
         $bre_join = 'INNER JOIN biblio.record_entry bre ON m.source = bre.id AND bre.deleted';
         # The above suffices for filters too when the #deleted modifier
         # is in use.
-    } elsif ($$flat_plan{uses_bre}) {
+    } elsif ($$flat_plan{uses_bre} or !$self->find_modifier('staff')) {
         $bre_join = 'INNER JOIN biblio.record_entry bre ON m.source = bre.id';
     }
-    
+
     my $desc = 'ASC';
     $desc = 'DESC' if ($self->find_modifier('descending'));
 
@@ -959,13 +963,110 @@ sub toSQL {
     my $key = 'm.source';
     $key = 'm.metarecord' if (grep {$_->name eq 'metarecord' or $_->name eq 'metabib'} @{$self->modifiers});
 
-    my $core_limit = $self->QueryParser->core_limit || 25000;
-    $core_limit = 1 if($self->find_modifier('lucky'));
+    my $core_limit = $self->QueryParser->core_limit || 'NULL';
+    if ($self->find_modifier('lucky')) {
+        $filters{check_limit} = 1;
+        $filters{skip_check} = 0;
+    	$core_limit = 1;
+    }
+
 
     my $flat_where = $$flat_plan{where};
     if ($flat_where ne '') {
         $flat_where = "AND (\n" . ${spc} x 5 . $flat_where . "\n" . ${spc} x 4 . ")";
     }
+
+    my $final_c_attr_test;
+    my $c_attr_join = '';
+    my $c_vis_test = '';
+    my $pc_vis_test = '';
+
+    # copy visibility testing
+    if (!$self->find_modifier('staff')) {
+        $pc_vis_test = "c_attrs";
+        $c_attr_join = ",c_attr"
+    }
+
+    if ($self->find_modifier('available')) {
+        push @{$$flat_plan{vis_filter}{'c_attr'}},
+            "search.calculate_visibility_attribute_test('status','{0,7,12}')";
+    }
+
+    if (@{$$flat_plan{vis_filter}{c_attr}}) {
+        $c_vis_test = join(",",@{$$flat_plan{vis_filter}{c_attr}});
+        $c_attr_join = ',c_attr';
+    }
+
+    if ($c_vis_test or $pc_vis_test) {
+        my $vis_test = '';
+
+        if ($c_vis_test and $pc_vis_test) {
+            $vis_test = $pc_vis_test . ",". $c_vis_test;
+        } elsif ($pc_vis_test) {
+            $vis_test = $pc_vis_test;
+        } else {
+            $vis_test = $c_vis_test;
+        }
+
+        # WITH-clause just generates vis test
+        $$flat_plan{with} .= "\n," if $$flat_plan{with};
+        $$flat_plan{with} .= "c_attr AS (SELECT (ARRAY_TO_STRING(ARRAY[$vis_test],'&'))::query_int AS vis_test FROM asset.patron_default_visibility_mask() x)";
+
+        $final_c_attr_test = 'EXISTS (SELECT 1 FROM asset.copy_vis_attr_cache WHERE record = m.source AND vis_attr_vector @@ c_attr.vis_test)';
+        if (!$pc_vis_test) { # staff search
+            $final_c_attr_test = '(' . $final_c_attr_test . ' OR NOT EXISTS (SELECT 1 FROM asset.copy_vis_attr_cache WHERE record = m.source))';
+        }
+    }
+ 
+    my $final_b_attr_test;
+    my $b_attr_join = '';
+    my $b_vis_test = '';
+    my $pb_vis_test = '';
+
+    # bib visibility testing
+    if (!$self->find_modifier('staff')) {
+        $pb_vis_test = "b_attrs";
+        $b_attr_join = ",b_attr"
+    }
+
+    if (@{$$flat_plan{vis_filter}{b_attr}}) {
+        $b_attr_join = ',b_attr ';
+        $b_vis_test = join("||'&'||",@{$$flat_plan{vis_filter}{b_attr}});
+    }
+
+    if ($b_vis_test or $pb_vis_test) {
+        my $vis_test = '';
+
+        if ($b_vis_test and $pb_vis_test) {
+            $vis_test = $pb_vis_test . ",". $b_vis_test;
+        } elsif ($pb_vis_test) {
+            $vis_test = $pb_vis_test;
+        } else {
+            $vis_test = $b_vis_test;
+        }
+
+        # WITH-clause just generates vis test
+        $$flat_plan{with} .= "\n," if $$flat_plan{with};
+        $$flat_plan{with} .= "b_attr AS (SELECT (ARRAY_TO_STRING(ARRAY[$vis_test],'&'))::query_int AS vis_test FROM asset.patron_default_visibility_mask() x)";
+
+        # These are magic numbers... see: search.calculate_visibility_attribute() UDF
+        $final_b_attr_test = '(b_attr.vis_test IS NULL OR bre.vis_attr_vector @@ b_attr.vis_test)';
+        if (!$pb_vis_test) { # staff search
+            $final_b_attr_test .= " OR NOT ( int4range(0,268435455,'[]') @> ANY(bre.vis_attr_vector) )";
+        }
+    }
+
+    if ($final_c_attr_test or $final_b_attr_test) { # something...
+        if ($final_c_attr_test and $final_b_attr_test) { # both!
+            my $plan = "($final_c_attr_test) OR ($final_b_attr_test)";
+            $flat_where .= "\n" . ${spc} x 4 . "AND (\n" . ${spc} x 5 .  $plan .  "\n" . ${spc} x 4 . ")";
+        } elsif ($final_c_attr_test) { # just copies...
+            $flat_where .= "\n" . ${spc} x 4 . "AND (\n" . ${spc} x 5 .  $final_c_attr_test .  "\n" . ${spc} x 4 . ")";
+        } else { # just bibs...
+            $flat_where .= "\n" . ${spc} x 4 . "AND (\n" . ${spc} x 5 .  $final_b_attr_test .  "\n" . ${spc} x 4 . ")";
+        }
+    }
+
     my $with = $$flat_plan{with};
     $with= "\nWITH $with" if $with;
 
@@ -978,27 +1079,45 @@ sub toSQL {
     }
 
     my $sql = <<SQL;
+WITH w AS (
+
 $with
-SELECT  $key AS id,
-        $agg_records,
-        (${rel})::NUMERIC AS rel,
-        $rank AS rank, 
-        FIRST(pubdate_t.value) AS tie_break,
-        STRING_AGG(ARRAY_TO_STRING(pop_with.badges,','),',') AS badges,
-        AVG(COALESCE(pop_with.total_score::NUMERIC,0.0::NUMERIC))::NUMERIC(2,1) AS popularity
-  FROM  metabib.metarecord_source_map m
-        $$flat_plan{from}
-        $mra_join
-        $mrv_join
-        $bre_join
-        $pop_join
-        $pubdate_join
-        $lang_join
-  WHERE 1=1
-        $flat_where
-  GROUP BY 1
-  ORDER BY 4 $desc $nullpos, $pop_extra_sort 5 DESC $nullpos, 3 DESC
-  LIMIT $core_limit
+SELECT  id,
+        rel,
+        CASE WHEN cardinality(records) = 1 THEN records[1] ELSE NULL END AS record,
+        NULL::INT AS total,
+        NULL::INT AS checked,
+        NULL::INT AS visible,
+        NULL::INT AS deleted,
+        NULL::INT AS excluded,
+        badges,
+        popularity
+  FROM  (SELECT $key AS id,
+                $agg_records,
+                ${rel}::NUMERIC AS rel,
+                $rank AS rank, 
+                FIRST(pubdate_t.value) AS tie_break,
+                STRING_AGG(ARRAY_TO_STRING(pop_with.badges,','),',') AS badges,
+                AVG(COALESCE(pop_with.total_score::NUMERIC,0.0::NUMERIC))::NUMERIC(2,1) AS popularity
+          FROM  metabib.metarecord_source_map m
+                $$flat_plan{from}
+                $mra_join
+                $mrv_join
+                $bre_join
+                $pop_join
+                $pubdate_join
+                $lang_join
+                $c_attr_join
+                $b_attr_join
+          WHERE 1=1
+                $flat_where
+          GROUP BY 1
+          ORDER BY 4 $desc $nullpos, $pop_extra_sort 5 DESC $nullpos, 3 DESC
+          LIMIT $core_limit
+        ) AS core_query
+) (SELECT * FROM w LIMIT $filters{check_limit} OFFSET $filters{skip_check})
+        UNION ALL
+  SELECT NULL,NULL,NULL,COUNT(*),COUNT(*),COUNT(*),0,0,NULL,NULL FROM w;
 SQL
 
     warn $sql if $self->QueryParser->debug;
@@ -1014,6 +1133,7 @@ sub flatten {
     my $from = shift || '';
     my $where = shift || '';
     my $with = '';
+    my %vis_filter = ( c_attr => [], b_attr => [] );
     my $uses_bre = 0;
     my $uses_mrd = 0;
     my $uses_mrv = 0;
@@ -1193,6 +1313,11 @@ sub flatten {
 
     my $joiner = "\n" . ${spc} x ( $self->plan_level + 5 ) . ($self->joiner eq '&' ? 'AND ' : 'OR ');
 
+    my ($depth_filter) = grep { $_->name eq 'depth' } @{$self->filters};
+    if ($depth_filter and @{$depth_filter->args} == 1) {
+        $depth_filter = $depth_filter->args->[0];
+    }
+
     my @dlist = ();
     my $common = 0;
     # for each dynamic filter, build more of the WHERE clause
@@ -1300,12 +1425,109 @@ sub flatten {
                         }
                     }
                 }
+            } elsif ($filter->name eq 'copy_tag') {
+                my $valid_copy_tag_search = 0;
+                my $copy_tag_type;
+                my $tag_value;
+                if (@{$filter->args} >= 2) { # must have at least two parts, tag (or *) and terms
+                    my @fargs = @{$filter->args};
+                    $copy_tag_type = shift(@fargs);
+                    $tag_value = join(' ', @fargs);
+                    $valid_copy_tag_search = 1;
+                }
+                if ($valid_copy_tag_search) {
+                    my $norm_value = search_normalize($tag_value);
+                    my @tokens = split /\s+/, $norm_value;
+                    
+                    my $filter_alias = "$filter";
+                    $filter_alias =~ s/^.*\(0(x[0-9a-fA-F]+)\)$/$1/go;
+                    $filter_alias =~ s/\|/_/go;
+
+                    $with .= ",\n     " if $with;
+                    $with .= "copy_tag_${filter_alias} AS (\n";
+                    $with .= "       SELECT cn.record AS record FROM config.copy_tag_type cctt\n";
+                    $with .= "             JOIN asset.copy_tag acpt ON (cctt.code = acpt.tag_type)\n";
+                    $with .= "             JOIN asset.copy_tag_copy_map acptcm ON (acpt.id = acptcm.tag)\n";
+                    $with .= "             JOIN asset.copy cp ON (acptcm.copy = cp.id)\n";
+                    $with .= "             JOIN asset.call_number cn ON (cp.call_number = cn.id)\n";
+                    $with .= "       WHERE 1 = 1 \n";
+                    if ($copy_tag_type ne '*') {
+                        $with .= "             AND cctt.code = " . $self->QueryParser->quote_value($copy_tag_type) . "\n";
+                    }
+                    if (@tokens) {
+                        $with .= '             AND acpt.value @@ to_tsquery(' . $self->QueryParser->quote_value(join(' & ', @tokens)) . ")\n";
+                    }
+                    if (!$self->find_modifier('staff')) {
+                        $with .= "             AND acpt.pub IS TRUE\n";
+                    }
+                    $with .= "     )";
+
+                    my $optimize_join = 1 if $self->top_plan and !$NOT;
+                    $from .= "\n" . ${spc} x 3 . ( $optimize_join ? 'INNER' : 'LEFT') . " JOIN copy_tag_${filter_alias} ON copy_tag_${filter_alias}.record = m.source";
+
+                    if (!$optimize_join) {
+                        $where .= $joiner if $where ne '';
+                        $where .= "(copy_tag_${filter_alias} IS " . ( $NOT ? 'NULL)' : 'NOT NULL)');
+                    }
+                }
             } elsif ($filter->name eq 'record_list') {
                 if (@{$filter->args} > 0) {
                     my $key = 'm.source';
                     $key = 'm.metarecord' if (grep {$_->name eq 'metarecord' or $_->name eq 'metabib'} @{$self->QueryParser->parse_tree->modifiers});
                     $where .= $joiner if $where ne '';
                     $where .= "$key ${NOT}IN (" . join(',', map { $self->QueryParser->quote_value($_) } @{$filter->args}) . ')';
+                }
+
+            } elsif ($filter->name eq 'site') {
+                if (@{$filter->args} == 1) {
+                    if (!defined($depth_filter) or $depth_filter > 0) { # no point in filtering by "all"
+                        my $sitename = $filter->args->[0];
+
+                        my $ot = $U->get_org_tree;
+                        my $site_org = $U->find_org_by_shortname($ot, $sitename);
+
+                        if ($site_org and $site_org->id != $ot->id) { # no point in filtering by "all"
+                            my $dorgs = $U->get_org_descendants($site_org->id, $depth_filter);
+                            my $aorgs = $U->get_org_ancestors($site_org->id);
+
+                            my $negate = $filter->negate ? 'TRUE' : 'FALSE';
+                            push @{$vis_filter{'c_attr'}},
+                                "search.calculate_visibility_attribute_test('circ_lib','{".join(',', @$dorgs)."}',$negate)";
+
+                            my $lorgs = [@$aorgs];
+                            my $luri_as_copy_gf = $U->get_global_flag('opac.located_uri.act_as_copy');
+                            push @$lorgs, @$dorgs if (
+                                $luri_as_copy_gf
+                                and $U->is_true($luri_as_copy_gf->enabled)
+                                and $U->is_true($luri_as_copy_gf->value)
+                            );
+
+                            $uses_bre = 1;
+                            push @{$vis_filter{'b_attr'}},
+                                "search.calculate_visibility_attribute_test('luri_org','{".join(',', @$lorgs)."}',$negate)";
+                        }
+                    }
+                }
+
+            } elsif ($filter->name eq 'locations') {
+                if (@{$filter->args} > 0) {
+                    my $negate = $filter->negate ? 'TRUE' : 'FALSE';
+                    push @{$vis_filter{'c_attr'}},
+                        "search.calculate_visibility_attribute_test('location','{".join(',', @{$filter->args})."}',$negate)";
+                }
+
+            } elsif ($filter->name eq 'location_groups') {
+                if (@{$filter->args} > 0) {
+                    my $negate = $filter->negate ? 'TRUE' : 'FALSE';
+                    push @{$vis_filter{'c_attr'}},
+                        "search.calculate_visibility_attribute_test('location_group','{".join(',', @{$filter->args})."}',$negate)";
+                }
+
+            } elsif ($filter->name eq 'statuses') {
+                if (@{$filter->args} > 0) {
+                    my $negate = $filter->negate ? 'TRUE' : 'FALSE';
+                    push @{$vis_filter{'c_attr'}},
+                        "search.calculate_visibility_attribute_test('status','{".join(',', @{$filter->args})."}',$negate)";
                 }
 
             } elsif ($filter->name eq 'has_browse_entry') {
@@ -1352,13 +1574,11 @@ sub flatten {
                     }
                 }
             } elsif ($filter->name eq 'bib_source') {
-                $uses_bre = 1;
-
                 if (@{$filter->args} > 0) {
-                    $where .= $joiner if $where ne '';
-                    $where .= "${NOT}COALESCE(bre.source IN ("
-                           . join(',', map { $self->QueryParser->quote_value($_) } @{ $filter->args })
-                           . "), false)";
+                    $uses_bre = 1;
+                    my $negate = $filter->negate ? 'TRUE' : 'FALSE';
+                    push @{$vis_filter{'c_attr'}},
+                        "search.calculate_visibility_attribute_test('source','{".join(',', @{$filter->args})."}',$negate)";
                 }
             } elsif ($filter->name eq 'from_metarecord') {
                 if (@{$filter->args} > 0) {
@@ -1393,6 +1613,7 @@ sub flatten {
         from => $from,
         where => $where,
         with => $with,
+        vis_filter => \%vis_filter,
         uses_bre => $uses_bre,
         uses_mrv => $uses_mrv,
         uses_mrd => $uses_mrd

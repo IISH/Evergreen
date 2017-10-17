@@ -1,21 +1,22 @@
 # Arabic translation for evergreen
-# Copyright (c) 2017 Rosetta Contributors and Canonical Ltd 2017
+# Copyright (c) 2016 Rosetta Contributors and Canonical Ltd 2016
 # This file is distributed under the same license as the evergreen package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2016.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: evergreen\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: 2017-08-25 14:21-0400\n"
-"PO-Revision-Date: 2017-04-09 07:00+0000\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2017-09-03 23:33-0400\n"
+"PO-Revision-Date: 2017-09-28 07:23+0000\n"
+"Last-Translator: fares othman <Unknown>\n"
 "Language-Team: Arabic <ar@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2017-08-28 05:34+0000\n"
-"X-Generator: Launchpad (build 18446)\n"
+"X-Launchpad-Export-Date: 2017-09-29 05:11+0000\n"
+"X-Generator: Launchpad (build 18471)\n"
+"Language: ar\n"
 
 #: 950.data.seed-values.sql:8080
 msgid "Estonia "
@@ -254,10 +255,6 @@ msgstr "سويسرا "
 msgid "Virgin Mobile"
 msgstr "جوال فيرجن"
 
-#: 950.data.seed-values.sql:13286
-msgid "Repertoire de vedettes-matiere"
-msgstr "مرجع أو دليل المواد المَعنية"
-
 #: 950.data.seed-values.sql:8132
 msgid "Jamaica "
 msgstr "جاميكا "
@@ -273,6 +270,10 @@ msgstr "CREATE_ORG_UNIT"
 #: 950.data.seed-values.sql:332
 msgid "Available"
 msgstr "متاحة"
+
+#: 950.data.seed-values.sql:16792
+msgid "Item Print Label - Width for Left Label"
+msgstr ""
 
 #: 950.data.seed-values.sql:289
 msgid "35_days_1_renew"
@@ -492,6 +493,12 @@ msgstr ""
 "سيتم اقتراح حقل day_phone في واجهة تسجيل المستفيد.  سيتم إظهاره في حال إظهار "
 "الحقول المقترحة.  سيتم تجاهل هذا الإعداد إذا كان الحقل ظاهر أو مطلوب."
 
+#: 950.data.seed-values.sql:16862
+msgid ""
+"This setting is used to set the default height (in number of lines) to use "
+"for call number wrapping in the left print label."
+msgstr ""
+
 #: 950.data.seed-values.sql:772
 msgid "Allow a user to renew an item past the maximum renewal count"
 msgstr "السماح للمستخدم بتمديد إعارة نُسخة أكبر من حد التمديد"
@@ -563,6 +570,10 @@ msgstr "رمز/كود طرد البريد"
 #: 950.data.seed-values.sql:6561
 msgid "Apache languages"
 msgstr "لغات الأباتشي"
+
+#: 950.data.seed-values.sql:17195
+msgid "Orders Include PO Name"
+msgstr ""
 
 #: 950.data.seed-values.sql:1302
 msgid "ADMIN_ASSET_COPY_TEMPLATE"
@@ -773,6 +784,10 @@ msgstr ""
 "الحد الأقصى لأهمية الرواجية التعددية مِن أجل البحث ذو العلاقة بـِ ضبط "
 "الرواجية/الشعبية (القيمة العشرية ما بين 1.0 و 2.0)"
 
+#: 950.data.seed-values.sql:17175
+msgid "Number of Retrievable Recent Patrons"
+msgstr ""
+
 #: 950.data.seed-values.sql:7933
 msgid "Bonne"
 msgstr "مسقط بون"
@@ -968,6 +983,14 @@ msgstr ""
 "يكون أسفل النسبة المئوية، فإن محاولات الإنفاق مِن التمويل سينتج عنها تحذير "
 "إلى طاقم المكتبة."
 
+#: 950.data.seed-values.sql:16744
+msgid "Item Print Label - Left Margin for Left Label"
+msgstr ""
+
+#: 950.data.seed-values.sql:5382
+msgid "Circulation History"
+msgstr "أرشيف الإعارة"
+
 #: 950.data.seed-values.sql:3215
 msgid "Hard stalling interval"
 msgstr "فترة توقف صارمة"
@@ -1100,6 +1123,10 @@ msgstr "DELETE_INVOICE_METHOD"
 #: 950.data.seed-values.sql:341
 msgid "On order"
 msgstr "قَيد الطلب"
+
+#: 950.data.seed-values.sql:17255
+msgid "Order Copies Always Include Call Number (Even if Empty)"
+msgstr ""
 
 #: 950.data.seed-values.sql:8117
 msgid "Iceland "
@@ -1263,9 +1290,9 @@ msgstr "اقتراح حقل فترة ما قبل المراهقة في تسجي�
 msgid "Kara-Kalpak"
 msgstr "كارا-كالباك"
 
-#: 950.data.seed-values.sql:6955
-msgid "Swahili"
-msgstr "لغة سواهلية"
+#: 950.data.seed-values.sql:1529
+msgid "Allows a user to cancel a transit on a copy with status of LOST"
+msgstr ""
 
 #: 950.data.seed-values.sql:11623
 msgid "Non-library Item"
@@ -1558,6 +1585,12 @@ msgstr "CREATE_XML_TRANSFORM"
 msgid "CREATE_XML_TRANSFORM"
 msgstr "CREATE_XML_TRANSFORM"
 
+#: 950.data.seed-values.sql:17222
+msgid ""
+"Emit Owning Library ID Rather Than Short Name. Takes effect only if "
+"INCLUDE_OWNING_LIB is in use"
+msgstr ""
+
 #: 950.data.seed-values.sql:7929
 msgid "Space oblique Mercator"
 msgstr "مسقط ميركاتور المنحرف الفراغي"
@@ -1581,6 +1614,14 @@ msgstr "مطابقة-دمج فقط"
 #: 950.data.seed-values.sql:155 950.data.seed-values.sql:5298
 msgid "Accession Number"
 msgstr "رقم الوصول"
+
+#: 950.data.seed-values.sql:16702
+msgid ""
+"Set the preferred font family for item print labels. You can specify a list "
+"of CSS fonts, separated by commas, in order of preference; the system will "
+"use the first font it finds with a matching name. For example, \"Arial, "
+"Helvetica, serif\""
+msgstr ""
 
 #: 950.data.seed-values.sql:3332
 msgid "Org Unit Target Weight"
@@ -1637,10 +1678,6 @@ msgstr "الأتشينيزية"
 #: 950.data.seed-values.sql:1408
 msgid "DELETE_METABIB_SEARCH_ALIAS"
 msgstr "DELETE_METABIB_SEARCH_ALIAS"
-
-#: 950.data.seed-values.sql:576
-msgid "Allow a user to mark an item as 'missing'"
-msgstr "السماح للمستخدم بتعيين حالة نُسخة كـَ \"ضائع\""
 
 #: 950.data.seed-values.sql:3899 950.data.seed-values.sql:3902
 msgid "PayflowPro password"
@@ -1767,6 +1804,10 @@ msgstr "التحقق الذاتي"
 msgid "Sichuan Yi"
 msgstr "سيتشوان يي"
 
+#: 950.data.seed-values.sql:16696
+msgid "Item Print Label Font Family"
+msgstr ""
+
 #: 950.data.seed-values.sql:4790
 msgid ""
 "The second_given_name field will be shown on the patron registration screen. "
@@ -1833,6 +1874,10 @@ msgstr "ذروة النتائج في بحث المستفيد لهذا الرقم
 #: 950.data.seed-values.sql:6556
 msgid "Albanian"
 msgstr "ألباني"
+
+#: 950.data.seed-values.sql:17258
+msgid "Order Copies Always Include Item Type (Even if Empty)"
+msgstr ""
 
 #: 950.data.seed-values.sql:12393
 msgid "Bad format for stat cat data, should be like: CAT 1|VALUE 1"
@@ -2047,6 +2092,10 @@ msgstr "موقع نسخة الاصدار السابق"
 msgid "Established Heading Linking Entry -- Personal Name"
 msgstr "مدخل رابط ترويسة التأسيس -- اسم شخصي"
 
+#: 950.data.seed-values.sql:17166
+msgid "Define the time zone in which a library physically resides"
+msgstr ""
+
 #: 950.data.seed-values.sql:896
 msgid "Allows a user to delete an MFHD record"
 msgstr "السماح لـِ المستخدم بحذف تسجيلة مارك المُنسق لحيازة البيانات"
@@ -2099,9 +2148,9 @@ msgstr "حجم الخط لـِ تسمية التعاريف"
 msgid "Minimum Item Price"
 msgstr "السعر الأقل للنسخة"
 
-#: 950.data.seed-values.sql:16187
-msgid "Vandelay Generate Default Barcodes"
-msgstr "المَعنِيات ـ توليد باركودات بشكل افتراضي"
+#: 950.data.seed-values.sql:13164
+msgid "Author axis"
+msgstr ""
 
 #: 950.data.seed-values.sql:13104
 msgid "Heading -- General Subdivision"
@@ -2337,14 +2386,6 @@ msgstr "تسجيل المستفيد: الحصول على نسخة العنوان
 msgid "The dob field will be required on the patron registration screen."
 msgstr "حقل تاريخ الميلاد سيكون مطلوباً في شاشة تسجيل المستفيد"
 
-#: 950.data.seed-values.sql:718
-msgid ""
-"Allow a user to abort a copy transit if the user is at the transit "
-"destination or source"
-msgstr ""
-"السماح لـِ المستخدم بإحباط/إفشال عبور/نفل النسخة إذا كان المستفيد في وجهة "
-"العبور أو المصدر"
-
 #: 950.data.seed-values.sql:7658
 msgid "audio roll"
 msgstr "بكرة أوديو"
@@ -2501,6 +2542,12 @@ msgstr "السماح للمستخدم بإنشاء قائمة استلام"
 msgid "Allow a user to modify an authority record"
 msgstr "السماح للمستخدم بـِ تعديل تسجيلة الإسناد"
 
+#: 950.data.seed-values.sql:17147
+msgid ""
+"If enabled, adds a \"Digital Bookplate\" option to the query type selectors "
+"in the public catalog for search on copy tags."
+msgstr ""
+
 #: 950.data.seed-values.sql:7068
 msgid "Mixed forms"
 msgstr "أشكال مختلطة"
@@ -2528,6 +2575,10 @@ msgstr "جايو"
 #: 950.data.seed-values.sql:8524 950.data.seed-values.sql:8554
 msgid "Standards/specifications"
 msgstr "معايير/ مواصفات"
+
+#: 950.data.seed-values.sql:17163
+msgid "Library time zone"
+msgstr ""
 
 #: 950.data.seed-values.sql:7946
 msgid "Cordiform"
@@ -2673,6 +2724,13 @@ msgstr ""
 "سيظهر حقل تاريخ الميلاد في تسجيل المستفيد. إظهار حقل سيجعله يظهر مع الحقول "
 "المطلوبة وحتى لو لم تكن مطلوبة. سيتم تجاهل هذا الإعداد إذا كان الحقل مطلوب."
 
+#: 950.data.seed-values.sql:17112
+msgid ""
+"Format Dates with this pattern (examples: \"yyyy-MM-dd\" for \"2010-04-26\", "
+"\"MMM d, yyyy\" for \"Apr 26, 2010\").  This will be used in areas where a "
+"date without a timestamp is sufficient, like Date of Birth."
+msgstr ""
+
 #: 950.data.seed-values.sql:15808
 msgid "Leave transaction open when long overdue balance equals zero"
 msgstr "ترك العملية مفتوحة عندما يكون الرصيد المُستحق طويلاً يساوي صفر"
@@ -2795,6 +2853,12 @@ msgstr "المَالطية"
 msgid "Inupiaq"
 msgstr "الإينبياك"
 
+#: 950.data.seed-values.sql:16798
+msgid ""
+"Set the default width for the leftmost item print label. Please include a "
+"unit of measurement that is valid CSS. For example, \"1in\" or \"2.5cm\""
+msgstr ""
+
 #: 950.data.seed-values.sql:4095
 msgid ""
 "If enabled, patrons can create and edit existing addresses.  Addresses are "
@@ -2845,6 +2909,10 @@ msgstr "البيسلاميا"
 #: 950.data.seed-values.sql:6547
 msgid "Acoli"
 msgstr "الأُكولي"
+
+#: 950.data.seed-values.sql:13166
+msgid "Topic"
+msgstr ""
 
 #: 950.data.seed-values.sql:7127 950.data.seed-values.sql:7128
 #: 950.data.seed-values.sql:7202 950.data.seed-values.sql:7203
@@ -2997,10 +3065,6 @@ msgstr ""
 msgid "user_request.create"
 msgstr "user_request.create"
 
-#: 950.data.seed-values.sql:13282
-msgid "Canadian Subject Headings"
-msgstr "قائمة رؤوس الموضوعات الكندية"
-
 #: 950.data.seed-values.sql:124
 msgid "Alternate Title"
 msgstr "العُنوان البديل"
@@ -3022,6 +3086,10 @@ msgstr ""
 msgid "UPDATE_IMPORT_ITEM_ATTR_DEF"
 msgstr "UPDATE_IMPORT_ITEM_ATTR_DEF"
 
+#: 950.data.seed-values.sql:8205
+msgid "Ohio "
+msgstr "أوهايو "
+
 #: 950.data.seed-values.sql:468
 msgid "Your Bookmobile"
 msgstr ""
@@ -3034,6 +3102,10 @@ msgstr ""
 #: 950.data.seed-values.sql:16256
 msgid "Default circulation modifier value for imported items"
 msgstr "قيمة مُعدل الإعارة الإفتراضية لـِ النُسخ المُستوردة"
+
+#: 950.data.seed-values.sql:15023
+msgid "Kid's OPAC Search Filter"
+msgstr ""
 
 #: 950.data.seed-values.sql:6906
 msgid "Yakut"
@@ -3142,9 +3214,9 @@ msgstr "سعر النُسخة الافتراضي"
 msgid "Negative Balance Interval for Overdues"
 msgstr "الفاصل الزمني للرصيد السلبي لـِ المستحقات"
 
-#: 950.data.seed-values.sql:15281
-msgid "Default provider to use during ACQ file upload"
-msgstr "المزود الافتراضي مِن أجل الاستخدام خلال رفع الملف التزويد"
+#: 950.data.seed-values.sql:1698
+msgid "Allow batch update via buckets"
+msgstr ""
 
 #: 950.data.seed-values.sql:6764
 msgid "Khoisan (Other)"
@@ -3153,6 +3225,13 @@ msgstr "الخواز (أخرى)"
 #: 950.data.seed-values.sql:650
 msgid "Allow a user to update a copy location"
 msgstr "السماح لـِ المستخدم بتحديث موقع النسخة"
+
+#: 950.data.seed-values.sql:15011
+msgid ""
+"If this is unset, staff can view User Trigger Events regardless of age. When "
+"this is set to an interval, it represents the age of the oldest possible "
+"User Trigger Event that can be viewed."
+msgstr ""
 
 #: 950.data.seed-values.sql:1568
 msgid "Allows a user to create/retrieve/update/delete copy location groups"
@@ -3229,6 +3308,12 @@ msgstr "السماح لـِ المستخدم بعرض كافة الإعدادا�
 #: 950.data.seed-values.sql:6641
 msgid "Czech"
 msgstr "تشيكي"
+
+#: 950.data.seed-values.sql:16846
+msgid ""
+"This setting allows you to inject arbitrary CSS into the item print label "
+"template.  For example, \".printlabel { text-transform: uppercase; }\""
+msgstr ""
 
 #: 950.data.seed-values.sql:6831
 msgid "Manipuri"
@@ -3388,6 +3473,10 @@ msgstr "شركة فيرايزون وايرلس"
 msgid "Ojibwa"
 msgstr "الأوجيبوا"
 
+#: 950.data.seed-values.sql:16728
+msgid "Item Print Label Font Weight"
+msgstr ""
+
 #: 950.data.seed-values.sql:7530
 msgid "roll"
 msgstr "لفة"
@@ -3524,6 +3613,10 @@ msgstr "صورة متحركة كاتوغرافيك"
 #: 950.data.seed-values.sql:8757
 msgid "Genealogical tables"
 msgstr "جداول الأنساب"
+
+#: 950.data.seed-values.sql:17207
+msgid "Orders Include Copy Item Types"
+msgstr ""
 
 #: 950.data.seed-values.sql:7866 950.data.seed-values.sql:8571
 #: 950.data.seed-values.sql:8592
@@ -3907,10 +4000,6 @@ msgstr "الأحداث ـ الأطفال حتى سن 15 سنة"
 msgid "Georgia "
 msgstr "جورجيا "
 
-#: 950.data.seed-values.sql:13284
-msgid "Art and Architecture Thesaurus"
-msgstr "مكنز الفنون وهندسة العمارة"
-
 #: 950.data.seed-values.sql:7974 950.data.seed-values.sql:8668
 #: 950.data.seed-values.sql:8678
 msgid "Loose-leaf"
@@ -4103,6 +4192,12 @@ msgstr "الأَلمانية"
 msgid "Holds Retarget Interval"
 msgstr "الفاصل الزمني لإعادة توجيه الحجوزات"
 
+#: 950.data.seed-values.sql:16878
+msgid ""
+"This setting is used to set the default width (in number of characters) to "
+"use for call number wrapping in the left print label."
+msgstr ""
+
 #: 950.data.seed-values.sql:12365
 msgid "Import failed due to barcode collision"
 msgstr "فشل الاستيراد بسبب تعارض/تضارب الباركود"
@@ -4143,6 +4238,10 @@ msgstr ""
 #: 950.data.seed-values.sql:7006
 msgid "Vietnamese"
 msgstr "الفِيتنامية"
+
+#: 950.data.seed-values.sql:17243
+msgid "Order Lineitems Include Pagination Info"
+msgstr ""
 
 #: 950.data.seed-values.sql:1380
 msgid "CREATE_MERGE_PROFILE"
@@ -4229,14 +4328,6 @@ msgstr "السودانية"
 #: 950.data.seed-values.sql:636
 msgid "User may delete a patron statistical category entry map"
 msgstr "يمكن لـِ المستخدم حذف خريطة مدخل الفئة الإحصائية للمستفيد"
-
-#: 950.data.seed-values.sql:720
-msgid ""
-"Allow a user to abort a copy transit if the user is not at the transit "
-"source or dest"
-msgstr ""
-"السماح لـ المستخدم بإلغاء/إبطال عبور النُسخة إذا كان المستفيد ليس في مصدر "
-"العبور/النقل أو الوجهة"
 
 #: 950.data.seed-values.sql:11073
 msgid "A hold request history needs to be formatted for printing."
@@ -4352,13 +4443,19 @@ msgstr "السماح للمستخدم بإرجاع نُسخة"
 msgid "Literary Form"
 msgstr "الشكل الأدبي"
 
-#: 950.data.seed-values.sql:8235
-msgid "South Africa "
-msgstr "افريقيا الجنوبية "
+#: 950.data.seed-values.sql:1190
+msgid "UPDATE_ORG_UNIT_SETTING.patron.password.use_phone"
+msgstr "UPDATE_ORG_UNIT_SETTING.patron.password.use_phone"
 
 #: 950.data.seed-values.sql:8173
 msgid "Mauritania "
 msgstr "موريتانيا "
+
+#: 950.data.seed-values.sql:16718
+msgid ""
+"Set the default font size for item print labels. Please include a unit of "
+"measurement that is valid CSS. For example, \"12pt\" or \"16px\" or \"1em\""
+msgstr ""
 
 #: 950.data.seed-values.sql:15201 950.data.seed-values.sql:15207
 msgid "Link Checker's Review Attempt interface's saved columns"
@@ -4527,6 +4624,10 @@ msgstr "أنظر مِن التتابع -- اسم الشركة"
 #: 950.data.seed-values.sql:15275
 msgid "Upload Default Provider"
 msgstr "تحميل المزود الافتراضي"
+
+#: 950.data.seed-values.sql:17237
+msgid "Order Lineitems Include Edition Info"
+msgstr ""
 
 #: 950.data.seed-values.sql:11791
 msgid ""
@@ -4895,6 +4996,10 @@ msgstr "جمعية الصناعات الإلكترونية اليابانية"
 msgid "Phoenician"
 msgstr "فينيقي"
 
+#: 950.data.seed-values.sql:16712
+msgid "Item Print Label Font Size"
+msgstr ""
+
 #: 950.data.seed-values.sql:1016
 msgid "UPDATE_BIB_LEVEL"
 msgstr "UPDATE_BIB_LEVEL"
@@ -4926,6 +5031,13 @@ msgstr "السماح للمستخدم بتعديل شارة الرواجية"
 #: 950.data.seed-values.sql:7101
 msgid "CED videodisc"
 msgstr "قرص مرئي فيديو CED"
+
+#: 950.data.seed-values.sql:16734
+msgid ""
+"Set the default font weight for item print labels. Please use the CSS "
+"specification for values for font-weight.  For example, \"normal\", "
+"\"bold\", \"bolder\", or \"lighter\""
+msgstr ""
 
 #: 950.data.seed-values.sql:6880
 msgid "Panjabi"
@@ -5240,6 +5352,10 @@ msgstr "عدد الثواني لـِ الانتظار ما بين محاولات
 msgid "UPDATE_TRANSLATION"
 msgstr "UPDATE_TRANSLATION"
 
+#: 950.data.seed-values.sql:13163
+msgid "Title axis"
+msgstr ""
+
 #: 950.data.seed-values.sql:7646
 msgid "computer card"
 msgstr "بطاقة حاسوبية"
@@ -5427,6 +5543,14 @@ msgstr "لغات واكاشان"
 msgid "Tajik"
 msgstr "الطَاجيكية"
 
+#: 950.data.seed-values.sql:15030
+msgid "General/Adult Materials"
+msgstr ""
+
+#: 950.data.seed-values.sql:17216
+msgid "Orders Include Copy Collection Codes"
+msgstr ""
+
 #: 950.data.seed-values.sql:992
 msgid "DELETE_ORG_TYPE"
 msgstr "DELETE_ORG_TYPE"
@@ -5611,6 +5735,10 @@ msgstr "المُعرف"
 msgid "Rondos"
 msgstr "موسيقا روندوز"
 
+#: 950.data.seed-values.sql:1696
+msgid "Administer copy tag"
+msgstr ""
+
 #: 950.data.seed-values.sql:333
 msgid "Checked out"
 msgstr "تمت الإعارة"
@@ -5708,6 +5836,12 @@ msgstr "هذا الفرع"
 msgid "Ragtime music"
 msgstr "موسيقا زنجية أمريكية"
 
+#: 950.data.seed-values.sql:17267
+msgid ""
+"Lineitem Identifier Fields (LIN/PIA) Use Vendor-Encoded ID Value When "
+"Available"
+msgstr ""
+
 #: 950.data.seed-values.sql:7752
 msgid "Songs"
 msgstr "الأَغاني"
@@ -5740,6 +5874,10 @@ msgstr "CREATE_CIRC_DURATION"
 #: 950.data.seed-values.sql:13658
 msgid "Iridium"
 msgstr "الإيريديوم"
+
+#: 950.data.seed-values.sql:17141
+msgid "Enable Digital Bookplate Search"
+msgstr ""
 
 #: 950.data.seed-values.sql:13450
 msgid "Rogers Wireless"
@@ -5974,6 +6112,10 @@ msgstr ""
 "النُسخ المُستهدفة من أجل الحجز حتى في حالة إغلاق مكتبة إعارة النُسخ إذا كانت "
 "مكتبة الإعارة هي مكتبة استلام الحجز"
 
+#: 950.data.seed-values.sql:17231
+msgid "Buyer ID Qualifier Includes Vendcode"
+msgstr ""
+
 #: 950.data.seed-values.sql:8070
 msgid "Delaware "
 msgstr "ولاية ديلاوير "
@@ -6205,6 +6347,10 @@ msgstr "مدير الإعارة"
 msgid "Manx"
 msgstr "مَانكس"
 
+#: 950.data.seed-values.sql:16856
+msgid "Item Print Label - Call Number Wrap Filter Height"
+msgstr ""
+
 #: 950.data.seed-values.sql:13136
 msgid "Subdivision Linking Entry -- Chronological Subdivision"
 msgstr "مدخل الرابط المُقَسَم -- تقسيمات فرعية مرتبة زمنياً"
@@ -6213,9 +6359,17 @@ msgstr "مدخل الرابط المُقَسَم -- تقسيمات فرعية م
 msgid "Dyula"
 msgstr "ديالا"
 
+#: 950.data.seed-values.sql:17201
+msgid "Orders Include Copy Funds"
+msgstr ""
+
 #: 950.data.seed-values.sql:1637
 msgid "Allow a user to mark an item status as 'reserves'"
 msgstr "السماح للمستخدم بـ تمييز حالة النسخة كـَ 'محجوزة'"
+
+#: 950.data.seed-values.sql:17213
+msgid "Orders Include Copy Locations"
+msgstr ""
 
 #: 950.data.seed-values.sql:8149
 msgid "Laos "
@@ -6543,6 +6697,10 @@ msgid ""
 msgstr ""
 "التعبير النظامي مِن أجل التحقق مِن حقل البريد الإلكتروني في تسجيل المستفيد."
 
+#: 950.data.seed-values.sql:17246
+msgid "Order Lineitem Notes Include Copy Spec Codes"
+msgstr ""
+
 #: 950.data.seed-values.sql:1306
 msgid "ADMIN_CIRC_MATRIX_MATCHPOINT"
 msgstr "ADMIN_CIRC_MATRIX_MATCHPOINT"
@@ -6612,6 +6770,10 @@ msgstr "تحميل الدمج في أفضل مُطابقة افتراضياً"
 #: 950.data.seed-values.sql:13102
 msgid "Heading -- Genre/Form Term"
 msgstr "الترويسة -- مصطلح النوع/الشكل"
+
+#: 950.data.seed-values.sql:1700
+msgid "Administer serial prediction pattern templates"
+msgstr ""
 
 #: 950.data.seed-values.sql:6902
 msgid "Rundi"
@@ -6795,10 +6957,6 @@ msgstr "التأخر: المقبول مع التعديل/التنقيح"
 msgid "User may unset a default entry in a patron statistical category"
 msgstr ""
 "يمكن للمستخدم إلغاء تعيين الإدخال الافتراضي لـِ الفئة الإحصائية للمستفيد"
-
-#: 950.data.seed-values.sql:13280
-msgid "Medical Subject Headings"
-msgstr "قائمة رؤوس الموضوعات الطبية"
 
 #: 950.data.seed-values.sql:15763 950.data.seed-values.sql:15769
 msgid "Void Long-Overdue Item Billing When Returned"
@@ -7114,6 +7272,10 @@ msgstr "الأَبخازية"
 #: 950.data.seed-values.sql:8532 950.data.seed-values.sql:8562
 msgid "Comics/graphic novels"
 msgstr "هزلية وروايات غرافيكية"
+
+#: 950.data.seed-values.sql:17252
+msgid "Order Lineitem Notes Always Present (Even if Empty)"
+msgstr ""
 
 #: 950.data.seed-values.sql:8159
 msgid "Madagascar "
@@ -7464,6 +7626,18 @@ msgstr "روابط اختصار التصفح لـِ استعراض الأوبا�
 msgid "Plates"
 msgstr "لوحات"
 
+#: 950.data.seed-values.sql:17128
+msgid ""
+"Format Date+Time with this pattern (examples: \"yy-MM-dd h:m:s.SSS a\" for "
+"\"16-04-05 2:07:20.666 PM\", \"yyyy-dd-MMM HH:mm\" for \"2016-05-Apr "
+"14:07\").  This will be used in areas of the client where a date with a "
+"timestamp is needed, like Checkout, Due Date, or Record Created."
+msgstr ""
+
+#: 950.data.seed-values.sql:17106
+msgid "Format Dates with this pattern"
+msgstr ""
+
 #: 950.data.seed-values.sql:8278
 msgid "Egypt "
 msgstr "مصر "
@@ -7718,9 +7892,9 @@ msgstr "المستفيد: كلمة المرور من الهاتف #"
 msgid "Allow a user to view report output"
 msgstr "السماح لـِ المستخدم بعرض مَخرج/ناتج التقرير"
 
-#: 950.data.seed-values.sql:1190
-msgid "UPDATE_ORG_UNIT_SETTING.patron.password.use_phone"
-msgstr "UPDATE_ORG_UNIT_SETTING.patron.password.use_phone"
+#: 950.data.seed-values.sql:368
+msgid "Lost and Paid"
+msgstr ""
 
 #: 950.data.seed-values.sql:930
 msgid "CREATE_ITEM_TYPE"
@@ -7816,6 +7990,10 @@ msgstr "ADMIN_ACQ_CLAIM_TYPE"
 msgid "DELETE_BIBLIO_FINGERPRINT"
 msgstr "DELETE_BIBLIO_FINGERPRINT"
 
+#: 950.data.seed-values.sql:17261
+msgid "Order Copies Always Include Location (Even if Empty)"
+msgstr ""
+
 #: 950.data.seed-values.sql:7758
 msgid "Teatro lirico"
 msgstr "موسيقا مسرح ليريكو"
@@ -7849,9 +8027,9 @@ msgstr "يمكن لـِ المستخدم حذف الفئة الإحصائية ل
 msgid "Creoles and Pidgins, French-based (Other)"
 msgstr "الكريول الفرنسية وأخرى"
 
-#: 950.data.seed-values.sql:8205
-msgid "Ohio "
-msgstr "أوهايو "
+#: 950.data.seed-values.sql:6955
+msgid "Swahili"
+msgstr "لغة سواهلية"
 
 #: 950.data.seed-values.sql:6789 950.data.seed-values.sql:6932
 msgid "Sami"
@@ -8144,9 +8322,17 @@ msgstr "توكيلاو "
 msgid "Allow a user to add/remove users to/from the \"Data Review\" group"
 msgstr "السماح للمستخدم بـِ إضافة/إلغاء مستخدمين إلى/من \"مراجعة البيانات\""
 
+#: 950.data.seed-values.sql:16808
+msgid "Item Print Label - Height for Right Label"
+msgstr ""
+
 #: 950.data.seed-values.sql:8210
 msgid "Pennsylvania "
 msgstr "بنسلفانيا "
+
+#: 950.data.seed-values.sql:12368 950.data.seed-values.sql:12369
+msgid "Import failed due to system id collision"
+msgstr "فشل الاستيراد بسبب تضارب رمز تعريف النظام"
 
 #: 950.data.seed-values.sql:7470
 msgid "projected"
@@ -8312,6 +8498,10 @@ msgstr "السماح للمستخدم بعرض وطلب شراء من مزود"
 msgid "Vandelay Default Copy Location"
 msgstr "المَعنِيات ـ موقع النُسخة الافتراضي"
 
+#: 950.data.seed-values.sql:17234
+msgid "Buyer ID Qualifier Only Contains Vendcode"
+msgstr ""
+
 #: 950.data.seed-values.sql:8684 950.data.seed-values.sql:8701
 #: 950.data.seed-values.sql:8717 950.data.seed-values.sql:8733
 #: 950.data.seed-values.sql:8749
@@ -8387,6 +8577,10 @@ msgstr "تنسيقات التواريخ مع هذا النمط/النموذج"
 #: 950.data.seed-values.sql:6777
 msgid "Kru"
 msgstr "كرو"
+
+#: 950.data.seed-values.sql:17204
+msgid "Orders Include Copy Call Numbers"
+msgstr ""
 
 #: 950.data.seed-values.sql:8238
 msgid "South Sudan "
@@ -8555,6 +8749,10 @@ msgid ""
 msgstr ""
 "ينتهي مقدار الوقت قبل الحجزعند النقطة التي ينبغي تنبيه المستفيد. أمثلة: \"5 "
 "أيام\"، \"1 ساعة\""
+
+#: 950.data.seed-values.sql:17225
+msgid "Orders Include Copy Quantities"
+msgstr ""
 
 #: 950.data.seed-values.sql:14902
 msgid "Auto-Override Permitted Hold Blocks (Patrons)"
@@ -9145,10 +9343,6 @@ msgstr "القارئ الإلكتروني لـِ التحميل المسبق"
 msgid "Friends"
 msgstr "الأَصدقاء"
 
-#: 950.data.seed-values.sql:13285
-msgid "Sears List of Subject Headings"
-msgstr "قائمة سيرز لرؤوس الموضوعات"
-
 #: 950.data.seed-values.sql:3758
 msgid "Mark barcode(s) of subordinate user(s) in a patron merge as inactive"
 msgstr ""
@@ -9482,6 +9676,12 @@ msgstr ""
 msgid "Playing cards"
 msgstr "بطاقات اللعب"
 
+#: 950.data.seed-values.sql:16782
+msgid ""
+"Set the default height for the leftmost item print label. Please include a "
+"unit of measurement that is valid CSS. For example, \"1in\" or \"2.5cm\""
+msgstr ""
+
 #: 950.data.seed-values.sql:644
 msgid "Allow a user to create a new in-house-use "
 msgstr "السماح للمستخدم بإنشاء جديد لـِ استحدام داخل المكتبة "
@@ -9542,6 +9742,10 @@ msgstr "المغرب "
 msgid "CREATE_HOURS_OF_OPERATION"
 msgstr "CREATE_HOURS_OF_OPERATION"
 
+#: 950.data.seed-values.sql:16901
+msgid "Display related headings (see-also) in browse"
+msgstr ""
+
 #: 950.data.seed-values.sql:8133
 msgid "Jordan "
 msgstr "الأردن "
@@ -9574,6 +9778,10 @@ msgstr "السماح للمستخدم بعرض الإعارة وأحداث ال�
 #: 950.data.seed-values.sql:912
 msgid "Allow a user to create/view/update/delete a copy location order"
 msgstr "السماح للمستخدم بـِ إنشاء/عرض/تحديث/حذف طلب موقع النُسخة"
+
+#: 950.data.seed-values.sql:8235
+msgid "South Africa "
+msgstr "افريقيا الجنوبية "
 
 #: 950.data.seed-values.sql:4799
 msgid ""
@@ -9804,6 +10012,10 @@ msgstr "فيجي"
 #: 950.data.seed-values.sql:1653
 msgid "Allow a user to create an authority record"
 msgstr "السماح للمستخدم بإنشاء تسجيلة إسناد"
+
+#: 950.data.seed-values.sql:17240
+msgid "Order Lineitems Include Author Info"
+msgstr ""
 
 #: 950.data.seed-values.sql:8252
 msgid "Swaziland "
@@ -10176,6 +10388,12 @@ msgstr "لغة ولوف"
 msgid "Set the default font size for spine and pocket labels"
 msgstr "تعيين وضبط حجم الخط الافتراضي للتعريفات والتسميات"
 
+#: 950.data.seed-values.sql:731
+msgid ""
+"Allow a user to cancel a copy transit if the user is at the transit "
+"destination or source"
+msgstr ""
+
 #: 950.data.seed-values.sql:14798
 msgid "Max user activity entries to retrieve (staff client)"
 msgstr ""
@@ -10202,6 +10420,10 @@ msgstr "نموذج كرة أرضية"
 #: 950.data.seed-values.sql:570
 msgid "* no longer applicable"
 msgstr "* لم يعد قابلاً للتطبيق"
+
+#: 950.data.seed-values.sql:16872
+msgid "Item Print Label - Call Number Wrap Filter Width"
+msgstr ""
 
 #: 950.data.seed-values.sql:6631
 msgid "Coptic"
@@ -10377,6 +10599,10 @@ msgstr "تنسيق اسم المستفيد"
 msgid ""
 "Default display grouping for serials distributions presented in the OPAC."
 msgstr "العرض الافتراضي لـِ تجمع توزيعات الدوريات المعروضة في الأوباك."
+
+#: 950.data.seed-values.sql:15281
+msgid "Default provider to use during ACQ file upload"
+msgstr "المزود الافتراضي مِن أجل الاستخدام خلال رفع الملف التزويد"
 
 #: 950.data.seed-values.sql:13966
 msgid "AT&T Enterprise Paging"
@@ -10633,6 +10859,10 @@ msgstr "أوكرانيا "
 msgid "Serials and magazines"
 msgstr "دوريات ومجلات"
 
+#: 950.data.seed-values.sql:17228
+msgid "Orders Include Copy IDs"
+msgstr ""
+
 #: 950.data.seed-values.sql:7000
 msgid "Umbundu"
 msgstr "يومبوندو"
@@ -10672,10 +10902,6 @@ msgstr "جزر فارو "
 #: 950.data.seed-values.sql:4364
 msgid "Suggest active field on patron registration"
 msgstr "حقل الاقتراح المفعل في تسجيل المستفيد"
-
-#: 950.data.seed-values.sql:13279
-msgid "LC subject headings for children's literature"
-msgstr "قائمة رؤوس موضوعات مكتبة الكونغرس لـِ أدب الأطفال"
 
 #: 950.data.seed-values.sql:7733 950.data.seed-values.sql:7854
 #: 950.data.seed-values.sql:7873 950.data.seed-values.sql:7990
@@ -10758,10 +10984,6 @@ msgstr ""
 msgid "Regular print reproduction"
 msgstr "مطبوعات منتظمة مُعاد انتاجها ـ استنساخ"
 
-#: 950.data.seed-values.sql:13281
-msgid "National Agricultural Library subject authority file"
-msgstr "ملف رؤوس موضوعات المكتبة الوطنية الزراعية"
-
 #: 950.data.seed-values.sql:7878 950.data.seed-values.sql:8583
 #: 950.data.seed-values.sql:8604
 msgid "Interviews"
@@ -10786,6 +11008,10 @@ msgstr "كل الكتب"
 #: 950.data.seed-values.sql:8228
 msgid "Serbia "
 msgstr "سيربيا "
+
+#: 950.data.seed-values.sql:17249
+msgid "Lineitem Title, Author, etc. Fields Are Present Even if Empty"
+msgstr ""
 
 #: 950.data.seed-values.sql:7769
 msgid "Single map"
@@ -10848,6 +11074,10 @@ msgstr "مسقط جود للمساحات المتساوية"
 msgid "Allow a user to place a volume level hold"
 msgstr "السماح للمستخدم بوضع حجز على مستوى المجلد"
 
+#: 950.data.seed-values.sql:17264
+msgid "Order Copies Always Include Collection Code (Even if Empty)"
+msgstr ""
+
 #: 950.data.seed-values.sql:422 950.data.seed-values.sql:443
 #: 950.data.seed-values.sql:5302
 msgid "Publisher"
@@ -10891,6 +11121,10 @@ msgstr "معاجم/ قواميس"
 #: 950.data.seed-values.sql:8588
 msgid "Conference proceedings"
 msgstr "وقائع مؤتمر"
+
+#: 950.data.seed-values.sql:13165
+msgid "Subject axis"
+msgstr ""
 
 #: 950.data.seed-values.sql:8031
 msgid "Belize "
@@ -11015,10 +11249,6 @@ msgstr "موسيقا متعددة الأصوات والألحان"
 #: 950.data.seed-values.sql:1690
 msgid "Staff"
 msgstr "طاقم"
-
-#: 950.data.seed-values.sql:1518
-msgid "Allows a user to abort a transit on a copy with status of MISSING"
-msgstr "السماح للمستخدم بإحباط النقل على النسخة التي في حالة مفقود"
 
 #: 950.data.seed-values.sql:6569
 msgid "Arawak"
@@ -11316,6 +11546,12 @@ msgstr "ورقي"
 #: 950.data.seed-values.sql:2714
 msgid "Booking"
 msgstr "الحجز"
+
+#: 950.data.seed-values.sql:17181
+msgid ""
+"Number of most recently accessed patrons that can be re-retrieved in the "
+"staff client.  A value of 0 or less disables the feature. Defaults to 1."
+msgstr ""
 
 #: 950.data.seed-values.sql:1138
 msgid "DELETE_IMPORT_TRASH_FIELD"
@@ -11724,6 +11960,10 @@ msgstr "لاهندا"
 msgid "Phonograph spoken recording"
 msgstr "تسجيلة فونوغراف ناطقة"
 
+#: 950.data.seed-values.sql:13166
+msgid "Topic Subject axis"
+msgstr ""
+
 #: 950.data.seed-values.sql:7848
 msgid "Chorus score"
 msgstr "مقطوعة موسيقية جماعية ـ الجوقة ـ"
@@ -11735,6 +11975,10 @@ msgstr "بربادوس "
 #: 950.data.seed-values.sql:6951
 msgid "Sukuma"
 msgstr "السوكوما"
+
+#: 950.data.seed-values.sql:16824
+msgid "Item Print Label - Width for Right Label"
+msgstr ""
 
 #: 950.data.seed-values.sql:2576
 msgid "Patron via OPAC"
@@ -11793,6 +12037,10 @@ msgstr "مدخل رابط ترويسة التأسيس -- العنوان المو
 
 #: 950.data.seed-values.sql:13728
 msgid "C Beyond"
+msgstr ""
+
+#: 950.data.seed-values.sql:16776
+msgid "Item Print Label - Height for Left Label"
 msgstr ""
 
 #: 950.data.seed-values.sql:1506
@@ -12057,10 +12305,6 @@ msgstr ""
 "المحطة الطرفية لطاقم المكتبة سيعرض تحذيراً قبل أيام من انتهاء حساب المستفيد. "
 "القيمة هي عدد الأيام، على سبيل المثال: 3 لمدة 3 أيام."
 
-#: 950.data.seed-values.sql:1516
-msgid "Allows a user to abort a transit on a copy with status of LOST"
-msgstr "السماح للمستخدم بإلغاء نقل نُسخة بحالة ضائع"
-
 #: 950.data.seed-values.sql:122
 msgid "Translated Title"
 msgstr "العنوان المترجم"
@@ -12188,6 +12432,12 @@ msgstr ""
 "تاريخ التوزيع أو الاصدار أو الانتاج أو تاريخ التسجيل عند الاختلاف، ولملفات "
 "الحاسوب يستخدم عندما يتاح الملف للجمهور"
 
+#: 950.data.seed-values.sql:733
+msgid ""
+"Allow a user to cancel a copy transit if the user is not at the transit "
+"source or dest"
+msgstr ""
+
 #: 950.data.seed-values.sql:16133
 msgid "Allow Patron Self-Registration"
 msgstr "السماح للمستفيد بالتسجيل الذاتي"
@@ -12203,6 +12453,10 @@ msgstr "أنظر أيضاً من التتابع - القسم الفرعي الع
 #: 950.data.seed-values.sql:1332
 msgid "ADMIN_INVOICE_METHOD"
 msgstr "ADMIN_INVOICE_METHOD"
+
+#: 950.data.seed-values.sql:17270
+msgid "Lineitem Reference Field (RFF) Uses Lineitem ID Only"
+msgstr ""
 
 #: 950.data.seed-values.sql:7896
 msgid "Instrumental parts"
@@ -12356,6 +12610,12 @@ msgstr ""
 msgid "text"
 msgstr "نص"
 
+#: 950.data.seed-values.sql:16830
+msgid ""
+"Set the default width for the rightmost item print label. Please include a "
+"unit of measurement that is valid CSS. For example, \"1in\" or \"2.5cm\""
+msgstr ""
+
 #: 950.data.seed-values.sql:1436
 msgid "UPDATE_USER_BTYPE"
 msgstr "UPDATE_USER_BTYPE"
@@ -12421,6 +12681,10 @@ msgid ""
 msgstr ""
 "عدد الثواني للانتظار قبل إعادة تحميل واجهة التسجيل الذاتي للمستفيد، بهدف "
 "حماية المعلومات الحساسة"
+
+#: 950.data.seed-values.sql:17122
+msgid "Format Date+Time with this pattern"
+msgstr ""
 
 #: 950.data.seed-values.sql:1182
 msgid "UPDATE_ORG_UNIT_SETTING.circ.selfcheck.alert_on_checkout_event"
@@ -12556,10 +12820,6 @@ msgstr "DELETE_CIRC_DURATION"
 msgid "Prohibit negative balance on bills for overdue materials"
 msgstr "حظر الرصيد السالب في الفواتير للمواد المتأخرة"
 
-#: 950.data.seed-values.sql:13278
-msgid "Library of Congress Subject Headings"
-msgstr "قائمة رؤوس موضوعات مكتبة الكونغرس"
-
 #: 950.data.seed-values.sql:616
 msgid "User may update a patron statistical category"
 msgstr "يمكن للمستخدم بتحديث فئة المستفيد الإحصائية"
@@ -12610,6 +12870,18 @@ msgstr "استراليا الغربية "
 msgid "Bilingual"
 msgstr "ثنائي اللغة"
 
+#: 950.data.seed-values.sql:17210
+msgid "Orders Include Copy Barcodes"
+msgstr ""
+
+#: 950.data.seed-values.sql:1694
+msgid "Administer copy tag types"
+msgstr ""
+
+#: 950.data.seed-values.sql:15026
+msgid "Children's Materials"
+msgstr ""
+
 #: 950.data.seed-values.sql:8347
 msgid "Reprint/reissue date and original date"
 msgstr "إعادة طباعة/إصدار التاريخ والتاريخ الأصلي"
@@ -12634,6 +12906,10 @@ msgstr "يمكن للمستخدم حذف مُدخل من فئة النُسخة �
 msgid "Macedonian"
 msgstr "المقدونية"
 
+#: 950.data.seed-values.sql:17219
+msgid "Orders Include Copy Owning Library"
+msgstr ""
+
 #: 950.data.seed-values.sql:16252
 msgid "Vandelay Default Circulation Modifier"
 msgstr "المَعنِيات ـ مُعدِل الإعارة الافتراضي"
@@ -12653,6 +12929,13 @@ msgstr "موسيقا كنتتا"
 #: 950.data.seed-values.sql:4769
 msgid "Show prefix field on patron registration"
 msgstr "إظهار حقل البادئة في تسجيل المستفيد"
+
+#: 950.data.seed-values.sql:16766
+msgid ""
+"Set the default left margin for the rightmost item print label (or in other "
+"words, the desired space between the two labels). Please include a unit of "
+"measurement that is valid CSS. For example, \"1in\" or \"2.5cm\""
+msgstr ""
 
 #: 950.data.seed-values.sql:7043
 msgid "Language material"
@@ -12714,6 +12997,10 @@ msgstr "فرض الطاقم"
 #: 950.data.seed-values.sql:1418
 msgid "UPDATE_BIB_SOURCE"
 msgstr "UPDATE_BIB_SOURCE"
+
+#: 950.data.seed-values.sql:15028
+msgid "Young Adult Materials"
+msgstr ""
 
 #: 950.data.seed-values.sql:5009
 msgid "Tag Circulated Items in Results"
@@ -13139,6 +13426,13 @@ msgstr "سامية (أخرى)"
 msgid "DELETE_IMPORT_ITEM_ATTR_DEF"
 msgstr "DELETE_IMPORT_ITEM_ATTR_DEF"
 
+#: 950.data.seed-values.sql:16750
+msgid ""
+"Set the default left margin for the leftmost item print Label. Please "
+"include a unit of measurement that is valid CSS. For example, \"1in\" or "
+"\"2.5cm\""
+msgstr ""
+
 #: 950.data.seed-values.sql:4140
 msgid ""
 "The OPAC should not display payments by patrons that are older than any "
@@ -13153,6 +13447,10 @@ msgstr "مادة"
 #: 950.data.seed-values.sql:7642
 msgid "computer chip cartridge"
 msgstr "خرطوشة رقاقة حاسوب"
+
+#: 950.data.seed-values.sql:16840
+msgid "Item Print Label - Inline CSS"
+msgstr ""
 
 #: 950.data.seed-values.sql:7486
 msgid "audio"
@@ -13191,6 +13489,10 @@ msgstr "السماح للمستخدم بـ إنشاء مجموعة ضبط إسن
 #: 950.data.seed-values.sql:8049
 msgid "Chad "
 msgstr "تشاد "
+
+#: 950.data.seed-values.sql:16911
+msgid "Ebook API Integration"
+msgstr ""
 
 #: 950.data.seed-values.sql:15170
 msgid "All Link Checker filter dialogs"
@@ -13278,6 +13580,10 @@ msgstr "قائمة القراءة"
 #: 950.data.seed-values.sql:832
 msgid "Allow a user to update a provider"
 msgstr "السماح للمستخدم بتحديث المزود"
+
+#: 950.data.seed-values.sql:15005
+msgid "Maximum visible age of User Trigger Events in Staff Interfaces"
+msgstr ""
 
 #: 950.data.seed-values.sql:9481
 msgid "A patron has made an acquisitions request."
@@ -13372,9 +13678,9 @@ msgstr "تم طلب ناتج CSV للتسجيلات في صف انتظار ال�
 msgid "Gibraltar "
 msgstr "جبل طارق "
 
-#: 950.data.seed-values.sql:12368 950.data.seed-values.sql:12369
-msgid "Import failed due to system id collision"
-msgstr "فشل الاستيراد بسبب تضارب رمز تعريف النظام"
+#: 950.data.seed-values.sql:1531
+msgid "Allows a user to cancel a transit on a copy with status of MISSING"
+msgstr ""
 
 #: 950.data.seed-values.sql:518
 msgid "Allow a user to place a hold on a specific copy"
@@ -13458,6 +13764,12 @@ msgstr "مدة إبقاء سجل الحجز - ملغي (انتهاء صلاحي�
 msgid "Patron in person"
 msgstr "المستفيد بشكل شخصي"
 
+#: 950.data.seed-values.sql:16814
+msgid ""
+"Set the default height for the rightmost item print label. Please include a "
+"unit of measurement that is valid CSS. For example, \"1in\" or \"2.5cm\""
+msgstr ""
+
 #: 950.data.seed-values.sql:3872
 msgid "Enable PayflowPro payments"
 msgstr "السماح بدفع PayflowPro"
@@ -13470,9 +13782,17 @@ msgstr "السماح للمستخدم بتحديد حالة النُسخة إل�
 msgid "Require county field on patron registration"
 msgstr "حقل البلد مطلوب في تسجيل المستفيد"
 
+#: 950.data.seed-values.sql:17198
+msgid "Orders Include Copy Data"
+msgstr ""
+
 #: 950.data.seed-values.sql:6767
 msgid "Kikuyu"
 msgstr "الكيكويو"
+
+#: 950.data.seed-values.sql:16187
+msgid "Vandelay Generate Default Barcodes"
+msgstr "المَعنِيات ـ توليد باركودات بشكل افتراضي"
 
 #: 950.data.seed-values.sql:4805
 msgid "Show suffix field on patron registration"
@@ -13765,6 +14085,10 @@ msgstr ""
 "سيتم اقتراح الحقل المحظور في واجهة تسجيل المستفيد.  سيتم إظهاره في حال إظهار "
 "الحقول المقترحة.  سيتم تجاهل هذا الإعداد إذا كان الحقل ظاهر أو مطلوب"
 
+#: 950.data.seed-values.sql:16760
+msgid "Item Print Label - Left Margin for Right Label"
+msgstr ""
+
 #: 950.data.seed-values.sql:602
 msgid "Allow a user to view other users' permission groups"
 msgstr "السماح لمستخدم بعرض صلاحيات مستخدمي المجموعات الأخرين"
@@ -13942,6 +14266,10 @@ msgstr "إظهار حقل  الوظائف في تسجيل المستفيد"
 msgid "Allows a user to override the TRANSIT_CHECKIN_INTERVAL_BLOCK event"
 msgstr "السماح للمستخدم بتجاوز عملية TRANSIT_CHECKIN_INTERVAL_BLOCK"
 
+#: 950.data.seed-values.sql:210
+msgid "All Creators"
+msgstr ""
+
 #: 950.data.seed-values.sql:4634
 msgid "Suggest evening_phone field on patron registration"
 msgstr "اقتراح حقل evening_phone في تسجيل المستفيد"
@@ -13957,3 +14285,50 @@ msgstr "كيريباس "
 #: 950.data.seed-values.sql:7717
 msgid "Flamenco"
 msgstr "موسيقا فلامينكو"
+
+#~ msgid "Allows a user to abort a transit on a copy with status of LOST"
+#~ msgstr "السماح للمستخدم بإلغاء نقل نُسخة بحالة ضائع"
+
+#~ msgid ""
+#~ "Allow a user to abort a copy transit if the user is at the transit "
+#~ "destination or source"
+#~ msgstr ""
+#~ "السماح لـِ المستخدم بإحباط/إفشال عبور/نفل النسخة إذا كان المستفيد في وجهة "
+#~ "العبور أو المصدر"
+
+#~ msgid "Canadian Subject Headings"
+#~ msgstr "قائمة رؤوس الموضوعات الكندية"
+
+#~ msgid "Art and Architecture Thesaurus"
+#~ msgstr "مكنز الفنون وهندسة العمارة"
+
+#~ msgid ""
+#~ "Allow a user to abort a copy transit if the user is not at the transit "
+#~ "source or dest"
+#~ msgstr ""
+#~ "السماح لـ المستخدم بإلغاء/إبطال عبور النُسخة إذا كان المستفيد ليس في مصدر "
+#~ "العبور/النقل أو الوجهة"
+
+#~ msgid "Medical Subject Headings"
+#~ msgstr "قائمة رؤوس الموضوعات الطبية"
+
+#~ msgid "Sears List of Subject Headings"
+#~ msgstr "قائمة سيرز لرؤوس الموضوعات"
+
+#~ msgid "Repertoire de vedettes-matiere"
+#~ msgstr "مرجع أو دليل المواد المَعنية"
+
+#~ msgid "LC subject headings for children's literature"
+#~ msgstr "قائمة رؤوس موضوعات مكتبة الكونغرس لـِ أدب الأطفال"
+
+#~ msgid "Library of Congress Subject Headings"
+#~ msgstr "قائمة رؤوس موضوعات مكتبة الكونغرس"
+
+#~ msgid "National Agricultural Library subject authority file"
+#~ msgstr "ملف رؤوس موضوعات المكتبة الوطنية الزراعية"
+
+#~ msgid "Allow a user to mark an item as 'missing'"
+#~ msgstr "السماح للمستخدم بتعيين حالة نُسخة كـَ \"ضائع\""
+
+#~ msgid "Allows a user to abort a transit on a copy with status of MISSING"
+#~ msgstr "السماح للمستخدم بإحباط النقل على النسخة التي في حالة مفقود"

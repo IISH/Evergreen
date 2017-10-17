@@ -420,6 +420,7 @@ sub build_hold_sort_clause {
                 COALESCE(dest_recv_time, source_send_time) AS moment
             FROM action.transit_copy
             WHERE target_copy = %d
+            AND cancel_time IS NULL
             ORDER BY moment DESC LIMIT 1
         ) UNION (
             SELECT
@@ -504,7 +505,8 @@ sub build_hold_sort_clause {
         WHERE
             atc.target_copy = %d AND
             (atc.dest = %d OR atc.source = %d) AND
-            atc.dest_recv_time >= NOW() - (SELECT value FROM go_home_interval)
+            atc.dest_recv_time >= NOW() - (SELECT value FROM go_home_interval) AND
+            atc.cancel_time IS NULL
     ) AS result FROM copy_has_not_been_home
 ) !, $cp->id, $cp->circ_lib, $cp->circ_lib);
         $joins .= " JOIN copy_has_not_been_home_even_to_idle ON (true) ";
@@ -1050,10 +1052,17 @@ sub MR_records_matching_format {
     if ($opac_visible) {
         $vis_q = <<'        SQL';
             EXISTS(
-                SELECT 1 FROM asset.opac_visible_copies
-                WHERE record = ? AND circ_lib IN (
-                    SELECT id FROM actor.org_unit_descendants(?)
-                )
+                SELECT  1
+                  FROM  asset.patron_default_visibility_mask() mask,
+                        asset.copy_vis_attr_cache v
+                        JOIN asset.copy c ON (
+                            c.id = v.target_copy
+                            AND v.record = ?
+                            AND c.circ_lib IN (
+                                SELECT id FROM actor.org_unit_descendants(?)
+                            )
+                        )
+                  WHERE v.vis_attr_vector @@ mask.c_attrs::query_int
             )
         SQL
     }

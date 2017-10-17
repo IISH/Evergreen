@@ -56,7 +56,7 @@
                 <a href="#"><img 
                     alt="[% l('Renewing Help') %]"
                     title="[% l('Actions for checked out items') %]"
-                    src="[% ctx.media_prefix %]/images/question-mark.png" /></a>
+                    src="[% ctx.media_prefix %]/images/question-mark.png[% ctx.cache_key %]" /></a>
             </span>
         </div>
 
@@ -167,7 +167,7 @@
                             [% circ.circ.renewal_remaining %]
                         </td>
                         [%
-                            due_date = ctx.parse_datetime(circ.circ.due_date);
+                            due_date = ctx.parse_datetime(circ.circ.due_date, circ.circ.circ_lib);
                             due_class = (date.now > date.format(due_date, '%s')) ? 'error' : '';
                         %]
                         <td name="due_date" class='[% due_class %]'>

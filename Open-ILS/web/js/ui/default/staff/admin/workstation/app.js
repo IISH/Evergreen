@@ -108,7 +108,9 @@ function($q , $timeout , $location , egCore , egConfirmDialog) {
                                 service.register_ws_api(
                                     base_name, name, org_id, true, deferred)
                             },
-                            cancel : function() {deferred.reject()} 
+                            cancel : function() {
+                                deferred.reject();
+                            }
                         }
                     );
 
@@ -449,6 +451,8 @@ function($scope , $q , egCore , ngToast) {
         checkins : [
             {
                 due_date : new Date().toISOString(),
+                circ_lib : 1,
+                duration : '7 days',
                 target_copy : seed_copy,
                 copy_barcode : seed_copy.barcode,
                 call_number : seed_copy.call_number,
@@ -460,6 +464,8 @@ function($scope , $q , egCore , ngToast) {
             {
                 circ : {
                     due_date : new Date().toISOString(),
+                    circ_lib : 1,
+                    duration : '7 days'
                 },
                 copy : seed_copy,
                 title : seed_record.title,
@@ -553,6 +559,16 @@ function($scope , $q , egCore , ngToast) {
         .then(function(template_context) {
             $scope.print.template_context = template_context;
         });
+    }
+
+    $scope.reset_to_default = function() {
+        egCore.print.removePrintTemplate(
+            $scope.print.template_name
+        );
+        egCore.print.removePrintTemplateContext(
+            $scope.print.template_name
+        );
+        $scope.template_changed();
     }
 
     $scope.save_locally = function() {
@@ -847,6 +863,8 @@ function($scope , $q , $window , $location , egCore , egAlertDialog , workstatio
                 return $scope.set_default_ws(new_ws.name);
             }
             $scope.newWSName = '';
+        }, function(err) {
+            $scope.is_registering = false;
         });
     }
 }])

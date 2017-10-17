@@ -1,21 +1,21 @@
-# French translation for evergreen
-# Copyright (c) 2017 Rosetta Contributors and Canonical Ltd 2017
-# This file is distributed under the same license as the evergreen package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
-#
+# extracted from ../../Open-ILS/web/opac/locale/en-US/reports.dtd
 msgid ""
 msgstr ""
-"Project-Id-Version: evergreen\n"
-"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: 2017-08-25 14:20-0500\n"
-"PO-Revision-Date: 2017-04-09 07:00+0000\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: French <fr@li.org>\n"
+"Project-Id-Version: Evergreen ILS > reports.dtd.po\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2017-09-03 23:32-0400\n"
+"PO-Revision-Date: 2009-11-24 21:11+0000\n"
+"Last-Translator: Warren Layton <Unknown>\n"
+"Language-Team: NRCan Library <Warren.Layton@nrcan.gc.ca>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2017-08-28 05:42+0000\n"
+"X-Launchpad-Export-Date: 2017-09-05 04:42+0000\n"
 "X-Generator: Launchpad (build 18446)\n"
+"X-Poedit-Country: CANADA\n"
+"X-Accelerator-Marker: &\n"
+"X-Poedit-Language: French\n"
+"X-Poedit-SourceCharset: UTF-8\n"
 
 #. Common Entities
 #: reports.common.logged_in_as
@@ -701,6 +701,46 @@ msgstr "Mois"
 msgid " ago"
 msgstr " Plus tôt"
 
+#: reports.oils_rpt_template_search_results
+msgid "Template Search Results"
+msgstr ""
+
+#: reports.oils_rpt_template_search_query
+msgid "Template query..."
+msgstr ""
+
+#: reports.oils_rpt_template_search_label
+msgid "Search Templates"
+msgstr ""
+
+#: reports.oils_rpt_template_search_all_fields
+msgid "All Fields"
+msgstr ""
+
+#: reports.oils_rpt_template_search_name
+msgid "Name"
+msgstr ""
+
+#: reports.oils_rpt_template_search_desc
+msgid "Description"
+msgstr ""
+
+#: reports.oils_rpt_template_search_all_folders
+msgid "All Folders"
+msgstr ""
+
+#: reports.oils_rpt_paging_start
+msgid "Start"
+msgstr ""
+
+#: reports.oils_rpt_paging_prev
+msgid "Prev"
+msgstr ""
+
+#: reports.oils_rpt_paging_next
+msgid "Next"
+msgstr ""
+
 #: reports.xul.template_builder.db_source_browser.label
 msgid "Database Source Browser"
 msgstr "Navigateur de sources de bases de données"
@@ -863,3 +903,20 @@ msgstr "Rapport"
 #: reports.xul.template_builder.field_doc.label
 msgid "Field Hint"
 msgstr ""
+
+#~ msgid "Cancel"
+#~ msgstr "Annuler"
+
+#~ msgid ""
+#~ "One or more of the selected templates could not be deleted because there are "
+#~ "reports that depend on them."
+#~ msgstr ""
+#~ "Un ou plusieurs des modèles sélectionnés ne pouvaient pas être supprimés "
+#~ "parce que des rapports en dépendent."
+
+#~ msgid ""
+#~ "One or more of The selected reports could not be deleted because there are "
+#~ "outputs that depend on them."
+#~ msgstr ""
+#~ "Un ou plusieurs des rapports sélectionnés ne pouvaient pas être supprimés "
+#~ "parce que des résultats en dépendent"

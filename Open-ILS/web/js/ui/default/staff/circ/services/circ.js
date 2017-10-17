@@ -122,7 +122,6 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,
     // options : non-parameter controls.  e.g. "override", "check_barcode"
     service.checkout = function(params, options) {
         if (!options) options = {};
-
         console.debug('egCirc.checkout() : ' 
             + js2JSON(params) + ' : ' + js2JSON(options));
 
@@ -292,6 +291,9 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,
         data.author = final_resp.evt[0].author;
         data.isbn = final_resp.evt[0].isbn;
         data.route_to = final_resp.evt[0].route_to;
+
+        if (payload.circ) data.duration = payload.circ.duration();
+        if (payload.circ) data.circ_lib = payload.circ.circ_lib();
 
         // for checkin, the mbts lives on the main circ
         if (payload.circ && payload.circ.billable_transaction())
@@ -559,9 +561,12 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,
         var promises = [];
         var payload;
         if (!evt[0] || !(payload = evt[0].payload)) return $q.when();
-
+        
         promises.push(service.flesh_copy_location(payload.copy));
         if (payload.copy) {
+            promises.push(service.flesh_acn_owning_lib(payload.volume));
+            promises.push(service.flesh_copy_circ_library(payload.copy));
+            promises.push(service.flesh_copy_circ_modifier(payload.copy));
             promises.push(
                 service.flesh_copy_status(payload.copy)
 
@@ -613,6 +618,30 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,
             (payload.copy ? payload.copy.dummy_isbn() : null);});
 
         return $q.all(promises);
+    }
+
+    service.flesh_acn_owning_lib = function(acn) {
+        if (!acn) return $q.when();
+        return $q.when(acn.owning_lib(egCore.org.get( acn.owning_lib() )));
+    }
+
+    service.flesh_copy_circ_library = function(copy) {
+        if (!copy) return $q.when();
+        
+        return $q.when(copy.circ_lib(egCore.org.get( copy.circ_lib() )));
+    }
+
+    // fetches the full list of circ modifiers
+    service.flesh_copy_circ_modifier = function(copy) {
+        if (!copy) return $q.when();
+        if (egCore.env.ccm)
+            return $q.when(copy.circ_modifier(egCore.env.ccm.map[copy.circ_modifier()]));
+        return egCore.pcrud.retrieveAll('ccm', {}, {atomic : true}).then(
+            function(list) {
+                egCore.env.absorbList(list, 'ccm');
+                copy.circ_modifier(egCore.env.ccm.map[copy.circ_modifier()]);
+            }
+        );
     }
 
     // fetches the full list of copy statuses
@@ -797,6 +826,13 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,
                 $scope.circModifiers = circMods;
                 $scope.ok = function(args) { $uibModalInstance.close(args) }
                 $scope.cancel = function () { $uibModalInstance.dismiss() }
+
+                // use this function as a keydown handler on form
+                // elements that should not submit the form on enter.
+                $scope.preventSubmit = function($event) {
+                    if ($event.keyCode == 13)
+                        $event.preventDefault();
+                }
             }],
             resolve : {
                 circMods : function() { 

@@ -96,8 +96,8 @@ SELECT SETVAL('config.standing_penalty_id_seq', 100);
 
 INSERT INTO config.metabib_class ( name, label ) VALUES ( 'identifier', oils_i18n_gettext('identifier', 'Identifier', 'cmc', 'label') );
 INSERT INTO config.metabib_class ( name, label ) VALUES ( 'keyword', oils_i18n_gettext('keyword', 'Keyword', 'cmc', 'label') );
-INSERT INTO config.metabib_class ( name, label ) VALUES ( 'title', oils_i18n_gettext('title', 'Title', 'cmc', 'label') );
-INSERT INTO config.metabib_class ( name, label ) VALUES ( 'author', oils_i18n_gettext('author', 'Author', 'cmc', 'label') );
+INSERT INTO config.metabib_class ( name, label ) VALUES ( 'title', oils_i18n_gettext('title', 'Title', 'cmc', 'label'));
+INSERT INTO config.metabib_class ( name, label ) VALUES ( 'author', oils_i18n_gettext('author', 'Author', 'cmc', 'label'));
 INSERT INTO config.metabib_class ( name, label ) VALUES ( 'subject', oils_i18n_gettext('subject', 'Subject', 'cmc', 'label') );
 INSERT INTO config.metabib_class ( name, label ) VALUES ( 'series', oils_i18n_gettext('series', 'Series', 'cmc', 'label') );
 
@@ -111,6 +111,7 @@ INSERT INTO config.xml_transform VALUES ( 'mods3', 'http://www.loc.gov/mods/v3',
 INSERT INTO config.xml_transform VALUES ( 'mods32', 'http://www.loc.gov/mods/v3', 'mods32', '');
 INSERT INTO config.xml_transform VALUES ( 'mods33', 'http://www.loc.gov/mods/v3', 'mods33', '');
 INSERT INTO config.xml_transform VALUES ( 'marc21expand880', 'http://www.loc.gov/MARC21/slim', 'marc', '' );
+INSERT INTO config.xml_transform VALUES ( 'mads21', 'http://www.loc.gov/mads/v2', 'mads21', '' );
 
 -- Index Definitions
 INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, facet_field, authority_xpath, browse_field ) VALUES
@@ -124,13 +125,13 @@ INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, 
     (4, 'title', 'alternative', oils_i18n_gettext(4, 'Alternate Title', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:titleInfo[mods32:title and starts-with(@type,'alternative')]$$, '//@xlink:href', $$*[local-name() != "nonSort"]$$ );
 INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, authority_xpath, browse_sort_xpath ) VALUES 
     (5, 'title', 'uniform', oils_i18n_gettext(5, 'Uniform Title', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:titleInfo[mods32:title and (@type='uniform-nfi')]$$, '//@xlink:href', $$*[local-name() != "nonSort"]$$ );
-INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, authority_xpath, browse_field ) VALUES
-    (6, 'title', 'proper', oils_i18n_gettext(6, 'Title Proper', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:titleNonfiling[mods32:title and not (@type)]$$, '//@xlink:href', FALSE );
+INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, authority_xpath, browse_field, display_field ) VALUES
+    (6, 'title', 'proper', oils_i18n_gettext(6, 'Title Proper', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:titleNonfiling[mods32:title and not (@type)]$$, '//@xlink:href', FALSE,TRUE );
 
 INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, facet_xpath, facet_field , authority_xpath, browse_xpath) VALUES 
     (7, 'author', 'corporate', oils_i18n_gettext(7, 'Corporate Author', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:name[@type='corporate' and (mods32:role/mods32:roleTerm[text()='creator'] or mods32:role/mods32:roleTerm[text()='aut'] or mods32:role/mods32:roleTerm[text()='cre'])]$$, $$//*[local-name()='namePart']$$, TRUE, '//@xlink:href',$$//*[local-name()='namePart']$$ ); -- /* to fool vim */;
-INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, facet_xpath, facet_field, authority_xpath, browse_xpath ) VALUES 
-    (8, 'author', 'personal', oils_i18n_gettext(8, 'Personal Author', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:name[@type='personal' and mods32:role/mods32:roleTerm[text()='creator']]$$, $$//*[local-name()='namePart']$$, TRUE, '//@xlink:href',$$//*[local-name()='namePart']$$ ); -- /* to fool vim */;
+INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, facet_xpath, facet_field, authority_xpath, browse_xpath, display_field, display_xpath ) VALUES 
+    (8, 'author', 'personal', oils_i18n_gettext(8, 'Personal Author', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:name[@type='personal' and mods32:role/mods32:roleTerm[text()='creator']]$$, $$//*[local-name()='namePart']$$, TRUE, '//@xlink:href',$$//*[local-name()='namePart']$$,TRUE,$$//*[local-name()='namePart']$$ ); -- /* to fool vim */;
 INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, facet_xpath, facet_field, authority_xpath, browse_xpath ) VALUES 
     (9, 'author', 'conference', oils_i18n_gettext(9, 'Conference Author', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:name[@type='conference' and mods32:role/mods32:roleTerm[text()='creator']]$$, $$//*[local-name()='namePart']$$, TRUE, '//@xlink:href',$$//*[local-name()='namePart']$$ ); -- /* to fool vim */;
 INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, facet_xpath, facet_field, authority_xpath, browse_xpath ) VALUES 
@@ -146,10 +147,10 @@ INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, 
     (14, 'subject', 'topic', oils_i18n_gettext(14, 'Topic Subject', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:subject/mods32:topic$$, TRUE, '//@xlink:href', FALSE );
 --INSERT INTO config.metabib_field ( id, field_class, name, format, xpath ) VALUES 
 --  ( id, field_class, name, xpath ) VALUES ( 'subject', 'genre', 'mods32', $$//mods32:mods/mods32:genre$$ );
-INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, browse_field ) VALUES 
-    (15, 'keyword', 'keyword', oils_i18n_gettext(15, 'General Keywords', 'cmf', 'label'), 'mods32', $$//mods32:mods/*[not(local-name()='originInfo')]$$, FALSE ); -- /* to fool vim */;
-INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, browse_field ) VALUES
-    (16, 'subject', 'complete', oils_i18n_gettext(16, 'All Subjects', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:subject$$, FALSE );
+INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, browse_field, display_field ) VALUES 
+    (15, 'keyword', 'keyword', oils_i18n_gettext(15, 'General Keywords', 'cmf', 'label'), 'mods32', $$//mods32:mods/*[not(local-name()='originInfo')]$$, FALSE, FALSE ); -- /* to fool vim */;
+INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, browse_field, display_field ) VALUES
+    (16, 'subject', 'complete', oils_i18n_gettext(16, 'All Subjects', 'cmf', 'label'), 'mods32', $$//mods32:mods/mods32:subject$$, FALSE, TRUE );
 
 INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, browse_field ) VALUES
     (17, 'identifier', 'accession', oils_i18n_gettext(17, 'Accession Number', 'cmf', 'label'), 'marcxml', $$//marc:controlfield[@tag='001']$$, FALSE );
@@ -187,7 +188,7 @@ INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, 
 INSERT INTO config.metabib_field ( id, field_class, name, label, format, xpath, browse_field, facet_field, facet_xpath, joiner ) VALUES
     (33, 'identifier', 'genre', oils_i18n_gettext(33, 'Genre', 'cmf', 'label'), 'marcxml', $$//marc:datafield[@tag='655']$$, FALSE, TRUE, $$//*[local-name()='subfield' and contains('abvxyz',@code)]$$, ' -- ' ); -- /* to fool vim */;
 
-UPDATE config.metabib_field SET joiner = ' -- ' WHERE field_class = 'subject' AND name NOT IN ('name', 'complete');
+UPDATE config.metabib_field SET joiner = ' -- ' WHERE field_class = 'subject' AND name NOT IN ('name');
 
 INSERT INTO config.metabib_field ( id, field_class, name, label, 
      format, xpath, search_field, browse_field, authority_xpath, joiner ) VALUES
@@ -204,6 +205,12 @@ INSERT INTO config.metabib_field ( id, field_class, name, label,
     (36, 'subject', 'temporal_browse', oils_i18n_gettext(36, 'Temporal Term Browse', 'cmf', 'label'), 
      'mods32', $$//mods32:mods/mods32:subject[local-name(./*[1]) = "temporal"]$$, FALSE, TRUE, '//@xlink:href', ' -- ' ); -- /* to fool vim */;
 
+INSERT INTO config.metabib_field ( id, field_class, name, label,
+    format, xpath, display_field, display_xpath ) VALUES 
+    (37, 'author', 'creator', oils_i18n_gettext(37, 'All Creators', 'cmf', 'label'),
+     'mods32', $$//mods32:mods/mods32:name[mods32:role/mods32:roleTerm[text()='creator']]$$, TRUE, $$//*[local-name()='namePart']$$ ); -- /* to fool vim */;
+
+
 INSERT INTO config.metabib_field_index_norm_map (field,norm)
     SELECT  m.id,
             i.id
@@ -213,6 +220,14 @@ INSERT INTO config.metabib_field_index_norm_map (field,norm)
             AND m.id IN (34, 35, 36);
 
 SELECT SETVAL('config.metabib_field_id_seq', GREATEST(1000, (SELECT MAX(id) FROM config.metabib_field)));
+
+INSERT INTO config.display_field_map (name, field, multi) VALUES
+    ('title', 6, FALSE),
+    ('author', 8, FALSE),
+    ('creators', 37, TRUE),
+    ('subject', 16, TRUE),
+    ('isbn', 18, TRUE)
+;
 
 INSERT INTO config.metabib_search_alias (alias,field_class) VALUES ('kw','keyword');
 INSERT INTO config.metabib_search_alias (alias,field_class) VALUES ('eg.keyword','keyword');
@@ -350,7 +365,7 @@ INSERT INTO config.copy_status
     VALUES (16, oils_i18n_gettext(16, 'Long Overdue', 'ccs', 'name'), 'f', 'f', 'f', 't');
 INSERT INTO config.copy_status
 (id, name, holdable, opac_visible, copy_active, restrict_copy_delete)
-VALUES (17, 'Lost and Paid', FALSE, FALSE, FALSE, TRUE);
+VALUES (17, oils_i18n_gettext(17, 'Lost and Paid', 'ccs', 'name'), 'f', 'f', 'f', 't');
 INSERT INTO config.copy_status(id,name,holdable,opac_visible) VALUES (18,oils_i18n_gettext(18, 'Canceled Transit', 'ccs', 'name'),'t','t');
 
 
@@ -573,8 +588,6 @@ INSERT INTO permission.perm_list ( id, code, description ) VALUES
     'Allow a user to record payments in the Billing Interface', 'ppl', 'description' )),
  ( 34, 'SET_CIRC_LOST', oils_i18n_gettext( 34, 
     'Allow a user to mark an item as ''lost''', 'ppl', 'description' )),
- ( 35, 'SET_CIRC_MISSING', oils_i18n_gettext( 35, 
-    'Allow a user to mark an item as ''missing''', 'ppl', 'description' )),
  ( 36, 'SET_CIRC_CLAIMS_RETURNED', oils_i18n_gettext( 36, 
     'Allow a user to mark an item as ''claims returned''', 'ppl', 'description' )),
  ( 37, 'CREATE_TRANSACTION', oils_i18n_gettext( 37, 
@@ -716,9 +729,9 @@ INSERT INTO permission.perm_list ( id, code, description ) VALUES
  ( 105, 'COPY_STATUS_MISSING.override', oils_i18n_gettext( 105, 
     'Allow a user to change the missing status on a copy', 'ppl', 'description' )),
  ( 106, 'ABORT_TRANSIT', oils_i18n_gettext( 106, 
-    'Allow a user to abort a copy transit if the user is at the transit destination or source', 'ppl', 'description' )),
+    'Allow a user to cancel a copy transit if the user is at the transit destination or source', 'ppl', 'description' )),
  ( 107, 'ABORT_REMOTE_TRANSIT', oils_i18n_gettext( 107, 
-    'Allow a user to abort a copy transit if the user is not at the transit source or dest', 'ppl', 'description' )),
+    'Allow a user to cancel a copy transit if the user is not at the transit source or dest', 'ppl', 'description' )),
  ( 108, 'VIEW_ZIP_DATA', oils_i18n_gettext( 108, 
     'Allow a user to query the ZIP code data method', 'ppl', 'description' )),
  ( 109, 'CANCEL_HOLDS', oils_i18n_gettext( 109, 
@@ -1514,9 +1527,9 @@ INSERT INTO permission.perm_list ( id, code, description ) VALUES
  ( 506, 'VIEW_USER_SETTING_TYPE', oils_i18n_gettext(506,
     'Allows viewing of configurable user setting types.', 'ppl', 'description')),
  ( 507, 'ABORT_TRANSIT_ON_LOST', oils_i18n_gettext(507,
-    'Allows a user to abort a transit on a copy with status of LOST', 'ppl', 'description')),
+    'Allows a user to cancel a transit on a copy with status of LOST', 'ppl', 'description')),
  ( 508, 'ABORT_TRANSIT_ON_MISSING', oils_i18n_gettext(508,
-    'Allows a user to abort a transit on a copy with status of MISSING', 'ppl', 'description')),
+    'Allows a user to cancel a transit on a copy with status of MISSING', 'ppl', 'description')),
  ( 509, 'TRANSIT_CHECKIN_INTERVAL_BLOCK.override', oils_i18n_gettext(509,
     'Allows a user to override the TRANSIT_CHECKIN_INTERVAL_BLOCK event', 'ppl', 'description')),
  ( 510, 'UPDATE_PATRON_COLLECTIONS_EXEMPT', oils_i18n_gettext(510,
@@ -1677,7 +1690,15 @@ INSERT INTO permission.perm_list ( id, code, description ) VALUES
  ( 588, 'ITEM_NOT_HOLDABLE.override', oils_i18n_gettext( 588,
     'Override the ITEM_NOT_HOLDABLE event', 'ppl', 'description' )),
  ( 589, 'ITEM_RENTAL_FEE_REQUIRED.override', oils_i18n_gettext( 589,
-    'Override the ITEM_RENTAL_FEE_REQUIRED event', 'ppl', 'description' ))
+    'Override the ITEM_RENTAL_FEE_REQUIRED event', 'ppl', 'description' )),
+ ( 590, 'ADMIN_COPY_TAG_TYPES', oils_i18n_gettext( 590,
+    'Administer copy tag types', 'ppl', 'description' )),
+ ( 591, 'ADMIN_COPY_TAG', oils_i18n_gettext( 591,
+    'Administer copy tag', 'ppl', 'description' )),
+ ( 592,'CONTAINER_BATCH_UPDATE', oils_i18n_gettext( 592,
+    'Allow batch update via buckets', 'ppl', 'description' )),
+ ( 593, 'ADMIN_SERIAL_PATTERN_TEMPLATE', oils_i18n_gettext( 593,
+    'Administer serial prediction pattern templates', 'ppl', 'description' ))
 ;
 
 SELECT SETVAL('permission.perm_list_id_seq'::TEXT, 1000);
@@ -2096,7 +2117,6 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 			'SET_CIRC_CLAIMS_RETURNED',
 			'SET_CIRC_CLAIMS_RETURNED.override',
 			'SET_CIRC_LOST',
-			'SET_CIRC_MISSING',
 			'UPDATE_BILL_NOTE',
 			'UPDATE_PATRON_CLAIM_NEVER_CHECKED_OUT_COUNT',
 			'UPDATE_PATRON_CLAIM_RETURN_COUNT',
@@ -2254,7 +2274,6 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 			'SET_CIRC_CLAIMS_RETURNED',
 			'SET_CIRC_CLAIMS_RETURNED.override',
 			'SET_CIRC_LOST',
-			'SET_CIRC_MISSING',
 			'UNBAR_PATRON',
 			'UPDATE_BILL_NOTE',
 			'UPDATE_NON_CAT_TYPE',
@@ -2487,6 +2506,7 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 			'ADMIN_SERIAL_CAPTION_PATTERN',
 			'ADMIN_SERIAL_DISTRIBUTION',
 			'ADMIN_SERIAL_ITEM',
+			'ADMIN_SERIAL_PATTERN_TEMPLATE',
 			'ADMIN_SERIAL_STREAM',
 			'ADMIN_SERIAL_SUBSCRIPTION',
 			'ISSUANCE_HOLDS',
@@ -2695,27 +2715,27 @@ INSERT INTO config.usr_setting_type (name,opac_visible,label,description,datatyp
 
 -- Add groups for org_unit settings
 INSERT INTO config.settings_group (name, label) VALUES
-('acq', oils_i18n_gettext('config.settings_group.acquisitions', 'Acquisitions', 'coust', 'label')),
-('sys', oils_i18n_gettext('config.settings_group.system', 'System', 'coust', 'label')),
-('gui', oils_i18n_gettext('config.settings_group.gui', 'GUI', 'coust', 'label')),
-('lib', oils_i18n_gettext('config.settings_group.lib', 'Library', 'coust', 'label')),
-('sec', oils_i18n_gettext('config.settings_group.sec', 'Security', 'coust', 'label')),
-('cat', oils_i18n_gettext('config.settings_group.cat', 'Cataloging', 'coust', 'label')),
-('holds', oils_i18n_gettext('config.settings_group.holds', 'Holds', 'coust', 'label')),
-('circ', oils_i18n_gettext('config.settings_group.circulation', 'Circulation', 'coust', 'label')),
-('self', oils_i18n_gettext('config.settings_group.self', 'Self Check', 'coust', 'label')),
-('opac', oils_i18n_gettext('config.settings_group.opac', 'OPAC', 'coust', 'label')),
-('prog', oils_i18n_gettext('config.settings_group.program', 'Program', 'coust', 'label')),
-('glob', oils_i18n_gettext('config.settings_group.global', 'Global', 'coust', 'label')),
-('finance', oils_i18n_gettext('config.settings_group.finances', 'Finances', 'coust', 'label')),
-('credit', oils_i18n_gettext('config.settings_group.ccp', 'Credit Card Processing', 'coust', 'label')),
-('serial', oils_i18n_gettext('config.settings_group.serial', 'Serials', 'coust', 'label')),
-('recall', oils_i18n_gettext('config.settings_group.recall', 'Recalls', 'coust', 'label')),
-('booking', oils_i18n_gettext('config.settings_group.booking', 'Booking', 'coust', 'label')),
-('offline', oils_i18n_gettext('config.settings_group.offline', 'Offline', 'coust', 'label')),
-('receipt_template', oils_i18n_gettext('config.settings_group.receipt_template', 'Receipt Template', 'coust', 'label')),
+('acq', oils_i18n_gettext('acq', 'Acquisitions', 'csg', 'label')),
+('sys', oils_i18n_gettext('sys', 'System', 'csg', 'label')),
+('gui', oils_i18n_gettext('gui', 'GUI', 'csg', 'label')),
+('lib', oils_i18n_gettext('lib', 'Library', 'csg', 'label')),
+('sec', oils_i18n_gettext('sec', 'Security', 'csg', 'label')),
+('cat', oils_i18n_gettext('cat', 'Cataloging', 'csg', 'label')),
+('holds', oils_i18n_gettext('holds', 'Holds', 'csg', 'label')),
+('circ', oils_i18n_gettext('circ', 'Circulation', 'csg', 'label')),
+('self', oils_i18n_gettext('self', 'Self Check', 'csg', 'label')),
+('opac', oils_i18n_gettext('opac', 'OPAC', 'csg', 'label')),
+('prog', oils_i18n_gettext('prog', 'Program', 'csg', 'label')),
+('glob', oils_i18n_gettext('glob', 'Global', 'csg', 'label')),
+('finance', oils_i18n_gettext('finance', 'Finances', 'csg', 'label')),
+('credit', oils_i18n_gettext('credit', 'Credit Card Processing', 'csg', 'label')),
+('serial', oils_i18n_gettext('serial', 'Serials', 'csg', 'label')),
+('recall', oils_i18n_gettext('recall', 'Recalls', 'csg', 'label')),
+('booking', oils_i18n_gettext('booking', 'Booking', 'csg', 'label')),
+('offline', oils_i18n_gettext('offline', 'Offline', 'csg', 'label')),
+('receipt_template', oils_i18n_gettext('receipt_template', 'Receipt Template', 'csg', 'label')),
 ('sms', oils_i18n_gettext('sms','SMS Text Messages','csg','label')),
-('vandelay', oils_i18n_gettext('vandelay','Vandelay','coust','label'))
+('vandelay', oils_i18n_gettext('vandelay','Vandelay','csg','label'))
 ;
 
 
@@ -5359,7 +5379,7 @@ SELECT SETVAL('vandelay.authority_attr_definition_id_seq'::TEXT, 100);
 
 INSERT INTO container.copy_bucket_type (code,label) VALUES ('misc', oils_i18n_gettext('misc', 'Miscellaneous', 'ccpbt', 'label'));
 INSERT INTO container.copy_bucket_type (code,label) VALUES ('staff_client', oils_i18n_gettext('staff_client', 'General Staff Client container', 'ccpbt', 'label'));
-INSERT INTO container.copy_bucket_type (code,label) VALUES ( 'circ_history', 'Circulation History' );
+INSERT INTO container.copy_bucket_type (code,label) VALUES ( 'circ_history', oils_i18n_gettext('circ_history', 'Circulation History', 'ccpbt', 'label'));
 INSERT INTO container.call_number_bucket_type (code,label) VALUES ('misc', oils_i18n_gettext('misc', 'Miscellaneous', 'ccnbt', 'label'));
 INSERT INTO container.biblio_record_entry_bucket_type (code,label) VALUES ('misc', oils_i18n_gettext('misc', 'Miscellaneous', 'cbrebt', 'label'));
 INSERT INTO container.biblio_record_entry_bucket_type (code,label) VALUES ('staff_client', oils_i18n_gettext('staff_client', 'General Staff Client container', 'cbrebt', 'label'));
@@ -5378,6 +5398,7 @@ INSERT INTO container.user_bucket_type (code,label) VALUES ('folks:circ.checkout
 INSERT INTO container.user_bucket_type (code,label) VALUES ('folks:hold.view', oils_i18n_gettext('folks:hold.view', 'View Holds', 'cubt', 'label'));
 INSERT INTO container.user_bucket_type (code,label) VALUES ('folks:hold.cancel', oils_i18n_gettext('folks:hold.cancel', 'Cancel Holds', 'cubt', 'label'));
 
+INSERT INTO container.user_bucket_type (code,label) SELECT code,label FROM container.copy_bucket_type where code = 'staff_client';
 
 ----------------------------------
 -- MARC21 record structure data --
@@ -6436,8 +6457,8 @@ INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, leng
 
 -- record attributes
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('alph','Alph','Alph');
-INSERT INTO config.record_attr_definition (name,label,fixed_field,description) values ('audience','Audn','Audn', oils_i18n_gettext('audience', 'Audience', 'crad', 'label'));
-INSERT INTO config.record_attr_definition (name,label,fixed_field,multi,description) values ('bib_level','BLvl','BLvl',FALSE,oils_i18n_gettext('bib_level', 'Bib Level', 'crad', 'label'));
+INSERT INTO config.record_attr_definition (name,label,fixed_field,description) values ('audience','Audn','Audn', oils_i18n_gettext('audience', 'Audience', 'crad', 'description'));
+INSERT INTO config.record_attr_definition (name,label,fixed_field,multi,description) values ('bib_level','BLvl','BLvl',FALSE,oils_i18n_gettext('bib_level', 'Bib Level', 'crad', 'description'));
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('biog','Biog','Biog');
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('conf','Conf','Conf');
 INSERT INTO config.record_attr_definition (name,label,fixed_field,multi) values ('control_type','Ctrl','Ctrl',FALSE);
@@ -6449,18 +6470,18 @@ INSERT INTO config.record_attr_definition (name,label,fixed_field,multi) values 
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('pub_status','DtSt','DtSt');
 INSERT INTO config.record_attr_definition (name,label,fixed_field,multi) values ('enc_level','ELvl','ELvl',FALSE);
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('fest','Fest','Fest');
-INSERT INTO config.record_attr_definition (name,label,fixed_field,description) values ('item_form','Form','Form',oils_i18n_gettext('item_form', 'Item Form', 'crad', 'label'));
+INSERT INTO config.record_attr_definition (name,label,fixed_field,description) values ('item_form','Form','Form',oils_i18n_gettext('item_form', 'Item Form', 'crad', 'description'));
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('gpub','GPub','GPub');
 INSERT INTO config.record_attr_definition (name,label,fixed_field,composite) values ('ills','Ills','Ills',TRUE);
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('indx','Indx','Indx');
-INSERT INTO config.record_attr_definition (name,label,fixed_field,description) values ('item_lang','Lang','Lang',oils_i18n_gettext('item_lang', 'Language', 'crad', 'label'));
+INSERT INTO config.record_attr_definition (name,label,fixed_field,description) values ('item_lang','Lang','Lang',oils_i18n_gettext('item_lang', 'Language', 'crad', 'description'));
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('language','Language (2.0 compat version)','Lang');
-INSERT INTO config.record_attr_definition (name,label,fixed_field,description) values ('lit_form','LitF','LitF',oils_i18n_gettext('lit_form', 'Literary Form', 'crad', 'label'));
+INSERT INTO config.record_attr_definition (name,label,fixed_field,description) values ('lit_form','LitF','LitF',oils_i18n_gettext('lit_form', 'Literary Form', 'crad', 'description'));
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('mrec','MRec','MRec');
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('ff_sl','S/L','S/L');
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('type_mat','TMat','TMat');
-INSERT INTO config.record_attr_definition (name,label,fixed_field,multi,description) values ('item_type','Type','Type',FALSE,oils_i18n_gettext('item_type', 'Item Type', 'crad', 'label'));
-INSERT INTO config.record_attr_definition (name,label,phys_char_sf,description) values ('vr_format','Videorecording format',72,oils_i18n_gettext('vr_format', 'Video Format', 'crad', 'label'));
+INSERT INTO config.record_attr_definition (name,label,fixed_field,multi,description) values ('item_type','Type','Type',FALSE,oils_i18n_gettext('item_type', 'Item Type', 'crad', 'description'));
+INSERT INTO config.record_attr_definition (name,label,phys_char_sf,description) values ('vr_format','Videorecording format',72,oils_i18n_gettext('vr_format', 'Video Format', 'crad', 'description'));
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('file','File','File');
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('freq','Freq','Freq');
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('regl','Regl','Regl');
@@ -9445,7 +9466,7 @@ INSERT INTO action_trigger.event_params (event_def, param, value)
 
 -- trigger data related to acq user requests
 
-INSERT INTO action_trigger.hook (key,core_type,description,passive) VALUES (
+INSERT INTO action_trigger.hook (key,core_type,description) VALUES (
         'aur.ordered',
         'aur', 
         oils_i18n_gettext(
@@ -9453,8 +9474,7 @@ INSERT INTO action_trigger.hook (key,core_type,description,passive) VALUES (
             'A patron acquisition request has been marked On-Order.',
             'ath',
             'description'
-        ), 
-        TRUE
+        ) 
     ), (
         'aur.received', 
         'aur', 
@@ -9463,8 +9483,7 @@ INSERT INTO action_trigger.hook (key,core_type,description,passive) VALUES (
             'A patron acquisition request has been marked Received.',
             'ath',
             'description'
-        ),
-        TRUE
+        )
     ), (
         'aur.cancelled',
         'aur',
@@ -9473,8 +9492,7 @@ INSERT INTO action_trigger.hook (key,core_type,description,passive) VALUES (
             'A patron acquisition request has been marked Cancelled.',
             'ath',
             'description'
-        ),
-        TRUE
+        )
     ), (
         'aur.created',
         'aur',
@@ -9483,8 +9501,7 @@ INSERT INTO action_trigger.hook (key,core_type,description,passive) VALUES (
             'A patron has made an acquisitions request.',
             'ath',
             'description'
-        ),
-        TRUE
+        )
     ), (
         'aur.rejected',
         'aur',
@@ -9493,8 +9510,7 @@ INSERT INTO action_trigger.hook (key,core_type,description,passive) VALUES (
             'A patron acquisition request has been rejected.',
             'ath',
             'description'
-        ),
-        TRUE
+        )
     )
 ;
 
@@ -9768,12 +9784,11 @@ INSERT INTO action_trigger.environment ( event_def, path) VALUES
     ( 20, 'usr.home_ou' );
 
 
-INSERT INTO action_trigger.hook (key, core_type, description, passive)
+INSERT INTO action_trigger.hook (key, core_type, description)
     VALUES (
         'format.acqcle.html',
         'acqcle',
-        'Formats claim events into a voucher',
-        TRUE
+        'Formats claim events into a voucher'
     );
 
 INSERT INTO action_trigger.event_definition (
@@ -9828,12 +9843,11 @@ INSERT INTO action_trigger.environment (event_def, path) VALUES
 ;
 
 
-INSERT INTO action_trigger.hook (key, core_type, description, passive)
+INSERT INTO action_trigger.hook (key, core_type, description)
     VALUES (
         'format.acqinv.html',
         'acqinv',
-        'Formats invoices into a voucher',
-        TRUE
+        'Formats invoices into a voucher'
     );
 
 INSERT INTO action_trigger.event_definition (
@@ -10322,12 +10336,11 @@ INSERT INTO action_trigger.reactor (module,description) VALUES
 
 -- self-check checkout receipt
 
-INSERT INTO action_trigger.hook (key, core_type, description, passive) 
+INSERT INTO action_trigger.hook (key, core_type, description) 
     VALUES (
         'format.selfcheck.checkout',
         'circ',
-        'Formats circ objects for self-checkout receipt',
-        TRUE
+        'Formats circ objects for self-checkout receipt'
     );
 
 INSERT INTO action_trigger.event_definition (id, active, owner, name, hook, validator, reactor, group_field, granularity, template )
@@ -10428,12 +10441,11 @@ INSERT INTO action_trigger.environment ( event_def, path) VALUES
 
 -- items out selfcheck receipt
 
-INSERT INTO action_trigger.hook (key, core_type, description, passive) 
+INSERT INTO action_trigger.hook (key, core_type, description) 
     VALUES (
         'format.selfcheck.items_out',
         'circ',
-        'Formats items out for self-checkout receipt',
-        TRUE
+        'Formats items out for self-checkout receipt'
     );
 
 INSERT INTO action_trigger.event_definition (id, active, owner, name, hook, validator, reactor, group_field, granularity, template )
@@ -10476,12 +10488,11 @@ INSERT INTO action_trigger.environment ( event_def, path) VALUES
     ( 11, 'circ_lib.hours_of_operation'),
     ( 11, 'usr');
 
-INSERT INTO action_trigger.hook (key, core_type, description, passive) 
+INSERT INTO action_trigger.hook (key, core_type, description) 
     VALUES (
         'format.selfcheck.holds',
         'ahr',
-        'Formats holds for self-checkout receipt',
-        TRUE
+        'Formats holds for self-checkout receipt'
     );
 
 INSERT INTO action_trigger.event_definition (id, active, owner, name, hook, validator, reactor, group_field, granularity, template )
@@ -10537,12 +10548,11 @@ INSERT INTO action_trigger.environment ( event_def, path) VALUES
 
 -- fines receipt
 
-INSERT INTO action_trigger.hook (key, core_type, description, passive) 
+INSERT INTO action_trigger.hook (key, core_type, description) 
     VALUES (
         'format.selfcheck.fines',
         'au',
-        'Formats fines for self-checkout receipt',
-        TRUE
+        'Formats fines for self-checkout receipt'
     );
 
 INSERT INTO action_trigger.event_definition (id, active, owner, name, hook, validator, reactor, granularity, template )
@@ -10587,12 +10597,11 @@ $$
 $$
 );
 
-INSERT INTO action_trigger.hook (key, core_type, description, passive) 
+INSERT INTO action_trigger.hook (key, core_type, description) 
     VALUES (
         'format.acqli.html',
         'jub',
-        'Formats lineitem worksheet for titles received',
-        TRUE
+        'Formats lineitem worksheet for titles received'
     );
 
 INSERT INTO action_trigger.event_definition (id, active, owner, name, hook, validator, reactor, granularity, template)
@@ -11353,64 +11362,55 @@ $$
         'xact.usr',
         'print-on-demand',
 $$
+
 [%- USE date -%][%- SET user = target.0.xact.usr -%]
-<div style="li { padding: 8px; margin 5px; }">
-    <div>[% date.format %]</div><br/>
+<div style="font-family: Arial, Helvetica, sans-serif;">
+   
+   <!-- Header aligned left -->
+   <div style="text-align:left;">
+       <span style="padding-top:1em;">[% date.format %]</span>
+    </div><br/>
+    
+     [% SET grand_total = 0.00 %]
     <ol>
     [% SET xact_mp_hash = {} %]
-    [% FOR mp IN target %][%# Template is hooked around payments, but let us make the receipt focused on transactions %]
+    [% FOR mp IN target %][%# Create an array of transactions/amount paid for each payment made %]
         [% SET xact_id = mp.xact.id %]
-        [% IF ! xact_mp_hash.defined( xact_id ) %][% xact_mp_hash.$xact_id = { 'xact' => mp.xact, 'payments' => [] } %][% END %]
-        [% xact_mp_hash.$xact_id.payments.push(mp) %]
+        [% SET amount = mp.amount %]
+        [% IF ! xact_mp_hash.defined( xact_id ) %]
+           [% xact_mp_hash.$xact_id = { 'xact' => mp.xact, 'payment' => amount } %]
+        [% END %]
     [% END %]
+    
     [% FOR xact_id IN xact_mp_hash.keys.sort %]
         [% SET xact = xact_mp_hash.$xact_id.xact %]
-        <li>Transaction ID: [% xact_id %]
-            [% IF xact.circulation %][% helpers.get_copy_bib_basics(xact.circulation.target_copy).title %]
-            [% ELSE %]Miscellaneous
-            [% END %]
-            Line item billings:<ol>
-                [% SET mb_type_hash = {} %]
-                [% FOR mb IN xact.billings %][%# Group billings by their btype %]
-                    [% IF mb.voided == 'f' %]
-                        [% SET mb_type = mb.btype.id %]
-                        [% IF ! mb_type_hash.defined( mb_type ) %][% mb_type_hash.$mb_type = { 'sum' => 0.00, 'billings' => [] } %][% END %]
-                        [% IF ! mb_type_hash.$mb_type.defined( 'first_ts' ) %][% mb_type_hash.$mb_type.first_ts = mb.billing_ts %][% END %]
-                        [% mb_type_hash.$mb_type.last_ts = mb.billing_ts %]
-                        [% mb_type_hash.$mb_type.sum = mb_type_hash.$mb_type.sum + mb.amount %]
-                        [% mb_type_hash.$mb_type.billings.push( mb ) %]
-                    [% END %]
-                [% END %]
-                [% FOR mb_type IN mb_type_hash.keys.sort %]
-                    <li>[% IF mb_type == 1 %][%# Consolidated view of overdue billings %]
-                        $[% mb_type_hash.$mb_type.sum %] for [% mb_type_hash.$mb_type.billings.0.btype.name %] 
-                            on [% mb_type_hash.$mb_type.first_ts %] through [% mb_type_hash.$mb_type.last_ts %]
-                    [% ELSE %][%# all other billings show individually %]
-                        [% FOR mb IN mb_type_hash.$mb_type.billings %]
-                            $[% mb.amount %] for [% mb.btype.name %] on [% mb.billing_ts %] [% mb.note %]
-                        [% END %]
-                    [% END %]</li>
-                [% END %]
-            </ol>
-            Line item payments:<ol>
-                [% FOR mp IN xact_mp_hash.$xact_id.payments %]
-                    <li>Payment ID: [% mp.id %]
-                        Paid [% mp.amount %] via [% SWITCH mp.payment_type -%]
-                            [% CASE "cash_payment" %]cash
-                            [% CASE "check_payment" %]check
-                            [% CASE "credit_card_payment" %]credit card
-                            [%- IF mp.credit_card_payment.cc_number %] ([% mp.credit_card_payment.cc_number %])[% END %]
-                            [% CASE "credit_payment" %]credit
-                            [% CASE "forgive_payment" %]forgiveness
-                            [% CASE "goods_payment" %]goods
-                            [% CASE "work_payment" %]work
-                        [%- END %] on [% mp.payment_ts %] [% mp.note %]
-                    </li>
-                [% END %]
-            </ol>
+        <li>
+          Transaction ID: [% xact_mp_hash.$xact_id.xact.id %]<br /> 
+          [% IF xact.circulation %]
+             Title: "[% helpers.get_copy_bib_basics(xact.circulation.target_copy).title %]" <br />                
+          [% END %]
+          
+           [%# Go get all the date needed from xact_summary %]
+           
+           [% SET mbts = xact.summary %]
+
+           Transaction Type: [% mbts.last_billing_type%]<br />
+           Date: [% mbts.last_billing_ts %] <br />
+
+           Note: [% mbts.last_billing_note %] <br />
+
+           Amount: $[% xact_mp_hash.$xact_id.payment | format("%.2f") %]
+           [% grand_total = grand_total + xact_mp_hash.$xact_id.payment %]
         </li>
+        <br />
     [% END %]
     </ol>
+    
+    <div> <!-- Summary of all the information -->
+       Payment Type: Credit Card <br />
+       Total:<strong> $[% grand_total | format("%.2f") %] </strong>  
+    </div>
+
 </div>
 $$
     )
@@ -13160,10 +13160,10 @@ UPDATE authority.control_set_authority_field
 
 
 INSERT INTO authority.browse_axis (code,name,description,sorter) VALUES
-    ('title','Title','Title axis','titlesort'),
-    ('author','Author','Author axis','titlesort'),
-    ('subject','Subject','Subject axis','titlesort'),
-    ('topic','Topic','Topic Subject axis','titlesort');
+    ('title',oils_i18n_gettext('title','Title','aba','name'),oils_i18n_gettext('title','Title axis','aba','description'),'titlesort'),
+    ('author',oils_i18n_gettext('author','Author','aba','name'),oils_i18n_gettext('author','Author axis','aba','description'),'titlesort'),
+    ('subject',oils_i18n_gettext('subject','Subject','aba','name'),oils_i18n_gettext('subject','Subject axis','aba','description'),'titlesort'),
+    ('topic',oils_i18n_gettext('topic','Topic','aba','name'),oils_i18n_gettext('topic','Topic Subject axis','aba','description'),'titlesort');
 
 INSERT INTO authority.browse_axis_authority_field_map (axis,field) VALUES
     ('author',  1 ),
@@ -13273,20 +13273,6 @@ INSERT INTO authority.control_set_bib_field_metabib_field_map (bib_field, metabi
       FROM  authority.control_set_bib_field b JOIN authority.control_set_authority_field a ON (b.authority_field = a.id), config.metabib_field m
       WHERE a.tag = '155' AND m.name = 'genre' -- Just in case...
 ;
-
-INSERT INTO authority.thesaurus (code, name, control_set) VALUES
-    ('a', oils_i18n_gettext('a','Library of Congress Subject Headings','at','name'), 1),
-    ('b', oils_i18n_gettext('b','LC subject headings for children''s literature','at','name'), 1), 
-    ('c', oils_i18n_gettext('c','Medical Subject Headings','at','name'), 1),
-    ('d', oils_i18n_gettext('d','National Agricultural Library subject authority file','at','name'), 1),
-    ('k', oils_i18n_gettext('k','Canadian Subject Headings','at','name'), 1),
-    ('n', oils_i18n_gettext('n','Not applicable','at','name'), 1),
-    ('r', oils_i18n_gettext('r','Art and Architecture Thesaurus','at','name'), 1),
-    ('s', oils_i18n_gettext('s','Sears List of Subject Headings','at','name'), 1),
-    ('v', oils_i18n_gettext('v','Repertoire de vedettes-matiere','at','name'), 1),
-    ('z', oils_i18n_gettext('z','Other','at','name'), 1),
-    ('|', oils_i18n_gettext('|','No attempt to code','at','name'), NULL),
-    (' ', oils_i18n_gettext(' ','Alternate no attempt to code','at','name'), NULL);
 
 INSERT INTO action_trigger.hook ( key, core_type, description, passive ) VALUES (
     'reservation.available',
@@ -14731,6 +14717,39 @@ INSERT INTO vandelay.merge_profile (id, owner, name, preserve_spec, update_bib_s
 
 SELECT SETVAL('vandelay.merge_profile_id_seq'::TEXT, 100);
 
+-- 3 Day Courtesy Notice by SMS
+INSERT INTO action_trigger.event_definition (id, active, owner, name, hook,
+        validator, reactor, delay, max_delay, delay_field, group_field, template)
+    VALUES (54, FALSE, 1,
+        '3 Day Courtesy Notice by SMS',
+        'checkout.due',
+        'CircIsOpen', 'SendSMS', '-3 days', '-2 days', 'due_date', 'usr',
+$$
+[%- USE date -%]
+[%- user = target.0.usr -%]
+[%- homelib = user.home_ou -%]
+[%- sms_number = helpers.get_user_setting(user.id, 'opac.default_sms_notify') -%]
+[%- sms_carrier = helpers.get_user_setting(user.id, 'opac.default_sms_carrier') -%]
+From: [%- helpers.get_org_setting(homelib.id, 'org.bounced_emails') || homelib.email || params.sender_email || default_sender %]
+To: [%- helpers.get_sms_gateway_email(sms_carrier,sms_number) %]
+Subject: Library Materials Due Soon
+
+You have items due soon:
+
+[% FOR circ IN target %]
+[%- copy_details = helpers.get_copy_bib_basics(circ.target_copy.id) -%]
+[% copy_details.title FILTER ucfirst %] by [% copy_details.author FILTER ucfirst %] due on [% date.format(helpers.format_date(circ.due_date), '%m-%d-%Y') %]
+
+[% END %]
+
+$$);
+
+INSERT INTO action_trigger.environment (event_def, path) VALUES
+    (54, 'circ_lib.billing_address'),
+    (54, 'target_copy.call_number'),
+    (54, 'usr'),
+    (54, 'usr.home_ou');
+
 -- user activity seed data --
 
 INSERT INTO config.usr_activity_type (id, ewho, ewhat, ehow, egroup, label) VALUES
@@ -14983,22 +15002,32 @@ INSERT INTO config.org_unit_setting_type (
 ) VALUES (
     'circ.staff.max_visible_event_age',
     'circ',
-    'Maximum visible age of User Trigger Events in Staff Interfaces',
-    'If this is unset, staff can view User Trigger Events regardless of age. When this is set to an interval, it represents the age of the oldest possible User Trigger Event that can be viewed.',
+    oils_i18n_gettext(
+        'circ.staff.max_visible_event_age',
+        'Maximum visible age of User Trigger Events in Staff Interfaces',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'circ.staff.max_visible_event_age',
+        'If this is unset, staff can view User Trigger Events regardless of age. When this is set to an interval, it represents the age of the oldest possible User Trigger Event that can be viewed.',
+        'coust',
+        'description'
+    ),
     'interval'
 );
 
 -- kid's opac main search filter
 
-INSERT INTO actor.search_filter_group (owner, code, label) 
-    VALUES (1, 'kpac_main', 'Kid''s OPAC Search Filter');
+INSERT INTO actor.search_filter_group (owner, code, label)
+    VALUES (1, 'kpac_main', oils_i18n_gettext(1,'Kid''s OPAC Search Filter','asfg','label'));
 
-INSERT INTO actor.search_query (label, query_text) 
-    VALUES ('Children''s Materials', 'audience(a,b,c)');
-INSERT INTO actor.search_query (label, query_text) 
-    VALUES ('Young Adult Materials', 'audience(j,d)');
-INSERT INTO actor.search_query (label, query_text) 
-    VALUES ('General/Adult Materials',  'audience(e,f,g, )');
+INSERT INTO actor.search_query (id, label, query_text)
+    VALUES (1, oils_i18n_gettext(1,'Children''s Materials','asq','label'), 'audience(a,b,c)');
+INSERT INTO actor.search_query (id, label, query_text)
+    VALUES (2, oils_i18n_gettext(2,'Young Adult Materials','asq','label'), 'audience(j,d)');
+INSERT INTO actor.search_query (id, label, query_text)
+    VALUES (3, oils_i18n_gettext(3,'General/Adult Materials','asq','label'), 'audience(e,f,g)');
 
 INSERT INTO actor.search_filter_group_entry (grp, query, pos)
     VALUES (
@@ -16654,6 +16683,207 @@ VALUES
      'coust', 'description'),
  'bool');
 
+
+INSERT into config.org_unit_setting_type (
+     name
+    ,grp
+    ,label
+    ,description
+    ,datatype
+) VALUES ( ----------------------------------------
+     'webstaff.cat.label.font.family'
+    ,'cat'
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.font.family'
+        ,'Item Print Label Font Family'
+        ,'coust'
+        ,'label'
+    )
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.font.family'
+        ,'Set the preferred font family for item print labels. You can specify a list of CSS fonts, separated by commas, in order of preference; the system will use the first font it finds with a matching name. For example, "Arial, Helvetica, serif"'
+        ,'coust'
+        ,'description'
+    )
+    ,'string'
+), ( ----------------------------------------
+     'webstaff.cat.label.font.size'
+    ,'cat'
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.font.size'
+        ,'Item Print Label Font Size'
+        ,'coust'
+        ,'label'
+    )
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.font.size'
+        ,'Set the default font size for item print labels. Please include a unit of measurement that is valid CSS. For example, "12pt" or "16px" or "1em"'
+        ,'coust'
+        ,'description'
+    )
+    ,'string'
+), ( ----------------------------------------
+     'webstaff.cat.label.font.weight'
+    ,'cat'
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.font.weight'
+        ,'Item Print Label Font Weight'
+        ,'coust'
+        ,'label'
+    )
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.font.weight'
+        ,'Set the default font weight for item print labels. Please use the CSS specification for values for font-weight.  For example, "normal", "bold", "bolder", or "lighter"'
+        ,'coust'
+        ,'description'
+    )
+    ,'string'
+), ( ----------------------------------------
+     'webstaff.cat.label.left_label.left_margin'
+    ,'cat'
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.left_label.left_margin'
+        ,'Item Print Label - Left Margin for Left Label'
+        ,'coust'
+        ,'label'
+    )
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.left_label.left_margin'
+        ,'Set the default left margin for the leftmost item print Label. Please include a unit of measurement that is valid CSS. For example, "1in" or "2.5cm"'
+        ,'coust'
+        ,'description'
+    )
+    ,'string'
+), ( ----------------------------------------
+     'webstaff.cat.label.right_label.left_margin'
+    ,'cat'
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.right_label.left_margin'
+        ,'Item Print Label - Left Margin for Right Label'
+        ,'coust'
+        ,'label'
+    )
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.right_label.left_margin'
+        ,'Set the default left margin for the rightmost item print label (or in other words, the desired space between the two labels). Please include a unit of measurement that is valid CSS. For example, "1in" or "2.5cm"'
+        ,'coust'
+        ,'description'
+    )
+    ,'string'
+), ( ----------------------------------------
+     'webstaff.cat.label.left_label.height'
+    ,'cat'
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.left_label.height'
+        ,'Item Print Label - Height for Left Label'
+        ,'coust'
+        ,'label'
+    )
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.left_label.height'
+        ,'Set the default height for the leftmost item print label. Please include a unit of measurement that is valid CSS. For example, "1in" or "2.5cm"'
+        ,'coust'
+        ,'description'
+    )
+    ,'string'
+), ( ----------------------------------------
+     'webstaff.cat.label.left_label.width'
+    ,'cat'
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.left_label.width'
+        ,'Item Print Label - Width for Left Label'
+        ,'coust'
+        ,'label'
+    )
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.left_label.width'
+        ,'Set the default width for the leftmost item print label. Please include a unit of measurement that is valid CSS. For example, "1in" or "2.5cm"'
+        ,'coust'
+        ,'description'
+    )
+    ,'string'
+), ( ----------------------------------------
+     'webstaff.cat.label.right_label.height'
+    ,'cat'
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.right_label.height'
+        ,'Item Print Label - Height for Right Label'
+        ,'coust'
+        ,'label'
+    )
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.right_label.height'
+        ,'Set the default height for the rightmost item print label. Please include a unit of measurement that is valid CSS. For example, "1in" or "2.5cm"'
+        ,'coust'
+        ,'description'
+    )
+    ,'string'
+), ( ----------------------------------------
+     'webstaff.cat.label.right_label.width'
+    ,'cat'
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.right_label.width'
+        ,'Item Print Label - Width for Right Label'
+        ,'coust'
+        ,'label'
+    )
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.right_label.width'
+        ,'Set the default width for the rightmost item print label. Please include a unit of measurement that is valid CSS. For example, "1in" or "2.5cm"'
+        ,'coust'
+        ,'description'
+    )
+    ,'string'
+), (
+     'webstaff.cat.label.inline_css'
+    ,'cat'
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.inline_css'
+        ,'Item Print Label - Inline CSS'
+        ,'coust'
+        ,'label'
+    )
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.inline_css'
+        ,'This setting allows you to inject arbitrary CSS into the item print label template.  For example, ".printlabel { text-transform: uppercase; }"'
+        ,'coust'
+        ,'description'
+    )
+    ,'string'
+), (
+     'webstaff.cat.label.call_number_wrap_filter_height'
+    ,'cat'
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.call_number_wrap_filter_height'
+        ,'Item Print Label - Call Number Wrap Filter Height'
+        ,'coust'
+        ,'label'
+    )
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.call_number_wrap_filter_height'
+        ,'This setting is used to set the default height (in number of lines) to use for call number wrapping in the left print label.'
+        ,'coust'
+        ,'description'
+    )
+    ,'integer'
+), (
+     'webstaff.cat.label.call_number_wrap_filter_width'
+    ,'cat'
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.call_number_wrap_filter_width'
+        ,'Item Print Label - Call Number Wrap Filter Width'
+        ,'coust'
+        ,'label'
+    )
+    ,oils_i18n_gettext(
+         'webstaff.cat.label.call_number_wrap_filter_width'
+        ,'This setting is used to set the default width (in number of characters) to use for call number wrapping in the left print label.'
+        ,'coust'
+        ,'description'
+    )
+    ,'integer'
+);
+
 INSERT INTO config.global_flag (name, label, value, enabled) VALUES (
     'circ.holds.retarget_interval',
     oils_i18n_gettext(
@@ -16666,8 +16896,19 @@ INSERT INTO config.global_flag (name, label, value, enabled) VALUES (
     TRUE
 );
 
+INSERT INTO config.global_flag (name, label, enabled) VALUES (
+    'opac.show_related_headings_in_browse',
+    oils_i18n_gettext(
+        'opac.show_related_headings_in_browse',
+        'Display related headings (see-also) in browse',
+        'cgf',
+        'label'
+    ),
+    TRUE
+);
+
 INSERT INTO config.settings_group (name, label)
-    VALUES ('ebook_api', 'Ebook API Integration');
+    VALUES ('ebook_api', oils_i18n_gettext('ebook_api', 'Ebook API Integration', 'csg', 'label'));
 
 INSERT INTO config.org_unit_setting_type
     (name, label, description, grp, datatype) 
@@ -16852,3 +17093,882 @@ VALUES (
     'ebook_api',
     'string'
 );
+
+INSERT into config.org_unit_setting_type (
+     name
+    ,grp
+    ,label
+    ,description
+    ,datatype
+) VALUES ( ----------------------------------------
+     'webstaff.format.dates'
+    ,'gui'
+    ,oils_i18n_gettext(
+         'webstaff.format.dates'
+        ,'Format Dates with this pattern'
+        ,'coust'
+        ,'label'
+    )
+    ,oils_i18n_gettext(
+         'webstaff.format.dates'
+        ,'Format Dates with this pattern (examples: "yyyy-MM-dd" for "2010-04-26", "MMM d, yyyy" for "Apr 26, 2010").  This will be used in areas where a date without a timestamp is sufficient, like Date of Birth.'
+        ,'coust'
+        ,'description'
+    )
+    ,'string'
+), ( ----------------------------------------
+     'webstaff.format.date_and_time'
+    ,'gui'
+    ,oils_i18n_gettext(
+         'webstaff.format.date_and_time'
+        ,'Format Date+Time with this pattern'
+        ,'coust'
+        ,'label'
+    )
+    ,oils_i18n_gettext(
+         'webstaff.format.date_and_time'
+        ,'Format Date+Time with this pattern (examples: "yy-MM-dd h:m:s.SSS a" for "16-04-05 2:07:20.666 PM", "yyyy-dd-MMM HH:mm" for "2016-05-Apr 14:07").  This will be used in areas of the client where a date with a timestamp is needed, like Checkout, Due Date, or Record Created.'
+        ,'coust'
+        ,'description'
+    )
+    ,'string'
+);
+
+INSERT INTO config.org_unit_setting_type
+    (name, label, description, grp, datatype)
+VALUES (
+    'opac.search.enable_bookplate_search',
+    oils_i18n_gettext(
+        'opac.search.enable_bookplate_search',
+        'Enable Digital Bookplate Search',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'opac.search.enable_bookplate_search',
+        'If enabled, adds a "Digital Bookplate" option to the query type selectors in the public catalog for search on copy tags.',   
+        'coust',
+        'description'
+    ),
+    'opac',
+    'bool'
+);
+
+INSERT INTO config.copy_tag_type (code, label, owner) VALUES ('bookplate', 'Digital Bookplate', 1);
+
+INSERT into config.org_unit_setting_type
+( name, grp, label, description, datatype ) VALUES
+
+( 'lib.timezone', 'lib',
+    oils_i18n_gettext('lib.timezone',
+        'Library time zone',
+        'coust', 'label'),
+    oils_i18n_gettext('lib.timezone',
+        'Define the time zone in which a library physically resides',
+        'coust', 'description'),
+    'string');
+
+INSERT INTO config.org_unit_setting_type
+    (name, label, description, grp, datatype)
+VALUES (
+    'ui.staff.max_recent_patrons',
+    oils_i18n_gettext(
+        'ui.staff.max_recent_patrons',
+        'Number of Retrievable Recent Patrons',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'ui.staff.max_recent_patrons',
+        'Number of most recently accessed patrons that can be re-retrieved ' ||
+        'in the staff client.  A value of 0 or less disables the feature. Defaults to 1.',
+        'coust',
+        'description'
+    ),
+    'circ',
+    'integer'
+);
+
+
+INSERT INTO acq.edi_attr (key, label) VALUES
+    ('INCLUDE_PO_NAME', 
+        oils_i18n_gettext('INCLUDE_PO_NAME', 
+        'Orders Include PO Name', 'aea', 'label')),
+    ('INCLUDE_COPIES', 
+        oils_i18n_gettext('INCLUDE_COPIES', 
+        'Orders Include Copy Data', 'aea', 'label')),
+    ('INCLUDE_FUND', 
+        oils_i18n_gettext('INCLUDE_FUND', 
+        'Orders Include Copy Funds', 'aea', 'label')),
+    ('INCLUDE_CALL_NUMBER', 
+        oils_i18n_gettext('INCLUDE_CALL_NUMBER', 
+        'Orders Include Copy Call Numbers', 'aea', 'label')),
+    ('INCLUDE_ITEM_TYPE', 
+        oils_i18n_gettext('INCLUDE_ITEM_TYPE', 
+        'Orders Include Copy Item Types', 'aea', 'label')),
+    ('INCLUDE_ITEM_BARCODE',
+        oils_i18n_gettext('INCLUDE_ITEM_BARCODE',
+        'Orders Include Copy Barcodes', 'aea', 'label')),
+    ('INCLUDE_LOCATION', 
+        oils_i18n_gettext('INCLUDE_LOCATION', 
+        'Orders Include Copy Locations', 'aea', 'label')),
+    ('INCLUDE_COLLECTION_CODE', 
+        oils_i18n_gettext('INCLUDE_COLLECTION_CODE', 
+        'Orders Include Copy Collection Codes', 'aea', 'label')),
+    ('INCLUDE_OWNING_LIB', 
+        oils_i18n_gettext('INCLUDE_OWNING_LIB', 
+        'Orders Include Copy Owning Library', 'aea', 'label')),
+    ('USE_ID_FOR_OWNING_LIB',
+        oils_i18n_gettext('USE_ID_FOR_OWNING_LIB',
+        'Emit Owning Library ID Rather Than Short Name. Takes effect only if INCLUDE_OWNING_LIB is in use', 'aea', 'label')),
+    ('INCLUDE_QUANTITY', 
+        oils_i18n_gettext('INCLUDE_QUANTITY', 
+        'Orders Include Copy Quantities', 'aea', 'label')),
+    ('INCLUDE_COPY_ID', 
+        oils_i18n_gettext('INCLUDE_COPY_ID', 
+        'Orders Include Copy IDs', 'aea', 'label')),
+    ('BUYER_ID_INCLUDE_VENDCODE', 
+        oils_i18n_gettext('BUYER_ID_INCLUDE_VENDCODE', 
+        'Buyer ID Qualifier Includes Vendcode', 'aea', 'label')),
+    ('BUYER_ID_ONLY_VENDCODE', 
+        oils_i18n_gettext('BUYER_ID_ONLY_VENDCODE', 
+        'Buyer ID Qualifier Only Contains Vendcode', 'aea', 'label')),
+    ('INCLUDE_BIB_EDITION', 
+        oils_i18n_gettext('INCLUDE_BIB_EDITION', 
+        'Order Lineitems Include Edition Info', 'aea', 'label')),
+    ('INCLUDE_BIB_AUTHOR', 
+        oils_i18n_gettext('INCLUDE_BIB_AUTHOR', 
+        'Order Lineitems Include Author Info', 'aea', 'label')),
+    ('INCLUDE_BIB_PAGINATION', 
+        oils_i18n_gettext('INCLUDE_BIB_PAGINATION', 
+        'Order Lineitems Include Pagination Info', 'aea', 'label')),
+    ('COPY_SPEC_CODES', 
+        oils_i18n_gettext('COPY_SPEC_CODES', 
+        'Order Lineitem Notes Include Copy Spec Codes', 'aea', 'label')),
+    ('INCLUDE_EMPTY_IMD_VALUES', 
+        oils_i18n_gettext('INCLUDE_EMPTY_IMD_VALUES',
+        'Lineitem Title, Author, etc. Fields Are Present Even if Empty', 'aea', 'label')),
+    ('INCLUDE_EMPTY_LI_NOTE', 
+        oils_i18n_gettext('INCLUDE_EMPTY_LI_NOTE', 
+        'Order Lineitem Notes Always Present (Even if Empty)', 'aea', 'label')),
+    ('INCLUDE_EMPTY_CALL_NUMBER', 
+        oils_i18n_gettext('INCLUDE_EMPTY_CALL_NUMBER', 
+        'Order Copies Always Include Call Number (Even if Empty)', 'aea', 'label')),
+    ('INCLUDE_EMPTY_ITEM_TYPE', 
+        oils_i18n_gettext('INCLUDE_EMPTY_ITEM_TYPE', 
+        'Order Copies Always Include Item Type (Even if Empty)', 'aea', 'label')),
+    ('INCLUDE_EMPTY_LOCATION', 
+        oils_i18n_gettext('INCLUDE_EMPTY_LOCATION', 
+        'Order Copies Always Include Location (Even if Empty)', 'aea', 'label')),
+    ('INCLUDE_EMPTY_COLLECTION_CODE', 
+        oils_i18n_gettext('INCLUDE_EMPTY_COLLECTION_CODE', 
+        'Order Copies Always Include Collection Code (Even if Empty)', 'aea', 'label')),
+    ('LINEITEM_IDENT_VENDOR_NUMBER',
+        oils_i18n_gettext('LINEITEM_IDENT_VENDOR_NUMBER',
+        'Lineitem Identifier Fields (LIN/PIA) Use Vendor-Encoded ID Value When Available', 'aea', 'label')),
+    ('LINEITEM_REF_ID_ONLY',
+        oils_i18n_gettext('LINEITEM_REF_ID_ONLY',
+        'Lineitem Reference Field (RFF) Uses Lineitem ID Only', 'aea', 'label'))
+
+;
+
+INSERT INTO acq.edi_attr_set (id, label) VALUES (1, 'Ingram Default');
+INSERT INTO acq.edi_attr_set (id, label) VALUES (2, 'Baker & Taylor Default');
+INSERT INTO acq.edi_attr_set (id, label) VALUES (3, 'Brodart Default');
+INSERT INTO acq.edi_attr_set (id, label) VALUES (4, 'Midwest Tape Default');
+INSERT INTO acq.edi_attr_set (id, label) VALUES (5, 'ULS Default');
+INSERT INTO acq.edi_attr_set (id, label) VALUES (6, 'Recorded Books Default');
+INSERT INTO acq.edi_attr_set (id, label) VALUES (7, 'Midwest Library Service');
+
+-- carve out space for mucho defaults
+SELECT SETVAL('acq.edi_attr_set_id_seq'::TEXT, 1000);
+
+INSERT INTO acq.edi_attr_set_map (attr_set, attr) VALUES
+
+    -- Ingram
+    (1, 'INCLUDE_PO_NAME'),
+    (1, 'INCLUDE_COPIES'),
+    (1, 'INCLUDE_ITEM_TYPE'),
+    (1, 'INCLUDE_COLLECTION_CODE'),
+    (1, 'INCLUDE_OWNING_LIB'),
+    (1, 'INCLUDE_QUANTITY'),
+    (1, 'INCLUDE_BIB_PAGINATION'),
+
+    -- B&T
+    (2, 'INCLUDE_COPIES'),
+    (2, 'INCLUDE_ITEM_TYPE'),
+    (2, 'INCLUDE_COLLECTION_CODE'),
+    (2, 'INCLUDE_CALL_NUMBER'),
+    (2, 'INCLUDE_OWNING_LIB'),
+    (2, 'INCLUDE_QUANTITY'),
+    (2, 'INCLUDE_BIB_PAGINATION'),
+    (2, 'BUYER_ID_INCLUDE_VENDCODE'),
+    (2, 'INCLUDE_EMPTY_LI_NOTE'),
+    (2, 'INCLUDE_EMPTY_CALL_NUMBER'),
+    (2, 'INCLUDE_EMPTY_ITEM_TYPE'),
+    (2, 'INCLUDE_EMPTY_COLLECTION_CODE'),
+    (2, 'INCLUDE_EMPTY_LOCATION'),
+    (2, 'LINEITEM_IDENT_VENDOR_NUMBER'),
+    (2, 'LINEITEM_REF_ID_ONLY'),
+
+    -- Brodart
+    (3, 'INCLUDE_COPIES'),
+    (3, 'INCLUDE_FUND'),
+    (3, 'INCLUDE_ITEM_TYPE'),
+    (3, 'INCLUDE_COLLECTION_CODE'),
+    (3, 'INCLUDE_OWNING_LIB'),
+    (3, 'INCLUDE_QUANTITY'),
+    (3, 'INCLUDE_BIB_PAGINATION'),
+    (3, 'COPY_SPEC_CODES'),
+
+    -- Midwest
+    (4, 'INCLUDE_COPIES'),
+    (4, 'INCLUDE_FUND'),
+    (4, 'INCLUDE_OWNING_LIB'),
+    (4, 'INCLUDE_QUANTITY'),
+    (4, 'INCLUDE_BIB_PAGINATION'),
+
+    -- ULS
+    (5, 'INCLUDE_COPIES'),
+    (5, 'INCLUDE_ITEM_TYPE'),
+    (5, 'INCLUDE_COLLECTION_CODE'),
+    (5, 'INCLUDE_OWNING_LIB'),
+    (5, 'INCLUDE_QUANTITY'),
+    (5, 'INCLUDE_BIB_AUTHOR'),
+    (5, 'INCLUDE_BIB_EDITION'),
+    (5, 'INCLUDE_EMPTY_LI_NOTE'),
+
+    -- Recorded Books
+    (6, 'INCLUDE_COPIES'),
+    (6, 'INCLUDE_ITEM_TYPE'),
+    (6, 'INCLUDE_COLLECTION_CODE'),
+    (6, 'INCLUDE_OWNING_LIB'),
+    (6, 'INCLUDE_QUANTITY'),
+    (6, 'INCLUDE_BIB_PAGINATION'),
+
+    -- Midwest Library Service
+    (7, 'INCLUDE_BIB_AUTHOR'),
+    (7, 'INCLUDE_BIB_EDITION'),
+    (7, 'BUYER_ID_ONLY_VENDCODE'),
+    (7, 'INCLUDE_EMPTY_IMD_VALUES')
+
+;
+INSERT INTO authority.thesaurus (code, short_code, name, control_set) VALUES
+    ('n', 'n', oils_i18n_gettext('n','Not applicable','at','name'), 1),
+    ('|', '|', oils_i18n_gettext('|','No attempt to code','at','name'), NULL),
+    (' ', ' ', oils_i18n_gettext(' ','Alternate no attempt to code','at','name'), NULL);
+
+
+CREATE TEMP TABLE thesauri (code text, uri text, name text, xlate hstore);
+COPY thesauri (code, uri, name, xlate) FROM STDIN;
+migfg	http://id.loc.gov/vocabulary/genreFormSchemes/migfg	Moving image genre-form guide	
+reveal	http://id.loc.gov/vocabulary/genreFormSchemes/reveal	REVEAL: fiction indexing and genre headings	
+dct	http://id.loc.gov/vocabulary/genreFormSchemes/dct	Dublin Core list of resource types	
+gmgpc	http://id.loc.gov/vocabulary/genreFormSchemes/gmgpc	Thesaurus for graphic materials: TGM II, Genre and physical characteristic terms	
+rbgenr	http://id.loc.gov/vocabulary/genreFormSchemes/rbgenr	Genre terms: a thesaurus for use in rare book and special collections cataloguing	
+sgp	http://id.loc.gov/vocabulary/genreFormSchemes/sgp	Svenska genrebeteckningar fr periodika	"sv"=>"Svenska genrebeteckningar fr periodika"
+estc	http://id.loc.gov/vocabulary/genreFormSchemes/estc	Eighteenth century short title catalogue, the cataloguing rules. New ed.	
+ftamc	http://id.loc.gov/vocabulary/genreFormSchemes/ftamc	Form terms for archival and manuscripts control	
+alett	http://id.loc.gov/vocabulary/genreFormSchemes/alett	An alphabetical list of English text types	
+gtlm	http://id.loc.gov/vocabulary/genreFormSchemes/gtlm	Genre terms for law materials: a thesaurus	
+rbprov	http://id.loc.gov/vocabulary/genreFormSchemes/rbprov	Provenance evidence: a thesaurus for use in rare book and special collections cataloging	
+rbbin	http://id.loc.gov/vocabulary/genreFormSchemes/rbbin	Binding terms: a thesaurus for use in rare book and special collections cataloguing	
+fbg	http://id.loc.gov/vocabulary/genreFormSchemes/fbg	Films by genre /dd>	
+isbdmedia	http://id.loc.gov/vocabulary/genreFormSchemes/isbdmedia	ISBD Area 0 [media]	
+marccategory	http://id.loc.gov/vocabulary/genreFormSchemes/marccategory	MARC form category term list	
+gnd-music	http://id.loc.gov/vocabulary/genreFormSchemes/gnd-music	Gemeinsame Normdatei: Musikalische Ausgabeform	
+proysen	http://id.loc.gov/vocabulary/genreFormSchemes/proysen	PrÃ¸ysen: emneord for PrÃ¸ysen-bibliografien	
+rdacarrier	http://id.loc.gov/vocabulary/genreFormSchemes/rdacarrier	Term and code list for RDA carrier types	
+gnd	http://id.loc.gov/vocabulary/genreFormSchemes/gnd	Gemeinsame Normdatei	
+cjh	http://id.loc.gov/vocabulary/genreFormSchemes/cjh	Center for Jewish History thesaurus	
+rbpri	http://id.loc.gov/vocabulary/genreFormSchemes/rbpri	Printing & publishing evidence: a thesaurus for use in rare book and special collections cataloging	
+fgtpcm	http://id.loc.gov/vocabulary/genreFormSchemes/fgtpcm	Form/genre terms for printed cartoon material	
+rbpub	http://id.loc.gov/vocabulary/genreFormSchemes/rbpub	Printing and publishing evidence: a thesaurus for use in rare book and special collections cataloging	
+gmd	http://id.loc.gov/vocabulary/genreFormSchemes/gmd	Anglo-American Cataloguing Rules general material designation	
+rbpap	http://id.loc.gov/vocabulary/genreFormSchemes/rbpap	Paper terms: a thesaurus for use in rare book and special collections cataloging	
+rdamedia	http://id.loc.gov/vocabulary/genreFormSchemes/rdamedia	Term and code list for RDA media types	
+marcsmd	http://id.loc.gov/vocabulary/genreFormSchemes/marcsmd	MARC specific material form term list	
+saogf	http://id.loc.gov/vocabulary/genreFormSchemes/saogf	Svenska Ã¤mnesord - Genre/Form	"sv"=>"Svenska Ã¤mnesord - Genre/Form"
+lcgft	http://id.loc.gov/vocabulary/genreFormSchemes/lcgft	Library of Congress genre/form terms for library and archival materials	
+muzeukv	http://id.loc.gov/vocabulary/genreFormSchemes/muzeukv	MuzeVideo UK DVD and UMD film genre classification	
+mim	http://id.loc.gov/vocabulary/genreFormSchemes/mim	Moving image materials: genre terms	
+nmc	http://id.loc.gov/vocabulary/genreFormSchemes/nmc	Revised nomenclature for museum cataloging: a revised and expanded version of Robert C. Chenhall's system for classifying man-made objects	
+gnd-content	http://id.loc.gov/vocabulary/genreFormSchemes/gnd-content	Gemeinsame Normdatei: Beschreibung des Inhalts	
+bgtchm	http://id.loc.gov/vocabulary/genreFormSchemes/bgtchm	Basic genre terms for cultural heritage materials	
+gsafd	http://id.loc.gov/vocabulary/genreFormSchemes/gsafd	Guidelines on subject access to individual works of fiction, drama, etc	
+marcform	http://id.loc.gov/vocabulary/genreFormSchemes/marcform	MARC form of item term list	
+marcgt	http://id.loc.gov/vocabulary/genreFormSchemes/marcgt	MARC genre terms	
+barngf	http://id.loc.gov/vocabulary/genreFormSchemes/barngf	Svenska Ã¤mnesord fÃ¶r barn - Genre/Form	"sv"=>"Svenska Ã¤mnesord fÃ¶r barn - Genre/Form"
+ngl	http://id.loc.gov/vocabulary/genreFormSchemes/ngl	Newspaper genre list	
+rvmgf	http://id.loc.gov/vocabulary/genreFormSchemes/rvmgf	ThÃ©saurus des descripteurs de genre/forme de l'UniversitÃ© Laval	"fr"=>"ThÃ©saurus des descripteurs de genre/forme de l'UniversitÃ© Laval"
+tgfbne	http://id.loc.gov/vocabulary/genreFormSchemes/tgfbne	TÃ©rminos de gÃ©nero/forma de la Biblioteca Nacional de EspaÃ±a	
+nbdbgf	http://id.loc.gov/vocabulary/genreFormSchemes/nbdbgf	NBD Biblion Genres Fictie	
+rbtyp	http://id.loc.gov/vocabulary/genreFormSchemes/rbtyp	Type evidence: a thesaurus for use in rare book and special collections cataloging	
+radfg	http://id.loc.gov/vocabulary/genreFormSchemes/radfg	Radio form / genre terms guide	
+gnd-carrier	http://id.loc.gov/vocabulary/genreFormSchemes/gnd-carrier	Gemeinsame Normdatei: DatentrÃ¤gertyp	
+gatbeg	http://id.loc.gov/vocabulary/genreFormSchemes/gatbeg	Gattungsbegriffe	"de"=>"Gattungsbegriffe"
+rdacontent	http://id.loc.gov/vocabulary/genreFormSchemes/rdacontent	Term and code list for RDA content types	
+isbdcontent	http://id.loc.gov/vocabulary/genreFormSchemes/isbdcontent	ISBD Area 0 [content]	
+nimafc	http://id.loc.gov/vocabulary/genreFormSchemes/nimafc	NIMA form codes	
+amg	http://id.loc.gov/vocabulary/genreFormSchemes/amg	Audiovisual material glossary	
+local	http://id.loc.gov/vocabulary/subjectSchemes/local	Locally assigned term	
+taika	http://id.loc.gov/vocabulary/subjectSchemes/taika	Taideteollisuuden asiasanasto	"fi"=>"Taideteollisuuden asiasanasto"
+nasat	http://id.loc.gov/vocabulary/subjectSchemes/nasat	NASA thesaurus	
+rswkaf	http://id.loc.gov/vocabulary/subjectSchemes/rswkaf	Alternativform zum Hauptschlagwort	"de"=>"Alternativform zum Hauptschlagwort"
+jhpk	http://id.loc.gov/vocabulary/subjectSchemes/jhpk	JÄzyk haseÅ przedmiotowych KABA	"pl"=>"JÄzyk haseÅ przedmiotowych KABA"
+asrcrfcd	http://id.loc.gov/vocabulary/subjectSchemes/asrcrfcd	Australian Standard Research Classification: Research Fields, Courses and Disciplines (RFCD) classification	
+bt	http://id.loc.gov/vocabulary/subjectSchemes/bt	Bioethics thesaurus	
+lcstt	http://id.loc.gov/vocabulary/subjectSchemes/lcstt	List of Chinese subject terms	
+netc	http://id.loc.gov/vocabulary/subjectSchemes/netc	National Emergency Training Center Thesaurus (NETC)	
+aat	http://id.loc.gov/vocabulary/subjectSchemes/aat	Art & architecture thesaurus	
+bet	http://id.loc.gov/vocabulary/subjectSchemes/bet	British education thesaurus	
+ncjt	http://id.loc.gov/vocabulary/subjectSchemes/ncjt	National criminal justice thesaurus	
+samisk	http://id.loc.gov/vocabulary/subjectSchemes/samisk	Sami bibliography	"no"=>"SÃ¡mi bibliografia = Samisk bibliografi (Norge)"
+tips	http://id.loc.gov/vocabulary/subjectSchemes/tips	Tesauro ISOC de psicologÃ­a	"es"=>"Tesauro ISOC de psicologÃ­a"
+ukslc	http://id.loc.gov/vocabulary/subjectSchemes/ukslc	UK Standard Library Categories	
+tekord	http://id.loc.gov/vocabulary/subjectSchemes/tekord	TEK-ord : UBiTs emneordliste for arkitektur, realfag, og teknolog	"no"=>"TEK-ord : UBiTs emneordliste for arkitektur, realfag, og teknolog"
+umitrist	http://id.loc.gov/vocabulary/subjectSchemes/umitrist	University of Michigan Transportation Research Institute structured thesaurus	
+wgst	http://id.loc.gov/vocabulary/subjectSchemes/wgst	Washington GILS Subject Tree	
+rasuqam	http://id.loc.gov/vocabulary/subjectSchemes/rasuqam	RÃ©pertoire d'autoritÃ©s-sujet de l'UQAM	"fr"=>"RÃ©pertoire d'autoritÃ©s-sujet de l'UQAM"
+ntids	http://id.loc.gov/vocabulary/subjectSchemes/ntids	Norske tidsskrifter 1700-1820: emneord	"no"=>"Norske tidsskrifter 1700-1820: emneord"
+kaa	http://id.loc.gov/vocabulary/subjectSchemes/kaa	Kasvatusalan asiasanasto	"fi"=>"Kasvatusalan asiasanasto"
+yso	http://id.loc.gov/vocabulary/subjectSchemes/yso	YSO - Yleinen suomalainen ontologia	"fi"=>"YSO - Yleinen suomalainen ontologia"
+gcipmedia	http://id.loc.gov/vocabulary/subjectSchemes/gcipmedia	GAMECIP - Computer Game Media Formats (GAMECIP (Game Metadata and Citation Project))	
+inspect	http://id.loc.gov/vocabulary/subjectSchemes/inspect	INSPEC thesaurus	
+ordnok	http://id.loc.gov/vocabulary/subjectSchemes/ordnok	Ordnokkelen: tesaurus for kulturminnevern	"no"=>"Ordnokkelen: tesaurus for kulturminnevern"
+helecon	http://id.loc.gov/vocabulary/subjectSchemes/helecon	Asiasanasto HELECON-tietikantoihin	"fi"=>"Asiasanasto HELECON-tietikantoihin"
+dltlt	http://id.loc.gov/vocabulary/subjectSchemes/dltlt	Cuddon, J. A. A dictionary of literary terms and literary theory	
+csapa	http://id.loc.gov/vocabulary/subjectSchemes/csapa	"Controlled vocabulary" in Pollution abstracts	
+gtt	http://id.loc.gov/vocabulary/subjectSchemes/gtt	GOO-trefwoorden thesaurus	"nl"=>"GOO-trefwoorden thesaurus"
+iescs	http://id.loc.gov/vocabulary/subjectSchemes/iescs	International energy subject categories and scope	
+itrt	http://id.loc.gov/vocabulary/subjectSchemes/itrt	International Thesaurus of Refugee Terminology	
+sanb	http://id.loc.gov/vocabulary/subjectSchemes/sanb	South African national bibliography authority file	
+blmlsh	http://id.loc.gov/vocabulary/subjectSchemes/blmlsh	British Library - Map library subject headings	
+bhb	http://id.loc.gov/vocabulary/subjectSchemes/bhb	Bibliography of the Hebrew Book	
+csh	http://id.loc.gov/vocabulary/subjectSchemes/csh	Kapsner, Oliver Leonard. Catholic subject headings	
+fire	http://id.loc.gov/vocabulary/subjectSchemes/fire	FireTalk, IFSI thesaurus	
+jlabsh	http://id.loc.gov/vocabulary/subjectSchemes/jlabsh	Basic subject headings	"ja"=>"Kihon kenmei hyÃ´mokuhyÃ´"
+udc	http://id.loc.gov/vocabulary/subjectSchemes/udc	Universal decimal classification	
+lcshac	http://id.loc.gov/vocabulary/subjectSchemes/lcshac	Children's subject headings in Library of Congress subject headings: supplementary vocabularies	
+geonet	http://id.loc.gov/vocabulary/subjectSchemes/geonet	NGA GEOnet Names Server (GNS)	
+humord	http://id.loc.gov/vocabulary/subjectSchemes/humord	HUMORD	"no"=>"HUMORD"
+no-ubo-mr	http://id.loc.gov/vocabulary/subjectSchemes/no-ubo-mr	Menneskerettighets-tesaurus	"no"=>"Menneskerettighets-tesaurus"
+sgce	http://id.loc.gov/vocabulary/subjectSchemes/sgce	COBISS.SI General List of subject headings (English subject headings)	"sl"=>"SploÅ¡ni geslovnik COBISS.SI"
+kdm	http://id.loc.gov/vocabulary/subjectSchemes/kdm	Khung dÃª muc hÃª thÃ´ng thÃ´ng tin khoa hoc vÃ  ky thuÃ¢t quÃ´c gia	"vi"=>"Khung dÃª muc hÃª thÃ´ng thÃ´ng tin khoa hoc vÃ  ky thuÃ¢t quÃ´c gia"
+thesoz	http://id.loc.gov/vocabulary/subjectSchemes/thesoz	Thesaurus for the Social Sciences	
+asth	http://id.loc.gov/vocabulary/subjectSchemes/asth	Astronomy thesaurus	
+muzeukc	http://id.loc.gov/vocabulary/subjectSchemes/muzeukc	MuzeMusic UK classical music classification	
+norbok	http://id.loc.gov/vocabulary/subjectSchemes/norbok	Norbok: emneord i Norsk bokfortegnelse	"no"=>"Norbok: emneord i Norsk bokfortegnelse"
+masa	http://id.loc.gov/vocabulary/subjectSchemes/masa	Museoalan asiasanasto	"fi"=>"Museoalan asiasanasto"
+conorsi	http://id.loc.gov/vocabulary/subjectSchemes/conorsi	CONOR.SI (name authority file) (Maribor, Slovenia: Institut informacijskih znanosti (IZUM))	
+eurovocen	http://id.loc.gov/vocabulary/subjectSchemes/eurovocen	Eurovoc thesaurus (English)	
+kto	http://id.loc.gov/vocabulary/subjectSchemes/kto	KTO - Kielitieteen ontologia	"fi"=>"KTO - Kielitieteen ontologia"
+muzvukci	http://id.loc.gov/vocabulary/subjectSchemes/muzvukci	MuzeVideo UK contributor index	
+kaunokki	http://id.loc.gov/vocabulary/subjectSchemes/kaunokki	Kaunokki: kaunokirjallisuuden asiasanasto	"fi"=>"Kaunokki: kaunokirjallisuuden asiasanasto"
+maotao	http://id.loc.gov/vocabulary/subjectSchemes/maotao	MAO/TAO - Ontologi fÃ¶r museibranschen och Konstindustriella ontologin	"fi"=>"MAO/TAO - Ontologi fÃ¶r museibranschen och Konstindustriella ontologin"
+psychit	http://id.loc.gov/vocabulary/subjectSchemes/psychit	Thesaurus of psychological index terms.	
+tlsh	http://id.loc.gov/vocabulary/subjectSchemes/tlsh	Subject heading authority list	
+csalsct	http://id.loc.gov/vocabulary/subjectSchemes/csalsct	CSA life sciences collection thesaurus	
+ciesiniv	http://id.loc.gov/vocabulary/subjectSchemes/ciesiniv	CIESIN indexing vocabulary	
+ebfem	http://id.loc.gov/vocabulary/subjectSchemes/ebfem	Encabezamientos bilingÃ¼es de la FundaciÃ³n Educativa Ana G. Mendez	
+mero	http://id.loc.gov/vocabulary/subjectSchemes/mero	MERO - Merenkulkualan ontologia	"fi"=>"MERO - Merenkulkualan ontologia"
+mmm	http://id.loc.gov/vocabulary/subjectSchemes/mmm	"Subject key" in Marxism and the mass media	
+pascal	http://id.loc.gov/vocabulary/subjectSchemes/pascal	PASCAL database classification scheme	"fr"=>"Base de donneÃ©s PASCAL: plan de classement"
+chirosh	http://id.loc.gov/vocabulary/subjectSchemes/chirosh	Chiropractic Subject Headings	
+cilla	http://id.loc.gov/vocabulary/subjectSchemes/cilla	Cilla: specialtesaurus fÃ¶r musik	"fi"=>"Cilla: specialtesaurus fÃ¶r musik"
+aiatsisl	http://id.loc.gov/vocabulary/subjectSchemes/aiatsisl	AIATSIS language thesaurus	
+nskps	http://id.loc.gov/vocabulary/subjectSchemes/nskps	PriruÄnik za izradu predmetnog kataloga u Nacionalnoj i sveuÄiliÅ¡noj knjiÄnici u Zagrebu	"hr"=>"PriruÄnik za izradu predmetnog kataloga u Nacionalnoj i sveuÄiliÅ¡noj knjiÄnici u Zagrebu"
+lctgm	http://id.loc.gov/vocabulary/subjectSchemes/lctgm	Thesaurus for graphic materials: TGM I, Subject terms	
+muso	http://id.loc.gov/vocabulary/subjectSchemes/muso	MUSO - Ontologi fÃ¶r musik	"fi"=>"MUSO - Ontologi fÃ¶r musik"
+blcpss	http://id.loc.gov/vocabulary/subjectSchemes/blcpss	COMPASS subject authority system	
+fast	http://id.loc.gov/vocabulary/subjectSchemes/fast	Faceted application of subject terminology	
+bisacmt	http://id.loc.gov/vocabulary/subjectSchemes/bisacmt	BISAC Merchandising Themes	
+lapponica	http://id.loc.gov/vocabulary/subjectSchemes/lapponica	Lapponica	"fi"=>"Lapponica"
+juho	http://id.loc.gov/vocabulary/subjectSchemes/juho	JUHO - Julkishallinnon ontologia	"fi"=>"JUHO - Julkishallinnon ontologia"
+idas	http://id.loc.gov/vocabulary/subjectSchemes/idas	ID-ArchivschlÃ¼ssel	"de"=>"ID-ArchivschlÃ¼ssel"
+tbjvp	http://id.loc.gov/vocabulary/subjectSchemes/tbjvp	Tesauro de la Biblioteca Dr. Jorge Villalobos Padilla, S.J.	"es"=>"Tesauro de la Biblioteca Dr. Jorge Villalobos Padilla, S.J."
+test	http://id.loc.gov/vocabulary/subjectSchemes/test	Thesaurus of engineering and scientific terms	
+finmesh	http://id.loc.gov/vocabulary/subjectSchemes/finmesh	FinMeSH	"fi"=>"FinMeSH"
+kssbar	http://id.loc.gov/vocabulary/subjectSchemes/kssbar	Klassifikationssystem for svenska bibliotek. Ãmnesordregister. Alfabetisk del	"sv"=>"Klassifikationssystem for svenska bibliotek. Ãmnesordregister. Alfabetisk del"
+kupu	http://id.loc.gov/vocabulary/subjectSchemes/kupu	Maori Wordnet	"mi"=>"He puna kupu"
+rpe	http://id.loc.gov/vocabulary/subjectSchemes/rpe	Rubricator on economics	"ru"=>"Rubrikator po ekonomike"
+dit	http://id.loc.gov/vocabulary/subjectSchemes/dit	Defense intelligence thesaurus	
+she	http://id.loc.gov/vocabulary/subjectSchemes/she	SHE: subject headings for engineering	
+idszbzna	http://id.loc.gov/vocabulary/subjectSchemes/idszbzna	Thesaurus IDS Nebis Zentralbibliothek ZÃ¼rich, Nordamerika-Bibliothek	"de"=>"Thesaurus IDS Nebis Zentralbibliothek ZÃ¼rich, Nordamerika-Bibliothek"
+msc	http://id.loc.gov/vocabulary/subjectSchemes/msc	Mathematical subject classification	
+muzeukn	http://id.loc.gov/vocabulary/subjectSchemes/muzeukn	MuzeMusic UK non-classical music classification	
+ipsp	http://id.loc.gov/vocabulary/subjectSchemes/ipsp	Defense intelligence production schedule.	
+sthus	http://id.loc.gov/vocabulary/subjectSchemes/sthus	Subject Taxonomy of the History of U.S. Foreign Relations	
+poliscit	http://id.loc.gov/vocabulary/subjectSchemes/poliscit	Political science thesaurus II	
+qtglit	http://id.loc.gov/vocabulary/subjectSchemes/qtglit	A queer thesaurus : an international thesaurus of gay and lesbian index terms	
+unbist	http://id.loc.gov/vocabulary/subjectSchemes/unbist	UNBIS thesaurus	
+gcipplatform	http://id.loc.gov/vocabulary/subjectSchemes/gcipplatform	GAMECIP - Computer Game Platforms (GAMECIP (Game Metadata and Citation Project))	
+puho	http://id.loc.gov/vocabulary/subjectSchemes/puho	PUHO - Puolustushallinnon ontologia	"fi"=>"PUHO - Puolustushallinnon ontologia"
+thub	http://id.loc.gov/vocabulary/subjectSchemes/thub	Thesaurus de la Universitat de Barcelona	"ca"=>"Thesaurus de la Universitat de Barcelona"
+ndlsh	http://id.loc.gov/vocabulary/subjectSchemes/ndlsh	National Diet Library list of subject headings	"ja"=>"Koktsu Kokkai Toshokan kenmei hyÃ´mokuhyÃ´"
+czenas	http://id.loc.gov/vocabulary/subjectSchemes/czenas	CZENAS thesaurus: a list of subject terms used in the National Library of the Czech Republic	"cs"=>"Soubor vÄcnÃ½ch autorit NÃ¡rodnÃ­ knihovny ÄR"
+idszbzzh	http://id.loc.gov/vocabulary/subjectSchemes/idszbzzh	Thesaurus IDS Nebis Zentralbibliothek ZÃ¼rich, Handschriftenabteilung	"de"=>"Thesaurus IDS Nebis Zentralbibliothek ZÃ¼rich, Handschriftenabteilung"
+unbisn	http://id.loc.gov/vocabulary/subjectSchemes/unbisn	UNBIS name authority list (New York, NY: Dag Hammarskjld Library, United Nations; : Chadwyck-Healey)	
+rswk	http://id.loc.gov/vocabulary/subjectSchemes/rswk	Regeln fÃ¼r den Schlagwortkatalog	"de"=>"Regeln fÃ¼r den Schlagwortkatalog"
+larpcal	http://id.loc.gov/vocabulary/subjectSchemes/larpcal	Lista de assuntos referente ao programa de cadastramento automatizado de livros da USP	"pt"=>"Lista de assuntos referente ao programa de cadastramento automatizado de livros da USP"
+biccbmc	http://id.loc.gov/vocabulary/subjectSchemes/biccbmc	BIC Children's Books Marketing Classifications	
+kulo	http://id.loc.gov/vocabulary/subjectSchemes/kulo	KULO - Kulttuurien tutkimuksen ontologia	"fi"=>"KULO - Kulttuurien tutkimuksen ontologia"
+popinte	http://id.loc.gov/vocabulary/subjectSchemes/popinte	POPIN thesaurus: population multilingual thesaurus	
+tisa	http://id.loc.gov/vocabulary/subjectSchemes/tisa	VillagrÃ¡ Rubio, Angel. Tesauro ISOC de sociologÃ­a autores	"es"=>"VillagrÃ¡ Rubio, Angel. Tesauro ISOC de sociologÃ­a autores"
+atg	http://id.loc.gov/vocabulary/subjectSchemes/atg	Agricultural thesaurus and glossary	
+eflch	http://id.loc.gov/vocabulary/subjectSchemes/eflch	E4Libraries Category Headings	
+maaq	http://id.loc.gov/vocabulary/subjectSchemes/maaq	MadÃ¢khil al-asmÃ¢' al-'arabÃ®yah al-qadÃ®mah	"ar"=>"MadÃ¢khil al-asmÃ¢' al-'arabÃ®yah al-qadÃ®mah"
+rvmgd	http://id.loc.gov/vocabulary/subjectSchemes/rvmgd	ThÃ©saurus des descripteurs de groupes dÃ©mographiques de l'UniversitÃ© Laval	"fr"=>"ThÃ©saurus des descripteurs de groupes dÃ©mographiques de l'UniversitÃ© Laval"
+csahssa	http://id.loc.gov/vocabulary/subjectSchemes/csahssa	"Controlled vocabulary" in Health and safety science abstracts	
+sigle	http://id.loc.gov/vocabulary/subjectSchemes/sigle	SIGLE manual, Part 2, Subject category list	
+blnpn	http://id.loc.gov/vocabulary/subjectSchemes/blnpn	British Library newspaper place names	
+asrctoa	http://id.loc.gov/vocabulary/subjectSchemes/asrctoa	Australian Standard Research Classification: Type of Activity (TOA) classification	
+lcdgt	http://id.loc.gov/vocabulary/subjectSchemes/lcdgt	Library of Congress demographic group term and code List	
+bokbas	http://id.loc.gov/vocabulary/subjectSchemes/bokbas	Bokbasen	"no"=>"Bokbasen"
+gnis	http://id.loc.gov/vocabulary/subjectSchemes/gnis	Geographic Names Information System (GNIS)	
+nbiemnfag	http://id.loc.gov/vocabulary/subjectSchemes/nbiemnfag	NBIs emneordsliste for faglitteratur	"no"=>"NBIs emneordsliste for faglitteratur"
+nlgaf	http://id.loc.gov/vocabulary/subjectSchemes/nlgaf	Archeio KathierÅmenÅn EpikephalidÅn	"el"=>"Archeio KathierÅmenÅn EpikephalidÅn"
+bhashe	http://id.loc.gov/vocabulary/subjectSchemes/bhashe	BHA, Bibliography of the history of art, subject headings/English	
+tsht	http://id.loc.gov/vocabulary/subjectSchemes/tsht	Thesaurus of subject headings for television	
+scbi	http://id.loc.gov/vocabulary/subjectSchemes/scbi	Soggettario per i cataloghi delle biblioteche italiane	"it"=>"Soggettario per i cataloghi delle biblioteche italiane"
+valo	http://id.loc.gov/vocabulary/subjectSchemes/valo	VALO - Fotografiska ontologin	"fi"=>"VALO - Fotografiska ontologin"
+wpicsh	http://id.loc.gov/vocabulary/subjectSchemes/wpicsh	WPIC Library thesaurus of subject headings	
+aktp	http://id.loc.gov/vocabulary/subjectSchemes/aktp	AlphavÄtikos Katalogos ThematikÅn PerigrapheÅn	"el"=>"AlphavÄtikos Katalogos ThematikÅn PerigrapheÅn"
+stw	http://id.loc.gov/vocabulary/subjectSchemes/stw	STW Thesaurus for Economics	"de"=>"Standard-Thesaurus Wirtschaft"
+mesh	http://id.loc.gov/vocabulary/subjectSchemes/mesh	Medical subject headings	
+ica	http://id.loc.gov/vocabulary/subjectSchemes/ica	Index of Christian art	
+emnmus	http://id.loc.gov/vocabulary/subjectSchemes/emnmus	Emneord for musikkdokument i EDB-kataloger	"no"=>"Emneord for musikkdokument i EDB-kataloger"
+sao	http://id.loc.gov/vocabulary/subjectSchemes/sao	Svenska Ã¤mnesord	"sv"=>"Svenska Ã¤mnesord"
+sgc	http://id.loc.gov/vocabulary/subjectSchemes/sgc	COBISS.SI General List of subject headings (Slovenian subject headings)	"sl"=>"SploÅ¡ni geslovnik COBISS.SI"
+bib1814	http://id.loc.gov/vocabulary/subjectSchemes/bib1814	1814-bibliografi: emneord for 1814-bibliografi	"no"=>"1814-bibliografi: emneord for 1814-bibliografi"
+bjornson	http://id.loc.gov/vocabulary/subjectSchemes/bjornson	Bjornson: emneord for Bjornsonbibliografien	"no"=>"Bjornson: emneord for Bjornsonbibliografien"
+liito	http://id.loc.gov/vocabulary/subjectSchemes/liito	LIITO - Liiketoimintaontologia	"fi"=>"LIITO - Liiketoimintaontologia"
+apaist	http://id.loc.gov/vocabulary/subjectSchemes/apaist	APAIS thesaurus: a list of subject terms used in the Australian Public Affairs Information Service	
+itglit	http://id.loc.gov/vocabulary/subjectSchemes/itglit	International thesaurus of gay and lesbian index terms (Chicago?: Thesaurus Committee, Gay and Lesbian Task Force, American Library Association)	
+ntcsd	http://id.loc.gov/vocabulary/subjectSchemes/ntcsd	"National Translations Center secondary descriptors" in National Translation Center primary subject classification and secondary descriptor	
+scisshl	http://id.loc.gov/vocabulary/subjectSchemes/scisshl	SCIS subject headings	
+opms	http://id.loc.gov/vocabulary/subjectSchemes/opms	OpetusministeriÃ¶n asiasanasto	"fi"=>"OpetusministeriÃ¶n asiasanasto"
+ttka	http://id.loc.gov/vocabulary/subjectSchemes/ttka	Teologisen tiedekunnan kirjaston asiasanasto	"fi"=>"Teologisen tiedekunnan kirjaston asiasanasto"
+watrest	http://id.loc.gov/vocabulary/subjectSchemes/watrest	Thesaurus of water resources terms: a collection of water resources and related terms for use in indexing technical information	
+ysa	http://id.loc.gov/vocabulary/subjectSchemes/ysa	Yleinen suomalainen asiasanasto	"fi"=>"Yleinen suomalainen asiasanasto"
+kitu	http://id.loc.gov/vocabulary/subjectSchemes/kitu	Kirjallisuudentutkimuksen asiasanasto	"fi"=>"Kirjallisuudentutkimuksen asiasanasto"
+sk	http://id.loc.gov/vocabulary/subjectSchemes/sk	'Zhong guo gu ji shan ban shu zong mu' fen lei biao	"zh"=>"'Zhong guo gu ji shan ban shu zong mu' fen lei biao"
+aiatsisp	http://id.loc.gov/vocabulary/subjectSchemes/aiatsisp	AIATSIS place thesaurus	
+ram	http://id.loc.gov/vocabulary/subjectSchemes/ram	RAMEAU: rÃ©pertoire d'authoritÃ© de matiÃ¨res encyclopÃ©dique unifiÃ©	"fr"=>"RAMEAU: rÃ©pertoire d'authoritÃ© de matiÃ¨res encyclopÃ©dique unifiÃ©"
+aedoml	http://id.loc.gov/vocabulary/subjectSchemes/aedoml	Listado de encabezamientos de materia de mÃºsica	"es"=>"Listado de encabezamientos de materia de mÃºsica"
+ated	http://id.loc.gov/vocabulary/subjectSchemes/ated	Australian Thesaurus of Education Descriptors (ATED)	
+cabt	http://id.loc.gov/vocabulary/subjectSchemes/cabt	CAB thesaurus (Slough [England]: Commonwealth Agricultural Bureaux)	
+kassu	http://id.loc.gov/vocabulary/subjectSchemes/kassu	Kassu - Kasvien suomenkieliset nimet	"fi"=>"Kassu - Kasvien suomenkieliset nimet"
+nbdbt	http://id.loc.gov/vocabulary/subjectSchemes/nbdbt	NBD Biblion Trefwoordenthesaurus	"nl"=>"NBD Biblion Trefwoordenthesaurus"
+jhpb	http://id.loc.gov/vocabulary/subjectSchemes/jhpb	JÄzyk haseÅ przedmiotowych Biblioteki Narodowej	"pl"=>"JÄzyk haseÅ przedmiotowych Biblioteki Narodowej"
+bidex	http://id.loc.gov/vocabulary/subjectSchemes/bidex	Bilindex: a bilingual Spanish-English subject heading list	
+ccsa	http://id.loc.gov/vocabulary/subjectSchemes/ccsa	Catalogue collectif suisse des affiches	"fr"=>"Catalogue collectif suisse des affiches"
+noraf	http://id.loc.gov/vocabulary/subjectSchemes/noraf	Norwegian Authority File	
+kito	http://id.loc.gov/vocabulary/subjectSchemes/kito	KITO - Kirjallisuudentutkimuksen ontologia	"fi"=>"KITO - Kirjallisuudentutkimuksen ontologia"
+tho	http://id.loc.gov/vocabulary/subjectSchemes/tho	Thesauros HellÄnikÅn Oron	"el"=>"Thesauros HellÄnikÅn Oron"
+pmont	http://id.loc.gov/vocabulary/subjectSchemes/pmont	Powerhouse Museum Object Name Thesaurus	
+ssg	http://id.loc.gov/vocabulary/subjectSchemes/ssg	SploÅ¡ni slovenski geslovnik	"sl"=>"SploÅ¡ni slovenski geslovnik"
+huc	http://id.loc.gov/vocabulary/subjectSchemes/huc	U.S. Geological Survey water-supply paper 2294: hydrologic basins unit codes	
+isis	http://id.loc.gov/vocabulary/subjectSchemes/isis	"Classification scheme" in Isis	
+ibsen	http://id.loc.gov/vocabulary/subjectSchemes/ibsen	Ibsen: emneord for Den internasjonale Ibsen-bibliografien	"no"=>"Ibsen: emneord for Den internasjonale Ibsen-bibliografien"
+lacnaf	http://id.loc.gov/vocabulary/subjectSchemes/lacnaf	Library and Archives Canada name authority file	
+swemesh	http://id.loc.gov/vocabulary/subjectSchemes/swemesh	Swedish MeSH	"sv"=>"Svenska MeSH"
+hamsun	http://id.loc.gov/vocabulary/subjectSchemes/hamsun	Hamsun: emneord for Hamsunbibliografien	"no"=>"Hamsun: emneord for Hamsunbibliografien"
+qrma	http://id.loc.gov/vocabulary/subjectSchemes/qrma	List of Arabic subject headings	"ar"=>"QÃ¢'imat ru'Ã»s al-mawdÃ»Ã¢t al-'ArabÃ®yah"
+qrmak	http://id.loc.gov/vocabulary/subjectSchemes/qrmak	QÃ¢'imat ru'Ã»s al-mawdÃ»'Ã¢t al-'ArabÃ®yah al-qiyÃ¢sÃ®yah al-maktabÃ¢t wa-marÃ¢kaz al-ma'lÃ»mÃ¢t wa-qawÃ¢id al-bayÃ¢nÃ¢t	"ar"=>"QÃ¢'imat ru'Ã»s al-mawdÃ»'Ã¢t al-'ArabÃ®yah al-qiyÃ¢sÃ®yah al-maktabÃ¢t wa-marÃ¢kaz al-ma'lÃ»mÃ¢t wa-qawÃ¢id al-bayÃ¢nÃ¢t"
+ceeus	http://id.loc.gov/vocabulary/subjectSchemes/ceeus	Counties and equivalent entities of the United States its possessions, and associated areas	
+taxhs	http://id.loc.gov/vocabulary/subjectSchemes/taxhs	A taxonomy or human services: a conceptual framework with standardized terminology and definitions for the field	
+noram	http://id.loc.gov/vocabulary/subjectSchemes/noram	Noram: emneord for Norsk-amerikansk samling	"no"=>"Noram: emneord for Norsk-amerikansk samling"
+eurovocfr	http://id.loc.gov/vocabulary/subjectSchemes/eurovocfr	Eurovoc thesaurus (French)	
+jurivoc	http://id.loc.gov/vocabulary/subjectSchemes/jurivoc	JURIVOC	
+agrifors	http://id.loc.gov/vocabulary/subjectSchemes/agrifors	AGRIFOREST-sanasto	"fi"=>"AGRIFOREST-sanasto"
+noubojur	http://id.loc.gov/vocabulary/subjectSchemes/noubojur	Thesaurus of Law	"no"=>"Thesaurus of Law"
+pha	http://id.loc.gov/vocabulary/subjectSchemes/pha	Puolostushallinnon asiasanasto	"fi"=>"Puolostushallinnon asiasanasto"
+ddcrit	http://id.loc.gov/vocabulary/subjectSchemes/ddcrit	DDC retrieval and indexing terminology; posting terms with hierarchy and KWOC	
+mar	http://id.loc.gov/vocabulary/subjectSchemes/mar	Merenkulun asiasanasto	"fi"=>"Merenkulun asiasanasto"
+sbt	http://id.loc.gov/vocabulary/subjectSchemes/sbt	Soggettario Sistema Bibliotecario Ticinese	"it"=>"Soggettario Sistema Bibliotecario Ticinese"
+nzggn	http://id.loc.gov/vocabulary/subjectSchemes/nzggn	New Zealand gazetteer of official geographic names (New Zealand Geographic Board Ngā Pou Taunaha o Aotearoa (NZGB))	
+kta	http://id.loc.gov/vocabulary/subjectSchemes/kta	Kielitieteen asiasanasto	"fi"=>"Kielitieteen asiasanasto"
+snt	http://id.loc.gov/vocabulary/subjectSchemes/snt	Sexual nomenclature : a thesaurus	
+francis	http://id.loc.gov/vocabulary/subjectSchemes/francis	FRANCIS database classification scheme	"fr"=>"Base de donneÃ©s FRANCIS: plan de classement"
+eurovocsl	http://id.loc.gov/vocabulary/subjectSchemes/eurovocsl	Eurovoc thesaurus	"sl"=>"Eurovoc thesaurus"
+idszbzes	http://id.loc.gov/vocabulary/subjectSchemes/idszbzes	Thesaurus IDS Nebis Bibliothek Englisches Seminar der UniversitÃ¤t ZÃ¼rich	"de"=>"Thesaurus IDS Nebis Bibliothek Englisches Seminar der UniversitÃ¤t ZÃ¼rich"
+nlmnaf	http://id.loc.gov/vocabulary/subjectSchemes/nlmnaf	National Library of Medicine name authority file	
+rugeo	http://id.loc.gov/vocabulary/subjectSchemes/rugeo	Natsional'nyi normativnyi fail geograficheskikh nazvanii Rossiiskoi Federatsii	"ru"=>"Natsional'nyi normativnyi fail geograficheskikh nazvanii Rossiiskoi Federatsii"
+sipri	http://id.loc.gov/vocabulary/subjectSchemes/sipri	SIPRI library thesaurus	
+kkts	http://id.loc.gov/vocabulary/subjectSchemes/kkts	Katalogos KathierÅmenÅn TypÅn Syllogikou Katalogou Demosion Vivliothekon	"el"=>"Katalogos KathierÅmenÅn TypÅn Syllogikou Katalogou Demosion Vivliothekon"
+tucua	http://id.loc.gov/vocabulary/subjectSchemes/tucua	Thesaurus for use in college and university archives	
+pmbok	http://id.loc.gov/vocabulary/subjectSchemes/pmbok	Guide to the project management body of knowledge (PMBOK Guide)	
+agrovoc	http://id.loc.gov/vocabulary/subjectSchemes/agrovoc	AGROVOC multilingual agricultural thesaurus	
+nal	http://id.loc.gov/vocabulary/subjectSchemes/nal	National Agricultural Library subject headings	
+lnmmbr	http://id.loc.gov/vocabulary/subjectSchemes/lnmmbr	Lietuvos nacionalines Martyno Mazvydo bibliotekos rubrikynas	"lt"=>"Lietuvos nacionalines Martyno Mazvydo bibliotekos rubrikynas"
+vmj	http://id.loc.gov/vocabulary/subjectSchemes/vmj	Vedettes-matiÃ¨re jeunesse	"fr"=>"Vedettes-matiÃ¨re jeunesse"
+ddcut	http://id.loc.gov/vocabulary/subjectSchemes/ddcut	Dewey Decimal Classification user terms	
+eks	http://id.loc.gov/vocabulary/subjectSchemes/eks	Eduskunnan kirjaston asiasanasto	"fi"=>"Eduskunnan kirjaston asiasanasto"
+wot	http://id.loc.gov/vocabulary/subjectSchemes/wot	A Women's thesaurus	
+noubomn	http://id.loc.gov/vocabulary/subjectSchemes/noubomn	University of Oslo Library Thesaurus of Science	"no"=>"University of Oslo Library Thesaurus of Science"
+idszbzzg	http://id.loc.gov/vocabulary/subjectSchemes/idszbzzg	Thesaurus IDS Nebis Zentralbibliothek ZÃ¼rich, Graphische Sammlung	"de"=>"Thesaurus IDS Nebis Zentralbibliothek ZÃ¼rich, Graphische Sammlung"
+precis	http://id.loc.gov/vocabulary/subjectSchemes/precis	PRECIS: a manual of concept analysis and subject indexing	
+cstud	http://id.loc.gov/vocabulary/subjectSchemes/cstud	Classificatieschema's Bibliotheek TU Delft	"nl"=>"Classificatieschema's Bibliotheek TU Delft"
+nlgkk	http://id.loc.gov/vocabulary/subjectSchemes/nlgkk	Katalogos kathierÅmenÅn onomatÅn physikÅn prosÅpÅn	"el"=>"Katalogos kathierÅmenÅn onomatÅn physikÅn prosÅpÅn"
+pmt	http://id.loc.gov/vocabulary/subjectSchemes/pmt	Project management terminology. Newtown Square, PA: Project Management Institute	
+ericd	http://id.loc.gov/vocabulary/subjectSchemes/ericd	Thesaurus of ERIC descriptors	
+rvm	http://id.loc.gov/vocabulary/subjectSchemes/rvm	RÃ©pertoire de vedettes-matiÃ¨re	"fr"=>"RÃ©pertoire de vedettes-matiÃ¨re"
+sfit	http://id.loc.gov/vocabulary/subjectSchemes/sfit	Svenska filminstitutets tesaurus	"sv"=>"Svenska filminstitutets tesaurus"
+trtsa	http://id.loc.gov/vocabulary/subjectSchemes/trtsa	Teatterin ja tanssin asiasanasto	"fi"=>"Teatterin ja tanssin asiasanasto"
+ulan	http://id.loc.gov/vocabulary/subjectSchemes/ulan	Union list of artist names	
+unescot	http://id.loc.gov/vocabulary/subjectSchemes/unescot	UNESCO thesaurus	"fr"=>"ThÃ©saurus de l'UNESCO","es"=>"Tesauro de la UNESCO"
+koko	http://id.loc.gov/vocabulary/subjectSchemes/koko	KOKO-ontologia	"fi"=>"KOKO-ontologia"
+msh	http://id.loc.gov/vocabulary/subjectSchemes/msh	Trimboli, T., and Martyn S. Marianist subject headings	
+trt	http://id.loc.gov/vocabulary/subjectSchemes/trt	Transportation resource thesaurus	
+agrovocf	http://id.loc.gov/vocabulary/subjectSchemes/agrovocf	AGROVOC thÃ©saurus agricole multilingue	"fr"=>"AGROVOC thÃ©saurus agricole multilingue"
+aucsh	http://id.loc.gov/vocabulary/subjectSchemes/aucsh	Arabic Union Catalog Subject Headings	"ar"=>"QÃ¢'imat ru'Ã»s mawdÃ»'Ã¢t al-fahras al-'ArabÃ®yah al-mowahad"
+ddcri	http://id.loc.gov/vocabulary/subjectSchemes/ddcri	Dewey Decimal Classification Relative Index	
+est	http://id.loc.gov/vocabulary/subjectSchemes/est	International energy: subject thesaurus (: International Energy Agency, Energy Technology Data Exchange)	
+lua	http://id.loc.gov/vocabulary/subjectSchemes/lua	Liikunnan ja urheilun asiasanasto	"fi"=>"Liikunnan ja urheilun asiasanasto"
+mipfesd	http://id.loc.gov/vocabulary/subjectSchemes/mipfesd	Macrothesaurus for information processing in the field of economic and social development	
+rurkp	http://id.loc.gov/vocabulary/subjectSchemes/rurkp	Predmetnye rubriki Rossiiskoi knizhnoi palaty	"ru"=>"Predmetnye rubriki Rossiiskoi knizhnoi palaty"
+albt	http://id.loc.gov/vocabulary/subjectSchemes/albt	Arbetslivsbibliotekets tesaurus	"sv"=>"Arbetslivsbibliotekets tesaurus"
+fmesh	http://id.loc.gov/vocabulary/subjectSchemes/fmesh	Liste systÃ©matique et liste permutÃ©e des descripteurs franÃ§ais MeSH	"fr"=>"Liste systÃ©matique et liste permutÃ©e des descripteurs franÃ§ais MeSH"
+bicssc	http://id.loc.gov/vocabulary/subjectSchemes/bicssc	BIC standard subject categories	
+cctf	http://id.loc.gov/vocabulary/subjectSchemes/cctf	Carto-Canadiana thÃ©saurus - FranÃ§ais	"fr"=>"Carto-Canadiana thÃ©saurus - FranÃ§ais"
+reo	http://id.loc.gov/vocabulary/subjectSchemes/reo	Māori Subject Headings thesaurus	"mi"=>"Ngā Åªpoko Tukutuku"
+icpsr	http://id.loc.gov/vocabulary/subjectSchemes/icpsr	ICPSR controlled vocabulary system	
+kao	http://id.loc.gov/vocabulary/subjectSchemes/kao	KVINNSAM Ã¤mnesordsregister	"sv"=>"KVINNSAM Ã¤mnesordsregister"
+asrcseo	http://id.loc.gov/vocabulary/subjectSchemes/asrcseo	Australian Standard Research Classification: Socio-Economic Objective (SEO) classification	
+georeft	http://id.loc.gov/vocabulary/subjectSchemes/georeft	GeoRef thesaurus	
+cct	http://id.loc.gov/vocabulary/subjectSchemes/cct	Chinese Classified Thesaurus	"zh"=>"Zhong guo fen lei zhu ti ci biao"
+dcs	http://id.loc.gov/vocabulary/subjectSchemes/dcs	Health Sciences Descriptors	"es"=>"Descriptores en Ciencias de la Salud","pt"=>"Descritores em CiÃªncias da SaÃºde"
+musa	http://id.loc.gov/vocabulary/subjectSchemes/musa	Musiikin asiasanasto: erikoissanasto	"fi"=>"Musiikin asiasanasto: erikoissanasto"
+ntissc	http://id.loc.gov/vocabulary/subjectSchemes/ntissc	NTIS subject categories	
+idszbz	http://id.loc.gov/vocabulary/subjectSchemes/idszbz	Thesaurus IDS Nebis Zentralbibliothek ZÃ¼rich	"de"=>"Thesaurus IDS Nebis Zentralbibliothek ZÃ¼rich"
+tlka	http://id.loc.gov/vocabulary/subjectSchemes/tlka	InvestigaciÃ³, ProcÃ©s TÃ¨cnicn kirjaston asiasanasto	"fi"=>"InvestigaciÃ³, ProcÃ©s TÃ¨cnicn kirjaston asiasanasto"
+usaidt	http://id.loc.gov/vocabulary/subjectSchemes/usaidt	USAID thesaurus: Keywords used to index documents included in the USAID Development Experience System.	
+embne	http://id.loc.gov/vocabulary/subjectSchemes/embne	Encabezamientos de Materia de la Biblioteca Nacional de EspaÃ±a	"es"=>"Encabezamientos de Materia de la Biblioteca Nacional de EspaÃ±a"
+vcaadu	http://id.loc.gov/vocabulary/subjectSchemes/vcaadu	Vocabulario controlado de arquitectura, arte, diseÃ±o y urbanismo	"es"=>"Vocabulario controlado de arquitectura, arte, diseÃ±o y urbanismo"
+ntcpsc	http://id.loc.gov/vocabulary/subjectSchemes/ntcpsc	"National Translations Center primary subject classification" in National Translations Center primary subject classification and secondary descriptors	
+quiding	http://id.loc.gov/vocabulary/subjectSchemes/quiding	Quiding, Nils Herman. Svenskt allmÃ¤nt fÃ¶rfattningsregister fÃ¶r tiden frÃ¥n Ã¥r 1522 till och med Ã¥r 1862	"sv"=>"Quiding, Nils Herman. Svenskt allmÃ¤nt fÃ¶rfattningsregister fÃ¶r tiden frÃ¥n Ã¥r 1522 till och med Ã¥r 1862"
+allars	http://id.loc.gov/vocabulary/subjectSchemes/allars	AllÃ¤rs: allmÃ¤n tesaurus pÃ¤ svenska	"fi"=>"AllÃ¤rs: allmÃ¤n tesaurus pÃ¤ svenska"
+ogst	http://id.loc.gov/vocabulary/subjectSchemes/ogst	Oregon GILS Subject Tree (Oregon: Oregon State Library and Oregon Information Resource Management Division (IRMD))	
+bella	http://id.loc.gov/vocabulary/subjectSchemes/bella	Bella: specialtesaurus fÃ¶r skÃ¶nlitteratur	"fi"=>"Bella: specialtesaurus fÃ¶r skÃ¶nlitteratur"
+bibalex	http://id.loc.gov/vocabulary/subjectSchemes/bibalex	Bibliotheca Alexandrina name and subject authority file	
+pepp	http://id.loc.gov/vocabulary/subjectSchemes/pepp	The Princeton encyclopedia of poetry and poetics	
+hkcan	http://id.loc.gov/vocabulary/subjectSchemes/hkcan	Hong Kong Chinese Authority File (Name) - HKCAN	
+dissao	http://id.loc.gov/vocabulary/subjectSchemes/dissao	"Dissertation abstracts online" in Search tools: the guide to UNI/Data Courier Online	
+ltcsh	http://id.loc.gov/vocabulary/subjectSchemes/ltcsh	Land Tenure Center Library list of subject headings	
+mpirdes	http://id.loc.gov/vocabulary/subjectSchemes/mpirdes	Macrothesaurus para el procesamiento de la informaciÃ³n relativa al desarrollo econÃ³mico y social	"es"=>"Macrothesaurus para el procesamiento de la informaciÃ³n relativa al desarrollo econÃ³mico y social"
+asft	http://id.loc.gov/vocabulary/subjectSchemes/asft	Aquatic sciences and fisheries thesaurus	
+naf	http://id.loc.gov/vocabulary/subjectSchemes/naf	NACO authority file	
+nimacsc	http://id.loc.gov/vocabulary/subjectSchemes/nimacsc	NIMA cartographic subject categories	
+khib	http://id.loc.gov/vocabulary/subjectSchemes/khib	Emneord, KHiB Biblioteket	"no"=>"Emneord, KHiB Biblioteket"
+cdcng	http://id.loc.gov/vocabulary/subjectSchemes/cdcng	Catalogage des documents cartographiques: forme et structure des vedettes noms gÃ©ographiques - NF Z 44-081	"fr"=>"Catalogage des documents cartographiques: forme et structure des vedettes noms gÃ©ographiques - NF Z 44-081"
+afset	http://id.loc.gov/vocabulary/subjectSchemes/afset	American Folklore Society Ethnographic Thesaurus	
+erfemn	http://id.loc.gov/vocabulary/subjectSchemes/erfemn	Erfaringskompetanses emneord	"no"=>"Erfaringskompetanses emneord"
+sbiao	http://id.loc.gov/vocabulary/subjectSchemes/sbiao	Svenska barnboksinstitutets Ã¤mnesordslista	"sv"=>"Svenska barnboksinstitutets Ã¤mnesordslista"
+socio	http://id.loc.gov/vocabulary/subjectSchemes/socio	Sociological Abstracts Thesaurus	
+bisacrt	http://id.loc.gov/vocabulary/subjectSchemes/bisacrt	BISAC Regional Themes	
+eum	http://id.loc.gov/vocabulary/subjectSchemes/eum	Eesti uldine mÃ¤rksonastik	"et"=>"Eesti uldine mÃ¤rksonastik"
+kula	http://id.loc.gov/vocabulary/subjectSchemes/kula	Kulttuurien tutkimuksen asiasanasto	"fi"=>"Kulttuurien tutkimuksen asiasanasto"
+odlt	http://id.loc.gov/vocabulary/subjectSchemes/odlt	Baldick, C. The Oxford dictionary of literary terms	
+rerovoc	http://id.loc.gov/vocabulary/subjectSchemes/rerovoc	Indexation matiÃ©res RERO autoritÃ¨s	"fr"=>"Indexation matiÃ©res RERO autoritÃ¨s"
+tsr	http://id.loc.gov/vocabulary/subjectSchemes/tsr	TSR-ontologia	"fi"=>"TSR-ontologia"
+czmesh	http://id.loc.gov/vocabulary/subjectSchemes/czmesh	Czech MeSH	"cs"=>"Czech MeSH"
+dltt	http://id.loc.gov/vocabulary/subjectSchemes/dltt	Quinn, E. A dictionary of literary and thematic terms	
+idsbb	http://id.loc.gov/vocabulary/subjectSchemes/idsbb	Thesaurus IDS Basel Bern	"de"=>"Thesaurus IDS Basel Bern"
+inist	http://id.loc.gov/vocabulary/subjectSchemes/inist	INIS: thesaurus	
+idszbzzk	http://id.loc.gov/vocabulary/subjectSchemes/idszbzzk	Thesaurus IDS Nebis Zentralbibliothek ZÃ¼rich, Kartensammlung	"de"=>"Thesaurus IDS Nebis Zentralbibliothek ZÃ¼rich, Kartensammlung"
+tesa	http://id.loc.gov/vocabulary/subjectSchemes/tesa	Tesauro AgrÃ­cola	"es"=>"Tesauro AgrÃ­cola"
+liv	http://id.loc.gov/vocabulary/subjectSchemes/liv	Legislative indexing vocabulary	
+collett	http://id.loc.gov/vocabulary/subjectSchemes/collett	Collett-bibliografi: litteratur av og om Camilla Collett	"no"=>"Collett-bibliografi: litteratur av og om Camilla Collett"
+nsbncf	http://id.loc.gov/vocabulary/subjectSchemes/nsbncf	Nuovo Soggettario	"it"=>"Nuovo Soggettario"
+ipat	http://id.loc.gov/vocabulary/subjectSchemes/ipat	IPA thesaurus and frequency list	
+skon	http://id.loc.gov/vocabulary/subjectSchemes/skon	Att indexera skÃ¶nlitteratur: Ãmnesordslista, vuxenlitteratur	"sv"=>"Att indexera skÃ¶nlitteratur: Ãmnesordslista, vuxenlitteratur"
+renib	http://id.loc.gov/vocabulary/subjectSchemes/renib	Renib	"es"=>"Renib"
+hrvmesh	http://id.loc.gov/vocabulary/subjectSchemes/hrvmesh	Croatian MeSH / Hrvatski MeSH	"no"=>"Croatian MeSH / Hrvatski MeSH"
+swd	http://id.loc.gov/vocabulary/subjectSchemes/swd	Schlagwortnormdatei	"de"=>"Schlagwortnormdatei"
+aass	http://id.loc.gov/vocabulary/subjectSchemes/aass	"Asian American Studies Library subject headings" in A Guide for establishing Asian American core collections	
+cht	http://id.loc.gov/vocabulary/subjectSchemes/cht	Chicano thesaurus for indexing Chicano materials in Chicano periodical index	
+galestne	http://id.loc.gov/vocabulary/subjectSchemes/galestne	Gale Group subject thesaurus and named entity vocabulary	
+nlgsh	http://id.loc.gov/vocabulary/subjectSchemes/nlgsh	Katalogos HellÄnikÅn thematikÅn epikephalidÅn	"el"=>"Katalogos HellÄnikÅn thematikÅn epikephalidÅn"
+hoidokki	http://id.loc.gov/vocabulary/subjectSchemes/hoidokki	Hoitotieteellinen asiasanasto	
+vffyl	http://id.loc.gov/vocabulary/subjectSchemes/vffyl	Vocabulario de la Biblioteca Central de la FFyL	"es"=>"Vocabulario de la Biblioteca Central de la FFyL"
+kubikat	http://id.loc.gov/vocabulary/subjectSchemes/kubikat	kubikat	"de"=>"kubikat"
+waqaf	http://id.loc.gov/vocabulary/subjectSchemes/waqaf	Maknas Uloom Al Waqaf	"ar"=>"Maknas Uloom Al Waqaf"
+hapi	http://id.loc.gov/vocabulary/subjectSchemes/hapi	HAPI thesaurus and name authority, 1970-2000	
+drama	http://id.loc.gov/vocabulary/subjectSchemes/drama	Drama: specialtesaurus fÃ¶r teater och dans	
+sosa	http://id.loc.gov/vocabulary/subjectSchemes/sosa	Sociaalialan asiasanasto	"fi"=>"Sociaalialan asiasanasto"
+ilpt	http://id.loc.gov/vocabulary/subjectSchemes/ilpt	Index to legal periodicals: thesaurus	
+nicem	http://id.loc.gov/vocabulary/subjectSchemes/nicem	NICEM subject headings and classification system	
+qlsp	http://id.loc.gov/vocabulary/subjectSchemes/qlsp	Queens Library Spanish language subject headings	
+eet	http://id.loc.gov/vocabulary/subjectSchemes/eet	European education thesaurus	
+nalnaf	http://id.loc.gov/vocabulary/subjectSchemes/nalnaf	National Agricultural Library name authority file	
+eclas	http://id.loc.gov/vocabulary/subjectSchemes/eclas	ECLAS thesaurus	
+agrovocs	http://id.loc.gov/vocabulary/subjectSchemes/agrovocs	AGROVOC tesauro agrÃ­cola multilingÃ©e	"es"=>"AGROVOC tesauro agrÃ­cola multilingÃ©e"
+shbe	http://id.loc.gov/vocabulary/subjectSchemes/shbe	Subject headings in business and economics	"sv"=>"Subject headings in business and economics"
+barn	http://id.loc.gov/vocabulary/subjectSchemes/barn	Svenska Ã¤mnesord fÃ¶r barn	"sv"=>"Svenska Ã¤mnesord fÃ¶r barn"
+bhammf	http://id.loc.gov/vocabulary/subjectSchemes/bhammf	BHA, Bibliographie d'histoire de l'art, mots-matiÃ¨re/franÃ§ais	"fr"=>"BHA, Bibliographie d'histoire de l'art, mots-matiÃ¨re/franÃ§ais"
+gccst	http://id.loc.gov/vocabulary/subjectSchemes/gccst	Government of Canada core subject thesaurus (Gatineau : Library and Archives Canada)	
+fnhl	http://id.loc.gov/vocabulary/subjectSchemes/fnhl	First Nations House of Learning Subject Headings	
+kauno	http://id.loc.gov/vocabulary/subjectSchemes/kauno	KAUNO - Kaunokki-ontologin	"fi"=>"KAUNO - Kaunokki-ontologin"
+dtict	http://id.loc.gov/vocabulary/subjectSchemes/dtict	Defense Technical Information Center thesaurus	
+mech	http://id.loc.gov/vocabulary/subjectSchemes/mech	Iskanje po zbirki MECH	"sl"=>"Iskanje po zbirki MECH"
+jupo	http://id.loc.gov/vocabulary/subjectSchemes/jupo	JUPO - Julkisen hallinnon palveluontologia	"fi"=>"JUPO - Julkisen hallinnon palveluontologia"
+ktpt	http://id.loc.gov/vocabulary/subjectSchemes/ktpt	Kirjasto- ja tietopalvelualan tesaurus	"fi"=>"Kirjasto- ja tietopalvelualan tesaurus"
+aiatsiss	http://id.loc.gov/vocabulary/subjectSchemes/aiatsiss	AIATSIS subject Thesaurus	
+lcac	http://id.loc.gov/vocabulary/subjectSchemes/lcac	Library of Congress Annotated Children's Cataloging Program subject headings	
+lemac	http://id.loc.gov/vocabulary/subjectSchemes/lemac	Llista d'encapÃ§alaments de matÃ¨ria en catalÃ 	"ca"=>"Llista d'encapÃ§alaments de matÃ¨ria en catalÃ "
+lemb	http://id.loc.gov/vocabulary/subjectSchemes/lemb	Lista de encabezamientos de materia para bibliotecas	"es"=>"Lista de encabezamientos de materia para bibliotecas"
+henn	http://id.loc.gov/vocabulary/subjectSchemes/henn	Hennepin County Library cumulative authority list	
+mtirdes	http://id.loc.gov/vocabulary/subjectSchemes/mtirdes	MacrothÃ©saurus pour le traitement de l'information relative au dÃ©veloppement Ã©conomique et social	"fr"=>"MacrothÃ©saurus pour le traitement de l'information relative au dÃ©veloppement Ã©conomique et social"
+cash	http://id.loc.gov/vocabulary/subjectSchemes/cash	Canadian subject headings	
+nznb	http://id.loc.gov/vocabulary/subjectSchemes/nznb	New Zealand national bibliographic	
+prvt	http://id.loc.gov/vocabulary/subjectSchemes/prvt	Patent- och registreringsverkets tesaurus	"sv"=>"Patent- och registreringsverkets tesaurus"
+scgdst	http://id.loc.gov/vocabulary/subjectSchemes/scgdst	Subject categorization guide for defense science and technology	
+gem	http://id.loc.gov/vocabulary/subjectSchemes/gem	GEM controlled vocabularies	
+lcsh	http://id.loc.gov/vocabulary/subjectSchemes/lcsh	Library of Congress subject headings	
+rero	http://id.loc.gov/vocabulary/subjectSchemes/rero	Indexation matires RERO	"fr"=>"Indexation matires RERO"
+peri	http://id.loc.gov/vocabulary/subjectSchemes/peri	Perinnetieteiden asiasanasto	"fi"=>"Perinnetieteiden asiasanasto"
+shsples	http://id.loc.gov/vocabulary/subjectSchemes/shsples	Encabezamientos de materia para bibliotecas escolares y pÃºblicas	"es"=>"Encabezamientos de materia para bibliotecas escolares y pÃºblicas"
+slem	http://id.loc.gov/vocabulary/subjectSchemes/slem	Sears: lista de encabezamientos de materia	"es"=>"Sears: lista de encabezamientos de materia"
+afo	http://id.loc.gov/vocabulary/subjectSchemes/afo	AFO - Viikin kampuskirjaston ontologia	"fi"=>"AFO - Viikin kampuskirjaston ontologia"
+gst	http://id.loc.gov/vocabulary/subjectSchemes/gst	Gay studies thesaurus: a controlled vocabulary for indexing and accessing materials of relevance to gay culture, history, politics and psychology	
+hlasstg	http://id.loc.gov/vocabulary/subjectSchemes/hlasstg	HLAS subject term glossary	
+iest	http://id.loc.gov/vocabulary/subjectSchemes/iest	International energy: subject thesaurus	
+pkk	http://id.loc.gov/vocabulary/subjectSchemes/pkk	Predmetnik za katoliÅ¡ke knjiÅ¾nice	"sl"=>"Predmetnik za katoliÅ¡ke knjiÅ¾nice"
+atla	http://id.loc.gov/vocabulary/subjectSchemes/atla	Religion indexes: thesaurus	
+scot	http://id.loc.gov/vocabulary/subjectSchemes/scot	Schools Online Thesaurus (ScOT)	
+smda	http://id.loc.gov/vocabulary/subjectSchemes/smda	Smithsonian National Air and Space Museum Directory of Airplanes	
+solstad	http://id.loc.gov/vocabulary/subjectSchemes/solstad	Solstad: emneord for Solstadbibliografien	"no"=>"Solstad: emneord for Solstadbibliografien"
+abne	http://id.loc.gov/vocabulary/subjectSchemes/abne	Autoridades de la Biblioteca Nacional de EspaÃ±a	"es"=>"Autoridades de la Biblioteca Nacional de EspaÃ±a"
+spines	http://id.loc.gov/vocabulary/subjectSchemes/spines	Tesauro SPINES: un vocabulario controlado y estructurado para el tratamiento de informaciÃ³n sobre ciencia y tecnologÃ­a para el desarrollo	"es"=>"Tesauro SPINES: un vocabulario controlado y estructurado para el tratamiento de informaciÃ³n sobre ciencia y tecnologÃ­a para el desarrollo"
+ktta	http://id.loc.gov/vocabulary/subjectSchemes/ktta	KÃ¤si - ja taideteollisuuden asiasanasto	"fi"=>"KÃ¤si - ja taideteollisuuden asiasanasto"
+ccte	http://id.loc.gov/vocabulary/subjectSchemes/ccte	Carto-Canadiana thesaurus - English	
+pmcsg	http://id.loc.gov/vocabulary/subjectSchemes/pmcsg	Combined standards glossary	
+bisacsh	http://id.loc.gov/vocabulary/subjectSchemes/bisacsh	BISAC Subject Headings	
+fssh	http://id.loc.gov/vocabulary/subjectSchemes/fssh	FamilySearch Subject Headings (FamilySearch)	
+tasmas	http://id.loc.gov/vocabulary/subjectSchemes/tasmas	Tesaurus de Asuntos Sociales del Ministerio de Asuntos Sociales de EspaÃ±a	"es"=>"Tesaurus de Asuntos Sociales del Ministerio de Asuntos Sociales de EspaÃ±a"
+tero	http://id.loc.gov/vocabulary/subjectSchemes/tero	TERO - Terveyden ja hyvinvoinnin ontologia	"fi"=>"TERO - Terveyden ja hyvinvoinnin ontologia"
+rma	http://id.loc.gov/vocabulary/subjectSchemes/rma	Ru'us al-mawdu'at al-'Arabiyah	"ar"=>"Ru'us al-mawdu'at al-'Arabiyah"
+tgn	http://id.loc.gov/vocabulary/subjectSchemes/tgn	Getty thesaurus of geographic names	
+tha	http://id.loc.gov/vocabulary/subjectSchemes/tha	Barcala de Moyano, Graciela G., Cristina Voena. Tesauro de Historia Argentina	"es"=>"Barcala de Moyano, Graciela G., Cristina Voena. Tesauro de Historia Argentina"
+ttll	http://id.loc.gov/vocabulary/subjectSchemes/ttll	Roggau, Zunilda. Tell. Tesauro de lengua y literatura	"es"=>"Roggau, Zunilda. Tell. Tesauro de lengua y literatura"
+sears	http://id.loc.gov/vocabulary/subjectSchemes/sears	Sears list of subject headings	
+csht	http://id.loc.gov/vocabulary/subjectSchemes/csht	Chinese subject headings	
+\.
+
+-- ' ...blah
+
+INSERT INTO authority.thesaurus (code, uri, name, control_set)
+  SELECT code, uri, name, 1 FROM thesauri;
+
+UPDATE authority.thesaurus SET short_code = 'a' WHERE code = 'lcsh';
+UPDATE authority.thesaurus SET short_code = 'b' WHERE code = 'lcshac';
+UPDATE authority.thesaurus SET short_code = 'c' WHERE code = 'mesh';
+UPDATE authority.thesaurus SET short_code = 'd' WHERE code = 'nal';
+UPDATE authority.thesaurus SET short_code = 'k' WHERE code = 'cash';
+UPDATE authority.thesaurus SET short_code = 'r' WHERE code = 'aat';
+UPDATE authority.thesaurus SET short_code = 's' WHERE code = 'sears';
+UPDATE authority.thesaurus SET short_code = 'v' WHERE code = 'rvm';
+
+UPDATE  authority.thesaurus
+  SET   short_code = 'z'
+  WHERE short_code IS NULL;
+
+INSERT INTO config.i18n_core (fq_field, identity_value, translation, string )
+  SELECT  'at.name', t.code, xlate->key, xlate->value
+    FROM  thesauri t
+          JOIN LATERAL each(t.xlate) AS xlate ON TRUE
+    WHERE NOT EXISTS
+            (SELECT id
+              FROM  config.i18n_core
+              WHERE fq_field = 'at.name'
+                    AND identity_value = t.code
+                    AND translation = xlate->key)
+          AND t.xlate IS NOT NULL
+          AND t.name <> (xlate->value);
+
+INSERT INTO authority.heading_field(heading_type, heading_purpose, label, heading_xpath, component_xpath, type_xpath, thesaurus_xpath, thesaurus_override_xpath) VALUES
+ ( 'topical_term', 'main',    'Main Topical Term',    '/mads21:mads/mads21:authority', '//mads21:topic', NULL, '/mads21:mads/mads21:authority/mads21:topic[1]/@authority', NULL )
+,( 'topical_term', 'variant', 'Variant Topical Term', '/mads21:mads/mads21:variant',   '//mads21:topic', '/mads21:variant/@type', '/mads21:mads/mads21:authority/mads21:topic[1]/@authority', '//mads21:topic[1]/@authority')
+,( 'topical_term', 'related', 'Related Topical Term', '/mads21:mads/mads21:related',   '//mads21:topic', '/mads21:related/@type', '/mads21:mads/mads21:authority/mads21:topic[1]/@authority', '//mads21:topic[1]/@authority')
+,( 'personal_name', 'main', 'Main Personal Name',     '/mads21:mads/mads21:authority', '//mads21:name[@type="personal"]', NULL, NULL, NULL )
+,( 'personal_name', 'variant', 'Variant Personal Name',     '/mads21:mads/mads21:variant', '//mads21:name[@type="personal"]', NULL, NULL, NULL )
+,( 'personal_name', 'related', 'Related Personal Name',     '/mads21:mads/mads21:related', '//mads21:name[@type="personal"]', '/mads21:related/@type', NULL, NULL )
+,( 'corporate_name', 'main', 'Main Corporate name',     '/mads21:mads/mads21:authority', '//mads21:name[@type="corporate"]', NULL, NULL, NULL )
+,( 'corporate_name', 'variant', 'Variant Corporate Name',     '/mads21:mads/mads21:variant', '//mads21:name[@type="corporate"]', NULL, NULL, NULL )
+,( 'corporate_name', 'related', 'Related Corporate Name',     '/mads21:mads/mads21:related', '//mads21:name[@type="corporate"]', '/mads21:related/@type', NULL, NULL )
+,( 'meeting_name', 'main', 'Main Meeting name',     '/mads21:mads/mads21:authority', '//mads21:name[@type="conference"]', NULL, NULL, NULL )
+,( 'meeting_name', 'variant', 'Variant Meeting Name',     '/mads21:mads/mads21:variant', '//mads21:name[@type="conference"]', NULL, NULL, NULL )
+,( 'meeting_name', 'related', 'Related Meeting Name',     '/mads21:mads/mads21:related', '//mads21:name[@type="meeting"]', '/mads21:related/@type', NULL, NULL )
+,( 'geographic_name', 'main',    'Main Geographic Term',    '/mads21:mads/mads21:authority', '//mads21:geographic', NULL, '/mads21:mads/mads21:authority/mads21:geographic[1]/@authority', NULL )
+,( 'geographic_name', 'variant', 'Variant Geographic Term', '/mads21:mads/mads21:variant',   '//mads21:geographic', '/mads21:variant/@type', '/mads21:mads/mads21:authority/mads21:geographic[1]/@authority', '//mads21:geographic[1]/@authority')
+,( 'geographic_name', 'related', 'Related Geographic Term', '/mads21:mads/mads21:related',   '//mads21:geographic', '/mads21:related/@type', '/mads21:mads/mads21:authority/mads21:geographic[1]/@authority', '//mads21:geographic[1]/@authority')
+,( 'genre_form_term', 'main',    'Main Genre/Form Term',    '/mads21:mads/mads21:authority', '//mads21:genre', NULL, '/mads21:mads/mads21:authority/mads21:genre[1]/@authority', NULL )
+,( 'genre_form_term', 'variant', 'Variant Genre/Form Term', '/mads21:mads/mads21:variant',   '//mads21:genre', '/mads21:variant/@type', '/mads21:mads/mads21:authority/mads21:genre[1]/@authority', '//mads21:genre[1]/@authority')
+,( 'genre_form_term', 'related', 'Related Genre/Form Term', '/mads21:mads/mads21:related',   '//mads21:genre', '/mads21:related/@type', '/mads21:mads/mads21:authority/mads21:genre[1]/@authority', '//mads21:genre[1]/@authority')
+,( 'chronological_term', 'main',    'Main Chronological Term',    '/mads21:mads/mads21:authority', '//mads21:temporal', NULL, '/mads21:mads/mads21:authority/mads21:temporal[1]/@authority', NULL )
+,( 'chronological_term', 'variant', 'Variant Chronological Term', '/mads21:mads/mads21:variant',   '//mads21:temporal', '/mads21:variant/@type', '/mads21:mads/mads21:authority/mads21:temporal[1]/@authority', '//mads21:temporal[1]/@authority')
+,( 'chronological_term', 'related', 'Related Chronological Term', '/mads21:mads/mads21:related',   '//mads21:temporal', '/mads21:related/@type', '/mads21:mads/mads21:authority/mads21:temporal[1]/@authority', '//mads21:temporal[1]/@authority')
+,( 'uniform_title', 'main',    'Main Uniform Title',    '/mads21:mads/mads21:authority', '//mads21:title', NULL, '/mads21:mads/mads21:authority/mads21:title[1]/@authority', NULL )
+,( 'uniform_title', 'variant', 'Variant Uniform Title', '/mads21:mads/mads21:variant',   '//mads21:title', '/mads21:variant/@type', '/mads21:mads/mads21:authority/mads21:title[1]/@authority', '//mads21:title[1]/@authority')
+,( 'uniform_title', 'related', 'Related Uniform Title', '/mads21:mads/mads21:related',   '//mads21:title', '/mads21:related/@type', '/mads21:mads/mads21:authority/mads21:title[1]/@authority', '//mads21:title[1]/@authority')
+;
+
+-- NACO normalize all the things
+INSERT INTO authority.heading_field_norm_map (field, norm, pos)
+SELECT id, 1, 0
+FROM authority.heading_field;
+
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '100'
+AND control_set = 1
+AND ahf.heading_purpose = 'main'
+AND ahf.heading_type = 'personal_name';
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '400'
+AND control_set = 1
+AND ahf.heading_purpose = 'variant'
+AND ahf.heading_type = 'personal_name';
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '500'
+AND control_set = 1
+AND ahf.heading_purpose = 'related'
+AND ahf.heading_type = 'personal_name';
+
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '110'
+AND control_set = 1
+AND ahf.heading_purpose = 'main'
+AND ahf.heading_type = 'corporate_name';
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '410'
+AND control_set = 1
+AND ahf.heading_purpose = 'variant'
+AND ahf.heading_type = 'corporate_name';
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '510'
+AND control_set = 1
+AND ahf.heading_purpose = 'related'
+AND ahf.heading_type = 'corporate_name';
+
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '111'
+AND control_set = 1
+AND ahf.heading_purpose = 'main'
+AND ahf.heading_type = 'meeting_name';
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '411'
+AND control_set = 1
+AND ahf.heading_purpose = 'variant'
+AND ahf.heading_type = 'meeting_name';
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '511'
+AND control_set = 1
+AND ahf.heading_purpose = 'related'
+AND ahf.heading_type = 'meeting_name';
+
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '130'
+AND control_set = 1
+AND ahf.heading_purpose = 'main'
+AND ahf.heading_type = 'uniform_title';
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '430'
+AND control_set = 1
+AND ahf.heading_purpose = 'variant'
+AND ahf.heading_type = 'uniform_title';
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '530'
+AND control_set = 1
+AND ahf.heading_purpose = 'related'
+AND ahf.heading_type = 'uniform_title';
+
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '150'
+AND control_set = 1
+AND ahf.heading_purpose = 'main'
+AND ahf.heading_type = 'topical_term';
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '450'
+AND control_set = 1
+AND ahf.heading_purpose = 'variant'
+AND ahf.heading_type = 'topical_term';
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '550'
+AND control_set = 1
+AND ahf.heading_purpose = 'related'
+AND ahf.heading_type = 'topical_term';
+
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '151'
+AND control_set = 1
+AND ahf.heading_purpose = 'main'
+AND ahf.heading_type = 'geographic_name';
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '451'
+AND control_set = 1
+AND ahf.heading_purpose = 'variant'
+AND ahf.heading_type = 'geographic_name';
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '551'
+AND control_set = 1
+AND ahf.heading_purpose = 'related'
+AND ahf.heading_type = 'geographic_name';
+
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '155'
+AND control_set = 1
+AND ahf.heading_purpose = 'main'
+AND ahf.heading_type = 'genre_form_term';
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '455'
+AND control_set = 1
+AND ahf.heading_purpose = 'variant'
+AND ahf.heading_type = 'genre_form_term';
+UPDATE authority.control_set_authority_field acsaf
+SET heading_field = ahf.id
+FROM authority.heading_field ahf
+WHERE tag = '555'
+AND control_set = 1
+AND ahf.heading_purpose = 'related'
+AND ahf.heading_type = 'genre_form_term';

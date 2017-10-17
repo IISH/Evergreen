@@ -152,9 +152,13 @@ CREATE OR REPLACE FUNCTION evergreen.ranked_volumes(
             AND acp.deleted IS FALSE
             AND CASE WHEN ('exclude_invisible_acn' = ANY($7)) THEN 
                 EXISTS (
-                    SELECT 1 
-                    FROM asset.opac_visible_copies 
-                    WHERE copy_id = acp.id AND record = acn.record
+                    WITH basevm AS (SELECT c_attrs FROM  asset.patron_default_visibility_mask()),
+                         circvm AS (SELECT search.calculate_visibility_attribute_test('circ_lib', ARRAY[acp.circ_lib]) AS mask)
+                    SELECT  1 
+                      FROM  basevm, circvm, asset.copy_vis_attr_cache acvac
+                      WHERE acvac.vis_attr_vector @@ (basevm.c_attrs || '&' || circvm.mask)::query_int
+                            AND acvac.target_copy = acp.id
+                            AND acvac.record = acn.record
                 ) ELSE TRUE END
         GROUP BY acn.id, evergreen.rank_cp(acp), owning_lib.name, acn.label_sortkey, aou.id
         WINDOW w AS (
@@ -321,6 +325,8 @@ RETURNS XML AS $F$ SELECT NULL::XML $F$ LANGUAGE SQL STABLE;
 
 CREATE OR REPLACE FUNCTION unapi.biblio_record_entry_feed ( id_list BIGINT[], format TEXT, includes TEXT[], org TEXT, depth INT DEFAULT NULL, slimit HSTORE DEFAULT NULL, soffset HSTORE DEFAULT NULL, include_xmlns BOOL DEFAULT TRUE, title TEXT DEFAULT NULL, description TEXT DEFAULT NULL, creator TEXT DEFAULT NULL, update_ts TEXT DEFAULT NULL, unapi_url TEXT DEFAULT NULL, header_xml XML DEFAULT NULL ) RETURNS XML AS $F$ SELECT NULL::XML $F$ LANGUAGE SQL STABLE;
 
+CREATE OR REPLACE FUNCTION unapi.metabib_virtual_record_feed ( id_list BIGINT[], format TEXT, includes TEXT[], org TEXT, depth INT DEFAULT NULL, slimit HSTORE DEFAULT NULL, soffset HSTORE DEFAULT NULL, include_xmlns BOOL DEFAULT TRUE, title TEXT DEFAULT NULL, description TEXT DEFAULT NULL, creator TEXT DEFAULT NULL, update_ts TEXT DEFAULT NULL, unapi_url TEXT DEFAULT NULL, header_xml XML DEFAULT NULL ) RETURNS XML AS $F$ SELECT NULL::XML $F$ LANGUAGE SQL STABLE;
+
 CREATE OR REPLACE FUNCTION unapi.memoize (classname TEXT, obj_id BIGINT, format TEXT,  ename TEXT, includes TEXT[], org TEXT, depth INT DEFAULT NULL, slimit HSTORE DEFAULT NULL, soffset HSTORE DEFAULT NULL, include_xmlns BOOL DEFAULT TRUE ) RETURNS XML AS $F$
 DECLARE
     key     TEXT;
@@ -375,6 +381,65 @@ BEGIN
 
     -- Gather the bib xml
     SELECT XMLAGG( unapi.bre(i, format, '', includes, org, depth, slimit, soffset, include_xmlns)) INTO tmp_xml FROM UNNEST( id_list ) i;
+
+    IF layout.title_element IS NOT NULL THEN
+        EXECUTE 'SELECT XMLCONCAT( XMLELEMENT( name '|| layout.title_element ||', XMLATTRIBUTES( $1 AS xmlns), $3), $2)' INTO tmp_xml USING xmlns_uri, tmp_xml::XML, title;
+    END IF;
+
+    IF layout.description_element IS NOT NULL THEN
+        EXECUTE 'SELECT XMLCONCAT( XMLELEMENT( name '|| layout.description_element ||', XMLATTRIBUTES( $1 AS xmlns), $3), $2)' INTO tmp_xml USING xmlns_uri, tmp_xml::XML, description;
+    END IF;
+
+    IF layout.creator_element IS NOT NULL THEN
+        EXECUTE 'SELECT XMLCONCAT( XMLELEMENT( name '|| layout.creator_element ||', XMLATTRIBUTES( $1 AS xmlns), $3), $2)' INTO tmp_xml USING xmlns_uri, tmp_xml::XML, creator;
+    END IF;
+
+    IF layout.update_ts_element IS NOT NULL THEN
+        EXECUTE 'SELECT XMLCONCAT( XMLELEMENT( name '|| layout.update_ts_element ||', XMLATTRIBUTES( $1 AS xmlns), $3), $2)' INTO tmp_xml USING xmlns_uri, tmp_xml::XML, update_ts;
+    END IF;
+
+    IF unapi_url IS NOT NULL THEN
+        EXECUTE $$SELECT XMLCONCAT( XMLELEMENT( name link, XMLATTRIBUTES( 'http://www.w3.org/1999/xhtml' AS xmlns, 'unapi-server' AS rel, $1 AS href, 'unapi' AS title)), $2)$$ INTO tmp_xml USING unapi_url, tmp_xml::XML;
+    END IF;
+
+    IF header_xml IS NOT NULL THEN tmp_xml := XMLCONCAT(header_xml,tmp_xml::XML); END IF;
+
+    element_list := regexp_split_to_array(layout.feed_top,E'\\.');
+    FOR i IN REVERSE ARRAY_UPPER(element_list, 1) .. 1 LOOP
+        EXECUTE 'SELECT XMLELEMENT( name '|| quote_ident(element_list[i]) ||', XMLATTRIBUTES( $1 AS xmlns), $2)' INTO tmp_xml USING xmlns_uri, tmp_xml::XML;
+    END LOOP;
+
+    RETURN tmp_xml::XML;
+END;
+$F$ LANGUAGE PLPGSQL STABLE;
+
+CREATE OR REPLACE FUNCTION unapi.metabib_virtual_record_feed ( id_list BIGINT[], format TEXT, includes TEXT[], org TEXT, depth INT DEFAULT NULL, slimit HSTORE DEFAULT NULL, soffset HSTORE DEFAULT NULL, include_xmlns BOOL DEFAULT TRUE, title TEXT DEFAULT NULL, description TEXT DEFAULT NULL, creator TEXT DEFAULT NULL, update_ts TEXT DEFAULT NULL, unapi_url TEXT DEFAULT NULL, header_xml XML DEFAULT NULL ) RETURNS XML AS $F$
+DECLARE
+    layout          unapi.bre_output_layout%ROWTYPE;
+    transform       config.xml_transform%ROWTYPE;
+    item_format     TEXT;
+    tmp_xml         TEXT;
+    xmlns_uri       TEXT := 'http://open-ils.org/spec/feed-xml/v1';
+    ouid            INT;
+    element_list    TEXT[];
+BEGIN
+
+    IF org = '-' OR org IS NULL THEN
+        SELECT shortname INTO org FROM evergreen.org_top();
+    END IF;
+
+    SELECT id INTO ouid FROM actor.org_unit WHERE shortname = org;
+    SELECT * INTO layout FROM unapi.bre_output_layout WHERE name = format;
+
+    IF layout.name IS NULL THEN
+        RETURN NULL::XML;
+    END IF;
+
+    SELECT * INTO transform FROM config.xml_transform WHERE name = layout.transform;
+    xmlns_uri := COALESCE(transform.namespace_uri,xmlns_uri);
+
+    -- Gather the bib xml
+    SELECT XMLAGG( unapi.mmr(i, format, '', includes, org, depth, slimit, soffset, include_xmlns)) INTO tmp_xml FROM UNNEST( id_list ) i;
 
     IF layout.title_element IS NOT NULL THEN
         EXECUTE 'SELECT XMLCONCAT( XMLELEMENT( name '|| layout.title_element ||', XMLATTRIBUTES( $1 AS xmlns), $3), $2)' INTO tmp_xml USING xmlns_uri, tmp_xml::XML, title;
@@ -1363,19 +1428,21 @@ CREATE OR REPLACE FUNCTION unapi.mmr_mra (
         (SELECT XMLAGG(foo.y)
           FROM (
             WITH sourcelist AS (
-                WITH aou AS (SELECT COALESCE(id, (evergreen.org_top()).id) AS id
-                    FROM actor.org_unit WHERE shortname = $5 LIMIT 1)
-                SELECT source
-                FROM metabib.metarecord_source_map mmsm, aou
-                WHERE metarecord = $1 AND (
+                WITH aou AS (SELECT COALESCE(id, (evergreen.org_top()).id) AS id FROM actor.org_unit WHERE shortname = $5 LIMIT 1),
+                     basevm AS (SELECT c_attrs FROM  asset.patron_default_visibility_mask()),
+                     circvm AS (SELECT search.calculate_visibility_attribute_test('circ_lib', ARRAY_AGG(aoud.id)) AS mask
+                                  FROM aou, LATERAL actor.org_unit_descendants(aou.id, $6) aoud)
+                SELECT  source
+                  FROM  aou, circvm, basevm, metabib.metarecord_source_map mmsm
+                  WHERE mmsm.metarecord = $1 AND (
                     EXISTS (
-                        SELECT 1 FROM asset.opac_visible_copies
-                        WHERE record = source AND circ_lib IN (
-                            SELECT id FROM actor.org_unit_descendants(aou.id, $6))
-                        LIMIT 1
+                        SELECT  1
+                          FROM  circvm, basevm, asset.copy_vis_attr_cache acvac
+                          WHERE acvac.vis_attr_vector @@ (basevm.c_attrs || '&' || circvm.mask)::query_int
+                                AND acvac.record = mmsm.source
                     )
-                    OR EXISTS (SELECT 1 FROM located_uris(source, aou.id, $10) LIMIT 1)
-                    OR EXISTS (SELECT 1 FROM biblio.record_entry b JOIN config.bib_source src ON (b.source = src.id) WHERE src.transcendant AND b.id = mmsm.source LIMIT 1)
+                    OR EXISTS (SELECT 1 FROM evergreen.located_uris(source, aou.id, $10) LIMIT 1)
+                    OR EXISTS (SELECT 1 FROM biblio.record_entry b JOIN config.bib_source src ON (b.source = src.id) WHERE src.transcendant AND b.id = mmsm.source)
                 )
             )
             SELECT  cmra.aid,

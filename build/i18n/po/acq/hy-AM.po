@@ -7,14 +7,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: evergreen\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: 2017-06-22 05:32+0000\n"
-"PO-Revision-Date: 2017-07-29 13:16+0000\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2017-06-22 06:17+0000\n"
+"PO-Revision-Date: 2017-07-30 08:39+0000\n"
+"Last-Translator: TZ <tigran@flib.sci.am>\n"
 "Language-Team: Armenian <hy@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2017-07-30 06:15+0000\n"
+"X-Launchpad-Export-Date: 2017-07-31 05:51+0000\n"
 "X-Generator: Launchpad (build 18441)\n"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:6
@@ -829,344 +829,344 @@ msgstr "Հղումով կապիր ապրանքագիրը"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:41
 msgid "Link Selected Line Items to Invoice"
-msgstr ""
+msgstr "Կապիր ընտրված գծային նյութերը ապրանքագրին"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:182
 msgid "Link To Catalog Record"
-msgstr ""
+msgstr "Կապիր քարտարանի գրառմանը"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:35
 msgid "Load Bibs and Items"
-msgstr ""
+msgstr "Բեռնավորիր մատենները և նյութերը"
 
 #: ../../Open-ILS/src/templates/acq/common/vlagent.tt2:60
 msgid "Load Items for Imported Records"
-msgstr ""
+msgstr "Ներմուծված գրառումների համար բեռնավորիր նյութերը"
 
 #: ../../Open-ILS/src/templates/acq/lineitem/worksheet.tt2:16
 msgid "Loading Worksheet..."
-msgstr ""
+msgstr "Աշխատանքային թերթը բեռնավորվում է․․․"
 
 #: ../../Open-ILS/src/templates/acq/lineitem/findbib.tt2:2
 msgid "Locate Bib Record"
-msgstr ""
+msgstr "Հայտնաբերի մատեն գրառումը"
 
 #: ../../Open-ILS/src/templates/acq/common/jubgrid.tt2:173
 msgid "Location: "
-msgstr ""
+msgstr "Տեղադրություն։ "
 
 #: ../../Open-ILS/src/templates/acq/settings/li_attr.tt2:61
 msgid "MARC Attributes"
-msgstr ""
+msgstr "ՄԵԸՔ բաղկացուցիչներ"
 
 #: ../../Open-ILS/src/templates/acq/common/info.tt2:17
 msgid "MARC ILS Record"
-msgstr ""
+msgstr "ՄԵԸՔ ՄԳԲ գրառում"
 
 #: ../../Open-ILS/src/templates/acq/common/info.tt2:16
 msgid "MARC Order Record"
-msgstr ""
+msgstr "ՄԵԸՔ պատվերի գրառում"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:26
 msgid "Mark Ready for Order"
-msgstr ""
+msgstr "Պատվերի համար նշիր պատրաստ"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:25
 msgid "Mark Ready for Selector"
-msgstr ""
+msgstr "Ընտրիչի համար նշիր պատրաստ"
 
 #: ../../Open-ILS/src/templates/acq/common/jubgrid.tt2:195
 msgid "Mark Selected Copies Received"
-msgstr ""
+msgstr "Նշիր ընտրված օրինակները որպես ստացված"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:38
 msgid "Mark Selected Line Items as Received"
-msgstr ""
+msgstr "Նշիր ընտրված գծային օրինակները որպես ստացված"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:585
 msgid "Mark all"
-msgstr ""
+msgstr "Նշիր բոլորը"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:583
 msgid "Mark selected"
-msgstr ""
+msgstr "Նշիր ընտրվածները"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:382
 msgid "Mark&nbsp;Received"
-msgstr ""
+msgstr "Նշիր&nbsp;Ստացված"
 
 #: ../../Open-ILS/src/templates/acq/picklist/list.tt2:58 ../../Open-ILS/src/templates/acq/search/unified.tt2:179
 msgid "Merge"
-msgstr ""
+msgstr "Միաձուլել"
 
 #: ../../Open-ILS/src/templates/acq/common/vlagent.tt2:35
 msgid "Merge On Best Match"
-msgstr ""
+msgstr "Ձուլիր լավագույն համընկնողը"
 
 #: ../../Open-ILS/src/templates/acq/common/vlagent.tt2:27
 msgid "Merge On Exact Match (901c)"
-msgstr ""
+msgstr "Ձուլիր ճշգրիտ համընկնողը (901c)"
 
 #: ../../Open-ILS/src/templates/acq/common/vlagent.tt2:31
 msgid "Merge On Single Match"
-msgstr ""
+msgstr "Ձուլիր միակ համընկնողը"
 
 #: ../../Open-ILS/src/templates/acq/common/vlagent.tt2:18
 msgid "Merge Profile"
-msgstr ""
+msgstr "Ձուլիր անձնագիրը"
 
 #: ../../Open-ILS/src/templates/acq/picklist/list.tt2:49 ../../Open-ILS/src/templates/acq/search/unified.tt2:162
 msgid "Merge Selected"
-msgstr ""
+msgstr "Ձուլիր ընտրվածը"
 
 #: ../../Open-ILS/src/templates/acq/picklist/list.tt2:7
 msgid "My Selection Lists"
-msgstr ""
+msgstr "Իմ ընտրանքի ցուցակը"
 
 #: ../../Open-ILS/src/templates/acq/fund/view.tt2:161 ../../Open-ILS/src/templates/acq/funding_source/view.tt2:92 ../../Open-ILS/src/templates/acq/po/view.tt2:18 ../../Open-ILS/src/templates/acq/search/unified.tt2:111 ../../Open-ILS/src/templates/acq/search/unified.tt2:202
 msgid "Name"
-msgstr ""
+msgstr "Անուն"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:468
 msgid "Name (optional)"
-msgstr ""
+msgstr "Անուն (ըստ ցանկության)"
 
 #: ../../Open-ILS/src/templates/acq/picklist/list.tt2:19 ../../Open-ILS/src/templates/acq/search/unified.tt2:129
 msgid "Name:"
-msgstr ""
+msgstr "Անուն:"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:215 ../../Open-ILS/src/templates/acq/po/search.tt2:55
 msgid "New"
-msgstr ""
+msgstr "Նոր"
 
 #: ../../Open-ILS/src/templates/acq/common/notes.tt2:24
 msgid "New Alert"
-msgstr ""
+msgstr "Նոր ահազանգ"
 
 #: ../../Open-ILS/src/templates/acq/picklist/brief_record.tt2:2
 msgid "New Brief Record"
-msgstr ""
+msgstr "Նոր հակիրճ գրառում"
 
 #: ../../Open-ILS/src/templates/acq/po/item_table.tt2:31
 msgid "New Charge"
-msgstr ""
+msgstr "Նոր գանձում"
 
 #: ../../Open-ILS/src/templates/acq/common/jubgrid.tt2:158
 msgid "New Copy"
-msgstr ""
+msgstr "Նոր օրինակ"
 
 #: ../../Open-ILS/src/templates/acq/currency_type/list.tt2:5
 msgid "New Currency Type"
-msgstr ""
+msgstr "Արտարժույթի նոր տեսակ"
 
 #: ../../Open-ILS/src/templates/acq/fund/list.tt2:41
 msgid "New Fund"
-msgstr ""
+msgstr "Նոր դրամագլուխ"
 
 #: ../../Open-ILS/src/templates/acq/funding_source/list.tt2:26
 msgid "New Funding Source"
-msgstr ""
+msgstr "Ֆինանսավորման նոր աղբյուր"
 
 #: ../../Open-ILS/src/templates/acq/picklist/list.tt2:36 ../../Open-ILS/src/templates/acq/search/unified.tt2:148
 msgid "New Name:"
-msgstr ""
+msgstr "Նոր անուն"
 
 #: ../../Open-ILS/src/templates/acq/common/notes.tt2:11
 msgid "New Note"
-msgstr ""
+msgstr "Նոր նշում"
 
 #: ../../Open-ILS/src/templates/acq/common/vlagent.tt2:42
 msgid "New Record Quality / Quality of Best Match"
-msgstr ""
+msgstr "Նոր գրառման որակ / Լավագույն համընկնման որակը"
 
 #: ../../Open-ILS/src/templates/acq/picklist/bib_search.tt2:59
 msgid "New Search"
-msgstr ""
+msgstr "Նոր փնտրում"
 
 #: ../../Open-ILS/src/templates/acq/picklist/list.tt2:15 ../../Open-ILS/src/templates/acq/search/unified.tt2:124
 msgid "New Selection List"
-msgstr ""
+msgstr "Ընտրության նոր ցուցակ"
 
 #: ../../Open-ILS/src/templates/acq/lineitem/search.tt2:80
 msgid "New brief record like this"
-msgstr ""
+msgstr "Նոր հակիրճ գրառում ինչպես սա"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table_pager.tt2:15 ../../Open-ILS/src/templates/acq/invoice/view.tt2:274
 msgid "Next"
-msgstr ""
+msgstr "Հաջորդը"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:60
 msgid "Next &#187;"
-msgstr ""
+msgstr "Հաջորդը &#187;"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:253
 msgid "No Copies"
-msgstr ""
+msgstr "Օրինակներ չկան"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:290
 msgid "No Results"
-msgstr ""
+msgstr "Անարդյունք"
 
 #: ../../Open-ILS/src/templates/acq/lineitem/search.tt2:33
 msgid "No further attributes to search by"
-msgstr ""
+msgstr "Չկան հետագա բաղկացուցիչներ փնտրման համար"
 
 #: ../../Open-ILS/src/templates/acq/common/jubgrid.tt2:78
 msgid "No. Copies"
-msgstr ""
+msgstr "Չկան օրինակներ"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:238 ../../Open-ILS/src/templates/acq/fund/view.tt2:127 ../../Open-ILS/src/templates/acq/po/item_table.tt2:10
 msgid "Note"
-msgstr ""
+msgstr "Նշում"
 
 #: ../../Open-ILS/src/templates/acq/common/notes.tt2:16
 msgid "Note is vendor-public"
-msgstr ""
+msgstr "Նշումը մատակարար-հանրային է"
 
 #: ../../Open-ILS/src/templates/acq/common/final_claim_dialog.tt2:4
 msgid "Note:"
-msgstr ""
+msgstr "Նշում։"
 
 #: ../../Open-ILS/src/templates/acq/fund/view.tt2:54 ../../Open-ILS/src/templates/acq/funding_source/view.tt2:22 ../../Open-ILS/src/templates/acq/funding_source/view.tt2:65
 msgid "Note: "
-msgstr ""
+msgstr "Նշում։ "
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:129 ../../Open-ILS/src/templates/acq/common/li_table.tt2:366 ../../Open-ILS/src/templates/acq/po/view.tt2:48
 msgid "Notes"
-msgstr ""
+msgstr "Նշումներ"
 
 #. ("<span name=\"notes_count\">0</span>")
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:203
 msgid "Notes(%1)"
-msgstr ""
+msgstr "Նշումներ(%1)"
 
 #: ../../Open-ILS/src/templates/acq/po/search.tt2:58
 msgid "On order"
-msgstr ""
+msgstr "Պատվիրված"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:220
 msgid "On-Order"
-msgstr ""
+msgstr "Պատվիրված է"
 
 #: ../../Open-ILS/src/templates/acq/common/vlagent.tt2:9
 msgid "Or create a new queue"
-msgstr ""
+msgstr "Կամ ստեղծիր նոր հերթ"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:165
 msgid "Order Identifier"
-msgstr ""
+msgstr "Պատվերի բնութագրիչ"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:217
 msgid "Order-Ready"
-msgstr ""
+msgstr "Պատվերը պատրաստ է"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:464 ../../Open-ILS/src/templates/acq/po/search.tt2:71
 msgid "Ordering Agency"
-msgstr ""
+msgstr "Պատվիրող գործակալություն"
 
 #: ../../Open-ILS/src/templates/acq/receiving/process.tt2:17
 msgid "Ordering Agency:"
-msgstr ""
+msgstr "Պատվիրող գործակալություն։"
 
 #: ../../Open-ILS/src/templates/acq/fund/view.tt2:164 ../../Open-ILS/src/templates/acq/funding_source/view.tt2:98 ../../Open-ILS/src/templates/acq/search/unified.tt2:204
 msgid "Owner"
-msgstr ""
+msgstr "Տնօրինող"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:332 ../../Open-ILS/src/templates/acq/common/li_table.tt2:359 ../../Open-ILS/src/templates/acq/common/li_table.tt2:412 ../../Open-ILS/src/templates/acq/common/li_table.tt2:73 ../../Open-ILS/src/templates/acq/invoice/receive.tt2:41
 msgid "Owning Branch"
-msgstr ""
+msgstr "Տնօրինող մասնաճյուղ"
 
 #: ../../Open-ILS/src/templates/acq/common/jubgrid.tt2:80
 msgid "PO"
-msgstr ""
+msgstr "PO"
 
 #: ../../Open-ILS/src/templates/acq/po/history.tt2:2
 msgid "PO History"
-msgstr ""
+msgstr "PO պատմություն"
 
 #: ../../Open-ILS/src/templates/acq/picklist/user_request.tt2:31
 msgid "PO Line Item"
-msgstr ""
+msgstr "PO գծային նյութ"
 
 #: ../../Open-ILS/src/templates/acq/po/search.tt2:10
 msgid "PO Search"
-msgstr ""
+msgstr "PO որոնում"
 
 #: ../../Open-ILS/src/templates/acq/po/events.tt2:7
 msgid "PO Triggered Events"
-msgstr ""
+msgstr "PO կապակցված իրադարձություններ"
 
 #: ../../Open-ILS/src/templates/acq/po/view.tt2:22
 msgid "PO name already in use: "
-msgstr ""
+msgstr "PO անունը արդեն օգտագործվում է: "
 
 #: ../../Open-ILS/src/templates/acq/lineitem/search.tt2:23
 msgid "PO ordering agency"
-msgstr ""
+msgstr "PO պատվիրող գործակալություն"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:191 ../../Open-ILS/src/templates/acq/invoice/view.tt2:127 ../../Open-ILS/src/templates/acq/invoice/view.tt2:93
 msgid "Paid"
-msgstr ""
+msgstr "Վճարված"
 
 #: ../../Open-ILS/src/templates/acq/picklist/user_request.tt2:65
 msgid "Patron Request"
-msgstr ""
+msgstr "Ընթերցողի հարցում"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:186 ../../Open-ILS/src/templates/acq/picklist/user_request.tt2:2
 msgid "Patron Requests"
-msgstr ""
+msgstr "Ընթերցողի հարցումներ"
 
 #: ../../Open-ILS/src/templates/acq/po/search.tt2:57
 msgid "Pending"
-msgstr ""
+msgstr "Սպասող"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:219
 msgid "Pending-Order"
-msgstr ""
+msgstr "Սպասող-Պատվեր"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:92
 msgid "Per Copy"
-msgstr ""
+msgstr "Ըստ օրինակի"
 
 #: ../../Open-ILS/src/templates/acq/fund/view.tt2:41 ../../Open-ILS/src/templates/acq/funding_source/view.tt2:53
 msgid "Percent: "
-msgstr ""
+msgstr "Տոկոս։ "
 
 #: ../../Open-ILS/src/templates/acq/fund/list.tt2:59
 msgid "Perform Fiscal Year Close-out Operation: "
-msgstr ""
+msgstr "Իրականացրու ֆինանսական տարվա Close-out գործողությունը։ "
 
 #: ../../Open-ILS/src/templates/acq/fund/view.tt2:46 ../../Open-ILS/src/templates/acq/funding_source/view.tt2:58
 msgid "Please enter an amount between 0 and 100"
-msgstr ""
+msgstr "Մուտք արա գումարը 0 և 100 միջակայքում"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:480
 msgid "Prepayment Required"
-msgstr ""
+msgstr "Պահանջվում է նախնական վճար"
 
 #: ../../Open-ILS/src/templates/acq/po/view.tt2:14
 msgid "Prepayment Required?"
-msgstr ""
+msgstr "Պահանջվու՞մ է նախնական վճար"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table_pager.tt2:5
 msgid "Prev"
-msgstr ""
+msgstr "Prev"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:271
 msgid "Previous"
-msgstr ""
+msgstr "Նախորդը"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:33
 msgid "Print Purchase Order"
-msgstr ""
+msgstr "Տպիր գնման պատվերը"
 
 #: ../../Open-ILS/src/templates/acq/search/unified.tt2:216
 msgid "Print Selected Invoices"
-msgstr ""
+msgstr "Տպիր ընտրված ապրանքահաշիվները"
 
 #: ../../Open-ILS/src/templates/acq/fund/list.tt2:115
 msgid "Process"
-msgstr ""
+msgstr "Գործընթաց"
 
 #: ../../Open-ILS/src/templates/acq/fund/list.tt2:51
 msgid ""
@@ -1175,350 +1175,356 @@ msgid ""
 "enabled will be affected.  No money or encumbrances are altered during this "
 "process."
 msgstr ""
+"Բազմացումը ստեղծում է նոր դրամագլուխներ ենթակա ֆինանսական տարվա համար, "
+"հիմնված ընտրված ֆինանսական տարվա դրամագլուխներից։ Միայն թույլատրված "
+"բազմացվող կարգաբերումով դրամագլուխները կախտահարվեն։ Այս գործընթացում ոչ փող "
+"և ոչ էլ արգելքներն են փոփոխվում։"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:173
 msgid "Prorate"
-msgstr ""
+msgstr "Համամասնական մասնաբաժին"
 
 #: ../../Open-ILS/src/templates/acq/lineitem/search.tt2:91
 msgid "Provide a file of search terms"
-msgstr ""
+msgstr "Տրամադրի որոնման տերմինների ֆայլը"
 
 #: ../../Open-ILS/src/templates/acq/picklist/from_bib.tt2:5
 msgid ""
 "Provide one or more CSV files whose first columns contain Evergreen "
 "bibliographic record IDs."
 msgstr ""
+"Տրամադրի մեկ կամ ավելի CSV ֆայլեր, որոնց արաջին սյունակը պարունակում է "
+"Էվերգրին մատենագիտական գրառման ID-երը։"
 
 #: ../../Open-ILS/src/templates/acq/common/inv_dialog.tt2:18 ../../Open-ILS/src/templates/acq/common/li_table.tt2:189 ../../Open-ILS/src/templates/acq/common/li_table.tt2:476 ../../Open-ILS/src/templates/acq/picklist/upload.tt2:22 ../../Open-ILS/src/templates/acq/po/search.tt2:42 ../../Open-ILS/src/templates/acq/po/view.tt2:46
 msgid "Provider"
-msgstr ""
+msgstr "Մատակարար"
 
 #: ../../Open-ILS/src/templates/acq/common/jubgrid.tt2:61
 msgid "Pubdate"
-msgstr ""
+msgstr "Pubdate"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:185 ../../Open-ILS/src/templates/acq/po/events.tt2:55 ../../Open-ILS/src/templates/acq/po/view.tt2:2
 msgid "Purchase Order"
-msgstr ""
+msgstr "Առաքման պատվեր"
 
 #. ("<span id=\"acq-po-view-state\"></span>")
 #: ../../Open-ILS/src/templates/acq/po/view.tt2:8
 msgid "Purchase Order (%1)"
-msgstr ""
+msgstr "Առաքման պատվեր (%1)"
 
 #: ../../Open-ILS/src/templates/acq/po/history.tt2:3
 msgid "Purchase Order History"
-msgstr ""
+msgstr "Գնման պահանջագրի պատմություն"
 
 #. ("<a attr=\"name\"></a>")
 #: ../../Open-ILS/src/templates/acq/po/search.tt2:14
 msgid "Purchase Order: %1"
-msgstr ""
+msgstr "Առաքման պատվեր: %1"
 
 #: ../../Open-ILS/src/templates/acq/po/search.tt2:2
 msgid "Purchase Orders"
-msgstr ""
+msgstr "Գնման պատվերներ"
 
 #: ../../Open-ILS/src/templates/acq/common/vlagent.tt2:90
 msgid "Real Copies Processed"
-msgstr ""
+msgstr "Իրական օրինակները կատարված են"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:538 ../../Open-ILS/src/templates/acq/picklist/user_request.tt2:74 ../../Open-ILS/src/templates/acq/po/view.tt2:115
 msgid "Reason:"
-msgstr ""
+msgstr "Պատճառ։"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:8
 msgid "Receive Items"
-msgstr ""
+msgstr "Ստացիր նյութերը"
 
 #: ../../Open-ILS/src/templates/acq/invoice/receive.tt2:32 ../../Open-ILS/src/templates/acq/invoice/receive.tt2:54
 msgid "Receive Selected Copies"
-msgstr ""
+msgstr "Ստացիր ընտրված օրինակները"
 
 #: ../../Open-ILS/src/templates/acq/common/jubgrid.tt2:107
 msgid "Receive Time"
-msgstr ""
+msgstr "Ստացման ժամ"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:221
 msgid "Received"
-msgstr ""
+msgstr "Ստացված"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:367
 msgid "Receiver"
-msgstr ""
+msgstr "Ստացող"
 
 #: ../../Open-ILS/src/templates/acq/receiving/process.tt2:2
 msgid "Receiving Processing"
-msgstr ""
+msgstr "Ստացման գործընթաց"
 
 #: ../../Open-ILS/src/templates/acq/common/vlagent.tt2:14
 msgid "Record Match Set"
-msgstr ""
+msgstr "Գրառման համընկնման բազմություն"
 
 #: ../../Open-ILS/src/templates/acq/common/vlagent.tt2:24
 msgid "Record Source"
-msgstr ""
+msgstr "Գրառման աղբյուր"
 
 #: ../../Open-ILS/src/templates/acq/fund/list.tt2:141
 msgid "Refresh"
-msgstr ""
+msgstr "Թարմացնել"
 
 #: ../../Open-ILS/src/templates/acq/fund/view.tt2:211 ../../Open-ILS/src/templates/acq/search/unified.tt2:121 ../../Open-ILS/src/templates/acq/search/unified.tt2:213 ../../Open-ILS/src/templates/acq/search/unified.tt2:94
 msgid "Refresh Grid"
-msgstr ""
+msgstr "Թարմացրու ցանցը"
 
 #: ../../Open-ILS/src/templates/acq/lineitem/related.tt2:2 ../../Open-ILS/src/templates/acq/lineitem/related.tt2:4
 msgid "Related Lineitems"
-msgstr ""
+msgstr "Կապված Lineitems"
 
 #: ../../Open-ILS/src/templates/acq/common/vlagent.tt2:50
 msgid "Remove MARC Field Groups"
-msgstr ""
+msgstr "Հեռացրու ՄԵԸՔ դաշտի խմբերը"
 
 #: ../../Open-ILS/src/templates/acq/common/jubgrid.tt2:141
 msgid "Remove Selected Titles"
-msgstr ""
+msgstr "Հեռացրու ընտրված վերնագրերը"
 
 #: ../../Open-ILS/src/templates/acq/lineitem/search.tt2:68
 msgid "Remove this row"
-msgstr ""
+msgstr "Հեռացրու այս տողը"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:178
 msgid "Reopen"
-msgstr ""
+msgstr "Վերաբացիր"
 
 #: ../../Open-ILS/src/templates/acq/po/events.tt2:10
 msgid "Reset Selected"
-msgstr ""
+msgstr "Վերագործարկեք ընտրվածները"
 
 #: ../../Open-ILS/src/templates/acq/po/search.tt2:112
 msgid "Results Summary"
-msgstr ""
+msgstr "Արդյունքների համառոտագրություն"
 
 #: ../../Open-ILS/src/templates/acq/picklist/from_bib.tt2:12
 msgid "Retrieve records"
-msgstr ""
+msgstr "Վերստացեք գրառումները"
 
 #: ../../Open-ILS/src/templates/acq/invoice/receive.tt2:61
 msgid "Return to Invoice"
-msgstr ""
+msgstr "Վերադարձիր ապրանքագրին"
 
 #: ../../Open-ILS/src/templates/acq/search/unified.tt2:18
 msgid "Reveal Search Form"
-msgstr ""
+msgstr "Բացահայտեք փնտրման ձևը"
 
 #: ../../Open-ILS/src/templates/acq/fund/view.tt2:115
 msgid "Same as source amount?"
-msgstr ""
+msgstr "Նույնն է ինչ սկզբնաղբյուր գումա՞րը։"
 
 #: ../../Open-ILS/src/templates/acq/common/add_to_po.tt2:55 ../../Open-ILS/src/templates/acq/common/li_table.tt2:531 ../../Open-ILS/src/templates/acq/common/li_table.tt2:547 ../../Open-ILS/src/templates/acq/invoice/view.tt2:169
 msgid "Save"
-msgstr ""
+msgstr "Հիշել"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:171
 msgid "Save &amp; Clear"
-msgstr ""
+msgstr "Հիշիր &amp; Մաքրիր"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:293 ../../Open-ILS/src/templates/acq/common/li_table.tt2:402
 msgid "Save Changes"
-msgstr ""
+msgstr "Հիշիր փոփոխությունները"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:24
 msgid "Save Items To Selection List"
-msgstr ""
+msgstr "Հիշիր նյութերը ընտրացուցակում"
 
 #: ../../Open-ILS/src/templates/acq/po/item_table.tt2:32
 msgid "Save New Charges"
-msgstr ""
+msgstr "Հիշիր նոր գանձումները"
 
 #: ../../Open-ILS/src/templates/acq/picklist/brief_record.tt2:24
 msgid "Save Record"
-msgstr ""
+msgstr "Հիշիր գրառումը"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:515
 msgid "Save all"
-msgstr ""
+msgstr "Հիշիր բոլորը"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:520
 msgid "Save as Selection List: "
-msgstr ""
+msgstr "Հիշիր որպես ընտրացուցակ։ "
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:513
 msgid "Save selected"
-msgstr ""
+msgstr "Հիշիր ընտրվածները"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:191 ../../Open-ILS/src/templates/acq/invoice/view.tt2:266 ../../Open-ILS/src/templates/acq/lineitem/findbib.tt2:14 ../../Open-ILS/src/templates/acq/lineitem/search.tt2:109 ../../Open-ILS/src/templates/acq/po/events.tt2:44 ../../Open-ILS/src/templates/acq/po/search.tt2:74 ../../Open-ILS/src/templates/acq/receiving/process.tt2:24 ../../Open-ILS/src/templates/acq/search/unified.tt2:87
 msgid "Search"
-msgstr ""
+msgstr "Որոնել"
 
 #: ../../Open-ILS/src/templates/acq/picklist/bib_search.tt2:25
 msgid "Search Fields"
-msgstr ""
+msgstr "Փնտրման դաշտեր"
 
 #: ../../Open-ILS/src/templates/acq/picklist/bib_search.tt2:54
 msgid "Search Results"
-msgstr ""
+msgstr "Որոնման արդյունքներ"
 
 #: ../../Open-ILS/src/templates/acq/lineitem/search.tt2:45
 msgid "Search by attribute values"
-msgstr ""
+msgstr "Որոնիր ըստ բաղկացուցիչների արժեքների"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:206 ../../Open-ILS/src/templates/acq/search/unified.tt2:25
 msgid "Search for"
-msgstr ""
+msgstr "Փնտրիր"
 
 #: ../../Open-ILS/src/templates/acq/lineitem/findbib.tt2:70
 msgid "Searching...."
-msgstr ""
+msgstr "Որոնում․․․"
 
 #: ../../Open-ILS/src/templates/acq/lineitem/findbib.tt2:32
 msgid "Select"
-msgstr ""
+msgstr "Ընտրել"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:287
 msgid "Select All"
-msgstr ""
+msgstr "Ընտրել բոլորը"
 
 #: ../../Open-ILS/src/templates/acq/common/claim_dialog.tt2:39
 msgid "Select Claim Action"
-msgstr ""
+msgstr "Ընտրիր պահանջի գործողությունը"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:184
 msgid "Select List"
-msgstr ""
+msgstr "Ընտրացուցակ"
 
 #. ("<div id=\"acq-invoice-extra-copies-fund\"></div>")
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:334
 msgid "Select a fund for the new items: %1"
-msgstr ""
+msgstr "Ընտրիր դրամագլուխ նոր նյութերի համար: %1"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:564
 msgid "Select a new fund:"
-msgstr ""
+msgstr "Ընտրիր նոր դրամագլուխ։"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:488
 msgid "Selected Line Items"
-msgstr ""
+msgstr "Ընտրված գծային նյութեր"
 
 #: ../../Open-ILS/src/templates/acq/picklist/view.tt2:2
 msgid "Selection List"
-msgstr ""
+msgstr "Ընտրացուցակ"
 
 #: ../../Open-ILS/src/templates/acq/picklist/list.tt2:2
 msgid "Selection Lists"
-msgstr ""
+msgstr "Ընտրացուցակներ"
 
 #. ("<span id=\"oils-acq-picklist-name\"> </span>")
 #: ../../Open-ILS/src/templates/acq/picklist/view.tt2:7
 msgid "Selection list %1"
-msgstr ""
+msgstr "Ընտրացուցակ %1"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:216
 msgid "Selector-Ready"
-msgstr ""
+msgstr "Ընըտրիչ-պատրաստ"
 
 #. ("<span id=\"oils-acq-picklist-attr-owner\"></span>")
 #: ../../Open-ILS/src/templates/acq/picklist/view.tt2:11
 msgid "Selector: %1"
-msgstr ""
+msgstr "Ընտրիչ: %1"
 
 #: ../../Open-ILS/src/templates/acq/picklist/user_request.tt2:69
 msgid "Set No Hold"
-msgstr ""
+msgstr "Կարգաբերի որպես Չկա պահում"
 
 #: ../../Open-ILS/src/templates/acq/common/jubgrid.tt2:103 ../../Open-ILS/src/templates/acq/common/jubgrid.tt2:124
 msgid "Shelving Location"
-msgstr ""
+msgstr "Դարակի վրա տեղաբաշխում"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:41
 msgid "Show Details"
-msgstr ""
+msgstr "Ցուցադրել մանրամասները"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:181
 msgid "Show In Catalog"
-msgstr ""
+msgstr "Ցույց տուր քարտարանում"
 
 #: ../../Open-ILS/src/templates/acq/common/claim_dialog.tt2:19
 msgid "Show Voucher"
-msgstr ""
+msgstr "Ցույց տուր երաշխագիրը"
 
 #: ../../Open-ILS/src/templates/acq/financial/claim_eligible.tt2:7
 msgid "Show items ready to claim for:"
-msgstr ""
+msgstr "Ցույց տուր պահանջի համար պատրաստի նյութերը։"
 
 #: ../../Open-ILS/src/templates/acq/po/search.tt2:79
 msgid "Show results as a virtual combined PO"
-msgstr ""
+msgstr "Ցույց տուր արդյունքերը, որպես վիրտուալ կոմբինացված PO"
 
 #: ../../Open-ILS/src/templates/acq/lineitem/search.tt2:49
 msgid "Show results for which:"
-msgstr ""
+msgstr "Ցույց տուր արդյունքները, որոնք։"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:279
 msgid "Sort by title"
-msgstr ""
+msgstr "Տեսակավորի ըստ վերնագրի"
 
 #: ../../Open-ILS/src/templates/acq/fund/view.tt2:81
 msgid "Source amount"
-msgstr ""
+msgstr "Սկզբնաղբյուրի գումար"
 
 #: ../../Open-ILS/src/templates/acq/fund/view.tt2:167
 msgid "Spent Balance"
-msgstr ""
+msgstr "Ծախսածի հաշվեկշիռ"
 
 #: ../../Open-ILS/src/templates/acq/po/view.tt2:143
 msgid "Split Order by Lineitems"
-msgstr ""
+msgstr "Տարանջատիր պատվերը ըստ գծանյութերի"
 
 #: ../../Open-ILS/src/templates/acq/po/events.tt2:31
 msgid "Start Date Range"
-msgstr ""
+msgstr "Սկսման ամսաթվի տիրույթ"
 
 #: ../../Open-ILS/src/templates/acq/common/jubgrid.tt2:79 ../../Open-ILS/src/templates/acq/po/events.tt2:15 ../../Open-ILS/src/templates/acq/po/search.tt2:45
 msgid "State"
-msgstr ""
+msgstr "Նահանգ"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:131
 msgid "Status"
-msgstr ""
+msgstr "Կարգավիճակ"
 
 #. ("<span attr=\"state\"></span>")
 #: ../../Open-ILS/src/templates/acq/po/search.tt2:19
 msgid "Status: %1"
-msgstr ""
+msgstr "Կարգավիճակ: %1"
 
 #: ../../Open-ILS/src/templates/acq/settings/li_attr.tt2:53
 msgid "Subfield"
-msgstr ""
+msgstr "Ենթադաշտ"
 
 #: ../../Open-ILS/src/templates/acq/settings/li_attr.tt2:22
 msgid "Subfield: "
-msgstr ""
+msgstr "Ենթադաշտ։ "
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:448 ../../Open-ILS/src/templates/acq/common/li_table.tt2:497 ../../Open-ILS/src/templates/acq/common/li_table.tt2:572 ../../Open-ILS/src/templates/acq/picklist/bib_search.tt2:43
 msgid "Submit"
-msgstr ""
+msgstr "Հաստատել"
 
 #: ../../Open-ILS/src/templates/acq/fund/view.tt2:153 ../../Open-ILS/src/templates/acq/funding_source/view.tt2:83
 msgid "Summary"
-msgstr ""
+msgstr "Ամփոփում"
 
 #: ../../Open-ILS/src/templates/acq/settings/li_attr.tt2:52
 msgid "Tag"
-msgstr ""
+msgstr "Ցուցիչ"
 
 #: ../../Open-ILS/src/templates/acq/settings/li_attr.tt2:18
 msgid "Tag: "
-msgstr ""
+msgstr "Ցուցիչ։ "
 
 #: ../../Open-ILS/src/templates/acq/fund/view.tt2:229
 msgid "Tags"
-msgstr ""
+msgstr "Ցուցիչներ"
 
 #: ../../Open-ILS/src/templates/acq/invoice/receive.tt2:26
 msgid "The remaining are listed below."
-msgstr ""
+msgstr "Մնացյալը թվարկված են ստորև։"
 
 #: ../../Open-ILS/src/templates/acq/fund/list.tt2:67
 msgid ""
@@ -1528,27 +1534,33 @@ msgid ""
 "the \"Rollover\" setting enabled, this process will move all unspent money "
 "to the analogous fund in the subsequent fiscal year."
 msgstr ""
+"Տարվա վերջի փակման գործողությունը տեղափոխում է ծանրաբեռնվածությունը ընտրված "
+"ֆինանսական տարուց հետագա ֆինանսական տարվա նմանատիպ դրամագլխին, և այն "
+"ապաակտիվացնում է ընտրված ֆինանսական տարվա դրամագլուխները։ Որպես հավելում, "
+"բոլոր այն դրամագլուխները, որոնց  \"Rollover\" կարգավիճակը թույլատրված է, այս "
+"գործողությունը կտեղափոխի բոլոր չծախսված գումարները նմանատիպ դրամագլուխ "
+"հաջորդ ֆինանսական տարում։"
 
 #: ../../Open-ILS/src/templates/acq/po/item_table.tt2:28
 msgid "There are no miscellanea attached to this purchase order."
-msgstr ""
+msgstr "Չկան տարբերակներ կցված գնման այս պատվերին։"
 
 #: ../../Open-ILS/src/templates/acq/search/unified.tt2:237
 msgid "There are no results from your search."
-msgstr ""
+msgstr "Քո փնտրումը անարդյունք է։"
 
 #: ../../Open-ILS/src/templates/acq/financial/claim_eligible.tt2:40
 msgid "There were no items matching your search."
-msgstr ""
+msgstr "Քո փնտրմանը համընկնող նյութեր չկան։"
 
 #. ("<span class=\"oils-notify-text\">", "</span>")
 #: ../../Open-ILS/src/templates/acq/fund/list.tt2:149
 msgid "These changes have %1not%2 been committed yet."
-msgstr ""
+msgstr "Այս փոփոխությունները դեռ %1չեն%2 կատարված։"
 
 #: ../../Open-ILS/src/templates/acq/invoice/receive.tt2:58
 msgid "This invoice has no more copies to receive."
-msgstr ""
+msgstr "Այս ապրանքագրով էլ ստանալու օրինակներ չկան։"
 
 #: ../../Open-ILS/src/templates/acq/fund/list.tt2:84
 msgid ""
@@ -1556,298 +1568,304 @@ msgid ""
 "transfered into the void (that is, entirely removed) instead of being "
 "transfered to the analogous funds in the subsequent fiscal year."
 msgstr ""
+"Սա ձևափոխում է վերևում նկարագրված Close-out գործողությունը, ստիպելով "
+"դրամագլուխնեինփոխանցվել դառնալով անվավեր (այն է, ամբողջովին հեռացվում են) "
+"փոխարենը ֆինանսական տարում փոխանցվել նմանատիպ դրամագլուխներ։"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:472
 msgid "This name is used by another PO"
-msgstr ""
+msgstr "Անունը օգտագործվում է մեկ այլ PO-ի կողմից։"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:558
 msgid "This will also update any existing encumbered or spent debits."
-msgstr ""
+msgstr "Սա նաև կթարմացնի ցանկացած ծանրաբեռնված կամ ծախսերի դեբիտը։"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:557
 msgid "This will update the fund for all copies attached to these lineitems."
-msgstr ""
+msgstr "Սա կթարմացնի այս գծանյութին կցված բոլոր օրինակների դրամագլուխը։"
 
 #: ../../Open-ILS/src/templates/acq/common/jubgrid.tt2:58
 msgid "Title"
-msgstr ""
+msgstr "Վերնագիր"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:124
 msgid "Title / Description"
-msgstr ""
+msgstr "Վերնագիր / նկարագրություն"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:89
 msgid "Title Details"
-msgstr ""
+msgstr "Վերնագրի մանրամասներ"
 
 #: ../../Open-ILS/src/templates/acq/po/item_table.tt2:8
 msgid "Title/Description"
-msgstr ""
+msgstr "Վերնագիր/նկարագրություն"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:159 ../../Open-ILS/src/templates/acq/invoice/view.tt2:161
 msgid "Total"
-msgstr ""
+msgstr "Ընդամենը"
 
 #: ../../Open-ILS/src/templates/acq/fund/view.tt2:166
 msgid "Total Allocated"
-msgstr ""
+msgstr "Ընդամենը հատկացված է"
 
 #: ../../Open-ILS/src/templates/acq/po/search.tt2:125
 msgid "Total Copies:"
-msgstr ""
+msgstr "Ընդամենը օրինակներ։"
 
 #. ("<span attr=\"copies\"></span>")
 #: ../../Open-ILS/src/templates/acq/po/search.tt2:18
 msgid "Total Copies: %1"
-msgstr ""
+msgstr "Ընդամենը օրինակներ: %1"
 
 #: ../../Open-ILS/src/templates/acq/funding_source/view.tt2:95
 msgid "Total Credits"
-msgstr ""
+msgstr "Ընդամենը կրեդիտներ"
 
 #: ../../Open-ILS/src/templates/acq/fund/view.tt2:168 ../../Open-ILS/src/templates/acq/funding_source/view.tt2:96
 msgid "Total Debits"
-msgstr ""
+msgstr "Ընդամենը դեբիտներ"
 
 #: ../../Open-ILS/src/templates/acq/fund/view.tt2:170 ../../Open-ILS/src/templates/acq/po/view.tt2:73
 msgid "Total Encumbered"
-msgstr ""
+msgstr "Ընդհանուր բեռնավորված"
 
 #: ../../Open-ILS/src/templates/acq/po/search.tt2:129
 msgid "Total Encumbered:"
-msgstr ""
+msgstr "Ընդհանուր բեռնավորված։"
 
 #. ("<span attr=\"amount_encumbered\">")
 #: ../../Open-ILS/src/templates/acq/po/search.tt2:16
 msgid "Total Encumbered: $%1"
-msgstr ""
+msgstr "Ընդհանուր բեռնավորված: $%1"
 
 #: ../../Open-ILS/src/templates/acq/po/view.tt2:64
 msgid "Total Estimated"
-msgstr ""
+msgstr "Ընդհանուր գնահատված"
 
 #: ../../Open-ILS/src/templates/acq/po/view.tt2:55
 msgid "Total Lineitems"
-msgstr ""
+msgstr "Ընդամենը գծանյութեր"
 
 #: ../../Open-ILS/src/templates/acq/po/search.tt2:121
 msgid "Total Lineitems:"
-msgstr ""
+msgstr "Ընդամենը գծանյութեր։"
 
 #. ("<span attr=\"lineitem_count\"></span>")
 #: ../../Open-ILS/src/templates/acq/po/search.tt2:15
 msgid "Total Lineitems: %1"
-msgstr ""
+msgstr "Ընդամենը գծանյութեր: %1"
 
 #: ../../Open-ILS/src/templates/acq/po/search.tt2:117
 msgid "Total Purchase Orders:"
-msgstr ""
+msgstr "Ընդմանեը գնման պատվերներ։"
 
 #: ../../Open-ILS/src/templates/acq/fund/view.tt2:169 ../../Open-ILS/src/templates/acq/po/view.tt2:105
 msgid "Total Spent"
-msgstr ""
+msgstr "Գումարային ծախսված"
 
 #: ../../Open-ILS/src/templates/acq/po/search.tt2:133
 msgid "Total Spent:"
-msgstr ""
+msgstr "Գումարային ծախսված։"
 
 #. ("<span attr=\"amount_spent\"></span>")
 #: ../../Open-ILS/src/templates/acq/po/search.tt2:17
 msgid "Total Spent: $%1"
-msgstr ""
+msgstr "Գումարային ծախսված: $%1"
 
 #: ../../Open-ILS/src/templates/acq/fund/view.tt2:138
 msgid "Transfer"
-msgstr ""
+msgstr "Տեղափոխում"
 
 #: ../../Open-ILS/src/templates/acq/fund/view.tt2:68
 msgid "Transfer Money"
-msgstr ""
+msgstr "Փողի փոխանցում"
 
 #: ../../Open-ILS/src/templates/acq/settings/li_attr.tt2:30
 msgid "True"
-msgstr ""
+msgstr "Ճիշտ"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:169
 msgid "UPC"
-msgstr ""
+msgstr "UPC"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:382
 msgid "Un-Receive"
-msgstr ""
+msgstr "Չստացված"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:39
 msgid "Un-Receive Selected Line Items"
-msgstr ""
+msgstr "Un-Receive Selected Line Items"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:208
 msgid "Update Barcodes"
-msgstr ""
+msgstr "Թարմացրու գծակոդերը"
 
 #: ../../Open-ILS/src/templates/acq/picklist/upload.tt2:4 ../../Open-ILS/src/templates/acq/picklist/upload.tt2:54
 msgid "Upload"
-msgstr ""
+msgstr "Բեռնել"
 
 #: ../../Open-ILS/src/templates/acq/picklist/upload.tt2:69
 msgid "Upload Complete!"
-msgstr ""
+msgstr "Բեռնումը ավարտվել է։"
 
 #: ../../Open-ILS/src/templates/acq/common/vlagent.tt2:6
 msgid "Upload to Queue"
-msgstr ""
+msgstr "Բեռնիր հերթում"
 
 #: ../../Open-ILS/src/templates/acq/invoice/receive.tt2:28
 msgid "Use List Mode"
-msgstr ""
+msgstr "Օգտագործիր ցուցակի մեթոդը"
 
 #: ../../Open-ILS/src/templates/acq/invoice/receive.tt2:29
 msgid "Use Numeric Mode"
-msgstr ""
+msgstr "Օգտագործիր թվային մեթոդը"
 
 #: ../../Open-ILS/src/templates/acq/picklist/user_request.tt2:22
 msgid "User"
-msgstr ""
+msgstr "Օգտվող"
 
 #: ../../Open-ILS/src/templates/acq/common/vlagent.tt2:74
 msgid "Vandelay Records Processed"
-msgstr ""
+msgstr "Vandelay գրառումները կատարվում են"
 
 #: ../../Open-ILS/src/templates/acq/common/jubgrid.tt2:74
 msgid "Vendor"
-msgstr ""
+msgstr "Մատակարար"
 
 #: ../../Open-ILS/src/templates/acq/po/view.tt2:69
 msgid "View"
-msgstr ""
+msgstr "Դիտել"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:211
 msgid "View History"
-msgstr ""
+msgstr "Դիտիր պատմությունը"
 
 #: ../../Open-ILS/src/templates/acq/picklist/upload.tt2:72
 msgid "View Import Queue"
-msgstr ""
+msgstr "Դիտիր ներմուծման հերթը"
 
 #. ("<span id=\"acq-po-view-invoice-count\"></span>")
 #: ../../Open-ILS/src/templates/acq/po/view.tt2:79
 msgid "View Invoices (%1)"
-msgstr ""
+msgstr "Դիտիր ապրանքագրերը (%1)"
 
 #: ../../Open-ILS/src/templates/acq/lineitem/findbib.tt2:31
 msgid "View MARC"
-msgstr ""
+msgstr "Դիտիր MARC"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:473 ../../Open-ILS/src/templates/acq/po/view.tt2:23
 msgid "View PO"
-msgstr ""
+msgstr "Դիտիր PO"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:34
 msgid "View PO History"
-msgstr ""
+msgstr "Դիտիր PO պատմությունը"
 
 #: ../../Open-ILS/src/templates/acq/picklist/upload.tt2:70
 msgid "View Purchase Order"
-msgstr ""
+msgstr "Դիտիր գնման պատվերը"
 
 #: ../../Open-ILS/src/templates/acq/picklist/upload.tt2:71 ../../Open-ILS/src/templates/acq/picklist/user_request.tt2:68
 msgid "View Selection List"
-msgstr ""
+msgstr "Դիտիր ընտրացուցակը"
 
 #: ../../Open-ILS/src/templates/acq/fund/list.tt2:107
 msgid ""
 "When Dry Run is selected, the system will generate a summary of the changes "
 "that would occur during the selected operation(s). No data will be changed."
 msgstr ""
+"Երբ Dry Run ընտրված է, համակարգը կգեներացնի փոփոխությունների "
+"համառոտագրությունը, որոնք կհայտնվեն ընտրված գործողությունների ընթացքում։ Ոչ "
+"մի տվյալ չի փոխվի։"
 
 #: ../../Open-ILS/src/templates/acq/settings/li_attr.tt2:55
 msgid "XPath"
-msgstr ""
+msgstr "XPath"
 
 #: ../../Open-ILS/src/templates/acq/settings/li_attr.tt2:35
 msgid "XPath (advanced): "
-msgstr ""
+msgstr "XPath (խորացված): "
 
 #: ../../Open-ILS/src/templates/acq/fund/list.tt2:134
 msgid "Year"
-msgstr ""
+msgstr "Տարի"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:212 ../../Open-ILS/src/templates/acq/search/unified.tt2:37
 msgid "all"
-msgstr ""
+msgstr "բոլորը"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:213 ../../Open-ILS/src/templates/acq/search/unified.tt2:38
 msgid "any"
-msgstr ""
+msgstr "որևէ"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:188
 msgid "claim policy:"
-msgstr ""
+msgstr "պահանջի քաղաքականություն։"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:236 ../../Open-ILS/src/templates/acq/search/unified.tt2:57
 msgid "contains"
-msgstr ""
+msgstr "պարունակում է"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:240 ../../Open-ILS/src/templates/acq/search/unified.tt2:61
 msgid "does NOT contain"
-msgstr ""
+msgstr "ՉԻ պարունակում"
 
 #: ../../Open-ILS/src/templates/acq/search/unified.tt2:33
 msgid "invoices"
-msgstr ""
+msgstr "ապրանքագրեր"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:233 ../../Open-ILS/src/templates/acq/search/unified.tt2:54
 msgid "is"
-msgstr ""
+msgstr "սա է"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:234 ../../Open-ILS/src/templates/acq/search/unified.tt2:55
 msgid "is NOT"
-msgstr ""
+msgstr "ՈՉ"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:246 ../../Open-ILS/src/templates/acq/search/unified.tt2:67
 msgid "is on or AFTER"
-msgstr ""
+msgstr "առաջ կամ ՀԵՏՈ"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:243 ../../Open-ILS/src/templates/acq/search/unified.tt2:64
 msgid "is on or BEFORE"
-msgstr ""
+msgstr "առաջ կամ ՄԻՆՉ"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:208 ../../Open-ILS/src/templates/acq/search/unified.tt2:27
 msgid "line items"
-msgstr ""
+msgstr "գծային նյութեր"
 
 #: ../../Open-ILS/src/templates/acq/search/unified.tt2:29
 msgid "line items &amp; catalog records"
-msgstr ""
+msgstr "գծային նյութեր &amp; քարտարանի գրառումներ"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:249 ../../Open-ILS/src/templates/acq/search/unified.tt2:70
 msgid "matches a term from a file"
-msgstr ""
+msgstr "համընկնում է տերմինը ֆայլից"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:210 ../../Open-ILS/src/templates/acq/search/unified.tt2:35
 msgid "matching"
-msgstr ""
+msgstr "համընկնում"
 
 #: ../../Open-ILS/src/templates/acq/invoice/view.tt2:216
 msgid "of the following terms"
-msgstr ""
+msgstr "հետևյալ տերմինների"
 
 #: ../../Open-ILS/src/templates/acq/search/unified.tt2:41
 msgid "of the following terms:"
-msgstr ""
+msgstr "հետևյալ տերմինների։"
 
 #: ../../Open-ILS/src/templates/acq/search/unified.tt2:32
 msgid "purchase orders"
-msgstr ""
+msgstr "գնման պատվերներ"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:186
 msgid "requests"
-msgstr ""
+msgstr "հարցումներ"
 
 #: ../../Open-ILS/src/templates/acq/search/unified.tt2:31
 msgid "selection lists"
-msgstr ""
+msgstr "ընտրացուցակներ"
 
 #: ../../Open-ILS/src/templates/acq/common/li_table.tt2:187
 msgid "view invoice(s)"
-msgstr ""
+msgstr "դիտիր ապրանքագրերը"

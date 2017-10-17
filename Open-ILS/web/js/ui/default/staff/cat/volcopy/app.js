@@ -139,7 +139,14 @@ function(egCore , $q) {
     service.get_locations = function(orgs) {
         return egCore.pcrud.search('acpl',
             {owning_lib : orgs, deleted : 'f'},
-            {order_by : { acpl : 'name' }}, {atomic : true}
+            {
+                flesh : 1,
+                flesh_fields : {
+                    acpl : ['owning_lib']
+                },
+                order_by : { acpl : 'name' }
+            },
+            {atomic : true}
         );
     };
 
@@ -246,8 +253,9 @@ function(egCore , $q) {
     service.flesh = {   
         flesh : 3, 
         flesh_fields : {
-            acp : ['call_number','parts','stat_cat_entries', 'notes'],
-            acn : ['label_class','prefix','suffix']
+            acp : ['call_number','parts','stat_cat_entries', 'notes', 'tags'],
+            acn : ['label_class','prefix','suffix'],
+            acptcm : ['tag']
         }
     }
 
@@ -808,12 +816,14 @@ function(egCore , $q) {
 function($scope , $q , $window , $routeParams , $location , $timeout , egCore , egNet , egGridDataProvider , itemSvc , $uibModal) {
 
     $scope.forms = {}; // Accessed by t_attr_edit.tt2
+    $scope.i18n = egCore.i18n;
 
     $scope.defaults = { // If defaults are not set at all, allow everything
         barcode_checkdigit : false,
         auto_gen_barcode : false,
         statcats : true,
         copy_notes : true,
+        copy_tags : true,
         attributes : {
             status : true,
             loan_duration : true,
@@ -1612,11 +1622,30 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
             egNet.request(
                 'open-ils.cat',
                 'open-ils.cat.asset.volume.fleshed.batch.update.override',
-                egCore.auth.token(), cnList, 1, { auto_merge_vols : 1, create_parts : 1 }
-            ).then(function(update_count) {
+                egCore.auth.token(), cnList, 1, { auto_merge_vols : 1, create_parts : 1, return_copy_ids : 1 }
+            ).then(function(copy_ids) {
                 if (and_exit) {
                     $scope.dirty = false;
-                    $timeout(function(){$window.close()});
+                    if ($scope.defaults.print_item_labels) {
+                        egCore.net.request(
+                            'open-ils.actor',
+                            'open-ils.actor.anon_cache.set_value',
+                            null, 'print-labels-these-copies', {
+                                copies : copy_ids
+                            }
+                        ).then(function(key) {
+                            if (key) {
+                                var url = egCore.env.basePath + 'cat/printlabels/' + key;
+                                $timeout(function() { $window.open(url, '_blank') }).then(
+                                    function() { $timeout(function(){$window.close()}); }
+                                );
+                            } else {
+                                alert('Could not create anonymous cache key!');
+                            }
+                        });
+                    } else {
+                        $timeout(function(){$window.close()});
+                    }
                 }
             });
         }
@@ -1668,7 +1697,16 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
 
                 $scope.ok = function(note) {
 
-                    if (note.initials) note.value += ' [' + note.initials + ']';
+                    if ($scope.initials) {
+                        note.value = egCore.strings.$replace(
+                            egCore.strings.COPY_NOTE_INITIALS, {
+                            value : note.value, 
+                            initials : $scope.initials,
+                            ws_ou : egCore.org.get(
+                                egCore.auth.user().ws_ou()).shortname()
+                        });
+                    }
+
                     angular.forEach(copy_list, function (cp) {
                         if (!angular.isArray(cp.notes())) cp.notes([]);
                         var n = new egCore.idl.acpn();
@@ -1681,6 +1719,125 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
                         cp.notes().push( n );
                     });
 
+                    $uibModalInstance.close();
+                }
+
+                $scope.cancel = function($event) {
+                    $uibModalInstance.dismiss();
+                    $event.preventDefault();
+                }
+            }]
+        });
+    }
+
+    $scope.copy_tags_dialog = function(copy_list) {
+        if (!angular.isArray(copy_list)) copy_list = [copy_list];
+
+        return $uibModal.open({
+            templateUrl: './cat/volcopy/t_copy_tags',
+            animation: true,
+            controller:
+                   ['$scope','$uibModalInstance',
+            function($scope , $uibModalInstance) {
+
+                $scope.tag_map = [];
+                var tag_hash = {};
+                var shared_tags = {};
+                angular.forEach(copy_list, function (cp) {
+                    angular.forEach(cp.tags(), function(tag) {
+                        if (!(tag.tag().id() in shared_tags)) {
+                            shared_tags[tag.tag().id()] = 1;
+                        } else {
+                            shared_tags[tag.tag().id()]++;
+                        }
+                        if (!(tag.tag().id() in tag_hash)) {
+                            tag_hash[tag.tag().id()] = tag;
+                        }
+                    });
+                });
+                angular.forEach(tag_hash, function(value, key) {
+                    if (shared_tags[key] == copy_list.length) {
+                        $scope.tag_map.push(value);
+                    }
+                });
+
+                $scope.tag_types = [];
+                egCore.pcrud.retrieveAll('cctt', {order_by : { cctt : 'label' }}, {atomic : true}).then(function(list) {
+                    $scope.tag_types = list;
+                    $scope.tag_type = $scope.tag_types[0].code(); // just pick a default
+                });
+
+                $scope.getTags = function(val) {
+                    return egCore.pcrud.search('acpt',
+                        { 
+                            owner :  egCore.org.fullPath(egCore.auth.user().ws_ou(), true),
+                            label : { 'startwith' : {
+                                        transform: 'evergreen.lowercase',
+                                        value : [ 'evergreen.lowercase', val ]
+                                    }},
+                            tag_type : $scope.tag_type
+                        },
+                        { order_by : { 'acpt' : ['label'] } }, { atomic: true }
+                    ).then(function(list) {
+                        return list.map(function(item) {
+                            return item.label();
+                        });
+                    });
+                }
+
+                $scope.addTag = function() {
+                    var tagLabel = $scope.selectedLabel;
+                    // clear the typeahead
+                    $scope.selectedLabel = "";
+
+                    // first, check tags already associated with the copy
+                    var foundMatch = false;
+                    angular.forEach($scope.tag_map, function(tag) {
+                        if (tag.tag().label() ==  tagLabel && tag.tag().tag_type() == $scope.tag_type) {
+                            foundMatch = true;
+                            if (tag.isdeleted()) tag.isdeleted(0); // just deleting the mapping
+                        }
+                    });
+                    if (!foundMatch) {
+                        egCore.pcrud.search('acpt',
+                            { 
+                                owner : egCore.org.fullPath(egCore.auth.user().ws_ou(), true),
+                                label : tagLabel,
+                                tag_type : $scope.tag_type
+                            },
+                            { order_by : { 'acpt' : ['label'] } }, { atomic: true }
+                        ).then(function(list) {
+                            if (list.length > 0) {
+                                var newMap = new egCore.idl.acptcm();
+                                newMap.isnew(1);
+                                newMap.copy(copy_list[0].id());
+                                newMap.tag(egCore.idl.Clone(list[0]));
+                                $scope.tag_map.push(newMap);
+                            } else {
+                                var newTag = new egCore.idl.acpt();
+                                newTag.isnew(1);
+                                newTag.owner(egCore.auth.user().ws_ou());
+                                newTag.label(tagLabel);
+                                newTag.pub('t');
+                                newTag.tag_type($scope.tag_type);
+
+                                var newMap = new egCore.idl.acptcm();
+                                newMap.isnew(1);
+                                newMap.copy(copy_list[0].id());
+                                newMap.tag(newTag);
+                                $scope.tag_map.push(newMap);
+                            }
+                        });
+                    }
+                }
+
+                $scope.ok = function(note) {
+                    // in the multi-item case, this works OK for
+                    // adding new maps to existing tags, but doesn't handle
+                    // all possibilities
+                    angular.forEach(copy_list, function (cp) {
+                        cp.tags($scope.tag_map);
+                    });
                     $uibModalInstance.close();
                 }
 
@@ -1705,11 +1862,14 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
         controller : ['$scope','$window','itemSvc','egCore','ngToast',
             function ( $scope , $window , itemSvc , egCore , ngToast) {
 
+                $scope.i18n = egCore.i18n;
+
                 $scope.defaults = { // If defaults are not set at all, allow everything
                     barcode_checkdigit : false,
                     auto_gen_barcode : false,
                     statcats : true,
                     copy_notes : true,
+                    copy_tags : true,
                     attributes : {
                         status : true,
                         loan_duration : true,

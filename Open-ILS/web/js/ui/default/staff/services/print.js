@@ -58,9 +58,12 @@ function($q , $window , $timeout , $http , egHatch , egAuth , egIDL , egOrg , eg
     service.fleshPrintScope = function(scope) {
         if (!scope) scope = {};
         scope.today = new Date().toISOString();
-        scope.staff = egIDL.toHash(egAuth.user());
-        scope.current_location = 
-            egIDL.toHash(egOrg.get(egAuth.user().ws_ou()));
+
+        if (!lf.isOffline) {
+            scope.staff = egIDL.toHash(egAuth.user());
+            scope.current_location = 
+                egIDL.toHash(egOrg.get(egAuth.user().ws_ou()));
+        }
 
         return service.fetch_includes(scope);
     }
@@ -235,6 +238,10 @@ function($q , $window , $timeout , $http , egHatch , egAuth , egIDL , egOrg , eg
         return egHatch.setItem('eg.print.template.' + name, html);
     }
 
+    service.removePrintTemplate = function(name) {
+        return egHatch.removeItem('eg.print.template.' + name);
+    }
+
     service.getPrintTemplateContext = function(name) {
         var deferred = $q.defer();
 
@@ -248,6 +255,9 @@ function($q , $window , $timeout , $http , egHatch , egAuth , egIDL , egOrg , eg
     }
     service.storePrintTemplateContext = function(name, context) {
         return egHatch.setItem('eg.print.template_context.' + name, context);
+    }
+    service.removePrintTemplateContext = function(name) {
+        return egHatch.removeItem('eg.print.template_context.' + name);
     }
 
     return service;

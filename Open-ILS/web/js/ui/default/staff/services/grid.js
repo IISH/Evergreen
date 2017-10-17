@@ -63,6 +63,11 @@ angular.module('egGridMod',
             // optional context menu label
             menuLabel : '@',
 
+            dateformat : '@', // optional: passed down to egGridValueFilter
+            datecontext: '@', // optional: passed down to egGridValueFilter to choose TZ
+            datefilter: '@', // optional: passed down to egGridValueFilter to choose specialized date filters
+            dateonlyinterval: '@', // optional: passed down to egGridValueFilter to choose a "better" format
+
             // Hash of control functions.
             //
             //  These functions are defined by the calling scope and 
@@ -177,9 +182,14 @@ angular.module('egGridMod',
 
                 grid.columnsProvider = egGridColumnsProvider.instance({
                     idlClass : grid.idlClass,
+                    clientSort : (features.indexOf('clientsort') > -1 && features.indexOf('-clientsort') == -1),
                     defaultToHidden : (features.indexOf('-display') > -1),
                     defaultToNoSort : (features.indexOf('-sort') > -1),
-                    defaultToNoMultiSort : (features.indexOf('-multisort') > -1)
+                    defaultToNoMultiSort : (features.indexOf('-multisort') > -1),
+                    defaultDateFormat : $scope.dateformat,
+                    defaultDateContext : $scope.datecontext,
+                    defaultDateFilter : $scope.datefilter,
+                    defaultDateOnlyInterval : $scope.dateonlyinterval
                 });
                 $scope.canMultiSelect = (features.indexOf('-multiselect') == -1);
 
@@ -206,6 +216,8 @@ angular.module('egGridMod',
                         query : $scope.query
                     });
                 }
+
+                grid.dataProvider.columnsProvider = grid.columnsProvider;
 
                 $scope.itemFieldValue = grid.dataProvider.itemFieldValue;
                 $scope.indexValue = function(item) {
@@ -747,8 +759,39 @@ angular.module('egGridMod',
                     column.flex = 1;
             }
             $scope.modifyColumnFlex = function(col, val) {
+                $scope.lastModColumn = col.name;
                 grid.modifyColumnFlex(col, val);
             }
+
+            grid.modifyColumnPos = function(col, diff) {
+                var srcIdx, targetIdx;
+                angular.forEach(grid.columnsProvider.columns,
+                    function(c, i) { if (c.name == col.name) srcIdx = i });
+
+                targetIdx = srcIdx + diff;
+                if (targetIdx < 0) {
+                    targetIdx = 0;
+                } else if (targetIdx >= grid.columnsProvider.columns.length) {
+                    // Target index follows the last visible column.
+                    var lastVisible = 0;
+                    angular.forEach(grid.columnsProvider.columns, 
+                        function(column, idx) {
+                            if (column.visible) lastVisible = idx;
+                        }
+                    );
+                    targetIdx = lastVisible + 1;
+                }
+
+                // Splice column out of old position, insert at new position.
+                grid.columnsProvider.columns.splice(srcIdx, 1);
+                grid.columnsProvider.columns.splice(targetIdx, 0, col);
+            }
+
+            $scope.modifyColumnPos = function(col, diff) {
+                $scope.lastModColumn = col.name;
+                return grid.modifyColumnPos(col, diff);
+            }
+
 
             // handles click, control-click, and shift-click
             $scope.handleRowClick = function($event, item) {
@@ -859,6 +902,7 @@ angular.module('egGridMod',
                     $scope.showGridConf = true;
                 }
 
+                delete $scope.lastModColumn;
                 $scope.gridColumnPickerIsOpen = false;
             }
 
@@ -951,7 +995,7 @@ angular.module('egGridMod',
                             // bare value
                             var val = grid.dataProvider.itemFieldValue(item, col);
                             // filtered value (dates, etc.)
-                            val = $filter('egGridValueFilter')(val, col);
+                            val = $filter('egGridValueFilter')(val, col, item);
                             csvStr += grid.csvDatum(val);
                             csvStr += ',';
                         }
@@ -1047,6 +1091,7 @@ angular.module('egGridMod',
         restrict : 'AE',
         scope : {
             flesher: '=', // optional; function that can flesh a linked field, given the value
+            comparator: '=', // optional; function that can sort the thing at the end of 'path' 
             name  : '@', // required; unique name
             path  : '@', // optional; flesh path
             ignore: '@', // optional; fields to ignore when path is a wildcard
@@ -1054,6 +1099,9 @@ angular.module('egGridMod',
             flex  : '@',  // optional; default flex width
             align  : '@',  // optional; default alignment, left/center/right
             dateformat : '@', // optional: passed down to egGridValueFilter
+            datecontext: '@', // optional: passed down to egGridValueFilter to choose TZ
+            datefilter: '@', // optional: passed down to egGridValueFilter to choose specialized date filters
+            dateonlyinterval: '@', // optional: passed down to egGridValueFilter to choose a "better" format
 
             // if a field is part of an IDL object, but we are unable to
             // determine the class, because it's nested within a hash
@@ -1135,9 +1183,12 @@ angular.module('egGridMod',
         cols.columns = [];
         cols.stockVisible = [];
         cols.idlClass = args.idlClass;
+        cols.clientSort = args.clientSort;
         cols.defaultToHidden = args.defaultToHidden;
         cols.defaultToNoSort = args.defaultToNoSort;
         cols.defaultToNoMultiSort = args.defaultToNoMultiSort;
+        cols.defaultDateFormat = args.defaultDateFormat;
+        cols.defaultDateContext = args.defaultDateContext;
 
         // resets column width, visibility, and sort behavior
         // Visibility resets to the visibility settings defined in the 
@@ -1326,6 +1377,7 @@ angular.module('egGridMod',
         cols.cloneFromScope = function(colSpec) {
             return {
                 flesher  : colSpec.flesher,
+                comparator  : colSpec.comparator,
                 name  : colSpec.name,
                 label : colSpec.label,
                 path  : colSpec.path,
@@ -1343,6 +1395,9 @@ angular.module('egGridMod',
                 multisortable    : colSpec.multisortable,
                 nonmultisortable : colSpec.nonmultisortable,
                 dateformat       : colSpec.dateformat,
+                datecontext      : colSpec.datecontext,
+                datefilter      : colSpec.datefilter,
+                dateonlyinterval : colSpec.dateonlyinterval,
                 parentIdlClass   : colSpec.parentIdlClass
             };
         }
@@ -1381,6 +1436,22 @@ angular.module('egGridMod',
             if (column.multisortable || 
                 (!cols.defaultToNoMultiSort && !column.nonmultisortable))
                 column.multisortable = true;
+
+            if (cols.defaultDateFormat && ! column.dateformat) {
+                column.dateformat = cols.defaultDateFormat;
+            }
+
+            if (cols.defaultDateOnlyInterval && ! column.dateonlyinterval) {
+                column.dateonlyinterval = cols.defaultDateOnlyInterval;
+            }
+
+            if (cols.defaultDateContext && ! column.datecontext) {
+                column.datecontext = cols.defaultDateContext;
+            }
+
+            if (cols.defaultDateFilter && ! column.datefilter) {
+                column.datefilter = cols.defaultDateFilter;
+            }
 
             cols.columns.push(column);
 
@@ -1480,6 +1551,81 @@ angular.module('egGridMod',
             // the range defined by count and offset
             gridData.arrayNotifier = function(arr, offset, count) {
                 if (!arr || arr.length == 0) return $q.when();
+
+                if (gridData.columnsProvider.clientSort
+                    && gridData.sort
+                    && gridData.sort.length > 0
+                ) {
+                    var sorter_cache = [];
+                    arr.sort(function(a,b) {
+                        for (var si = 0; si < gridData.sort.length; si++) {
+                            if (!sorter_cache[si]) { // Build sort structure on first comparison, reuse thereafter
+                                var field = gridData.sort[si];
+                                var dir = 'asc';
+
+                                if (angular.isObject(field)) {
+                                    dir = Object.values(field)[0];
+                                    field = Object.keys(field)[0];
+                                }
+
+                                var path = gridData.columnsProvider.findColumn(field).path || field;
+                                var comparator = gridData.columnsProvider.findColumn(field).comparator ||
+                                    function (x,y) { if (x < y) return -1; if (x > y) return 1; return 0 };
+
+                                sorter_cache[si] = {
+                                    field       : path,
+                                    dir         : dir,
+                                    comparator  : comparator
+                                };
+                            }
+
+                            var sc = sorter_cache[si];
+
+                            var af,bf;
+
+                            if (a._isfieldmapper || angular.isFunction(a[sc.field])) {
+                                try {af = a[sc.field](); bf = b[sc.field]() } catch (e) {};
+                            } else {
+                                af = a[sc.field]; bf = b[sc.field];
+                            }
+                            if (af === undefined && sc.field.indexOf('.') > -1) { // assume an object, not flat path
+                                var parts = sc.field.split('.');
+                                af = a;
+                                bf = b;
+                                angular.forEach(parts, function (p) {
+                                    if (af) {
+                                        if (af._isfieldmapper || angular.isFunction(af[p])) af = af[p]();
+                                        else af = af[p];
+                                    }
+                                    if (bf) {
+                                        if (bf._isfieldmapper || angular.isFunction(bf[p])) bf = bf[p]();
+                                        else bf = bf[p];
+                                    }
+                                });
+                            }
+
+                            if (af === undefined) af = null;
+                            if (bf === undefined) bf = null;
+
+                            if (af === null && bf !== null) return 1;
+                            if (bf === null && af !== null) return -1;
+
+                            if (!(bf === null && af === null)) {
+                                var partial = sc.comparator(af,bf);
+                                if (partial) {
+                                    if (sc.dir == 'desc') {
+                                        if (partial > 0) return -1;
+                                        return 1;
+                                    }
+                                    return partial;
+                                }
+                            }
+                        }
+
+                        return 0;
+                    });
+                }
+
                 if (count) arr = arr.slice(offset, offset + count);
                 var def = $q.defer();
                 // promise notifications are only witnessed when delivered
@@ -1789,12 +1935,21 @@ angular.module('egGridMod',
  *    value.  (Though we could manually translate instead..)
  * Others likely to follow...
  */
-.filter('egGridValueFilter', ['$filter', function($filter) {                         
-    return function(value, column) {                                             
-        switch(column.datatype) {                                                
-            case 'bool':                                                       
+.filter('egGridValueFilter', ['$filter','egCore', function($filter,egCore) {
+    function traversePath(obj,path) {
+        var list = path.split('.');
+        for (var part in path) {
+            if (obj[path]) obj = obj[path]
+            else return null;
+        }
+        return obj;
+    }
+
+    var GVF = function(value, column, item) {
+        switch(column.datatype) {
+            case 'bool':
                 switch(value) {
-                    // Browser will translate true/false for us                    
+                    // Browser will translate true/false for us
                     case 't' : 
                     case '1' :  // legacy
                     case true:
@@ -1806,16 +1961,32 @@ angular.module('egGridMod',
                     // value may be null,  '', etc.
                     default : return '';
                 }
-            case 'timestamp':                                                  
-                // canned angular date filter FTW                              
-                if (!column.dateformat) 
-                    column.dateformat = 'shortDate';
-                return $filter('date')(value, column.dateformat);
-            case 'money':                                                  
+            case 'timestamp':
+                var interval = angular.isFunction(item[column.dateonlyinterval])
+                    ? item[column.dateonlyinterval]()
+                    : item[column.dateonlyinterval];
+
+                if (column.dateonlyinterval && !interval) // try it as a dotted path
+                    interval = traversePath(item, column.dateonlyinterval);
+
+                var context = angular.isFunction(item[column.datecontext])
+                    ? item[column.datecontext]()
+                    : item[column.datecontext];
+
+                if (column.datecontext && !context) // try it as a dotted path
+                    context = traversePath(item, column.datecontext);
+
+                var date_filter = column.datefilter || 'egOrgDateInContext';
+
+                return $filter(date_filter)(value, column.dateformat, context, interval);
+            case 'money':
                 return $filter('currency')(value);
-            default:                                                           
-                return value;                                                  
-        }                                                                      
-    }                                                                          
+            default:
+                return value;
+        }
+    };
+
+    GVF.$stateful = true;
+    return GVF;
 }]);
 

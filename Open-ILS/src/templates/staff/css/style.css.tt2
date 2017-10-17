@@ -27,31 +27,8 @@
     border-bottom-color: #ddd;
 }
 
-/* status bar along the bottom of the page ------------------------ */
-/* decrease padding to decrease overall height */
-
-/** TODO:move status bar items into navbar config entry (top-right)
- * to avoid body padding weirdness.  Or if we want a permenently
- * visible status bar, maybe put it just below the navbar.. */
-
-/* bottom padding ensures no body content is hidden behind the status
- * bar.  When content reaches the status bar a scroll bar appears */
-/*body { padding-bottom: 26px; }*/
-
-#status-bar {
-  min-height:1.8em !important;
-}
-#status-bar > ul {
-  margin-right:6px; 
-}
-#status-bar li {
-  padding-left: 10px;
-}
-#status-bar > li > a {
-  padding-top:5px !important; 
-  padding-bottom:5px !important;
-}
-.status-bar-connected {
+/* Hatch / WebSockets / Etc. connectivity status indicator */
+.connect-status-ok {
   color: rgb(92, 184, 92); /* success */
 }
 
@@ -117,7 +94,7 @@
 a.disabled {
   pointer-events: none;
   cursor: default;
-  color: #888;
+  color: #888 !important;
 }
 
 #splash-nav .panel-body div {
@@ -221,6 +198,20 @@ table.list tr.selected td { /* deprecated? */
   margin: 0px;
   padding: 0px;
 }
+
+/* Useful for grid-like things that aren't proper grids.
+ * Mimics the grids color scheme. */
+.selected-row {
+  background-color: rgb(248, 248, 248);
+}
+
+/* Reduces the vertical space added by form-group's.  Especially useful
+ * for tall modal windows.
+ */
+.tight-vert-form .form-group {
+  margin-bottom: 5px;
+} 
+
 
 /* ----------------------------------------------------------------------
  * Grid
@@ -379,6 +370,10 @@ table.list tr.selected td { /* deprecated? */
 }
 .eg-grid-column-resize-handle-east {
   cursor: e-resize;
+}
+
+.eg-grid-column-last-mod {
+  background-color: #78FA89;
 }
 
 .eg-grid-menu-item {

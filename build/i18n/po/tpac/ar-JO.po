@@ -1,21 +1,23 @@
 # Arabic translation for evergreen
-# Copyright (c) 2017 Rosetta Contributors and Canonical Ltd 2017
+# Copyright (c) 2015 Rosetta Contributors and Canonical Ltd 2015
 # This file is distributed under the same license as the evergreen package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2015.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: evergreen\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: 2017-08-30 02:21+0000\n"
-"PO-Revision-Date: 2017-06-22 06:05+0000\n"
-"Last-Translator: Kathy Lussier <Unknown>\n"
+"POT-Creation-Date: 2017-09-21 02:30+0000\n"
+"PO-Revision-Date: 2017-09-28 07:14+0000\n"
+"Last-Translator: fares othman <Unknown>\n"
 "Language-Team: Arabic <ar@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2017-08-31 05:37+0000\n"
-"X-Generator: Launchpad (build 18446)\n"
+"X-Launchpad-Export-Date: 2017-09-29 05:12+0000\n"
+"X-Generator: Launchpad (build 18471)\n"
+"Language: AR\n"
+"X-Poedit-SourceCharset: UTF-8\n"
 
 #: ../../Open-ILS/src/templates/opac/register.tt2:63
 msgid ""
@@ -42,6 +44,18 @@ msgstr " (%1)"
 #: ../../Open-ILS/src/templates/opac/parts/record/copy_table.tt2:159
 msgid " / "
 msgstr " / "
+
+#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:49
+msgid " Due "
+msgstr ""
+
+#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:52
+msgid " Returned&#42;"
+msgstr ""
+
+#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:51
+msgid " Returned/Renewed"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/record/summary.tt2:101
 msgid " View My Lists"
@@ -75,14 +89,19 @@ msgstr "$%.2f"
 msgid "%1"
 msgstr "%1"
 
+#. (money(ctx.fines.balance_owed))
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:32 ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:82
+msgid "%1 "
+msgstr ""
+
 #. (ctx.user.first_given_name, ctx.user.family_name)
 #: ../../Open-ILS/src/templates/opac/parts/topnav.tt2:22
 msgid "%1 %2"
 msgstr "%1 %2"
 
+#. (title, hold.hold.part.label)
 #. (copy.label, copy_org.name)
 #. (title, part.label)
-#. (title, hold.hold.part.label)
 #: ../../Open-ILS/src/templates/opac/myopac/holds.tt2:188 ../../Open-ILS/src/templates/opac/myopac/holds/edit.tt2:27 ../../Open-ILS/src/templates/opac/myopac/lists.tt2:360 ../../Open-ILS/src/templates/opac/parts/anon_list.tt2:65 ../../Open-ILS/src/templates/opac/parts/place_hold_result.tt2:37
 msgid "%1 (%2)"
 msgstr "%1 (%2)"
@@ -102,9 +121,9 @@ msgstr "%1 - %2"
 msgid "%1 OpenSearch"
 msgstr "%1 OpenSearch"
 
-#. (ou_avail, ou_count, ou_name)
-#. (attrs.plib_copy_counts.$depth.available, attrs.plib_copy_counts.$depth.count, ou_name)
 #. (attrs.copy_counts.$depth.available, attrs.copy_counts.$depth.count, ou_name)
+#. (attrs.plib_copy_counts.$depth.available, attrs.plib_copy_counts.$depth.count, ou_name)
+#. (ou_avail, ou_count, ou_name)
 #: ../../Open-ILS/src/templates/opac/parts/record/copy_counts.tt2:22 ../../Open-ILS/src/templates/opac/parts/record/copy_counts.tt2:40 ../../Open-ILS/src/templates/opac/parts/result/copy_counts.tt2:14 ../../Open-ILS/src/templates/opac/parts/result/copy_counts.tt2:33
 msgid "%1 of %quant(%2,copy,copies) available at %3."
 msgstr "%1 من  %quant(%2, نُسخة ,نُسخ) المتاحة في %3."
@@ -209,6 +228,12 @@ msgstr "اسم القائمة مطلوب"
 msgid "A registration error has occurred"
 msgstr "حدث خطأ أثناء التسجيل"
 
+#: ../../Open-ILS/src/templates/opac/parts/place_hold.tt2:239
+msgid ""
+"A suspended hold will retain its place in the queue, but will not be "
+"fulfilled until it has been activated."
+msgstr ""
+
 #: ../../Open-ILS/src/templates/opac/parts/relators.tt2:1
 msgid "Abridger"
 msgstr "المختزل/المُختصِر"
@@ -220,6 +245,10 @@ msgstr "تاريخ إنشاء الحساب"
 #: ../../Open-ILS/src/templates/opac/myopac/prefs.tt2:110 ../../Open-ILS/src/templates/opac/parts/myopac/main_base.tt2:42
 msgid "Account Expiration Date"
 msgstr "تاريخ انتهاء الحساب"
+
+#: ../../Open-ILS/src/templates/opac/myopac/main_pay.tt2:29
+msgid "Account Home"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/myopac/prefs_base.tt2:33
 msgid "Account Information and Preferences"
@@ -293,6 +322,10 @@ msgstr "تفعيل"
 msgid "Activate On"
 msgstr "تفعيل في"
 
+#: ../../Open-ILS/src/templates/opac/parts/place_hold.tt2:245
+msgid "Activate on"
+msgstr ""
+
 #: ../../Open-ILS/src/templates/opac/myopac/prefs.tt2:156
 msgid "Active Addresses"
 msgstr "تفعيل العناوين"
@@ -318,7 +351,7 @@ msgid "Adapter"
 msgstr "مُقتبس سينمائي"
 
 #. (attrs.title)
-#: ../../Open-ILS/src/templates/opac/parts/result/table.tt2:404
+#: ../../Open-ILS/src/templates/opac/parts/result/table.tt2:406
 msgid "Add %1 to my list"
 msgstr "إضافة %1 إلى القائمة الخاصة بي"
 
@@ -331,7 +364,7 @@ msgstr "إضافة صف بحث"
 msgid "Add item to a list: %1"
 msgstr "إضافة نُسخة إلى قائمة: %1"
 
-#: ../../Open-ILS/src/templates/opac/parts/bookbag_actions.tt2:44 ../../Open-ILS/src/templates/opac/parts/record/summary.tt2:87 ../../Open-ILS/src/templates/opac/parts/result/table.tt2:404
+#: ../../Open-ILS/src/templates/opac/parts/bookbag_actions.tt2:44 ../../Open-ILS/src/templates/opac/parts/record/summary.tt2:87 ../../Open-ILS/src/templates/opac/parts/result/table.tt2:406
 msgid "Add to my list"
 msgstr "إضافة إلى القائمة الخاصة بي"
 
@@ -492,18 +525,17 @@ msgstr "المُستأنف ضده"
 msgid "Applicant"
 msgstr "المُتقدم"
 
-#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:181
-msgid "April"
-msgstr "نيسان"
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:198
+msgid "April (4)"
+msgstr "نيسان (4)"
 
 #: ../../Open-ILS/src/templates/opac/parts/relators.tt2:1
 msgid "Architect"
 msgstr "مهندس معماري"
 
-#. (money(ctx.fines.balance_owed))
-#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:29
-msgid "Are you sure you are ready to charge %1 to your credit card?"
-msgstr "هل تؤكد دفع %1 من بطاقتك الإئتمانية؟"
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:31 ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:81
+msgid "Are you sure you are ready to charge "
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/myopac/prefs_settings.tt2:20
 msgid "Are you sure you wish to continue?"
@@ -569,9 +601,9 @@ msgstr "الدلال"
 msgid "Audience"
 msgstr "الجمهور المُستهدف"
 
-#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:185
-msgid "August"
-msgstr "آب"
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:202
+msgid "August (8)"
+msgstr "آب (8)"
 
 #: ../../Open-ILS/src/templates/opac/css/style.css.tt2:3043 ../../Open-ILS/src/templates/opac/css/style.css.tt2:3051 ../../Open-ILS/src/templates/opac/css/style.css.tt2:3060 ../../Open-ILS/src/templates/opac/css/style.css.tt2:3068 ../../Open-ILS/src/templates/opac/css/style.css.tt2:3074 ../../Open-ILS/src/templates/opac/css/style.css.tt2:3079 ../../Open-ILS/src/templates/opac/myopac/circ_history.tt2:98 ../../Open-ILS/src/templates/opac/myopac/circ_history/export.tt2:6 ../../Open-ILS/src/templates/opac/myopac/circs.tt2:75 ../../Open-ILS/src/templates/opac/myopac/ebook_circs.tt2:33 ../../Open-ILS/src/templates/opac/myopac/ebook_holds.tt2:41 ../../Open-ILS/src/templates/opac/myopac/ebook_holds_ready.tt2:41 ../../Open-ILS/src/templates/opac/myopac/hold_history.tt2:67 ../../Open-ILS/src/templates/opac/myopac/holds.tt2:117 ../../Open-ILS/src/templates/opac/myopac/main.tt2:29 ../../Open-ILS/src/templates/opac/parts/qtype_selector.tt2:1 ../../Open-ILS/src/templates/opac/parts/record/authors.tt2:1 ../../Open-ILS/src/templates/opac/parts/relators.tt2:1
 msgid "Author"
@@ -664,10 +696,6 @@ msgstr "الرجوع إلى النتائج"
 #: ../../Open-ILS/src/templates/opac/parts/record/summary.tt2:419
 msgid "Badges:"
 msgstr "بطاقات الانتساب:"
-
-#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:128 ../../Open-ILS/src/templates/opac/myopac/main.tt2:33
-msgid "Balance Owed"
-msgstr "الرصيد المُستحق"
 
 #: ../../Open-ILS/src/templates/opac/css/style.css.tt2:3046 ../../Open-ILS/src/templates/opac/css/style.css.tt2:3055 ../../Open-ILS/src/templates/opac/myopac/circ_history.tt2:102 ../../Open-ILS/src/templates/opac/myopac/circ_history/export.tt2:10 ../../Open-ILS/src/templates/opac/myopac/circs.tt2:78 ../../Open-ILS/src/templates/opac/parts/record/copy_table.tt2:41
 msgid "Barcode"
@@ -811,6 +839,10 @@ msgstr "علاقة فرعية"
 msgid "Broadcaster"
 msgstr "مذيع"
 
+#: ../../Open-ILS/src/templates/opac/browse.tt2:1
+msgid "Broader term"
+msgstr "مصطلح أوسع"
+
 #: ../../Open-ILS/src/templates/opac/browse.tt2:46 ../../Open-ILS/src/templates/opac/parts/myopac/base.tt2:27
 msgid "Browse"
 msgstr "تصفح"
@@ -855,6 +887,10 @@ msgstr "خطاط"
 #: ../../Open-ILS/src/templates/opac/myopac/holds.tt2:75 ../../Open-ILS/src/templates/opac/myopac/lists.tt2:66 ../../Open-ILS/src/templates/opac/myopac/lists.tt2:67 ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:214 ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:37 ../../Open-ILS/src/templates/opac/myopac/prefs_settings.tt2:22 ../../Open-ILS/src/templates/opac/parts/place_hold.tt2:210 ../../Open-ILS/src/templates/opac/parts/place_hold_result.tt2:133
 msgid "Cancel"
 msgstr "إلغاء"
+
+#: ../../Open-ILS/src/templates/opac/parts/ebook_api/base_js.tt2:17
+msgid "Cancel Hold"
+msgstr "إلغاء الحجز"
 
 #: ../../Open-ILS/src/templates/opac/myopac/holds.tt2:120
 msgid "Cancel if not filled by"
@@ -932,6 +968,27 @@ msgstr "تغيير المكتبة المُفضلة"
 msgid "Character Attributes: "
 msgstr "سمات الشخصية: "
 
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:48
+msgid "Charge/Fee"
+msgstr ""
+
+#: ../../Open-ILS/src/templates/opac/parts/myopac/main_base.tt2:106 ../../Open-ILS/src/templates/opac/parts/myopac/main_base.tt2:109 ../../Open-ILS/src/templates/opac/parts/topnav.tt2:69
+msgid "Charges"
+msgstr ""
+
+#: ../../Open-ILS/src/templates/opac/parts/myopac/main_base.tt2:19
+msgid "Charges:"
+msgstr ""
+
+#. (attrs.title)
+#: ../../Open-ILS/src/templates/opac/parts/record/summary.tt2:88 ../../Open-ILS/src/templates/opac/parts/result/table.tt2:405
+msgid "Check Out %1"
+msgstr ""
+
+#: ../../Open-ILS/src/templates/opac/myopac/ebook_checkout.tt2:11 ../../Open-ILS/src/templates/opac/myopac/ebook_checkout.tt2:19 ../../Open-ILS/src/templates/opac/myopac/ebook_checkout.tt2:7 ../../Open-ILS/src/templates/opac/parts/record/summary.tt2:89 ../../Open-ILS/src/templates/opac/parts/result/table.tt2:408
+msgid "Check Out E-Item"
+msgstr ""
+
 #: ../../Open-ILS/src/templates/opac/myopac/circ_history.tt2:23 ../../Open-ILS/src/templates/opac/myopac/circs.tt2:19 ../../Open-ILS/src/templates/opac/myopac/ebook_circs.tt2:17
 msgid "Check Out History"
 msgstr "أرشيف الإعارة"
@@ -948,6 +1005,10 @@ msgstr "تمت الإعارة من قبل"
 msgid "Checking availability for this item..."
 msgstr "التحقق من الاتاحة أو التوافر لهذه النسخة"
 
+#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:48 ../../Open-ILS/src/templates/opac/parts/ebook_api/base_js.tt2:15
+msgid "Checkout"
+msgstr "إعارة"
+
 #: ../../Open-ILS/src/templates/opac/css/style.css.tt2:3052 ../../Open-ILS/src/templates/opac/myopac/circ_history.tt2:99 ../../Open-ILS/src/templates/opac/myopac/circ_history/export.tt2:7 ../../Open-ILS/src/templates/opac/myopac/main.tt2:30
 msgid "Checkout Date"
 msgstr "تاريخ الإعارة"
@@ -959,6 +1020,14 @@ msgstr "مدير الرقص"
 #: ../../Open-ILS/src/templates/opac/parts/relators.tt2:1
 msgid "Cinematographer"
 msgstr "مصور سينمائي"
+
+#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:27
+msgid "Circulation Charges"
+msgstr ""
+
+#: ../../Open-ILS/src/templates/opac/parts/record/copy_table.tt2:48
+msgid "Circulation Modifier"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/hold_error_messages.tt2:1
 msgid "Circulation rules reject this item as non-circulatable"
@@ -980,16 +1049,15 @@ msgstr "مسح الذاكرة المؤقتة لــِ المحتوى المُض�
 msgid "Clear Form"
 msgstr "مسح بيانات الاستمارة"
 
-#. ("<strong>", "</strong>")
-#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:102
-msgid "Click %1Cancel%2 to go back and (un)select other fines."
-msgstr "انقر على %1إلغاء%2 للرجوع أو لتحديد/لإلغاء تحديد الغرامات الأخرى."
-
 #: ../../Open-ILS/src/templates/opac/parts/tips.tt2:5
 msgid ""
 "Click on a folder icon in the sidebar to access related quick searches"
 msgstr ""
 "يمكنك النقر على أيقونة المجلد في الشريط الجانبي للوصول إلى نتائج ذات علاقة"
+
+#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:42
+msgid "Click to (un)select all charges"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/myopac/main.tt2:135 ../../Open-ILS/src/templates/opac/myopac/main.tt2:38
 msgid "Click to (un)select all fines"
@@ -1208,6 +1276,10 @@ msgstr "البطاقة الائتمانية #"
 msgid "Credit Card Information"
 msgstr "معلومات البطاقة الائتمانية"
 
+#: ../../Open-ILS/src/templates/opac/parts/myopac/main_base.tt2:29
+msgid "Credit Card Logo"
+msgstr ""
+
 #: ../../Open-ILS/src/templates/opac/parts/record/contents.tt2:1
 msgid "Cumulative Index/Finding Aids Note: "
 msgstr "الكشاف او المؤشر التراكمي/ ملاحظة مساعدات البحث: "
@@ -1284,9 +1356,9 @@ msgstr "التاريخ: من الأقدم إلى الأحدث"
 msgid "Day Phone"
 msgstr "الاتصال النهاري"
 
-#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:189
-msgid "December"
-msgstr "كانون الأول"
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:206
+msgid "December (12)"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/relators.tt2:1
 msgid "Dedicatee"
@@ -1381,6 +1453,14 @@ msgstr "مصمم"
 #: ../../Open-ILS/src/templates/opac/browse.tt2:96
 msgid "Did you mean %1?"
 msgstr "هل تقصد %1؟"
+
+#: ../../Open-ILS/src/templates/opac/parts/qtype_selector.tt2:1
+msgid "Digital Bookplate"
+msgstr ""
+
+#: ../../Open-ILS/src/templates/opac/parts/qtype_selector.tt2:1
+msgid "Digital Bookplates"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/relators.tt2:1
 msgid "Director"
@@ -1486,6 +1566,18 @@ msgstr "النسخ الإلكترونية في الحجز"
 #: ../../Open-ILS/src/templates/opac/parts/myopac/main_base.tt2:88
 msgid "E-Items ready for pickup"
 msgstr "النسخ الإلكترونية جاهزة من أجل الالتقاط"
+
+#: ../../Open-ILS/src/templates/opac/myopac/ebook_checkout.tt2:14
+msgid "E-item could not be checked out."
+msgstr ""
+
+#: ../../Open-ILS/src/templates/opac/myopac/ebook_place_hold.tt2:16
+msgid "E-item is now on hold."
+msgstr ""
+
+#: ../../Open-ILS/src/templates/opac/myopac/ebook_checkout.tt2:15
+msgid "E-item successfully checked out."
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/record/issues-db.tt2:1
 msgid "Earlier"
@@ -1740,9 +1832,9 @@ msgstr "فشل في تحديد %1 من رسائل مقروءة."
 msgid "Failed to renew %1 item(s)"
 msgstr "فشل في تمديد  %1 من النُسخ المُعارة"
 
-#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:179
-msgid "February"
-msgstr "شباط"
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:196
+msgid "February (2)"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/result/facets.tt2:72
 msgid "Fewer"
@@ -1784,14 +1876,6 @@ msgstr "تصفية حسب:"
 #: ../../Open-ILS/src/templates/opac/parts/place_hold_result.tt2:109
 msgid "Find a copy in the shelving location, \"%1.\""
 msgstr "إيجاد النسخة في موقع الرفوف, \"%1.\""
-
-#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:24 ../../Open-ILS/src/templates/opac/parts/myopac/main_base.tt2:100 ../../Open-ILS/src/templates/opac/parts/myopac/main_base.tt2:103 ../../Open-ILS/src/templates/opac/parts/topnav.tt2:69
-msgid "Fines"
-msgstr "الغرامات"
-
-#: ../../Open-ILS/src/templates/opac/parts/myopac/main_base.tt2:19
-msgid "Fines:"
-msgstr "الغرامات:"
 
 #: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:106 ../../Open-ILS/src/templates/opac/register.tt2:1
 msgid "First Name"
@@ -1882,10 +1966,6 @@ msgstr "الذهاب"
 msgid "Go Back"
 msgstr "الرجوع إلى الخلف"
 
-#: ../../Open-ILS/src/templates/opac/myopac/main_pay.tt2:28
-msgid "Go back to try again or to cancel this payment attempt."
-msgstr "يمكنك الرجوع من أجل المحاولة مرة أخرى أو إلغاء محاولة الدفع هذه"
-
 #. (rec_attrs.title)
 #: ../../Open-ILS/src/templates/opac/parts/record/cnbrowse.tt2:38
 msgid "Go to record %1"
@@ -1915,6 +1995,10 @@ msgstr "عرض HTML"
 msgid "Hide"
 msgstr "إخفاء"
 
+#: ../../Open-ILS/src/templates/opac/parts/place_hold.tt2:13
+msgid "Hide activation date"
+msgstr ""
+
 #: ../../Open-ILS/src/templates/opac/myopac/lists.tt2:136
 msgid "Hide items in list"
 msgstr "إخفاء النُسخ في القائمة"
@@ -1943,6 +2027,18 @@ msgstr "الحجز #%1 في %quant(%2، نُسخة، نُسخ)"
 #: ../../Open-ILS/src/templates/opac/place_hold.tt2:8
 msgid "Hold Placement"
 msgstr "الحجوزات المُستهدفة أو المُنسبة"
+
+#: ../../Open-ILS/src/templates/opac/myopac/ebook_holds.tt2:34
+msgid "Hold could not be canceled."
+msgstr ""
+
+#: ../../Open-ILS/src/templates/opac/myopac/ebook_place_hold.tt2:15
+msgid "Hold could not be placed."
+msgstr ""
+
+#: ../../Open-ILS/src/templates/opac/parts/place_hold_result.tt2:59
+msgid "Hold is suspended"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/myopac/holds/edit.tt2:121
 msgid "Hold not found"
@@ -2097,10 +2193,6 @@ msgstr "ملاحظة حول معلومات الوثائق: "
 msgid "Information Relating to Copyright Status: "
 msgstr "المعلومات المتعلقة بحالة حقوق الملكية: "
 
-#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:126
-msgid "Initial Amount Owed"
-msgstr "المبلغ أو الكمية الأولية المستحقة"
-
 #: ../../Open-ILS/src/templates/opac/parts/relators.tt2:1
 msgid "Inscriber"
 msgstr "نقاش أو حفار"
@@ -2200,9 +2292,9 @@ msgstr "النُسخ التي في الحجز"
 msgid "Items ready for pickup (%1)"
 msgstr "النسخ الجاهزة للالتقاط (%1)"
 
-#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:178
-msgid "January"
-msgstr "كانون الثاني"
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:195
+msgid "January (1)"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/qtype_selector.tt2:1
 msgid "Journal Title"
@@ -2212,13 +2304,13 @@ msgstr "عنوان الدورية"
 msgid "Judge"
 msgstr "القاضي"
 
-#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:184
-msgid "July"
-msgstr "تموز"
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:201
+msgid "July (7)"
+msgstr ""
 
-#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:183
-msgid "June"
-msgstr "حزيران"
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:200
+msgid "June (6)"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/relators.tt2:1
 msgid "Jurisdiction governed"
@@ -2275,10 +2367,6 @@ msgstr "خط كبير"
 #: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:111 ../../Open-ILS/src/templates/opac/register.tt2:1
 msgid "Last Name"
 msgstr "الاسم الأخير"
-
-#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:125
-msgid "Last Payment Time"
-msgstr "تاريخ آخر دفع"
 
 #: ../../Open-ILS/src/templates/opac/parts/record/issues-db.tt2:1
 msgid "Later"
@@ -2526,9 +2614,9 @@ msgstr "الصانع:"
 msgid "Marbler"
 msgstr "اختصاصي بناء القماش والجلود"
 
-#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:180
-msgid "March"
-msgstr "آذار"
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:197
+msgid "March (3)"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/myopac/messages/list.tt2:61
 msgid "Mark As Read"
@@ -2560,9 +2648,9 @@ msgstr "محرر برمجي"
 msgid "Matches exactly"
 msgstr "تطابق بالضبط"
 
-#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:182
-msgid "May"
-msgstr "أيار"
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:199
+msgid "May (5)"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/relators.tt2:1
 msgid "Medium"
@@ -2712,6 +2800,10 @@ msgstr "الاسم:"
 msgid "Narrator"
 msgstr "الراوي"
 
+#: ../../Open-ILS/src/templates/opac/browse.tt2:1
+msgid "Narrower term"
+msgstr ""
+
 #: ../../Open-ILS/src/templates/opac/myopac/lists.tt2:413
 msgid "Navigate Selected List "
 msgstr "تصفح القوائم المحددة "
@@ -2814,6 +2906,10 @@ msgstr "ليسَ"
 msgid "Not holdable"
 msgstr "غير قابل للحجز"
 
+#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:159
+msgid "Note"
+msgstr ""
+
 #: ../../Open-ILS/src/templates/opac/browse.tt2:216
 msgid "Note:"
 msgstr "ملاحظة:"
@@ -2864,9 +2960,9 @@ msgstr ""
 msgid "Notify when hold is ready for pickup?"
 msgstr "إبلاغي عند يصبح الحجز مُتاحاً للاستلام؟"
 
-#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:188
-msgid "November"
-msgstr "تشرين الثاني"
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:205
+msgid "November (11)"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/record/contents.tt2:1
 msgid "Numbering Peculiarities Note: "
@@ -2884,9 +2980,9 @@ msgstr "نعم"
 msgid "OR"
 msgstr "أَو"
 
-#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:187
-msgid "October"
-msgstr "تشرين الأول"
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:204
+msgid "October (10)"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/topnav.tt2:57
 msgid "On Hold"
@@ -2936,9 +3032,9 @@ msgstr "المُنشيء أو المُنظم"
 msgid "Other"
 msgstr "أخر"
 
-#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:120
-msgid "Other Fees"
-msgstr "الرسوم الأخرى"
+#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:140
+msgid "Other Charges"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/myopac/main.tt2:116
 msgid "Other Fines and Fees"
@@ -2947,6 +3043,10 @@ msgstr "الغرامات والرسوم الأخرى"
 #: ../../Open-ILS/src/templates/opac/myopac/prefs.tt2:39
 msgid "Other Phone"
 msgstr "رقم هاتف أخر"
+
+#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:157 ../../Open-ILS/src/templates/opac/myopac/main.tt2:45
+msgid "Owed"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/relators.tt2:1
 msgid "Owner"
@@ -3012,6 +3112,10 @@ msgstr "المستفيد"
 msgid "Patron Reviews:"
 msgstr "مراجعات المستفيد:"
 
+#: ../../Open-ILS/src/templates/opac/parts/place_hold.tt2:89
+msgid "Patron Search"
+msgstr ""
+
 #: ../../Open-ILS/src/templates/opac/parts/place_hold.tt2:64
 msgid "Patron barcode was not found"
 msgstr "تعذر العثور على باركود المستفيد"
@@ -3020,13 +3124,25 @@ msgstr "تعذر العثور على باركود المستفيد"
 msgid "Patron has reached the maximum fine amount"
 msgstr "لقد تجاوز المستفيد الحد الأقصى من مقدار الغرامات"
 
-#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:136 ../../Open-ILS/src/templates/opac/myopac/main.tt2:39 ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:13 ../../Open-ILS/src/templates/opac/parts/myopac/main_base.tt2:25 ../../Open-ILS/src/templates/opac/parts/myopac/main_base.tt2:26
-msgid "Pay Fines"
-msgstr "دفع الغرامات"
+#: ../../Open-ILS/src/templates/opac/parts/myopac/main_base.tt2:25 ../../Open-ILS/src/templates/opac/parts/myopac/main_base.tt2:26
+msgid "Pay All Charges"
+msgstr ""
 
-#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:183 ../../Open-ILS/src/templates/opac/myopac/main.tt2:184
-msgid "Pay selected fines"
-msgstr "دفع الغرامات المحددة"
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:15
+msgid "Pay Charges"
+msgstr ""
+
+#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:25
+msgid "Pay Selected Circulation Charges"
+msgstr ""
+
+#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:138
+msgid "Pay Selected Other Charges"
+msgstr ""
+
+#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:206 ../../Open-ILS/src/templates/opac/myopac/main.tt2:207
+msgid "Pay selected charges"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/myopac/main.tt2:167 ../../Open-ILS/src/templates/opac/myopac/main.tt2:98
 msgid "Pay this fine"
@@ -3122,6 +3238,10 @@ msgstr "حجز"
 msgid "Place Hold on %1"
 msgstr "حجز %1"
 
+#: ../../Open-ILS/src/templates/opac/myopac/ebook_place_hold.tt2:12 ../../Open-ILS/src/templates/opac/myopac/ebook_place_hold.tt2:20 ../../Open-ILS/src/templates/opac/myopac/ebook_place_hold.tt2:8 ../../Open-ILS/src/templates/opac/parts/record/summary.tt2:96 ../../Open-ILS/src/templates/opac/parts/result/table.tt2:417
+msgid "Place Hold on E-Item"
+msgstr ""
+
 #: ../../Open-ILS/src/templates/opac/parts/place_hold_result.tt2:146
 msgid "Place another hold for this "
 msgstr "وضع حجز آخر لهذا "
@@ -3196,6 +3316,10 @@ msgstr "الرجاء مراجعة طاقم المكتبة لاستكمال عم�
 #: ../../Open-ILS/src/templates/opac/register.tt2:115
 msgid "Please select a valid library"
 msgstr "الرجاء اختيار مكتبة صحيحة"
+
+#: ../../Open-ILS/src/templates/opac/parts/sms_carrier_selector.tt2:22
+msgid "Please select your mobile carrier"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/filtersort.tt2:27
 msgid "Popularity Adjusted Relevance"
@@ -3407,13 +3531,18 @@ msgstr "مخرج برامج راديو"
 msgid "Radio producer"
 msgstr "منتج برامج راديو"
 
-#: ../../Open-ILS/src/templates/opac/parts/result/table.tt2:429
+#: ../../Open-ILS/src/templates/opac/parts/result/table.tt2:432
 msgid "Ratings Icon"
 msgstr "أيقونة التقييم"
 
 #: ../../Open-ILS/src/templates/opac/password_reset.tt2:39
 msgid "Re-enter new password:"
 msgstr "إعادة إدخال كلمة المرور:"
+
+#. (date.format(ctx.parse_datetime(hdata.thaw_date), DATE_FORMAT))
+#: ../../Open-ILS/src/templates/opac/parts/place_hold_result.tt2:62
+msgid "Reactivate on %1"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/ebook_api/base_js.tt2:13
 msgid "Ready for Checkout"
@@ -3479,13 +3608,17 @@ msgstr "تم التسجيل بنجاح!"
 msgid "Regular Font"
 msgstr "الخط الاعتيادي"
 
+#: ../../Open-ILS/src/templates/opac/browse.tt2:1
+msgid "Related term"
+msgstr ""
+
 #. ((crad.description || crad.label))
 #: ../../Open-ILS/src/templates/opac/parts/result/adv_filter.tt2:36 ../../Open-ILS/src/templates/opac/parts/result/adv_filter.tt2:37
 msgid "Remove %1 filter"
 msgstr "إزالة التصفية %1"
 
 #. (attrs.title)
-#: ../../Open-ILS/src/templates/opac/parts/result/table.tt2:404
+#: ../../Open-ILS/src/templates/opac/parts/result/table.tt2:406
 msgid "Remove %1 from my list"
 msgstr "حذف %1 من القائمة الخاصة بي"
 
@@ -3501,7 +3634,7 @@ msgstr "حذف صف بحث"
 msgid "Remove from list"
 msgstr "حذف من القائمة"
 
-#: ../../Open-ILS/src/templates/opac/parts/record/summary.tt2:87 ../../Open-ILS/src/templates/opac/parts/result/table.tt2:404
+#: ../../Open-ILS/src/templates/opac/parts/record/summary.tt2:87 ../../Open-ILS/src/templates/opac/parts/result/table.tt2:406
 msgid "Remove from my list"
 msgstr "حذف من القائمة الخاصة بي"
 
@@ -3602,9 +3735,9 @@ msgid "Restrictions on Access Note: "
 msgstr "مُحددات ملاحظة الوصول: "
 
 #. ("<span class=\"result_count_number\">' _ ctx.result_start _ '</span>", "<span class=\"result_count_number\">' _ ctx.result_stop _ '</span>", "<span class=\"result_count_number\">' _ ctx.hit_count _ '</span>")
-#: ../../Open-ILS/src/templates/opac/parts/result/paginate.tt2:9
-msgid "Results %1 - %2 of about %3"
-msgstr "نتائج %1 - %2 حول %3"
+#: ../../Open-ILS/src/templates/opac/parts/result/paginate.tt2:10
+msgid "Results %1 - %2 of %3"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/myopac/list/update.tt2:40
 msgid "Return"
@@ -3630,12 +3763,12 @@ msgstr "المُراجع"
 msgid "Reviews"
 msgstr "مراجعات"
 
-#: ../../Open-ILS/src/templates/opac/parts/result/table.tt2:430
+#: ../../Open-ILS/src/templates/opac/parts/result/table.tt2:433
 msgid "Reviews &amp; More"
 msgstr "المراجعات &amp; إلخ"
 
 #. (attrs.title)
-#: ../../Open-ILS/src/templates/opac/parts/result/table.tt2:425
+#: ../../Open-ILS/src/templates/opac/parts/result/table.tt2:428
 msgid "Reviews and More for %1"
 msgstr "مراجعات والمزيد حول %1"
 
@@ -3828,6 +3961,10 @@ msgstr "سكريتر"
 msgid "Security Code"
 msgstr "رمز الحماية"
 
+#: ../../Open-ILS/src/templates/opac/browse.tt2:1
+msgid "See"
+msgstr ""
+
 #: ../../Open-ILS/src/templates/opac/parts/bookbag_actions.tt2:85
 msgid "See All"
 msgstr "عرض الكل"
@@ -3925,10 +4062,6 @@ msgstr "حدد الصيغ المفضلة"
 msgid "Select your desired language(s)."
 msgstr "حدد اللغات المفضلة"
 
-#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:60
-msgid "Selected fines you are paying for:"
-msgstr "الغرامات المحددة التي ستدفعها:"
-
 #: ../../Open-ILS/src/templates/opac/parts/relators.tt2:1
 msgid "Seller"
 msgstr "البائع"
@@ -3937,9 +4070,9 @@ msgstr "البائع"
 msgid "Send Call Number via Text/SMS"
 msgstr "إرسال رمز الاستدعاء عبر رسالة نصية قصيرة"
 
-#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:186
-msgid "September"
-msgstr "أيلول"
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:203
+msgid "September (9)"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/qtype_selector.tt2:1
 msgid "Series"
@@ -3948,6 +4081,10 @@ msgstr "السلسلة"
 #: ../../Open-ILS/src/templates/opac/myopac/holds.tt2:74
 msgid "Set Active Date"
 msgstr "حدد تاريخ التفعيل"
+
+#: ../../Open-ILS/src/templates/opac/parts/place_hold.tt2:14 ../../Open-ILS/src/templates/opac/parts/place_hold.tt2:242
+msgid "Set activation date"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/relators.tt2:1
 msgid "Set designer"
@@ -4222,10 +4359,6 @@ msgstr "الموضوعات"
 msgid "Submit"
 msgstr "حفظ"
 
-#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:36
-msgid "Submit Payment"
-msgstr "حفظ الدفع"
-
 #: ../../Open-ILS/src/templates/opac/register.tt2:195
 msgid "Submit Registration"
 msgstr "حفظ التسجيل"
@@ -4279,6 +4412,18 @@ msgstr "مساح أراضي"
 #: ../../Open-ILS/src/templates/opac/myopac/holds.tt2:72
 msgid "Suspend"
 msgstr "تعليق"
+
+#: ../../Open-ILS/src/templates/opac/parts/place_hold.tt2:238
+msgid "Suspend Hold Help"
+msgstr ""
+
+#: ../../Open-ILS/src/templates/opac/parts/place_hold.tt2:232
+msgid "Suspend these holds?"
+msgstr ""
+
+#: ../../Open-ILS/src/templates/opac/parts/place_hold.tt2:232
+msgid "Suspend this hold?"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/ebook_api/base_js.tt2:14 ../../Open-ILS/src/templates/opac/parts/hold_status.tt2:21
 msgid "Suspended"
@@ -4388,6 +4533,10 @@ msgstr "المكتبة التي توجد بها النُسخة لا تقبل ا�
 #: ../../Open-ILS/src/templates/opac/parts/hold_error_messages.tt2:1
 msgid "The item's location is not holdable"
 msgstr "موقع النُسخة غير قابل للحجز"
+
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:18
+msgid "The minimum amount you can pay is $0.01."
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/myopac/prefs_my_lists.tt2:58
 msgid ""
@@ -4545,21 +4694,13 @@ msgstr ""
 msgid "Topic Heading: "
 msgstr "ترويسة الموضوع: "
 
-#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:127
-msgid "Total Amount Paid"
-msgstr "المجموع الكلي المدفوع"
-
-#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:98
-msgid "Total amount to pay:"
-msgstr "المجموع النهائي للدفع:"
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:231
+msgid "Total amount:"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/myopac/main_payments.tt2:10
 msgid "Transaction Payments"
 msgstr "اجراءات الدفع"
-
-#: ../../Open-ILS/src/templates/opac/myopac/main.tt2:124
-msgid "Transaction Start Time"
-msgstr "بداية تاريخ الإجراء"
 
 #: ../../Open-ILS/src/templates/opac/parts/relators.tt2:1
 msgid "Transcriber"
@@ -4572,6 +4713,10 @@ msgstr "مترجم"
 #: ../../Open-ILS/src/templates/opac/parts/result/lowhits.tt2:48
 msgid "Truncation"
 msgstr "الشذب"
+
+#: ../../Open-ILS/src/templates/opac/myopac/main_pay.tt2:30
+msgid "Try Payment Again"
+msgstr ""
 
 #. ("<strong>' _ i18n_advsearch _ '</strong>")
 #: ../../Open-ILS/src/templates/opac/parts/result/lowhits.tt2:36
@@ -4654,6 +4799,10 @@ msgstr "صيغة الفيديو"
 #: ../../Open-ILS/src/templates/opac/parts/relators.tt2:1
 msgid "Videographer"
 msgstr "مصور فيديو"
+
+#: ../../Open-ILS/src/templates/opac/parts/myopac/main_base.tt2:28
+msgid "View Charges"
+msgstr ""
 
 #: ../../Open-ILS/src/templates/opac/parts/myopac/main_base.tt2:57
 msgid "View My Checked Out E-Items"
@@ -4824,14 +4973,6 @@ msgstr "تقوم بالإضافة إلى قائمة مؤقتة."
 msgid "You are now browsing %1"
 msgstr "أنت تتصفح %1 الآن"
 
-#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:16
-msgid ""
-"You either have no fines to pay or you have selected fines whose total is "
-"non-positive.  We cannot process non-positive amounts."
-msgstr ""
-"قد لا يكون عليك أي غرامات للدفع، أو مجموع مبلغ الغرامات يساوي عدد سالب، لا "
-"يمكننا معالجة المبالغ السالبة."
-
 #: ../../Open-ILS/src/templates/opac/parts/js.tt2:11
 msgid ""
 "You have entered an invalid date, or an improperly formatted date.  Please "
@@ -4920,6 +5061,10 @@ msgid "Your email has been queued for delivery to %1"
 msgstr ""
 "لقد تم وضع البريد الإلكتروني في صف الانتظار، ليتم إرساله لاحقاً إلى %1"
 
+#: ../../Open-ILS/src/templates/opac/myopac/ebook_holds.tt2:35
+msgid "Your hold has been canceled."
+msgstr ""
+
 #. (fmt_expire_date)
 #: ../../Open-ILS/src/templates/opac/parts/myopac/main_base.tt2:37
 msgid ""
@@ -5007,6 +5152,10 @@ msgstr "حجري"
 msgid "title"
 msgstr "العنوان"
 
+#: ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:33 ../../Open-ILS/src/templates/opac/myopac/main_payment_form.tt2:83
+msgid "to your credit card?"
+msgstr ""
+
 #: ../../Open-ILS/src/templates/opac/parts/topnav.tt2:33
 msgid "unread"
 msgstr "غير مقروء"
@@ -5018,3 +5167,97 @@ msgstr "عرض"
 #: ../../Open-ILS/src/templates/opac/parts/place_hold_result.tt2:138
 msgid "volume"
 msgstr "المجلد"
+
+#~ msgid "April"
+#~ msgstr "نيسان"
+
+#~ msgid "Are you sure you are ready to charge %1 to your credit card?"
+#~ msgstr "هل تؤكد دفع %1 من بطاقتك الإئتمانية؟"
+
+#~ msgid "August"
+#~ msgstr "آب"
+
+#~ msgid "September"
+#~ msgstr "أيلول"
+
+#~ msgid "Submit Payment"
+#~ msgstr "حفظ الدفع"
+
+#~ msgid "Balance Owed"
+#~ msgstr "الرصيد المُستحق"
+
+#~ msgid "Click %1Cancel%2 to go back and (un)select other fines."
+#~ msgstr "انقر على %1إلغاء%2 للرجوع أو لتحديد/لإلغاء تحديد الغرامات الأخرى."
+
+#~ msgid "December"
+#~ msgstr "كانون الأول"
+
+#~ msgid "February"
+#~ msgstr "شباط"
+
+#~ msgid "March"
+#~ msgstr "آذار"
+
+#~ msgid "May"
+#~ msgstr "أيار"
+
+#~ msgid "Total Amount Paid"
+#~ msgstr "المجموع الكلي المدفوع"
+
+#~ msgid "Total amount to pay:"
+#~ msgstr "المجموع النهائي للدفع:"
+
+#~ msgid "Transaction Start Time"
+#~ msgstr "بداية تاريخ الإجراء"
+
+#~ msgid ""
+#~ "You either have no fines to pay or you have selected fines whose total is "
+#~ "non-positive.  We cannot process non-positive amounts."
+#~ msgstr ""
+#~ "قد لا يكون عليك أي غرامات للدفع، أو مجموع مبلغ الغرامات يساوي عدد سالب، لا "
+#~ "يمكننا معالجة المبالغ السالبة."
+
+#~ msgid "Fines"
+#~ msgstr "الغرامات"
+
+#~ msgid "Fines:"
+#~ msgstr "الغرامات:"
+
+#~ msgid "Last Payment Time"
+#~ msgstr "تاريخ آخر دفع"
+
+#~ msgid "November"
+#~ msgstr "تشرين الثاني"
+
+#~ msgid "October"
+#~ msgstr "تشرين الأول"
+
+#~ msgid "Other Fees"
+#~ msgstr "الرسوم الأخرى"
+
+#~ msgid "Pay Fines"
+#~ msgstr "دفع الغرامات"
+
+#~ msgid "Pay selected fines"
+#~ msgstr "دفع الغرامات المحددة"
+
+#~ msgid "Results %1 - %2 of about %3"
+#~ msgstr "نتائج %1 - %2 حول %3"
+
+#~ msgid "Selected fines you are paying for:"
+#~ msgstr "الغرامات المحددة التي ستدفعها:"
+
+#~ msgid "Go back to try again or to cancel this payment attempt."
+#~ msgstr "يمكنك الرجوع من أجل المحاولة مرة أخرى أو إلغاء محاولة الدفع هذه"
+
+#~ msgid "January"
+#~ msgstr "كانون الثاني"
+
+#~ msgid "July"
+#~ msgstr "تموز"
+
+#~ msgid "June"
+#~ msgstr "حزيران"
+
+#~ msgid "Initial Amount Owed"
+#~ msgstr "المبلغ أو الكمية الأولية المستحقة"

@@ -1,25 +1,26 @@
-# Czech translation for evergreen
-# Copyright (c) 2017 Rosetta Contributors and Canonical Ltd 2017
-# This file is distributed under the same license as the evergreen package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
-#
+# extracted from ../../Open-ILS/web/opac/locale/en-US/fm_IDL.dtd
 msgid ""
 msgstr ""
-"Project-Id-Version: evergreen\n"
-"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: 2017-08-25 14:20-0400\n"
-"PO-Revision-Date: 2017-04-09 07:00+0000\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: Czech <cs@li.org>\n"
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: open-ils-dev@list.georgialibraries.org\n"
+"POT-Creation-Date: 2017-09-03 23:32-0400\n"
+"PO-Revision-Date: 2017-09-28 19:31+0000\n"
+"Last-Translator: Eva Cerninakova <Unknown>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2017-08-28 05:36+0000\n"
-"X-Generator: Launchpad (build 18446)\n"
+"X-Launchpad-Export-Date: 2017-09-29 05:12+0000\n"
+"X-Generator: Launchpad (build 18471)\n"
+"X-Accelerator-Marker: &\n"
 
 #: class.stgu.label:9560
 msgid "User Stage"
 msgstr "Stav uživatele"
+
+#: class.xex.label:10040
+msgid "Exists Expression"
+msgstr "Existuje výraz"
 
 #: field.bre.source.label:3071
 msgid "Record Source"
@@ -79,7 +80,7 @@ msgstr "Detaily platby kreditní kartou"
 #: field.cracct.host.label:1159 field.czs.host.label:1184
 #: field.acqedi.host.label:8963 field.uvu.host.label:10393
 msgid "Host"
-msgstr "Hostitelský počítač"
+msgstr "Hostitelský server"
 
 #: field.rccbs.patron_city.label:10977
 msgid "User City"
@@ -95,6 +96,10 @@ msgstr "Alias pro vyhledávání metazáznamů"
 #: field.rodcirc.billing_total.label:11201
 msgid "Billing Totals"
 msgstr "Poplatky celkem"
+
+#: field.ahf.joiner.label:2706
+msgid "Joiner string"
+msgstr ""
 
 #: field.qsq.where_clause.label:9752
 msgid "WHERE Clause"
@@ -112,9 +117,9 @@ msgstr "Adresa organizace"
 msgid "URI ID"
 msgstr "ID URI"
 
-#: field.mcrp.id.label:6354
-msgid "Pyament ID"
-msgstr "ID platby"
+#: field.acsaf.heading_field.label:2493
+msgid "Heading Field"
+msgstr "Pole záhlaví"
 
 #: field.au.claims_returned_count.label:3333
 msgid "Claims-returned Count"
@@ -122,7 +127,7 @@ msgstr "Počet údajně vrácených"
 
 #: class.acqfsrcct.label:8290
 msgid "Total Credit to Funding Source"
-msgstr "Připsat celkem ve prospěch finančního zdroje"
+msgstr "Celková výše finančního zdroje"
 
 #: class.acqlipad.label:8889
 msgid "Line Item Provider Attribute Definition"
@@ -144,6 +149,10 @@ msgstr "Parametry (JSON Array)"
 #: field.rocit.ref.label:11250
 msgid "Reference"
 msgstr "Příruční knihovna"
+
+#: field.acpt.tag_type.label:12133
+msgid "Copy Tag Type"
+msgstr "Typ tagu exempláře"
 
 #: field.acqfsb.amount.label:8323
 msgid "Balance after Spent"
@@ -195,6 +204,10 @@ msgstr "Signatura (odkaz)"
 #: field.acirc.checkin_lib.label:4312 field.rodcirc.checkin_lib.label:11173
 msgid "Check In Library"
 msgstr "Vráceno v knihovně"
+
+#: field.at.short_code.label:2559
+msgid "Short Code"
+msgstr "Krátký kód"
 
 #: class.citm.label:5397
 msgid "Item Type Map"
@@ -259,7 +272,7 @@ msgstr "Je aktivní?"
 
 #: field.au.other_phone.label:3354
 msgid "Other Phone"
-msgstr "Jiné telefonní číslo"
+msgstr "Další telefonní číslo"
 
 #: field.actsced.id.label:6567
 msgid "Default Entry ID"
@@ -356,6 +369,10 @@ msgstr "Generované pokrytí"
 #: class.mdp.label:7261
 msgid "Payments: Desk"
 msgstr "Platby: Výpůjční pult"
+
+#: field.erccpo.visible_count.label:9783
+msgid "Total visible copies"
+msgstr "Viditelné exempláře celkem"
 
 #: field.qrc.column_type.label:9914
 msgid "Column Type"
@@ -475,11 +492,6 @@ msgstr ""
 "Počet rezervovatelných exemplářů v knihovně pro vyzvednutní a jv jejích "
 "podřízených jednotkách)"
 
-#: field.bre.metarecord.label:3076 class.mmr.label:3615
-#: field.rsr.metarecord.label:9210
-msgid "Metarecord"
-msgstr "Metazáznam"
-
 #: field.ahr.cancel_time.label:5681 field.ahopl.cancel_time.label:5829
 #: field.alhr.cancel_time.label:5912 field.combahr.cancel_time.label:5998
 #: field.aahr.cancel_time.label:6057
@@ -580,6 +592,10 @@ msgstr "Datum třídění"
 msgid "Response Group ID"
 msgstr "ID skupiny odpovídajících"
 
+#: field.mcrp.id.label:6354
+msgid "Pyament ID"
+msgstr "ID platby"
+
 #: class.aus.label:2288
 msgid "User Setting"
 msgstr "Uživatelské nastavení"
@@ -654,6 +670,10 @@ msgstr "ID Mapy"
 #: field.alhr.eligible_copies.label:5917
 msgid "Eligible Copies"
 msgstr "Vhodné exempláře"
+
+#: class.afsg.label:10130 field.afs.fieldset_group.label:10171
+msgid "Fieldset Group"
+msgstr "Skupina sady polí"
 
 #: field.ccmlsm.limit_set.label:2002 field.cclscmm.limit_set.label:2029
 #: field.cclsacpl.limit_set.label:2054 field.cclsgm.limit_set.label:2080
@@ -770,7 +790,7 @@ msgstr "Datum objednání"
 #: field.sunit.fine_level.label:5162 field.acp.fine_level.label:6798
 #: field.act.fine_level.label:6880
 msgid "Fine Level"
-msgstr "Úroveň pokut"
+msgstr "Úroveň pokuty"
 
 #: field.cbho.pprox.label:2820
 msgid "Capture Lib to Pickup Lib Proximity"
@@ -784,10 +804,9 @@ msgstr "Řady exemplářů"
 msgid "Required Permission"
 msgstr "Požadované oprávnění"
 
-#: field.sunit.status_changed_time.label:5170
-#: field.acp.status_changed_time.label:6807
-msgid "Copy Status Changed Time"
-msgstr "Čas změny statutu exempláře"
+#: field.ahf.thesaurus_xpath.label:2704
+msgid "Thesaurus XPath"
+msgstr "XPath pro tezaurus"
 
 #: field.sunit.mint_condition.label:5171 field.ahr.mint_condition.label:5693
 #: field.ahopl.mint_condition.label:5841 field.alhr.mint_condition.label:5924
@@ -851,7 +870,7 @@ msgstr "K vrácení dne"
 
 #: field.cmc.buoyant.label:2766
 msgid "Buoyant?"
-msgstr ""
+msgstr "Plovoucí?"
 
 #: field.asvq.responses.label:2123 field.asv.responses.label:5539
 msgid "Responses"
@@ -1037,9 +1056,17 @@ msgstr "Pole signatury"
 msgid "Spent Total"
 msgstr "Celkem utraceno"
 
+#: field.ahf.type_xpath.label:2703
+msgid "Related/Variant Type XPath"
+msgstr "Související/variantní typ XPath"
+
 #: class.cza.label:1207 field.czifm.z3950_attr.label:1239
 msgid "Z39.50 Attribute"
 msgstr "Atribury Z39.50"
+
+#: field.acqedi.use_attrs.label:9378
+msgid "Use EDI Attributes"
+msgstr "Použít atributy EDI"
 
 #: field.mbtslv.billing_location.label:2192
 #: field.mg.billing_location.label:6478
@@ -1062,9 +1089,17 @@ msgstr "Status publikování"
 msgid "Importance Interval"
 msgstr "Interval důležitosti"
 
+#: class.aeasm.label:9439
+msgid "EDI Attribute Set Map"
+msgstr "Mapa sad atributů EDI"
+
 #: field.aufhmxl.max.label:9718
 msgid "Max Loop"
-msgstr ""
+msgstr "Max Loop"
+
+#: field.ahf.label.label:2699
+msgid "Heading Field Label"
+msgstr "Označení polí záhlaví"
 
 #: field.atev.async_output.label:1445
 msgid "Asynchronous Output"
@@ -1103,6 +1138,10 @@ msgstr "Poznámka k položce"
 msgid "In House?"
 msgstr "Prezenčně?"
 
+#: class.aacs.label:4425
+msgid "Combined Aged and Active circulations"
+msgstr "Kombinované archivní a akvitvní výpůjčky"
+
 #: field.au.card.label:3332
 msgid "Current Library Card"
 msgstr "Stávající průkaz do knihovny"
@@ -1120,6 +1159,10 @@ msgstr "Odhadovaná částka"
 msgid "Passive"
 msgstr "Pasivní"
 
+#: class.cctt.label:12112
+msgid "Copy Tag Types"
+msgstr "Typy tagů exemplářů"
+
 #: field.acp.last_circ.label:6817 field.rlc.last_circ.label:10799
 msgid "Last Circulation Date"
 msgstr "Naposledy vypůjčeno"
@@ -1131,6 +1174,10 @@ msgstr "Zdroje"
 #: class.ash.label:2666
 msgid "Authority Simple Heading"
 msgstr "Jednoduché záhlaví autority"
+
+#: field.bre.compressed_display_entries.label:3137
+msgid "Compressed Display Entries"
+msgstr "Údaje zkráceného zobrazení"
 
 #: field.sstr.routing_label.label:5044
 msgid "Routing Label"
@@ -1193,6 +1240,20 @@ msgstr "Klasfikační schéma signatur"
 #: class.aufh.label:7033
 msgid "Unfulfilled Hold Targets"
 msgstr "Nesplněné rezervace"
+
+#: field.sre.creator.label:4847 field.ssubn.creator.label:4949
+#: field.sdistn.creator.label:5011 field.siss.creator.label:5103
+#: field.sitem.creator.label:5214 field.sin.creator.label:5259
+#: field.act.creator.label:6871 field.acqpron.creator.label:7695
+#: field.acqpl.creator.label:8450 field.acqpo.creator.label:8497
+#: field.acqpoh.creator.label:8540 field.acqpon.creator.label:8572
+#: field.jub.creator.label:8653 field.acqlih.creator.label:8701
+#: field.acqlin.creator.label:8766 field.acqdfa.creator.label:9372
+#: field.acqcle.creator.label:9473 field.acqscle.creator.label:9501
+#: field.uvs.creator.label:10282 field.cfdfs.creator.label:10542
+#: field.rocit.creator.label:11247
+msgid "Creator"
+msgstr "Vytvořil(a)"
 
 #: field.acp.holds_count.label:6824
 msgid "Has Holds"
@@ -1302,7 +1363,7 @@ msgstr "Je vedoucím skupiny uživatelů"
 #: field.alhr.frozen.label:5918 field.combahr.frozen.label:6000
 #: field.aahr.frozen.label:6059
 msgid "Currently Frozen"
-msgstr "Momentálně \"zmraženo\""
+msgstr "Momentálně zmraženo"
 
 #: field.acqpca.contact.label:7915
 msgid "Contact"
@@ -1819,6 +1880,10 @@ msgstr "ID nekatalogizované výpůjčky"
 msgid "Match Set Type"
 msgstr "Typ sady shod"
 
+#: field.puwoum.work_ou.label:7526
+msgid "Working Location"
+msgstr "Pracovní organizační jednotka"
+
 #: field.rp.func.label:276
 msgid "Population Function"
 msgstr ""
@@ -1885,6 +1950,10 @@ msgstr "Prefix"
 #: field.ahrn.pub.label:5956
 msgid "Pub?"
 msgstr "Veřejné?"
+
+#: field.cmf.display_xpath.label:2840
+msgid "Display XPath"
+msgstr "Zobrazit XPath"
 
 #: field.jub.expected_recv_time.label:8651
 msgid "Expected Receive Date"
@@ -2037,9 +2106,9 @@ msgstr "Přehled skupin výpůjčních limitů"
 msgid "Is Active"
 msgstr "Je aktivní"
 
-#: field.czs.attrs.label:1190
-msgid "Attrs"
-msgstr "Atributy"
+#: field.au.usr_work_ou_map.label:3434
+msgid "User/Working Location Map"
+msgstr "Použít mapu uživatelů / pracovních umístění"
 
 #: field.acsaf.nfi.label:2473
 msgid "Non-filing Indicator"
@@ -2112,7 +2181,7 @@ msgstr "Stará výpůjčka (bez čtenáře)"
 
 #: class.cbho.label:2816
 msgid "Best-Hold Sort Order"
-msgstr "Pořadí pro řazení \"Nevýhodnějších rezervací\""
+msgstr "Pořadí pro řazení Nevýhodnějších rezervací"
 
 #: field.vmsp.quality.label:748
 msgid "Importance"
@@ -2154,7 +2223,7 @@ msgstr "Skupina limitů"
 
 #: class.mbeshm.label:3705
 msgid "Combined Browse Entry Simple Authority Heading Map"
-msgstr ""
+msgstr "Kombinované procházení mapy záznamů prostých záhlaví autorit"
 
 #: field.au.barred.label:3330
 msgid "Barred"
@@ -2185,7 +2254,7 @@ msgstr "Hloubka výběru rezervace"
 #: field.mfr.tag.label:3608 field.cmfpm.tag.label:10208
 #: field.uvu.tag.label:10388
 msgid "Tag"
-msgstr "Návěští"
+msgstr "Tag"
 
 #: field.acqf.rollover.label:8116 field.acqfsum.rollover.label:8358
 msgid "Rollover"
@@ -2201,6 +2270,10 @@ msgstr "XPath"
 #: class.vmsp.label:738
 msgid "Record Matching Definition"
 msgstr "Záznam odpovídající definici"
+
+#: field.ahf.heading_xpath.label:2701
+msgid "Heading XPath"
+msgstr "XPath pro záhlaví"
 
 #: field.mrd.date2.label:3843
 msgid "Date2"
@@ -2226,7 +2299,7 @@ msgstr "Zpráva uživatele"
 #: field.qbv.label.label:9831 field.cmpctm.label.label:10225
 #: field.cmpcsm.label.label:10242 field.cmpcvm.label.label:10259
 msgid "Label"
-msgstr "Popisek"
+msgstr "Štítek"
 
 #: class.at.label:2540
 msgid "Authority Thesaurus"
@@ -2256,6 +2329,10 @@ msgstr "Aktuální cena"
 msgid "Email Gateway"
 msgstr "E- mailová brána"
 
+#: field.puwoum.id.label:7524
+msgid "User/Working Location Map ID"
+msgstr "ID mapy uživatelů /pracovní lokace"
+
 #: class.crainm.label:1106
 msgid "SVF Record Attribute to Indexing Normalizer Map"
 msgstr ""
@@ -2271,6 +2348,10 @@ msgstr "Vrácení"
 #: field.actscsf.field.label:6267 field.ascsf.field.label:7329
 msgid "Field Identifier"
 msgstr "Identifikátor pole"
+
+#: field.cmf.display_field.label:2844
+msgid "Display Field?"
+msgstr "Zobrazit pole"
 
 #: field.cblvl.code.label:5414
 msgid "Bib Level Code"
@@ -2293,7 +2374,7 @@ msgstr "Distribuce"
 
 #: field.bre.simple_record.label:3086
 msgid "Simple Record Extracts "
-msgstr "Výtah z jednoduchého záznamu "
+msgstr "Stručný výpis ze záznamu "
 
 #: class.actsce.label:6551
 msgid "User Stat Cat Entry"
@@ -2305,17 +2386,20 @@ msgstr "Nezletilí"
 
 #: class.acqftm.label:11371
 msgid "Fund Tag Map"
-msgstr "Přehled finančních fondů"
+msgstr "Mapa tagů finančních fondů"
 
 #: class.acn.label:2942 field.sunit.call_number.label:5145
 #: field.acp.call_number.label:6781
 msgid "Call Number/Volume"
 msgstr "Signatura"
 
-#: field.uvsbrem.session.label:10321 field.uvus.session.label:10347
-#: field.uvu.session.label:10386 field.uvva.session.label:10440
-msgid "Session"
-msgstr "Relace"
+#: class.spt.label:5704
+msgid "Prediction Pattern Template"
+msgstr "Šablona schématu pro predikci"
+
+#: field.bre.display_entries.label:3135
+msgid "Display Fields"
+msgstr "Zobrazit pole"
 
 #: field.atul.user_data.label:1538
 msgid "Event User Data"
@@ -2517,7 +2601,7 @@ msgstr "Zrušit počítání"
 
 #: class.acqft.label:11351
 msgid "Fund Tag"
-msgstr "Označení finančního  fondu"
+msgstr "Tygy finančního fondu"
 
 #: field.smhc.ind1.label:5289
 msgid "First Indicator"
@@ -2546,6 +2630,10 @@ msgstr "Celkem ze všech fondů"
 #: class.i18n_l.label:7509
 msgid "Locale"
 msgstr "Lokalizace"
+
+#: class.mwde.label:3797
+msgid "Wide Display Entry"
+msgstr ""
 
 #: field.rb.recalc_interval.label:312
 msgid "Recalculation Interval"
@@ -2596,7 +2684,7 @@ msgstr "Definice atributů autoritních záznamů ve frontě"
 
 #: field.cbho.cut.label:2825
 msgid "Hold Cut-in-line State"
-msgstr "Stav \"vmáčknutí\" rezervace do fronty"
+msgstr "Stav vnucení  rezervace do fronty"
 
 #: field.aout.opac_label.label:6430
 msgid "OPAC Label"
@@ -2729,6 +2817,10 @@ msgstr "Doba hájení"
 msgid "Fiscal Calendar Name"
 msgstr "Jméno fiskálního kalendáře"
 
+#: field.afs.error_msg.label:10172
+msgid "Error Message"
+msgstr "Chybová zpráva"
+
 #: class.czs.label:1180 field.czs.name.label:1182 field.cza.source.label:1210
 msgid "Z39.50 Source"
 msgstr "Z39.50 zdroj"
@@ -2738,6 +2830,10 @@ msgstr "Z39.50 zdroj"
 #: field.aur.eg_bib.label:7574
 msgid "Bib Record"
 msgstr "Bibliografický záznam"
+
+#: field.aea.key.label:9407
+msgid "Key"
+msgstr "Klávesa"
 
 #: field.clfm.code.label:6616
 msgid "LitF Code"
@@ -2907,19 +3003,9 @@ msgstr "Poměr rezervací/exemplářů na bib. záznam"
 msgid "Alert Message"
 msgstr "Upozornění"
 
-#: field.sre.creator.label:4847 field.ssubn.creator.label:4949
-#: field.sdistn.creator.label:5011 field.siss.creator.label:5103
-#: field.sitem.creator.label:5214 field.sin.creator.label:5259
-#: field.act.creator.label:6871 field.acqpron.creator.label:7695
-#: field.acqpl.creator.label:8450 field.acqpo.creator.label:8497
-#: field.acqpoh.creator.label:8540 field.acqpon.creator.label:8572
-#: field.jub.creator.label:8653 field.acqlih.creator.label:8701
-#: field.acqlin.creator.label:8766 field.acqdfa.creator.label:9372
-#: field.acqcle.creator.label:9473 field.acqscle.creator.label:9501
-#: field.uvs.creator.label:10282 field.cfdfs.creator.label:10542
-#: field.rocit.creator.label:11247
-msgid "Creator"
-msgstr "Vytvořil(a)"
+#: field.acp.tags.label:7203 class.acpt.label:12130
+msgid "Copy Tags"
+msgstr "Tagy exemplářů"
 
 #: field.asvq.id.label:2124
 msgid "Question ID"
@@ -2928,6 +3014,10 @@ msgstr "ID dotazu"
 #: class.acqpon.label:8568
 msgid "PO Note"
 msgstr "Poznámka k objednávce"
+
+#: field.aeas.attr_maps.label:9425
+msgid "Mapped EDI Attributes"
+msgstr "Zmapované atributy EDI"
 
 #: field.czs.transmission_format.label:1188
 msgid "Transmission Format"
@@ -2947,7 +3037,7 @@ msgstr "Typ podpole"
 
 #: field.acqfsrcct.amount.label:8293
 msgid "Total Credits to Funding Source"
-msgstr "Kredit ve finančním zdroji celkem"
+msgstr "Celková výše finančního zdroje"
 
 #: class.mct.label:3035
 msgid "Collections Tracker"
@@ -2964,7 +3054,7 @@ msgstr "Pevné hodnocení"
 #: field.cmrcfld.tag.label:902 field.cmrcsubfld.tag.label:930
 #: field.crad.tag.label:961
 msgid "MARC Tag"
-msgstr "Označení pole MARCu"
+msgstr "Tagy polí MARCu"
 
 #: field.czs.db.label:1186
 msgid "DB"
@@ -3016,6 +3106,10 @@ msgstr "Výraz operátoru"
 #: field.rxbt.total.label:9274
 msgid "Total Billing Amount"
 msgstr "Celková výše poplatků"
+
+#: field.afsg.rollback_group.label:10138
+msgid "Rollback Group"
+msgstr "Skupina pro vrácení zpět"
 
 #: field.circ.xact_finish.label:4173 field.combcirc.xact_finish.label:4246
 #: field.acirc.xact_finish.label:4335 field.bresv.xact_finish.label:4558
@@ -3199,6 +3293,14 @@ msgstr "Použít ALL (vše)"
 msgid "Trigger Event Reactor"
 msgstr "Reaktor spouštěče události"
 
+#: class.mde.label:3726
+msgid "Display Field Entry"
+msgstr "Zabrazit zápis v poli"
+
+#: field.rhcrpbap.pickup_library_ratio.label:10706
+msgid "Hold/Copy Ratio at Pickup Library"
+msgstr "Poměr rezervací/exemplářů v knihovně pro vyzvednutní"
+
 #: field.acqf.combined_balance.label:8129
 msgid "Combined Balance"
 msgstr "Kombinovaná bilance"
@@ -3356,7 +3458,7 @@ msgstr "Definice transformace XML/XSLT"
 
 #: class.acqmapinv.label:11398
 msgid "Acq Map to Invoice View"
-msgstr ""
+msgstr "Mapování akvizice na zobrazení faktur"
 
 #: class.asq.label:5592
 msgid "Search Query"
@@ -3401,9 +3503,9 @@ msgstr "Datum / čas splnění"
 msgid "Note"
 msgstr "Poznámka"
 
-#: class.ccnbi.label:4631
-msgid "Call Number Bucket Item"
-msgstr "Položka skupiny signatur"
+#: field.acqexr.to_currency.label:7637
+msgid "To Currency"
+msgstr "K měně"
 
 #: class.xbet.label:9950
 msgid "Between Expression"
@@ -3499,6 +3601,10 @@ msgstr "Knihovna plnící rezervaci"
 msgid "Shelving Location Name"
 msgstr "Název umístění"
 
+#: field.afsg.container.label:10136
+msgid "Container ID"
+msgstr "ID kontejneru"
+
 #: field.atc.id.label:2355 field.artc.id.label:7366 field.ahtc.id.label:7401
 #: field.iatc.id.label:11103
 msgid "Transit ID"
@@ -3535,7 +3641,7 @@ msgstr "ID položky skupiny"
 
 #: field.cbho.hprox.label:2821
 msgid "Circ Lib to Request Lib Proximity"
-msgstr ""
+msgstr "Blízkost půjčující knihovny knihovně, kde byl zadán požadavek"
 
 #: field.ahr.sms_carrier.label:5671 field.ahopl.sms_carrier.label:5819
 msgid "Notifications SMS Carrier"
@@ -3560,6 +3666,10 @@ msgstr "Údajně vráceno"
 #: field.bresv.request_lib.label:4580
 msgid "Request Library"
 msgstr "Žádající knihovna"
+
+#: field.aeasm.attr_set.label:9444
+msgid "Attribute Set"
+msgstr "Sada atributů"
 
 #: field.hasholdscount.count.label:11589
 msgid "Holds Count"
@@ -3614,9 +3724,9 @@ msgstr "ID datového typu"
 msgid "Failure Cleanup"
 msgstr "Vyčištění po neúspěšné akci"
 
-#: field.ccmm.circulate.label:1920 field.act.circulate.label:6882
-msgid "Circulate?"
-msgstr "Půjčovat?"
+#: field.bre.wide_display_entry.label:3138
+msgid "Wide Display Entries"
+msgstr ""
 
 #: field.chmw.usr_grp.label:1769 field.chmm.usr_grp.label:1857
 msgid "User Permission Group"
@@ -3642,9 +3752,9 @@ msgstr "Klasifikační schéma"
 msgid "Billing Line Item"
 msgstr "Položka seznamu poplatků"
 
-#: field.chmm.age_hold_protect_rule.label:1871
-msgid "Copy Age Hold Protection Rule"
-msgstr "Pravidla dočasného omezení rezervací exemplářů"
+#: field.brav.attr_val_maps.label:4506
+msgid "Resource Attribute Value Maps"
+msgstr "Přehled hodnot atributů zdroje"
 
 #: field.cxt.prefix.label:2728
 msgid "Namespace Prefix"
@@ -3671,6 +3781,10 @@ msgstr "Položka katalogu"
 #: field.rccbs.last_billing_note.label:10972
 msgid "Last Billing Note"
 msgstr "Poznámka k naúčtovanému poplatku"
+
+#: field.abaafm.axis.label:2588
+msgid "Axis"
+msgstr "Osa"
 
 #: field.czs.port.label:1185
 msgid "Port"
@@ -3710,7 +3824,11 @@ msgstr "Otevřít přehled výpůjček uživatele"
 
 #: field.auch.source_circ.label:4400
 msgid "Source Circulation"
-msgstr ""
+msgstr "Zdroj výpůjčky"
+
+#: field.afsg.container_type.label:10137
+msgid "Container Type"
+msgstr "Typ kontejneru"
 
 #: field.acqf.propagate.label:8117 field.acqfsum.propagate.label:8359
 msgid "Propagate"
@@ -3857,7 +3975,7 @@ msgstr "Finanční zdroj"
 
 #: field.acqft.owner.label:11354
 msgid "Fund Tag Owner"
-msgstr "Vlastník označení fondu"
+msgstr "Vlastník tagu finančního fondu"
 
 #: class.acqfa.label:8381
 msgid "Fund Allocation"
@@ -4048,6 +4166,10 @@ msgstr "Akce (typ události)"
 msgid "Hours of Operation"
 msgstr "Otevírací doba"
 
+#: field.atevdef.retention_interval.label:1409
+msgid "Retention Interval"
+msgstr "Interval uchování"
+
 #: field.cmrtm.blvl_val.label:10567
 msgid "BLvl Value"
 msgstr "Hodnota BLvl (bib úrovně)"
@@ -4193,9 +4315,11 @@ msgstr "Položka nebibliografické faktury"
 msgid "Filters"
 msgstr "Filtry"
 
-#: field.cmc.fields.label:2773
-msgid "Fields"
-msgstr "Pole"
+#: field.aua.country.label:3948 field.aal.country.label:3978
+#: field.acqpa.country.label:7843 field.acqpca.country.label:7908
+#: field.stgma.country.label:9604 field.stgba.country.label:9620
+msgid "Country"
+msgstr "Země"
 
 #: field.ccmm.total_copy_hold_ratio.label:1928
 msgid "Minimum Total Copy/Hold Ratio"
@@ -4233,6 +4357,10 @@ msgstr "Adresy"
 #: field.acp.peer_records.label:6822
 msgid "Peer Records"
 msgstr "Rovnocenný záznam"
+
+#: field.acqedi.attr_set.label:9377 class.aeas.label:9419
+msgid "EDI Attribute Set"
+msgstr "Sada atributů EDI"
 
 #: field.vmsp.children.label:749
 msgid "Expression Tree Children"
@@ -4345,7 +4473,7 @@ msgstr "Předchozí cílpřepravy exempláře"
 #: field.acqofscred.amount.label:8065 field.acqfdeb.amount.label:8079
 #: field.acqfa.amount.label:8386
 msgid "Amount"
-msgstr "Výše"
+msgstr "Částka"
 
 #: class.mwps.label:91
 msgid "Workstation Payment Summary"
@@ -4378,7 +4506,7 @@ msgstr "Sufix"
 
 #: field.mrd.type_mat.label:3840
 msgid "TMat"
-msgstr ""
+msgstr "TMat"
 
 #: class.mckp.label:6748 field.mdp.check_payment.label:7274
 msgid "Check Payment"
@@ -4426,7 +4554,7 @@ msgstr "Žádající knihovna"
 
 #: field.rb.discard.label:314
 msgid "Discard Value Count"
-msgstr ""
+msgstr "Zrušit počet hodnot"
 
 #: field.srlu.department.label:5075
 msgid "Department"
@@ -4471,7 +4599,7 @@ msgstr "Výše dluhu"
 
 #: field.cmf.facet_xpath.label:2799
 msgid "Facet XPath"
-msgstr "XPath Fasety"
+msgstr "XPath pro Fasety"
 
 #: field.act.opac_visible.label:6891
 msgid "OPAC Visible?"
@@ -4579,6 +4707,11 @@ msgstr "Typ transakce"
 #: field.bresv.end_time.label:4568
 msgid "End Time"
 msgstr "Čas ukončení"
+
+#: field.sunit.status_changed_time.label:5170
+#: field.acp.status_changed_time.label:6807
+msgid "Copy Status Changed Time"
+msgstr "Čas změny statutu exempláře"
 
 #: field.ateo.id.label:1260
 msgid "Output ID"
@@ -4800,9 +4933,9 @@ msgstr "Hloubka sdílení"
 msgid "Use Permission"
 msgstr "Oprávnění užití"
 
-#: field.rhcrpbap.pickup_library_ratio.label:10706
-msgid "Hold/Copy Ratio at Pickup Library"
-msgstr "Poměr rezervací/exemplářů v knihovně pro vyzvednutní"
+#: class.mcde.label:3772
+msgid "Compressed Display Entry"
+msgstr "Zobrazní zkráceného zápisu"
 
 #: class.rtf.label:9053
 msgid "Template Folder"
@@ -4861,6 +4994,10 @@ msgstr "Typ reklamace"
 #: field.acirc.payments.label:4343 field.rodcirc.payments.label:11198
 msgid "Transaction Payments"
 msgstr "Platby v rámci transakce"
+
+#: field.ahf.heading_type.label:2697
+msgid "Heading Type"
+msgstr "Typ záhlaví"
 
 #: field.abaafm.field.label:2587 field.aalink.field.label:6393
 msgid "Authority Field"
@@ -4926,6 +5063,10 @@ msgstr "Výše útraty"
 #: field.crad.string_len.label:967
 msgid "String Length"
 msgstr "Délka řetězce"
+
+#: field.bre.flat_display_entries.label:3136
+msgid "Flat Display Entries"
+msgstr ""
 
 #: class.rr.label:9118
 msgid "Report"
@@ -5055,6 +5196,10 @@ msgstr "Chybový výstup události"
 msgid "Last Transaction ID"
 msgstr "ID transakce"
 
+#: field.acpt.staff_note.label:12136
+msgid "Staff Note"
+msgstr "Poznámka personálu"
+
 #: class.alhr.label:5885
 msgid "Last Captured Hold Request"
 msgstr "Naposledy zachycená žádost o rezervaci"
@@ -5130,7 +5275,7 @@ msgstr ""
 
 #: field.ath.core_type.label:1282
 msgid "Core Type"
-msgstr ""
+msgstr "Základní typ"
 
 #: field.mb.billing_type.label:7434
 msgid "Legacy Billing Type"
@@ -5218,9 +5363,9 @@ msgstr "Výpůjční váhy"
 msgid "Entry ID"
 msgstr "ID položky"
 
-#: field.brav.attr_val_maps.label:4506
-msgid "Resource Attribute Value Maps"
-msgstr "Přehled hodnot atributů zdroje"
+#: field.chmm.age_hold_protect_rule.label:1871
+msgid "Copy Age Hold Protection Rule"
+msgstr "Pravidla dočasného omezení rezervací exemplářů"
 
 #: field.qfr.id.label:9888 field.qrc.from_relation.label:9911
 msgid "From Relation ID"
@@ -5290,6 +5435,10 @@ msgstr "ID poznámky k objednávce"
 #: field.ahopl.usr_first_given_name.label:5846
 msgid "User First Given Name"
 msgstr "První křestní jméno uživatele"
+
+#: field.erccpo.circ_lib.label:9778
+msgid "Circulation Library"
+msgstr "Výpůjční knihovna"
 
 #: field.cust.fm_class.label:3514
 msgid "Fieldmapper Class"
@@ -5563,7 +5712,7 @@ msgstr "ID reklamace"
 
 #: field.cfg.manual.label:11537
 msgid "Manual"
-msgstr ""
+msgstr "Manuální"
 
 #: class.ccraed.label:1006
 msgid "Composite Attribute Definitions"
@@ -5635,13 +5784,13 @@ msgstr "Položka distribučního vzorce"
 msgid "Address ID"
 msgstr "ID adresy"
 
-#: field.rccbs.patron_county.label:10976
-msgid "User County"
-msgstr "Kraj uživatele"
+#: field.afsg.rollback_time.label:10139
+msgid "Rollback Time"
+msgstr "Čas vrácení zpět"
 
 #: field.acqf.tags.label:8124
 msgid "Tags"
-msgstr "Štítky"
+msgstr "Tagy"
 
 #: field.combcirc.usr_home_ou.label:4260 field.acirc.usr_home_ou.label:4348
 #: field.combahr.usr_home_ou.label:5991 field.aahr.usr_home_ou.label:6050
@@ -5674,6 +5823,10 @@ msgstr "Skupina oprávění žádajícího"
 #: class.ccvm.label:1128
 msgid "SVF Record Attribute Coded Value Map"
 msgstr "Přehled kódovaných hodnot atributů záznamů SVF"
+
+#: field.cmf.display_field_map.label:2845 class.cdfm.label:3822
+msgid "Display Field Map"
+msgstr "Mapa zobrazení polí"
 
 #: class.mvr.label:117
 msgid "Virtual Record"
@@ -5789,6 +5942,11 @@ msgstr "Styl ankety?"
 msgid "Case Branch ID"
 msgstr "ID dané pobočky"
 
+#: field.uvsbrem.session.label:10321 field.uvus.session.label:10347
+#: field.uvu.session.label:10386 field.uvva.session.label:10440
+msgid "Session"
+msgstr "Relace"
+
 #: field.sasum.id.label:5275
 msgid "Native ID"
 msgstr "Domovské ID"
@@ -5897,7 +6055,7 @@ msgstr "Výpůjčky podle vlastnické knihovny"
 
 #: class.mndp.label:7237
 msgid "Payments: Non-drawer Staff"
-msgstr "Platby: \"nepokladní\" personál"
+msgstr "Platby: Personál mimo pokladnu"
 
 #: field.uvva.id.label:10438
 msgid "Attempt ID"
@@ -6015,7 +6173,7 @@ msgstr "ID fiskálního kalendáře"
 
 #: field.ssub.record_entry.label:4920
 msgid "Bibliographic Record Entry"
-msgstr "Položka bibliografického záznamu"
+msgstr "Číslo bibliografického záznamu"
 
 #: field.rhcrpbap.holds_everywhere.label:10704
 #: field.rhcrpbapd.holds_everywhere.label:10760
@@ -6038,6 +6196,10 @@ msgstr "Prohlížet pole"
 #: field.aout.depth.label:6427
 msgid "Type Depth"
 msgstr "Hloubka typu"
+
+#: field.ahf.heading_purpose.label:2698
+msgid "Heading Purpose"
+msgstr "Účel záhlaví"
 
 #: field.acqpro.email.label:7668 field.acqpc.email.label:7881
 msgid "Email"
@@ -6066,6 +6228,10 @@ msgstr "Skupina čtenářských oprávnění"
 msgid "User Home Library Short (Policy) Name"
 msgstr "Značka domovské knihovny uživatele"
 
+#: class.ahf.label:2694
+msgid "Authority Heading Fields"
+msgstr "Pole autoritního záhlaví"
+
 #: field.acqii.fund.label:7808 class.acqf.label:8108
 #: field.acqfa.fund.label:8384 field.acqpoi.fund.label:8612
 #: field.acqlid.fund.label:8807 field.acqdfe.fund.label:9340
@@ -6091,6 +6257,10 @@ msgstr "ID přehledu položek"
 #: field.au.prefix.label:3357
 msgid "Prefix/Title"
 msgstr "Prefix/Titul"
+
+#: field.ahf.thesaurus_override_xpath.label:2705
+msgid "Thesaurus Override XPath"
+msgstr "Xpath pro překonání tezauru"
 
 #: class.cubn.label:6339
 msgid "User Bucket Note"
@@ -6224,7 +6394,7 @@ msgstr "Uložený dotaz"
 
 #: field.acqft.id.label:11353
 msgid "Fund Tag ID"
-msgstr "ID označení finančního fondu"
+msgstr "ID tagu finančního fondu"
 
 #: field.cxt.namespace_uri.label:2727
 msgid "Namespace URI"
@@ -6284,9 +6454,9 @@ msgstr "Distribuční vzorec"
 msgid "Main Entry"
 msgstr "Hlavní položka"
 
-#: field.acqexr.to_currency.label:7637
-msgid "To Currency"
-msgstr "K měně"
+#: class.ccnbi.label:4631
+msgid "Call Number Bucket Item"
+msgstr "Položka skupiny signatur"
 
 #: field.rsr.topic_subject.label:9225
 msgid "Topic Subjects (normalized)"
@@ -6309,7 +6479,7 @@ msgstr "Příspěvek k finančnímu zdroji"
 #: field.acirc.copy_location.label:4352 field.sunit.location.label:5165
 #: field.acp.location.label:6802 field.rccc.shelving_location.label:10890
 msgid "Shelving Location"
-msgstr "Umístění regálu"
+msgstr "Umístění"
 
 #: field.chmw.pickup_ou.label:1766 field.chmm.pickup_ou.label:1854
 #: field.bresv.pickup_lib.label:4581 field.ahr.pickup_lib.label:5672
@@ -6439,6 +6609,10 @@ msgstr "Stáří exempláře"
 msgid "Primary Identification Type"
 msgstr "Primární identifikační doklad"
 
+#: field.czs.attrs.label:1190
+msgid "Attrs"
+msgstr "Atributy"
+
 #: field.rccbs.total_owed.label:10965 field.rmocbbol.billed.label:11277
 #: field.rmocbbcol.billed.label:11302 field.rmocbbhol.billed.label:11330
 msgid "Total Billed"
@@ -6496,11 +6670,15 @@ msgstr "Datum/čas výpůjčky"
 
 #: class.rssr.label:9188
 msgid "Simple Record Extracts"
-msgstr "Výtahy ze zjednodušených záznamů"
+msgstr "Stručný výpis  ze záznamu"
 
 #: class.acqdfa.label:9369
 msgid "Distribution Formula Application"
 msgstr "Uplatnění distribučního vzorce"
+
+#: field.circ.circ_lib.label:4337
+msgid "Checkout / Renewal Library"
+msgstr "Půjčující/prodlužující knihovna"
 
 #: field.acsbf.authority_field.label:2504
 msgid "Controlling Authority Field"
@@ -6545,6 +6723,10 @@ msgstr "Prefix signatury Deweyho třídění"
 #: field.acqfsrcat.amount.label:8303
 msgid "Total Allocated from Funding Source"
 msgstr "Z finančního zdroje vyčleněno celkem"
+
+#: field.erccpo.total_count.label:9784
+msgid "Total copies attached"
+msgstr "Připojené exempláře celkem"
 
 #: class.rhcrpbap.label:10669
 msgid "Hold/Copy Ratio per Bib and Pickup Library"
@@ -6636,6 +6818,10 @@ msgstr "Skupina nastavení"
 msgid "Combined?"
 msgstr "Kombinovaný"
 
+#: class.mfde.label:3747
+msgid "Flat Display Entry"
+msgstr ""
+
 #: field.sunit.active_date.label:5152 field.acp.active_date.label:6788
 msgid "Active Date/Time"
 msgstr "Datum/čas aktivace"
@@ -6675,6 +6861,10 @@ msgstr "Ctrl"
 #: field.qxp.cast_type.label:9856 field.xcast.cast_type.label:10015
 msgid "Cast Type"
 msgstr "Typ obsazení"
+
+#: class.aacct.label:4405
+msgid "All Circulation Combined Types"
+msgstr "Všechny kombinované typy výpůjček"
 
 #: class.ancihu.label:2331
 msgid "Non-cataloged In House Use"
@@ -6719,7 +6909,7 @@ msgstr "Asynchronní výstupu události"
 
 #: class.rsr.label:9207
 msgid "Simple Record"
-msgstr "Jednoduchý záznam"
+msgstr "Prostý záznam"
 
 #: class.rmocbbcol.label:11296
 msgid "Open Circulation Billing by Circulating Library and Owning Library"
@@ -6765,6 +6955,10 @@ msgstr "Omezení vyhledávání"
 #: field.cmrcsubfld.code.label:931
 msgid "MARC Subfield"
 msgstr "Podpole MARC"
+
+#: field.afsg.name.label:10133
+msgid "Fieldset Group Name"
+msgstr "Jméno skupiny sady polí"
 
 #: class.mbts.label:2148
 msgid "Billable Transaction Summary"
@@ -7009,6 +7203,10 @@ msgstr "Aplikuje se na exempláře"
 msgid "Billed Cost per Item"
 msgstr "Účtované náklady za exemplář"
 
+#: class.aea.label:9403
+msgid "EDI Attribute"
+msgstr "Atributy EDI"
+
 #: field.jub.claim_policy.label:8655 field.acqlih.claim_policy.label:8714
 #: class.acqclp.label:9511
 msgid "Claim Policy"
@@ -7021,6 +7219,11 @@ msgstr "Poznámka k dodavateli"
 #: field.auoi.org_unit.label:813
 msgid "Allowed Org Unit"
 msgstr "Povolená organizační jednotka"
+
+#: field.atc.cancel_time.label:2365 field.artc.cancel_time.label:7773
+#: field.ahtc.cancel_time.label:7809 field.iatc.cancel_time.label:11647
+msgid "Cancel Date/Time"
+msgstr "Datum/čas zrušení"
 
 #: class.xcast.label:10008
 msgid "Cast Expression"
@@ -7048,9 +7251,13 @@ msgstr "Výraz FUNCTION"
 msgid "Body"
 msgstr "Tělo"
 
+#: field.ahf.component_xpath.label:2702
+msgid "Heading Component XPath"
+msgstr "Xpath pro komponenety záhlaví"
+
 #: field.acqft.name.label:11355
 msgid "Fund Tag Name"
-msgstr "Název označení fonud"
+msgstr "Název tagu finančního fondu"
 
 #: class.ard.label:2642
 msgid "Authority Record Descriptor"
@@ -7071,6 +7278,10 @@ msgstr "Pravidlo pro pokuty"
 #: field.atev.complete_time.label:1440
 msgid "Complete Time"
 msgstr "Čas skončení"
+
+#: class.acptcm.label:12153
+msgid "Copy Tag Copy Map"
+msgstr ""
 
 #: class.acqda.label:9400
 msgid "Debit Attribution"
@@ -7118,6 +7329,10 @@ msgstr "ID hodnoty sloupce"
 msgid "Total Spent from Fund"
 msgstr "Celková útrata z fondu"
 
+#: field.mwde.creators.label:3808
+msgid "Creators"
+msgstr "Vytvořili"
+
 #: field.acqcl.lineitem_detail.label:9459
 #: field.acrlid.lineitem_detail.label:11040
 msgid "Lineitem Detail"
@@ -7150,6 +7365,10 @@ msgstr "Statistické kategorie uživatelů"
 #: class.auss.label:3997
 msgid "User Saved Search"
 msgstr "Uložené hledání uživatele"
+
+#: field.mwde.subject.label:3807
+msgid "Subject"
+msgstr "Předmět"
 
 #: field.chddv.ceiling_date.label:3261
 msgid "Ceiling Date"
@@ -7247,6 +7466,11 @@ msgstr "Úprava účtu"
 msgid "Hold Request"
 msgstr "Požadavek na rezervaci"
 
+#: class.acqct.label:7617 field.acqf.currency_type.label:8114
+#: field.acqfsum.currency_type.label:8356
+msgid "Currency Type"
+msgstr "Typ měny"
+
 #: field.bre.notes.label:3078
 msgid "Non-MARC Record Notes"
 msgstr "Poznámka k ne-MARCovému záznamu"
@@ -7279,9 +7503,17 @@ msgstr "Je smazáno?"
 msgid "Circulation Chain Summary"
 msgstr "Přehled sledu výpůjček"
 
+#: field.erccpo.deleted_count.label:9782
+msgid "Total deleted copies"
+msgstr "Smazané exempláře celkem"
+
 #: field.sunit.circulate.label:5149 field.acp.circulate.label:6785
 msgid "Can Circulate"
 msgstr "Může se půjčovat"
+
+#: field.afsg.id.label:10132
+msgid "Fieldset Group ID"
+msgstr "ID skupiny sady polí"
 
 #: class.acqlia.label:8782
 msgid "Line Item Attribute"
@@ -7403,6 +7635,10 @@ msgstr "Vytvořil(a)"
 #: field.uvuv.res_time.label:10481
 msgid "Result Time"
 msgstr "Čas výsledku"
+
+#: field.ccmm.circulate.label:1920 field.act.circulate.label:6882
+msgid "Circulate?"
+msgstr "Půjčovat?"
 
 #: field.acqlid.recv_time.label:8805
 msgid "Actual Receive Date"
@@ -7623,7 +7859,7 @@ msgstr "Percentil"
 
 #: class.rmsr.label:9164
 msgid "Fast Simple Record Extracts"
-msgstr "Rychlé výtahy ze zjednodušených záznamů"
+msgstr "Rychlý stručný výpis ze záznamu"
 
 #: field.ahr.cancel_cause.label:5690 field.ahopl.cancel_cause.label:5838
 #: field.alhr.cancel_cause.label:5921 field.combahr.cancel_cause.label:6003
@@ -7797,9 +8033,9 @@ msgstr "Odsouhlasil(a)"
 msgid "Address Alert ID"
 msgstr "ID upozornění pro adresy"
 
-#: field.abaafm.axis.label:2588
-msgid "Axis"
-msgstr "Osa"
+#: field.ahf.format.label:2700
+msgid "Heading XSLT Format"
+msgstr "XSLT formát záhlaví"
 
 #: class.rodcirc.label:11171
 msgid "Overdue Circulation"
@@ -7812,6 +8048,10 @@ msgstr "Je aktivní?"
 #: field.actsc.allow_freetext.label:6294
 msgid "Free Text"
 msgstr "Volný text"
+
+#: field.erccpo.last_edit_time.label:9780
+msgid "Last Edit Date"
+msgstr "Datum poslední editace"
 
 #: field.ausp.stop_date.label:3926
 msgid "Stop Date"
@@ -8212,15 +8452,13 @@ msgstr "Interval akce"
 msgid "Date of Birth"
 msgstr "Datum narození"
 
-#: field.aua.country.label:3948 field.aal.country.label:3978
-#: field.acqpa.country.label:7843 field.acqpca.country.label:7908
-#: field.stgma.country.label:9604 field.stgba.country.label:9620
-msgid "Country"
-msgstr "Země"
+#: field.cmc.fields.label:2773
+msgid "Fields"
+msgstr "Pole"
 
 #: field.bre.creator.label:3062
 msgid "Record Creator"
-msgstr "Tvůrce záznamu"
+msgstr "Záznam vytvořil(a)"
 
 #: field.acqedim.edi.label:9007
 msgid "EDI Message Body"
@@ -8240,6 +8478,10 @@ msgstr "Definice parametru funkce"
 #: field.afs.creation_time.label:9654
 msgid "Creation Time"
 msgstr "Čas vytvoření"
+
+#: field.rccbs.patron_county.label:10976
+msgid "User County"
+msgstr "Kraj uživatele"
 
 #: field.acqlid.collection_code.label:8813
 #: field.acqdfe.collection_code.label:9342
@@ -8437,10 +8679,14 @@ msgstr "ID reklamační politiky"
 msgid "Standing Penalties"
 msgstr "Blokace / penále"
 
-#: class.acqct.label:7617 field.acqf.currency_type.label:8114
-#: field.acqfsum.currency_type.label:8356
-msgid "Currency Type"
-msgstr "Typ měny"
+#: class.erccpo.label:9775
+msgid "Library Holdings Count with Deleted"
+msgstr "Počet vlastněných knihovnou, včetně smazaných"
+
+#: field.bre.metarecord.label:3076 class.mmr.label:3615
+#: field.rsr.metarecord.label:9210
+msgid "Metarecord"
+msgstr "Metazáznam"
 
 #: field.aout.can_have_users.label:6425
 msgid "Can Have Users?"
@@ -8479,9 +8725,9 @@ msgstr "Funkce"
 msgid "OPAC/Patron Visible"
 msgstr "Viditelné pro OPAC / čtenáře"
 
-#: class.xex.label:10040
-msgid "Exists Expression"
-msgstr "Existuje výraz"
+#: field.erccpo.has_only_deleted_copies.label:9781
+msgid "Has Only Deleted Copies 0/1"
+msgstr "Má jen smazané exempláře 0/1"
 
 #: field.aur.volume.label:7580
 msgid "Volume"
@@ -8587,7 +8833,7 @@ msgstr "Jméno datového typu"
 
 #: field.aiit.blanket.label:1607
 msgid "Blanket?"
-msgstr ""
+msgstr "Paušální?"
 
 #: field.circ.renewal_remaining.label:4167
 #: field.combcirc.renewal_remaining.label:4240
@@ -8608,5 +8854,35 @@ msgstr "ID faktury"
 msgid "Billable Transactions"
 msgstr "Zúčtovatelné transakce"
 
+#~ msgid "Check Out Date/Time"
+#~ msgstr "Datum / Čas výpůjčky"
+
+#~ msgid "Matched Attribute"
+#~ msgstr "Odpovídající atribut"
+
+#~ msgid "Thaw Date (if frozen)"
+#~ msgstr "Datum \"rozmražení\" (pokud zmraženo)"
+
+#~ msgid "Field Type"
+#~ msgstr "Typ pole"
+
+#~ msgid "Suffix/Title"
+#~ msgstr "Sufix / název"
+
+#~ msgid "Test ID"
+#~ msgstr "ID testu"
+
 #~ msgid "Keep"
 #~ msgstr "Zachovat"
+
+#~ msgid "Circulation Modifier Subtest ID"
+#~ msgstr "ID subtestu modifikátoru výpůjčky"
+
+#~ msgid "Circulation Matrix Circulation Modifier Subtest"
+#~ msgstr "Výpůjční subtest modifikátoru výpůjční matice"
+
+#~ msgid "Floating?"
+#~ msgstr "Pohyblivý exemplář?"
+
+#~ msgid "Is Floating"
+#~ msgstr "Je pohyblivý?"

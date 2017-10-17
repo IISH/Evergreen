@@ -183,6 +183,75 @@ CREATE INDEX metabib_facet_entry_field_idx ON metabib.facet_entry (field);
 CREATE INDEX metabib_facet_entry_value_idx ON metabib.facet_entry (SUBSTRING(value,1,1024));
 CREATE INDEX metabib_facet_entry_source_idx ON metabib.facet_entry (source);
 
+CREATE TABLE metabib.display_entry (
+    id      BIGSERIAL  PRIMARY KEY,
+    source  BIGINT     NOT NULL,
+    field   INT        NOT NULL,
+    value   TEXT       NOT NULL
+);
+
+CREATE INDEX metabib_display_entry_field_idx 
+    ON metabib.display_entry (field);
+CREATE INDEX metabib_display_entry_source_idx 
+    ON metabib.display_entry (source);
+
+CREATE VIEW metabib.flat_display_entry AS
+    /* One row per display entry fleshed with field info */
+    SELECT
+        mde.source,
+        cdfm.name,
+        cdfm.multi,
+        cmf.label,
+        cmf.id AS field,
+        mde.value
+    FROM metabib.display_entry mde
+    JOIN config.metabib_field cmf ON (cmf.id = mde.field)
+    JOIN config.display_field_map cdfm ON (cdfm.field = mde.field)
+;
+
+CREATE VIEW metabib.compressed_display_entry AS
+/* Like flat_display_entry except values are compressed into 
+   one row per display_field_map and JSON-ified.  */
+    SELECT 
+        source,
+        name,
+        multi,
+        label,
+        field,
+        CASE WHEN multi THEN
+            TO_JSON(ARRAY_AGG(value))
+        ELSE
+            TO_JSON(MIN(value))
+        END AS value
+    FROM metabib.flat_display_entry
+    GROUP BY 1, 2, 3, 4, 5
+;
+
+CREATE VIEW metabib.wide_display_entry AS
+/* Table-like view of well-known display fields.   
+   This VIEW expands as well-known display fields are added. */
+    SELECT 
+        bre.id AS source,
+        COALESCE(mcde_title.value, 'null') AS title,
+        COALESCE(mcde_author.value, 'null') AS author,
+        COALESCE(mcde_subject.value, 'null') AS subject,
+        COALESCE(mcde_creators.value, 'null') AS creators,
+        COALESCE(mcde_isbn.value, 'null') AS isbn
+    -- ensure one row per bre regardless of the presence of display entries
+    FROM biblio.record_entry bre 
+    LEFT JOIN metabib.compressed_display_entry mcde_title 
+        ON (bre.id = mcde_title.source AND mcde_title.name = 'title')
+    LEFT JOIN metabib.compressed_display_entry mcde_author 
+        ON (bre.id = mcde_author.source AND mcde_author.name = 'author')
+    LEFT JOIN metabib.compressed_display_entry mcde_subject 
+        ON (bre.id = mcde_subject.source AND mcde_subject.name = 'subject')
+    LEFT JOIN metabib.compressed_display_entry mcde_creators 
+        ON (bre.id = mcde_creators.source AND mcde_creators.name = 'creators')
+    LEFT JOIN metabib.compressed_display_entry mcde_isbn 
+        ON (bre.id = mcde_isbn.source AND mcde_isbn.name = 'isbn')
+;
+
+
 CREATE TABLE metabib.browse_entry (
     id BIGSERIAL PRIMARY KEY,
     value TEXT,
@@ -219,6 +288,58 @@ CREATE TABLE metabib.browse_entry_simple_heading_map (
 );
 CREATE INDEX browse_entry_sh_map_entry_idx ON metabib.browse_entry_simple_heading_map (entry);
 CREATE INDEX browse_entry_sh_map_sh_idx ON metabib.browse_entry_simple_heading_map (simple_heading);
+
+CREATE OR REPLACE FUNCTION metabib.display_field_normalize_trigger () 
+    RETURNS TRIGGER AS $$
+DECLARE
+    normalizer  RECORD;
+    display_field_text  TEXT;
+BEGIN
+    display_field_text := NEW.value;
+
+    FOR normalizer IN
+        SELECT  n.func AS func,
+                n.param_count AS param_count,
+                m.params AS params
+          FROM  config.index_normalizer n
+                JOIN config.metabib_field_index_norm_map m ON (m.norm = n.id)
+          WHERE m.field = NEW.field AND m.pos < 0
+          ORDER BY m.pos LOOP
+
+            EXECUTE 'SELECT ' || normalizer.func || '(' ||
+                quote_literal( display_field_text ) ||
+                CASE
+                    WHEN normalizer.param_count > 0
+                        THEN ',' || REPLACE(REPLACE(BTRIM(
+                            normalizer.params,'[]'),E'\'',E'\\\''),E'"',E'\'')
+                        ELSE ''
+                    END ||
+                ')' INTO display_field_text;
+
+    END LOOP;
+
+    NEW.value = display_field_text;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE TRIGGER display_field_normalize_tgr
+	BEFORE UPDATE OR INSERT ON metabib.display_entry
+	FOR EACH ROW EXECUTE PROCEDURE metabib.display_field_normalize_trigger();
+
+CREATE OR REPLACE FUNCTION evergreen.display_field_force_nfc() 
+    RETURNS TRIGGER AS $$
+BEGIN
+    NEW.value := force_unicode_normal_form(NEW.value,'NFC');
+    RETURN NEW;
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE TRIGGER display_field_force_nfc_tgr
+	BEFORE UPDATE OR INSERT ON metabib.display_entry
+	FOR EACH ROW EXECUTE PROCEDURE evergreen.display_field_force_nfc();
+
 
 CREATE OR REPLACE FUNCTION metabib.facet_normalize_trigger () RETURNS TRIGGER AS $$
 DECLARE
@@ -551,6 +672,7 @@ CREATE TYPE metabib.field_entry_template AS (
     field_class         TEXT,
     field               INT,
     facet_field         BOOL,
+    display_field       BOOL,
     search_field        BOOL,
     browse_field        BOOL,
     source              BIGINT,
@@ -559,8 +681,12 @@ CREATE TYPE metabib.field_entry_template AS (
     sort_value          TEXT
 );
 
-
-CREATE OR REPLACE FUNCTION biblio.extract_metabib_field_entry ( rid BIGINT, default_joiner TEXT ) RETURNS SETOF metabib.field_entry_template AS $func$
+CREATE OR REPLACE FUNCTION biblio.extract_metabib_field_entry (
+    rid BIGINT,
+    default_joiner TEXT,
+    field_types TEXT[],
+    only_fields INT[]
+) RETURNS SETOF metabib.field_entry_template AS $func$
 DECLARE
     bib     biblio.record_entry%ROWTYPE;
     idx     config.metabib_field%ROWTYPE;
@@ -570,6 +696,7 @@ DECLARE
     xml_node    TEXT;
     xml_node_list   TEXT[];
     facet_text  TEXT;
+    display_text TEXT;
     browse_text TEXT;
     sort_value  TEXT;
     raw_text    TEXT;
@@ -578,18 +705,27 @@ DECLARE
     authority_text TEXT;
     authority_link BIGINT;
     output_row  metabib.field_entry_template%ROWTYPE;
+    process_idx BOOL;
 BEGIN
 
     -- Start out with no field-use bools set
     output_row.browse_field = FALSE;
     output_row.facet_field = FALSE;
+    output_row.display_field = FALSE;
     output_row.search_field = FALSE;
 
     -- Get the record
     SELECT INTO bib * FROM biblio.record_entry WHERE id = rid;
 
     -- Loop over the indexing entries
-    FOR idx IN SELECT * FROM config.metabib_field ORDER BY format LOOP
+    FOR idx IN SELECT * FROM config.metabib_field WHERE id = ANY (only_fields) ORDER BY format LOOP
+
+        process_idx := FALSE;
+        IF idx.display_field AND 'display' = ANY (field_types) THEN process_idx = TRUE; END IF;
+        IF idx.browse_field AND 'browse' = ANY (field_types) THEN process_idx = TRUE; END IF;
+        IF idx.search_field AND 'search' = ANY (field_types) THEN process_idx = TRUE; END IF;
+        IF idx.facet_field AND 'facet' = ANY (field_types) THEN process_idx = TRUE; END IF;
+        CONTINUE WHEN process_idx = FALSE;
 
         joiner := COALESCE(idx.joiner, default_joiner);
 
@@ -710,6 +846,25 @@ BEGIN
                 output_row.facet_field = FALSE;
             END IF;
 
+            -- insert raw node text for display
+            IF idx.display_field THEN
+
+                IF idx.display_xpath IS NOT NULL AND idx.display_xpath <> '' THEN
+                    display_text := oils_xpath_string( idx.display_xpath, xml_node, joiner, ARRAY[ARRAY[xfrm.prefix, xfrm.namespace_uri]] );
+                ELSE
+                    display_text := curr_text;
+                END IF;
+
+                output_row.field_class = idx.field_class;
+                output_row.field = -1 * idx.id;
+                output_row.source = rid;
+                output_row.value = BTRIM(REGEXP_REPLACE(display_text, E'\\s+', ' ', 'g'));
+
+                output_row.display_field = TRUE;
+                RETURN NEXT output_row;
+                output_row.display_field = FALSE;
+            END IF;
+
         END LOOP;
 
         CONTINUE WHEN raw_text IS NULL OR raw_text = '';
@@ -785,21 +940,41 @@ BEGIN
 END;
 $func$ LANGUAGE PLPGSQL;
 
-CREATE OR REPLACE FUNCTION metabib.reingest_metabib_field_entries( bib_id BIGINT, skip_facet BOOL DEFAULT FALSE, skip_browse BOOL DEFAULT FALSE, skip_search BOOL DEFAULT FALSE ) RETURNS VOID AS $func$
+CREATE OR REPLACE FUNCTION metabib.reingest_metabib_field_entries( 
+    bib_id BIGINT,
+    skip_facet BOOL DEFAULT FALSE, 
+    skip_display BOOL DEFAULT FALSE,
+    skip_browse BOOL DEFAULT FALSE, 
+    skip_search BOOL DEFAULT FALSE,
+    only_fields INT[] DEFAULT '{}'::INT[]
+) RETURNS VOID AS $func$
 DECLARE
     fclass          RECORD;
     ind_data        metabib.field_entry_template%ROWTYPE;
     mbe_row         metabib.browse_entry%ROWTYPE;
     mbe_id          BIGINT;
     b_skip_facet    BOOL;
+    b_skip_display    BOOL;
     b_skip_browse   BOOL;
     b_skip_search   BOOL;
     value_prepped   TEXT;
+    field_list      INT[] := only_fields;
+    field_types     TEXT[] := '{}'::TEXT[];
 BEGIN
 
+    IF field_list = '{}'::INT[] THEN
+        SELECT ARRAY_AGG(id) INTO field_list FROM config.metabib_field;
+    END IF;
+
     SELECT COALESCE(NULLIF(skip_facet, FALSE), EXISTS (SELECT enabled FROM config.internal_flag WHERE name =  'ingest.skip_facet_indexing' AND enabled)) INTO b_skip_facet;
+    SELECT COALESCE(NULLIF(skip_display, FALSE), EXISTS (SELECT enabled FROM config.internal_flag WHERE name =  'ingest.skip_display_indexing' AND enabled)) INTO b_skip_display;
     SELECT COALESCE(NULLIF(skip_browse, FALSE), EXISTS (SELECT enabled FROM config.internal_flag WHERE name =  'ingest.skip_browse_indexing' AND enabled)) INTO b_skip_browse;
     SELECT COALESCE(NULLIF(skip_search, FALSE), EXISTS (SELECT enabled FROM config.internal_flag WHERE name =  'ingest.skip_search_indexing' AND enabled)) INTO b_skip_search;
+
+    IF NOT b_skip_facet THEN field_types := field_types || '{facet}'; END IF;
+    IF NOT b_skip_display THEN field_types := field_types || '{display}'; END IF;
+    IF NOT b_skip_browse THEN field_types := field_types || '{browse}'; END IF;
+    IF NOT b_skip_search THEN field_types := field_types || '{search}'; END IF;
 
     PERFORM * FROM config.internal_flag WHERE name = 'ingest.assume_inserts_only' AND enabled;
     IF NOT FOUND THEN
@@ -812,12 +987,15 @@ BEGIN
         IF NOT b_skip_facet THEN
             DELETE FROM metabib.facet_entry WHERE source = bib_id;
         END IF;
+        IF NOT b_skip_display THEN
+            DELETE FROM metabib.display_entry WHERE source = bib_id;
+        END IF;
         IF NOT b_skip_browse THEN
             DELETE FROM metabib.browse_entry_def_map WHERE source = bib_id;
         END IF;
     END IF;
 
-    FOR ind_data IN SELECT * FROM biblio.extract_metabib_field_entry( bib_id ) LOOP
+    FOR ind_data IN SELECT * FROM biblio.extract_metabib_field_entry( bib_id, ' ', field_types, field_list ) LOOP
 
 	-- don't store what has been normalized away
         CONTINUE WHEN ind_data.value IS NULL;
@@ -830,6 +1008,12 @@ BEGIN
             INSERT INTO metabib.facet_entry (field, source, value)
                 VALUES (ind_data.field, ind_data.source, ind_data.value);
         END IF;
+
+        IF ind_data.display_field AND NOT b_skip_display THEN
+            INSERT INTO metabib.display_entry (field, source, value)
+                VALUES (ind_data.field, ind_data.source, ind_data.value);
+        END IF;
+
 
         IF ind_data.browse_field AND NOT b_skip_browse THEN
             -- A caveat about this SELECT: this should take care of replacing
@@ -885,11 +1069,6 @@ BEGIN
     RETURN;
 END;
 $func$ LANGUAGE PLPGSQL;
-
--- default to a space joiner
-CREATE OR REPLACE FUNCTION biblio.extract_metabib_field_entry ( BIGINT ) RETURNS SETOF metabib.field_entry_template AS $func$
-	SELECT * FROM biblio.extract_metabib_field_entry($1, ' ');
-$func$ LANGUAGE SQL;
 
 CREATE OR REPLACE FUNCTION authority.flatten_marc ( rid BIGINT ) RETURNS SETOF authority.full_rec AS $func$
 DECLARE
@@ -1611,17 +1790,8 @@ BEGIN
     PERFORM metabib.reingest_metabib_field_entries(NEW.id);
 
     -- Located URI magic
-    IF TG_OP = 'INSERT' THEN
-        PERFORM * FROM config.internal_flag WHERE name = 'ingest.disable_located_uri' AND enabled;
-        IF NOT FOUND THEN
-            PERFORM biblio.extract_located_uris( NEW.id, NEW.marc, NEW.editor );
-        END IF;
-    ELSE
-        PERFORM * FROM config.internal_flag WHERE name = 'ingest.disable_located_uri' AND enabled;
-        IF NOT FOUND THEN
-            PERFORM biblio.extract_located_uris( NEW.id, NEW.marc, NEW.editor );
-        END IF;
-    END IF;
+    PERFORM * FROM config.internal_flag WHERE name = 'ingest.disable_located_uri' AND enabled;
+    IF NOT FOUND THEN PERFORM biblio.extract_located_uris( NEW.id, NEW.marc, NEW.editor ); END IF;
 
     -- (re)map metarecord-bib linking
     IF TG_OP = 'INSERT' THEN -- if not deleted and performing an insert, check for the flag
@@ -1792,135 +1962,8 @@ BEGIN
 END;
 $$ LANGUAGE PLPGSQL;
 
-
-CREATE OR REPLACE
-    FUNCTION metabib.suggest_browse_entries(
-        raw_query_text  TEXT,   -- actually typed by humans at the UI level
-        search_class    TEXT,   -- 'alias' or 'class' or 'class|field..', etc
-        headline_opts   TEXT,   -- markup options for ts_headline()
-        visibility_org  INTEGER,-- null if you don't want opac visibility test
-        query_limit     INTEGER,-- use in LIMIT clause of interal query
-        normalization   INTEGER -- argument to TS_RANK_CD()
-    ) RETURNS TABLE (
-        value                   TEXT,   -- plain
-        field                   INTEGER,
-        buoyant_and_class_match BOOL,
-        field_match             BOOL,
-        field_weight            INTEGER,
-        rank                    REAL,
-        buoyant                 BOOL,
-        match                   TEXT    -- marked up
-    ) AS $func$
-DECLARE
-    prepared_query_texts    TEXT[];
-    query                   TSQUERY;
-    plain_query             TSQUERY;
-    opac_visibility_join    TEXT;
-    search_class_join       TEXT;
-    r_fields                RECORD;
-BEGIN
-    prepared_query_texts := metabib.autosuggest_prepare_tsquery(raw_query_text);
-
-    query := TO_TSQUERY('keyword', prepared_query_texts[1]);
-    plain_query := TO_TSQUERY('keyword', prepared_query_texts[2]);
-
-    visibility_org := NULLIF(visibility_org,-1);
-    IF visibility_org IS NOT NULL THEN
-        opac_visibility_join := '
-    JOIN asset.opac_visible_copies aovc ON (
-        aovc.record = x.source AND
-        aovc.circ_lib IN (SELECT id FROM actor.org_unit_descendants($4))
-    )';
-    ELSE
-        opac_visibility_join := '';
-    END IF;
-
-    -- The following determines whether we only provide suggestsons matching
-    -- the user's selected search_class, or whether we show other suggestions
-    -- too. The reason for MIN() is that for search_classes like
-    -- 'title|proper|uniform' you would otherwise get multiple rows.  The
-    -- implication is that if title as a class doesn't have restrict,
-    -- nor does the proper field, but the uniform field does, you're going
-    -- to get 'false' for your overall evaluation of 'should we restrict?'
-    -- To invert that, change from MIN() to MAX().
-
-    SELECT
-        INTO r_fields
-            MIN(cmc.restrict::INT) AS restrict_class,
-            MIN(cmf.restrict::INT) AS restrict_field
-        FROM metabib.search_class_to_registered_components(search_class)
-            AS _registered (field_class TEXT, field INT)
-        JOIN
-            config.metabib_class cmc ON (cmc.name = _registered.field_class)
-        LEFT JOIN
-            config.metabib_field cmf ON (cmf.id = _registered.field);
-
-    -- evaluate 'should we restrict?'
-    IF r_fields.restrict_field::BOOL OR r_fields.restrict_class::BOOL THEN
-        search_class_join := '
-    JOIN
-        metabib.search_class_to_registered_components($2)
-        AS _registered (field_class TEXT, field INT) ON (
-            (_registered.field IS NULL AND
-                _registered.field_class = cmf.field_class) OR
-            (_registered.field = cmf.id)
-        )
-    ';
-    ELSE
-        search_class_join := '
-    LEFT JOIN
-        metabib.search_class_to_registered_components($2)
-        AS _registered (field_class TEXT, field INT) ON (
-            _registered.field_class = cmc.name
-        )
-    ';
-    END IF;
-
-    RETURN QUERY EXECUTE '
-SELECT  DISTINCT
-        x.value,
-        x.id,
-        x.push,
-        x.restrict,
-        x.weight,
-        x.ts_rank_cd,
-        x.buoyant,
-        TS_HEADLINE(value, $7, $3)
-  FROM  (SELECT DISTINCT
-                mbe.value,
-                cmf.id,
-                cmc.buoyant AND _registered.field_class IS NOT NULL AS push,
-                _registered.field = cmf.id AS restrict,
-                cmf.weight,
-                TS_RANK_CD(mbe.index_vector, $1, $6),
-                cmc.buoyant,
-                mbedm.source
-          FROM  metabib.browse_entry_def_map mbedm
-                JOIN (SELECT * FROM metabib.browse_entry WHERE index_vector @@ $1 LIMIT 10000) mbe ON (mbe.id = mbedm.entry)
-                JOIN config.metabib_field cmf ON (cmf.id = mbedm.def)
-                JOIN config.metabib_class cmc ON (cmf.field_class = cmc.name)
-                '  || search_class_join || '
-          ORDER BY 3 DESC, 4 DESC NULLS LAST, 5 DESC, 6 DESC, 7 DESC, 1 ASC
-          LIMIT 1000) AS x
-        ' || opac_visibility_join || '
-  ORDER BY 3 DESC, 4 DESC NULLS LAST, 5 DESC, 6 DESC, 7 DESC, 1 ASC
-  LIMIT $5
-'   -- sic, repeat the order by clause in the outer select too
-    USING
-        query, search_class, headline_opts,
-        visibility_org, query_limit, normalization, plain_query
-        ;
-
-    -- sort order:
-    --  buoyant AND chosen class = match class
-    --  chosen field = match field
-    --  field weight
-    --  rank
-    --  buoyancy
-    --  value itself
-
-END;
-$func$ LANGUAGE PLPGSQL;
+-- Functions metabib.browse, metabib.staged_browse, and metabib.suggest_browse_entries
+-- will be created later, after internal dependencies are resolved.
 
 CREATE OR REPLACE FUNCTION public.oils_tsearch2 () RETURNS TRIGGER AS $$
 DECLARE
@@ -2109,355 +2152,6 @@ CREATE OR REPLACE FUNCTION metabib.browse_pivot(
       ORDER BY sort_value, value LIMIT 1;
 $p$ LANGUAGE SQL STABLE;
 
-
-CREATE OR REPLACE FUNCTION metabib.staged_browse(
-    query                   TEXT,
-    fields                  INT[],
-    context_org             INT,
-    context_locations       INT[],
-    staff                   BOOL,
-    browse_superpage_size   INT,
-    count_up_from_zero      BOOL,   -- if false, count down from -1
-    result_limit            INT,
-    next_pivot_pos          INT
-) RETURNS SETOF metabib.flat_browse_entry_appearance AS $p$
-DECLARE
-    curs                    REFCURSOR;
-    rec                     RECORD;
-    qpfts_query             TEXT;
-    aqpfts_query            TEXT;
-    afields                 INT[];
-    bfields                 INT[];
-    result_row              metabib.flat_browse_entry_appearance%ROWTYPE;
-    results_skipped         INT := 0;
-    row_counter             INT := 0;
-    row_number              INT;
-    slice_start             INT;
-    slice_end               INT;
-    full_end                INT;
-    all_records             BIGINT[];
-    all_brecords             BIGINT[];
-    all_arecords            BIGINT[];
-    superpage_of_records    BIGINT[];
-    superpage_size          INT;
-BEGIN
-    IF count_up_from_zero THEN
-        row_number := 0;
-    ELSE
-        row_number := -1;
-    END IF;
-
-    OPEN curs FOR EXECUTE query;
-
-    LOOP
-        FETCH curs INTO rec;
-        IF NOT FOUND THEN
-            IF result_row.pivot_point IS NOT NULL THEN
-                RETURN NEXT result_row;
-            END IF;
-            RETURN;
-        END IF;
-
-
-        -- Gather aggregate data based on the MBE row we're looking at now, authority axis
-        SELECT INTO all_arecords, result_row.sees, afields
-                ARRAY_AGG(DISTINCT abl.bib), -- bibs to check for visibility
-                STRING_AGG(DISTINCT aal.source::TEXT, $$,$$), -- authority record ids
-                ARRAY_AGG(DISTINCT map.metabib_field) -- authority-tag-linked CMF rows
-
-          FROM  metabib.browse_entry_simple_heading_map mbeshm
-                JOIN authority.simple_heading ash ON ( mbeshm.simple_heading = ash.id )
-                JOIN authority.authority_linking aal ON ( ash.record = aal.source )
-                JOIN authority.bib_linking abl ON ( aal.target = abl.authority )
-                JOIN authority.control_set_auth_field_metabib_field_map_refs map ON (
-                    ash.atag = map.authority_field
-                    AND map.metabib_field = ANY(fields)
-                )
-          WHERE mbeshm.entry = rec.id;
-
-
-        -- Gather aggregate data based on the MBE row we're looking at now, bib axis
-        SELECT INTO all_brecords, result_row.authorities, bfields
-                ARRAY_AGG(DISTINCT source),
-                STRING_AGG(DISTINCT authority::TEXT, $$,$$),
-                ARRAY_AGG(DISTINCT def)
-          FROM  metabib.browse_entry_def_map
-          WHERE entry = rec.id
-                AND def = ANY(fields);
-
-        SELECT INTO result_row.fields STRING_AGG(DISTINCT x::TEXT, $$,$$) FROM UNNEST(afields || bfields) x;
-
-        result_row.sources := 0;
-        result_row.asources := 0;
-
-        -- Bib-linked vis checking
-        IF ARRAY_UPPER(all_brecords,1) IS NOT NULL THEN
-
-            full_end := ARRAY_LENGTH(all_brecords, 1);
-            superpage_size := COALESCE(browse_superpage_size, full_end);
-            slice_start := 1;
-            slice_end := superpage_size;
-
-            WHILE result_row.sources = 0 AND slice_start <= full_end LOOP
-                superpage_of_records := all_brecords[slice_start:slice_end];
-                qpfts_query :=
-                    'SELECT NULL::BIGINT AS id, ARRAY[r] AS records, ' ||
-                    'NULL AS badges, NULL::NUMERIC AS popularity, ' ||
-                    '1::NUMERIC AS rel FROM (SELECT UNNEST(' ||
-                    quote_literal(superpage_of_records) || '::BIGINT[]) AS r) rr';
-
-                -- We use search.query_parser_fts() for visibility testing.
-                -- We're calling it once per browse-superpage worth of records
-                -- out of the set of records related to a given mbe, until we've
-                -- either exhausted that set of records or found at least 1
-                -- visible record.
-
-                SELECT INTO result_row.sources visible
-                    FROM search.query_parser_fts(
-                        context_org, NULL, qpfts_query, NULL,
-                        context_locations, 0, NULL, NULL, FALSE, staff, FALSE
-                    ) qpfts
-                    WHERE qpfts.rel IS NULL;
-
-                slice_start := slice_start + superpage_size;
-                slice_end := slice_end + superpage_size;
-            END LOOP;
-
-            -- Accurate?  Well, probably.
-            result_row.accurate := browse_superpage_size IS NULL OR
-                browse_superpage_size >= full_end;
-
-        END IF;
-
-        -- Authority-linked vis checking
-        IF ARRAY_UPPER(all_arecords,1) IS NOT NULL THEN
-
-            full_end := ARRAY_LENGTH(all_arecords, 1);
-            superpage_size := COALESCE(browse_superpage_size, full_end);
-            slice_start := 1;
-            slice_end := superpage_size;
-
-            WHILE result_row.asources = 0 AND slice_start <= full_end LOOP
-                superpage_of_records := all_arecords[slice_start:slice_end];
-                qpfts_query :=
-                    'SELECT NULL::BIGINT AS id, ARRAY[r] AS records, ' ||
-                    'NULL AS badges, NULL::NUMERIC AS popularity, ' ||
-                    '1::NUMERIC AS rel FROM (SELECT UNNEST(' ||
-                    quote_literal(superpage_of_records) || '::BIGINT[]) AS r) rr';
-
-                -- We use search.query_parser_fts() for visibility testing.
-                -- We're calling it once per browse-superpage worth of records
-                -- out of the set of records related to a given mbe, via
-                -- authority until we've either exhausted that set of records
-                -- or found at least 1 visible record.
-
-                SELECT INTO result_row.asources visible
-                    FROM search.query_parser_fts(
-                        context_org, NULL, qpfts_query, NULL,
-                        context_locations, 0, NULL, NULL, FALSE, staff, FALSE
-                    ) qpfts
-                    WHERE qpfts.rel IS NULL;
-
-                slice_start := slice_start + superpage_size;
-                slice_end := slice_end + superpage_size;
-            END LOOP;
-
-
-            -- Accurate?  Well, probably.
-            result_row.aaccurate := browse_superpage_size IS NULL OR
-                browse_superpage_size >= full_end;
-
-        END IF;
-
-        IF result_row.sources > 0 OR result_row.asources > 0 THEN
-
-            -- The function that calls this function needs row_number in order
-            -- to correctly order results from two different runs of this
-            -- functions.
-            result_row.row_number := row_number;
-
-            -- Now, if row_counter is still less than limit, return a row.  If
-            -- not, but it is less than next_pivot_pos, continue on without
-            -- returning actual result rows until we find
-            -- that next pivot, and return it.
-
-            IF row_counter < result_limit THEN
-                result_row.browse_entry := rec.id;
-                result_row.value := rec.value;
-
-                RETURN NEXT result_row;
-            ELSE
-                result_row.browse_entry := NULL;
-                result_row.authorities := NULL;
-                result_row.fields := NULL;
-                result_row.value := NULL;
-                result_row.sources := NULL;
-                result_row.sees := NULL;
-                result_row.accurate := NULL;
-                result_row.aaccurate := NULL;
-                result_row.pivot_point := rec.id;
-
-                IF row_counter >= next_pivot_pos THEN
-                    RETURN NEXT result_row;
-                    RETURN;
-                END IF;
-            END IF;
-
-            IF count_up_from_zero THEN
-                row_number := row_number + 1;
-            ELSE
-                row_number := row_number - 1;
-            END IF;
-
-            -- row_counter is different from row_number.
-            -- It simply counts up from zero so that we know when
-            -- we've reached our limit.
-            row_counter := row_counter + 1;
-        END IF;
-    END LOOP;
-END;
-$p$ LANGUAGE PLPGSQL;
-
-
-CREATE OR REPLACE FUNCTION metabib.browse(
-    search_field            INT[],
-    browse_term             TEXT,
-    context_org             INT DEFAULT NULL,
-    context_loc_group       INT DEFAULT NULL,
-    staff                   BOOL DEFAULT FALSE,
-    pivot_id                BIGINT DEFAULT NULL,
-    result_limit            INT DEFAULT 10
-) RETURNS SETOF metabib.flat_browse_entry_appearance AS $p$
-DECLARE
-    core_query              TEXT;
-    back_query              TEXT;
-    forward_query           TEXT;
-    pivot_sort_value        TEXT;
-    pivot_sort_fallback     TEXT;
-    context_locations       INT[];
-    browse_superpage_size   INT;
-    results_skipped         INT := 0;
-    back_limit              INT;
-    back_to_pivot           INT;
-    forward_limit           INT;
-    forward_to_pivot        INT;
-BEGIN
-    -- First, find the pivot if we were given a browse term but not a pivot.
-    IF pivot_id IS NULL THEN
-        pivot_id := metabib.browse_pivot(search_field, browse_term);
-    END IF;
-
-    SELECT INTO pivot_sort_value, pivot_sort_fallback
-        sort_value, value FROM metabib.browse_entry WHERE id = pivot_id;
-
-    -- Bail if we couldn't find a pivot.
-    IF pivot_sort_value IS NULL THEN
-        RETURN;
-    END IF;
-
-    -- Transform the context_loc_group argument (if any) (logc at the
-    -- TPAC layer) into a form we'll be able to use.
-    IF context_loc_group IS NOT NULL THEN
-        SELECT INTO context_locations ARRAY_AGG(location)
-            FROM asset.copy_location_group_map
-            WHERE lgroup = context_loc_group;
-    END IF;
-
-    -- Get the configured size of browse superpages.
-    SELECT INTO browse_superpage_size value     -- NULL ok
-        FROM config.global_flag
-        WHERE enabled AND name = 'opac.browse.holdings_visibility_test_limit';
-
-    -- First we're going to search backward from the pivot, then we're going
-    -- to search forward.  In each direction, we need two limits.  At the
-    -- lesser of the two limits, we delineate the edge of the result set
-    -- we're going to return.  At the greater of the two limits, we find the
-    -- pivot value that would represent an offset from the current pivot
-    -- at a distance of one "page" in either direction, where a "page" is a
-    -- result set of the size specified in the "result_limit" argument.
-    --
-    -- The two limits in each direction make four derived values in total,
-    -- and we calculate them now.
-    back_limit := CEIL(result_limit::FLOAT / 2);
-    back_to_pivot := result_limit;
-    forward_limit := result_limit / 2;
-    forward_to_pivot := result_limit - 1;
-
-    -- This is the meat of the SQL query that finds browse entries.  We'll
-    -- pass this to a function which uses it with a cursor, so that individual
-    -- rows may be fetched in a loop until some condition is satisfied, without
-    -- waiting for a result set of fixed size to be collected all at once.
-    core_query := '
-SELECT  mbe.id,
-        mbe.value,
-        mbe.sort_value
-  FROM  metabib.browse_entry mbe
-  WHERE (
-            EXISTS ( -- are there any bibs using this mbe via the requested fields?
-                SELECT  1
-                  FROM  metabib.browse_entry_def_map mbedm
-                  WHERE mbedm.entry = mbe.id AND mbedm.def = ANY(' || quote_literal(search_field) || ')
-                  LIMIT 1
-            ) OR EXISTS ( -- are there any authorities using this mbe via the requested fields?
-                SELECT  1
-                  FROM  metabib.browse_entry_simple_heading_map mbeshm
-                        JOIN authority.simple_heading ash ON ( mbeshm.simple_heading = ash.id )
-                        JOIN authority.control_set_auth_field_metabib_field_map_refs map ON (
-                            ash.atag = map.authority_field
-                            AND map.metabib_field = ANY(' || quote_literal(search_field) || ')
-                        )
-                  WHERE mbeshm.entry = mbe.id
-            )
-        ) AND ';
-
-    -- This is the variant of the query for browsing backward.
-    back_query := core_query ||
-        ' mbe.sort_value <= ' || quote_literal(pivot_sort_value) ||
-    ' ORDER BY mbe.sort_value DESC, mbe.value DESC ';
-
-    -- This variant browses forward.
-    forward_query := core_query ||
-        ' mbe.sort_value > ' || quote_literal(pivot_sort_value) ||
-    ' ORDER BY mbe.sort_value, mbe.value ';
-
-    -- We now call the function which applies a cursor to the provided
-    -- queries, stopping at the appropriate limits and also giving us
-    -- the next page's pivot.
-    RETURN QUERY
-        SELECT * FROM metabib.staged_browse(
-            back_query, search_field, context_org, context_locations,
-            staff, browse_superpage_size, TRUE, back_limit, back_to_pivot
-        ) UNION
-        SELECT * FROM metabib.staged_browse(
-            forward_query, search_field, context_org, context_locations,
-            staff, browse_superpage_size, FALSE, forward_limit, forward_to_pivot
-        ) ORDER BY row_number DESC;
-
-END;
-$p$ LANGUAGE PLPGSQL;
-
-CREATE OR REPLACE FUNCTION metabib.browse(
-    search_class        TEXT,
-    browse_term         TEXT,
-    context_org         INT DEFAULT NULL,
-    context_loc_group   INT DEFAULT NULL,
-    staff               BOOL DEFAULT FALSE,
-    pivot_id            BIGINT DEFAULT NULL,
-    result_limit        INT DEFAULT 10
-) RETURNS SETOF metabib.flat_browse_entry_appearance AS $p$
-BEGIN
-    RETURN QUERY SELECT * FROM metabib.browse(
-        (SELECT COALESCE(ARRAY_AGG(id), ARRAY[]::INT[])
-            FROM config.metabib_field WHERE field_class = search_class),
-        browse_term,
-        context_org,
-        context_loc_group,
-        staff,
-        pivot_id,
-        result_limit
-    );
-END;
-$p$ LANGUAGE PLPGSQL;
 
 -- This function is used to help clean up facet labels. Due to quirks in
 -- MARC parsing, some facet labels may be generated with periods or commas

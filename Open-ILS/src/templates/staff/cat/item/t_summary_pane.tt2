@@ -1,5 +1,9 @@
 <div class="">
 
+  <div class="label label-danger" ng-show="copy.deleted() == 't'">
+    [% l('This item has been marked as Deleted.') %]
+  </div>
+
   <div class="flex-row">
     <div class="flex-cell">[% l('Barcode') %]</div>
     <div class="flex-cell well">{{copy.barcode()}}</div>
@@ -24,13 +28,13 @@
     <div class="flex-cell well">{{copy.price()}}</div>
 
     <div class="flex-cell">[% l('Owning Library') %]</div>
-    <div class="flex-cell well">{{copy.circ_lib().shortname()}}</div>
+    <div class="flex-cell well">{{copy.call_number().owning_lib().shortname()}}</div>
 
     <div class="flex-cell">[% l('Call #') %]</div>
     <div class="flex-cell well">{{copy.call_number().label()}}</div>
 
     <div class="flex-cell">[% l('Due Date') %]</div>
-    <div class="flex-cell well">{{circ.due_date() | date:'short'}}</div>
+    <div class="flex-cell well">{{circ.due_date() | egDueDate:egDateAndTimeFormat:circ.circ_lib():circ.duration()}}</div>
   </div>
 
   <div class="flex-row">
@@ -49,7 +53,7 @@
     </div>
 
     <div class="flex-cell">[% l('Checkout Date') %]</div>
-    <div class="flex-cell well">{{circ.xact_start() | date:'short'}}</div>
+    <div class="flex-cell well">{{circ.xact_start() | date:egDateAndTimeFormat}}</div>
   </div>
 
   <div class="flex-row">
@@ -78,7 +82,7 @@
 
   <div class="flex-row">
     <div class="flex-cell">[% l('Date Created') %]</div>
-    <div class="flex-cell well">{{copy.create_date() | date:'short'}}</div>
+    <div class="flex-cell well">{{copy.create_date() | date:egDateAndTimeFormat}}</div>
     <div class="flex-cell">[% l('Fine Level') %]</div>
     <div class="flex-cell well">
       <div ng-if="copy.fine_level() == 1">[% l('Low') %]</div>
@@ -95,7 +99,7 @@
 
   <div class="flex-row">
     <div class="flex-cell">[% l('Date Active') %]</div>
-    <div class="flex-cell well">{{copy.active_date() | date:'short'}}</div>
+    <div class="flex-cell well">{{copy.active_date() | date:egDateAndTimeFormat}}</div>
 
     <div class="flex-cell">[% l('Reference') %]</div>
     <div class="flex-cell well">{{copy.ref()}}</div>
@@ -109,7 +113,7 @@
 
   <div class="flex-row">
     <div class="flex-cell">[% l('Status Changed') %]</div>
-    <div class="flex-cell well">{{copy.status_changed_time() | date:'short'}}</div>
+    <div class="flex-cell well">{{copy.status_changed_time() | date:egDateAndTimeFormat}}</div>
 
     <div class="flex-cell">[% l('OPAC Visible') %]</div>
     <div class="flex-cell well">{{copy.opac_visible()}}</div>
@@ -134,7 +138,7 @@
     <div class="flex-cell">[% l('Checkin Time') %]</div>
     <div class="flex-cell well">
       {{circ.checkin_time() || 
-        circ_summary.last_checkin_time() | date:'short'}}
+        circ_summary.last_checkin_time() | date:egDateAndTimeFormat}}
     </div>
   </div>
 
@@ -151,7 +155,7 @@
     <div class="flex-cell">[% l('Checkin Scan Time') %]</div>
     <div class="flex-cell well">
       {{circ.checkin_scan_time() || 
-        circ_summary.last_checkin_scan_time() | date:'short'}}
+        circ_summary.last_checkin_scan_time() | date:egDateAndTimeFormat}}
     </div>
   </div>
 

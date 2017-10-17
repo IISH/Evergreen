@@ -1,4 +1,4 @@
-﻿Evergreen Documentation
+﻿﻿Evergreen Documentation
 =======================
 Documentation Interest Group
 :doctype: book
@@ -81,8 +81,6 @@ include::installation/server_installation.adoc[]
 
 // Return to normal title levels.
 :leveloffset: 0
-
-include::installation/staff_client_installation.adoc[]
 
 include::installation/server_upgrade.adoc[]
 
@@ -180,13 +178,11 @@ For information about the XUL client, consult the http://docs.evergreen-ils.org/
 
 include::admin/web_client-login.adoc[]
 
-include::admin/web_client-browser-tab-shortcuts.adoc[]
+include::admin/web-client-browser-best-practices.adoc[]
 
 include::admin/staff_client-column_picker.adoc[]
 
 include::admin/staff_client-recent_searches.adoc[]
-
-include::admin/staff_client-return_to_results_from_marc.adoc[]
 
 include::admin/workstation_admin.adoc[]
 
@@ -279,6 +275,8 @@ include::admin/hold_driven_recalls.adoc[]
 
 include::admin/actiontriggers.adoc[]
 
+include::admin/actiontriggers_process.adoc[]
+
 include::admin/recent_staff_searches.adoc[]
 
 include::admin/lsa-standing_penalties.adoc[]
@@ -312,7 +310,12 @@ include::acquisitions/blanket.adoc[]
 Cataloging
 ==========
 
-include::cataloging/cataloging_web_client.adoc[]
+Introduction
+------------
+
+This part describes cataloging in Evergreen.
+
+include::cataloging/marc_tag_table.adoc[]
 
 include::cataloging/copy-buckets_web_client.adoc[]
 
@@ -333,7 +336,9 @@ include::cataloging/overlay_record_3950_import.adoc[]
 
 include::cataloging/z39.50_search_enhancements.adoc[]
 
+
 include::cataloging/monograph_parts.adoc[]
+
 
 include::cataloging/conjoined_items.adoc[]
 
@@ -380,7 +385,12 @@ system.
 
 include::circulation/circulating_items_web_client.adoc[]
 
-include::circulation/holds.adoc[]
+Holds Management
+----------------
+
+include::circulation/basic_holds.adoc[]
+
+include::circulation/advanced_holds.adoc[]
 
 include::circulation/booking.adoc[]
 
@@ -505,7 +515,7 @@ include::development/data_unapi.adoc[]
 // Return to normal title levels.
 :leveloffset: 0
 
-include::attributions.adoc[]
+include::shared/attributions.adoc[]
 
 include::licensing.adoc[]
 

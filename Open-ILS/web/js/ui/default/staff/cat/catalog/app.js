@@ -7,7 +7,8 @@
  *
  */
 
-angular.module('egCatalogApp', ['ui.bootstrap','ngRoute','ngLocationUpdate','egCoreMod','egGridMod', 'egMarcMod', 'egUserMod', 'egHoldingsMod', 'ngToast'])
+angular.module('egCatalogApp', ['ui.bootstrap','ngRoute','ngLocationUpdate','egCoreMod','egGridMod', 'egMarcMod', 'egUserMod', 'egHoldingsMod', 'ngToast','egPatronSearchMod',
+'egSerialsMod','egSerialsAppDep'])
 
 .config(['ngToastProvider', function(ngToastProvider) {
   ngToastProvider.configure({
@@ -246,10 +247,10 @@ function($scope , $routeParams , $location , $window , $q , egCore) {
 .controller('CatalogCtrl',
        ['$scope','$routeParams','$location','$window','$q','egCore','egHolds','egCirc','egConfirmDialog','ngToast',
         'egGridDataProvider','egHoldGridActions','egProgressDialog','$timeout','$uibModal','holdingsSvc','egUser','conjoinedSvc',
-        '$cookies',
+        '$cookies','egSerialsCoreSvc',
 function($scope , $routeParams , $location , $window , $q , egCore , egHolds , egCirc , egConfirmDialog , ngToast ,
          egGridDataProvider , egHoldGridActions , egProgressDialog , $timeout , $uibModal , holdingsSvc , egUser , conjoinedSvc,
-         $cookies
+         $cookies , egSerialsCoreSvc
 ) {
 
     var holdingsSvcInst = new holdingsSvc();
@@ -365,6 +366,62 @@ function($scope , $routeParams , $location , $window , $q , egCore , egHolds , e
     $scope.current_voltransfer_target = egCore.hatch.getLocalItem('eg.cat.marked_volume_transfer_record');
     $scope.current_conjoined_target   = egCore.hatch.getLocalItem('eg.cat.marked_conjoined_record');
 
+    $scope.quickReceive = function () {
+        var list = [];
+        var next_per_stream = {};
+
+        var recId = $scope.record_id;
+        return $uibModal.open({
+            templateUrl: './share/t_subscription_select_dialog',
+            controller: ['$scope', '$uibModalInstance',
+                function($scope, $uibModalInstance) {
+
+                    $scope.focus = true;
+                    $scope.rememberMe = 'eg.serials.quickreceive.last_org';
+                    $scope.record_id = recId;
+                    $scope.ssubId = null;
+
+                    $scope.ok = function() { $uibModalInstance.close($scope.ssubId) }
+                    $scope.cancel = function() { $uibModalInstance.dismiss(); }
+                }
+            ]
+        }).result.then(function(ssubId) {
+            if (ssubId) {
+                var promises = [];
+                promises.push(egSerialsCoreSvc.fetchItemsForSub(ssubId,{status:'Expected'}).then(function(){
+                    angular.forEach(egSerialsCoreSvc.itemTree, function (item) {
+                        if (next_per_stream[item.stream().id()]) return;
+                        if (item.status() == 'Expected') {
+                            next_per_stream[item.stream().id()] = item;
+                            list.push(egCore.idl.Clone(item));
+                        }
+                    });
+                }));
+
+                return $q.all(promises).then(function() {
+
+                    if (!list.length) {
+                        ngToast.warning(egCore.strings.SERIALS_NO_ITEMS);
+                        return $q.reject();
+                    }
+
+                    return egSerialsCoreSvc.process_items(
+                        'receive',
+                        $scope.record_id,
+                        list,
+                        true, // barcode
+                        false,// bind
+                        false, // print by default
+                        function() { $scope.holdings_record_id_changed($scope.record_id) }
+                    );
+                });
+            } else {
+                ngToast.warning(egCore.strings.SERIALS_NO_SUBS);
+                return $q.reject();
+            }
+        });
+    }
+
     $scope.markConjoined = function () {
         $scope.current_conjoined_target = $scope.record_id;
         egCore.hatch.setLocalItem('eg.cat.marked_conjoined_record',$scope.record_id);
@@ -426,6 +483,36 @@ function($scope , $routeParams , $location , $window , $q , egCore , egHolds , e
         return record_id;
     }
 
+    patron_search_dialog = function() {
+        return $uibModal.open({
+            templateUrl: './share/t_patron_selector',
+            size: 'lg',
+            animation: true,
+            controller:
+                   ['$scope','$uibModalInstance','$controller',
+            function($scope , $uibModalInstance , $controller) {
+                angular.extend(this, $controller('BasePatronSearchCtrl', {$scope : $scope}));
+                $scope.clearForm();
+                $scope.need_one_selected = function() {
+                    var items = $scope.gridControls.selectedItems();
+                    return (items.length == 1) ? false : true
+                }
+                $scope.ok = function() {
+                    var items = $scope.gridControls.selectedItems();
+                    if (items.length == 1) {
+                        $uibModalInstance.close(items[0].card().barcode());
+                    } else {
+                        $uibModalInstance.close()
+                    }
+                }
+                $scope.cancel = function($event) {
+                    $uibModalInstance.dismiss();
+                    $event.preventDefault();
+                }
+            }]
+        });
+    }
+
     // also set it when the iframe changes to a new record
     $scope.handle_page = function(url) {
 
@@ -442,6 +529,7 @@ function($scope , $routeParams , $location , $window , $q , egCore , egHolds , e
             conjoinedSvc.fetch($scope.record_id).then(function(){
                 $scope.conjoinedGridDataProvider.refresh();
             });
+            egHolds.fetch_holds(hold_ids).then($scope.hold_grid_data_provider.refresh);
             init_parts_url();
             $location.update_path('/cat/catalog/record/' + $scope.record_id);
         } else {
@@ -463,6 +551,18 @@ function($scope , $routeParams , $location , $window , $q , egCore , egHolds , e
         } else {
             $scope.in_opac_call = false;
         }
+
+        if ($scope.opac_iframe && $location.path().match(/cat\/catalog/)) {
+            var doc = $scope.opac_iframe.dom.contentWindow.document;
+            $(doc).find('#hold_usr_search').show();
+            $(doc).find('#hold_usr_search').on('click', function() {
+                patron_search_dialog().result.then(function(barc) {
+                    $(doc).find('#hold_usr_input').val(barc);
+                    $(doc).find('#hold_usr_input').change();
+                });
+            })
+        }
+
     }
 
     // xulG catalog handlers
@@ -1415,6 +1515,23 @@ function($scope , $routeParams , $location , $window , $q , egCore , egHolds , e
         );
     }
 
+    $scope.selectedHoldingsPrintLabels = function() {
+        egCore.net.request(
+            'open-ils.actor',
+            'open-ils.actor.anon_cache.set_value',
+            null, 'print-labels-these-copies', {
+                copies : gatherSelectedHoldingsIds()
+            }
+        ).then(function(key) {
+            if (key) {
+                var url = egCore.env.basePath + 'cat/printlabels/' + key;
+                $timeout(function() { $window.open(url, '_blank') });
+            } else {
+                alert('Could not create anonymous cache key!');
+            }
+        });
+    }
+
     $scope.selectedHoldingsDamaged = function () {
         egCirc.mark_damaged(gatherSelectedHoldingsIds()).then(function() {
             holdingsSvcInst.fetchAgain().then(function() {
@@ -1713,9 +1830,34 @@ function($scope , $location) {
 }])
 
 .controller('VandelayCtrl',
-       ['$scope','$location',
-function($scope , $location) {
+       ['$scope','$location', 'egCore', '$uibModal',
+function($scope , $location, egCore, $uibModal) {
     $scope.vandelay_url = $location.absUrl().replace(/\/staff\/cat\/catalog\/vandelay/, '/vandelay/vandelay');
+    $scope.funcs = {};
+    $scope.funcs.edit_marc_modal = function(bre, callback){
+        var marcArgs = { 'marc_xml': bre.marc() };
+        var vqbibrecId = bre.id();
+        $uibModal.open({
+            templateUrl: './cat/catalog/t_edit_marc_modal',
+            size: 'lg',
+            controller: ['$scope', '$uibModalInstance', function($scope, $uibModalInstance) {
+                $scope.focusMe = true;
+                $scope.recordId = vqbibrecId;
+                $scope.args = marcArgs;
+                $scope.dirty_flag = false;
+                $scope.ok = function(marg){
+                    $uibModalInstance.close(marg);
+                };
+                $scope.cancel = function(){ $uibModalInstance.dismiss() }
+            }]
+        }).result.then(function(res){
+            var new_xml = res.marc_xml;
+            egCore.pcrud.retrieve('vqbr', vqbibrecId).then(function(vqbib){
+                vqbib.marc(new_xml);
+                egCore.pcrud.update(vqbib).then( function(){ callback(vqbibrecId); });
+            });
+        });
+    };
 }])
 
 .controller('ManageAuthoritiesCtrl',

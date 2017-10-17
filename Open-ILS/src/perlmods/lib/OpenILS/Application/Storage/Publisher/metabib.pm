@@ -95,7 +95,8 @@ sub ordered_records_from_metarecord { # XXX Replace with QP-based search-within-
     my $org = shift;
     my $depth = shift;
 
-    my $copies_visible = 'LEFT JOIN asset.opac_visible_copies vc ON (br.id = vc.record)';
+    my $copies_visible = 'LEFT JOIN asset.copy_attr_vis_cache vc ON (br.id = vc.record '.
+                         'AND vc.vis_attr_vector @@ (SELECT c_attrs::query_int FROM asset.patron_default_visibility_mask() LIMIT 1))';
     $copies_visible = '' if ($self->api_name =~ /staff/o);
 
     my $copies_visible_count = ',COUNT(vc.id)';
@@ -3001,7 +3002,7 @@ sub query_parser_fts {
 
 
     # gather the limit or default to 10
-    my $limit = $args{check_limit} || 'NULL';
+    my $limit = $args{check_limit};
     if (my ($filter) = $query->parse_tree->find_filter('limit')) {
             $limit = $filter->args->[0] if (@{$filter->args});
     }
@@ -3011,7 +3012,7 @@ sub query_parser_fts {
 
 
     # gather the offset or default to 0
-    my $offset = $args{skip_check} || $args{offset} || 0;
+    my $offset = $args{skip_check} || $args{offset};
     if (my ($filter) = $query->parse_tree->find_filter('offset')) {
             $offset = $filter->args->[0] if (@{$filter->args});
     }
@@ -3077,7 +3078,8 @@ sub query_parser_fts {
 
     my $param_search_ou = $ou;
     my $param_depth = $depth; $param_depth = 'NULL' unless (defined($depth) and length($depth) > 0 );
-    my $param_core_query = "\$core_query_$$\$" . $query->parse_tree->toSQL . "\$core_query_$$\$";
+#    my $param_core_query = "\$core_query_$$\$" . $query->parse_tree->toSQL . "\$core_query_$$\$";
+    my $param_core_query = $query->parse_tree->toSQL;
     my $param_statuses = '$${' . join(',', map { s/\$//go; "\"$_\""} @statuses) . '}$$';
     my $param_locations = '$${' . join(',', map { s/\$//go; "\"$_\""} @location) . '}$$';
     my $staff = ($self->api_name =~ /staff/ or $query->parse_tree->find_modifier('staff')) ? "'t'" : "'f'";
@@ -3085,22 +3087,27 @@ sub query_parser_fts {
     my $metarecord = ($self->api_name =~ /metabib/ or $query->parse_tree->find_modifier('metabib') or $query->parse_tree->find_modifier('metarecord')) ? "'t'" : "'f'";
     my $param_pref_ou = $pref_ou || 'NULL';
 
+#    my $sth = metabib::metarecord_source_map->db_Main->prepare(<<"    SQL");
+#        SELECT  * -- bib search: $args{query}
+#          FROM  search.query_parser_fts(
+#                    $param_search_ou\:\:INT,
+#                    $param_depth\:\:INT,
+#                    $param_core_query\:\:TEXT,
+#                    $param_statuses\:\:INT[],
+#                    $param_locations\:\:INT[],
+#                    $param_offset\:\:INT,
+#                    $param_check\:\:INT,
+#                    $param_limit\:\:INT,
+#                    $metarecord\:\:BOOL,
+#                    $staff\:\:BOOL,
+#                    $deleted_search\:\:BOOL,
+#                    $param_pref_ou\:\:INT
+#                );
+#    SQL
+
     my $sth = metabib::metarecord_source_map->db_Main->prepare(<<"    SQL");
-        SELECT  * -- bib search: $args{query}
-          FROM  search.query_parser_fts(
-                    $param_search_ou\:\:INT,
-                    $param_depth\:\:INT,
-                    $param_core_query\:\:TEXT,
-                    $param_statuses\:\:INT[],
-                    $param_locations\:\:INT[],
-                    $param_offset\:\:INT,
-                    $param_check\:\:INT,
-                    $param_limit\:\:INT,
-                    $metarecord\:\:BOOL,
-                    $staff\:\:BOOL,
-                    $deleted_search\:\:BOOL,
-                    $param_pref_ou\:\:INT
-                );
+        -- bib search: $args{query}
+        $param_core_query
     SQL
 
     $sth->execute;
@@ -3113,14 +3120,6 @@ sub query_parser_fts {
     my $visible  = $$summary_row{visible};
     my $deleted  = $$summary_row{deleted};
     my $excluded = $$summary_row{excluded};
-
-    my $estimate = $visible;
-    if ( $total > $checked && $checked ) {
-
-        $$summary_row{hit_estimate} = FTS_paging_estimate($self, $client, $checked, $visible, $excluded, $deleted, $total);
-        $estimate = $$summary_row{estimated_hit_count} = $$summary_row{hit_estimate}{$estimation_strategy};
-
-    }
 
     delete $$summary_row{id};
     delete $$summary_row{rel};
@@ -3141,7 +3140,7 @@ sub query_parser_fts {
 
     $client->respond( $summary_row );
 
-    $log->debug("Search yielded ".scalar(@$recs)." checked, visible results with an approximate visible total of $estimate.",DEBUG);
+    $log->debug("Search yielded ".scalar(@$recs)." checked, visible results with an approximate visible total of $visible.",DEBUG);
 
     for my $rec (@$recs) {
         delete $$rec{checked};
@@ -3268,6 +3267,27 @@ sub query_parser_fts_wrapper {
         }
     }
 
+    # gather the limit or default to 10
+    my $limit = delete($args{check_limit}) || $base_plan->superpage_size;
+    if (my ($filter) = $base_plan->parse_tree->find_filter('limit')) {
+            $limit = $filter->args->[0] if (@{$filter->args});
+    }
+    if (my ($filter) = $base_plan->parse_tree->find_filter('check_limit')) {
+            $limit = $filter->args->[0] if (@{$filter->args});
+    }
+
+    # gather the offset or default to 0
+    my $offset = delete($args{skip_check}) || delete($args{offset}) || 0;
+    if (my ($filter) = $base_plan->parse_tree->find_filter('offset')) {
+            $offset = $filter->args->[0] if (@{$filter->args});
+    }
+    if (my ($filter) = $base_plan->parse_tree->find_filter('skip_check')) {
+            $offset = $filter->args->[0] if (@{$filter->args});
+    }
+
+
+    $query = "check_limit($limit) $query" if (defined $limit);
+    $query = "skip_check($offset) $query" if (defined $offset);
     $query = "estimation_strategy($args{estimation_strategy}) $query" if ($args{estimation_strategy});
     $query = "badge_orgs($borgs) $query" if ($borgs);
 
@@ -3275,9 +3295,9 @@ sub query_parser_fts_wrapper {
     $query = "site($args{org_unit}) $query" if ($args{org_unit});
     $query = "depth($args{depth}) $query" if (defined($args{depth}));
     $query = "sort($args{sort}) $query" if ($args{sort});
-    $query = "limit($args{limit}) $query" if ($args{limit});
     $query = "core_limit($args{core_limit}) $query" if ($args{core_limit});
-    $query = "skip_check($args{skip_check}) $query" if ($args{skip_check});
+#    $query = "limit($args{limit}) $query" if ($args{limit});
+#    $query = "skip_check($args{skip_check}) $query" if ($args{skip_check});
     $query = "superpage($args{superpage}) $query" if ($args{superpage});
     $query = "offset($args{offset}) $query" if ($args{offset});
     $query = "#metarecord $query" if ($self->api_name =~ /metabib/);

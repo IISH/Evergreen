@@ -1,25 +1,30 @@
 # Arabic translation for evergreen
-# Copyright (c) 2017 Rosetta Contributors and Canonical Ltd 2017
+# Copyright (c) 2016 Rosetta Contributors and Canonical Ltd 2016
 # This file is distributed under the same license as the evergreen package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2016.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: evergreen\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: 2017-08-25 14:20-0400\n"
-"PO-Revision-Date: 2017-04-09 07:00+0000\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2017-09-03 23:32-0400\n"
+"PO-Revision-Date: 2017-09-28 07:32+0000\n"
+"Last-Translator: fares othman <Unknown>\n"
 "Language-Team: Arabic <ar@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2017-08-28 05:36+0000\n"
-"X-Generator: Launchpad (build 18446)\n"
+"X-Launchpad-Export-Date: 2017-09-29 05:11+0000\n"
+"X-Generator: Launchpad (build 18471)\n"
+"Language: ar\n"
 
 #: class.stgu.label:9560
 msgid "User Stage"
 msgstr "منصة المستخدم"
+
+#: class.xex.label:10040
+msgid "Exists Expression"
+msgstr "يوجد تعبير"
 
 #: field.bre.source.label:3071
 msgid "Record Source"
@@ -96,6 +101,10 @@ msgstr "البحث في ميتاداتا المكتبة لـِ الاسم الم
 msgid "Billing Totals"
 msgstr "مجموع الفواتير"
 
+#: field.ahf.joiner.label:2706
+msgid "Joiner string"
+msgstr ""
+
 #: field.qsq.where_clause.label:9752
 msgid "WHERE Clause"
 msgstr "عبارة WHERE"
@@ -112,9 +121,9 @@ msgstr "عنوان المنظمة"
 msgid "URI ID"
 msgstr "مُعرف الرابط"
 
-#: field.mcrp.id.label:6354
-msgid "Pyament ID"
-msgstr "مُعرف الدفع"
+#: field.acsaf.heading_field.label:2493
+msgid "Heading Field"
+msgstr "حقل التسمية أو العنوان"
 
 #: field.au.claims_returned_count.label:3333
 msgid "Claims-returned Count"
@@ -144,6 +153,10 @@ msgstr "البارامترات (JSON Array)"
 #: field.rocit.ref.label:11250
 msgid "Reference"
 msgstr "مرجع"
+
+#: field.acpt.tag_type.label:12133
+msgid "Copy Tag Type"
+msgstr ""
 
 #: field.acqfsb.amount.label:8323
 msgid "Balance after Spent"
@@ -195,6 +208,10 @@ msgstr "رابط رمز الاستدعاء"
 #: field.acirc.checkin_lib.label:4312 field.rodcirc.checkin_lib.label:11173
 msgid "Check In Library"
 msgstr "مكتبة الإرجاع"
+
+#: field.at.short_code.label:2559
+msgid "Short Code"
+msgstr "كود قصير"
 
 #: class.citm.label:5397
 msgid "Item Type Map"
@@ -357,6 +374,10 @@ msgstr "التغطية المُولدة"
 msgid "Payments: Desk"
 msgstr "المدفوعات: المكتب"
 
+#: field.erccpo.visible_count.label:9783
+msgid "Total visible copies"
+msgstr ""
+
 #: field.qrc.column_type.label:9914
 msgid "Column Type"
 msgstr "نوع العمود"
@@ -473,11 +494,6 @@ msgstr "اِسم النوع"
 msgid "Holdable Copy Count at Pickup Library and its Descendants"
 msgstr "تعداد قابلية الحجز للنسخة في مكتبة الالتقاط وسلالتها"
 
-#: field.bre.metarecord.label:3076 class.mmr.label:3615
-#: field.rsr.metarecord.label:9210
-msgid "Metarecord"
-msgstr "ميتاداتا التسجيلة"
-
 #: field.ahr.cancel_time.label:5681 field.ahopl.cancel_time.label:5829
 #: field.alhr.cancel_time.label:5912 field.combahr.cancel_time.label:5998
 #: field.aahr.cancel_time.label:6057
@@ -578,6 +594,10 @@ msgstr "تاريخ الفرز"
 msgid "Response Group ID"
 msgstr "رمز استجابة المجموعة"
 
+#: field.mcrp.id.label:6354
+msgid "Pyament ID"
+msgstr "مُعرف الدفع"
+
 #: class.aus.label:2288
 msgid "User Setting"
 msgstr "إعداد المستخدم"
@@ -652,6 +672,10 @@ msgstr "مُعرف الخريطة"
 #: field.alhr.eligible_copies.label:5917
 msgid "Eligible Copies"
 msgstr "النُسخة المؤهلة/المرغوبة"
+
+#: class.afsg.label:10130 field.afs.fieldset_group.label:10171
+msgid "Fieldset Group"
+msgstr ""
 
 #: field.ccmlsm.limit_set.label:2002 field.cclscmm.limit_set.label:2029
 #: field.cclsacpl.limit_set.label:2054 field.cclsgm.limit_set.label:2080
@@ -782,10 +806,9 @@ msgstr "التيارات"
 msgid "Required Permission"
 msgstr "الصلاحية/الإذن المطلوب"
 
-#: field.sunit.status_changed_time.label:5170
-#: field.acp.status_changed_time.label:6807
-msgid "Copy Status Changed Time"
-msgstr "وقت تغيير حالة النُسخة"
+#: field.ahf.thesaurus_xpath.label:2704
+msgid "Thesaurus XPath"
+msgstr ""
 
 #: field.sunit.mint_condition.label:5171 field.ahr.mint_condition.label:5693
 #: field.ahopl.mint_condition.label:5841 field.alhr.mint_condition.label:5924
@@ -1034,9 +1057,17 @@ msgstr "حقول رمز الاستدعاء"
 msgid "Spent Total"
 msgstr "الإجمالي المُنفق"
 
+#: field.ahf.type_xpath.label:2703
+msgid "Related/Variant Type XPath"
+msgstr ""
+
 #: class.cza.label:1207 field.czifm.z3950_attr.label:1239
 msgid "Z39.50 Attribute"
 msgstr "خاصية Z39.50"
+
+#: field.acqedi.use_attrs.label:9378
+msgid "Use EDI Attributes"
+msgstr ""
 
 #: field.mbtslv.billing_location.label:2192
 #: field.mg.billing_location.label:6478
@@ -1059,9 +1090,17 @@ msgstr "حالة النشر"
 msgid "Importance Interval"
 msgstr "الفاصل لـِ الأهمية"
 
+#: class.aeasm.label:9439
+msgid "EDI Attribute Set Map"
+msgstr ""
+
 #: field.aufhmxl.max.label:9718
 msgid "Max Loop"
 msgstr "الحد الأقصى لـِ التكرار"
+
+#: field.ahf.label.label:2699
+msgid "Heading Field Label"
+msgstr ""
 
 #: field.atev.async_output.label:1445
 msgid "Asynchronous Output"
@@ -1100,6 +1139,10 @@ msgstr "ملاحظة القيد"
 msgid "In House?"
 msgstr "في المَسكن/جماعة المشاهدين؟"
 
+#: class.aacs.label:4425
+msgid "Combined Aged and Active circulations"
+msgstr ""
+
 #: field.au.card.label:3332
 msgid "Current Library Card"
 msgstr "بطاقة المكتبة الحالية"
@@ -1117,6 +1160,10 @@ msgstr "الكمية المُقدرة"
 msgid "Passive"
 msgstr "سلبي/غير فعال"
 
+#: class.cctt.label:12112
+msgid "Copy Tag Types"
+msgstr ""
+
 #: field.acp.last_circ.label:6817 field.rlc.last_circ.label:10799
 msgid "Last Circulation Date"
 msgstr "تاريخ آخر إعارة"
@@ -1128,6 +1175,10 @@ msgstr "المصادر"
 #: class.ash.label:2666
 msgid "Authority Simple Heading"
 msgstr "الترويسة البسيطة لـِ الإسناد"
+
+#: field.bre.compressed_display_entries.label:3137
+msgid "Compressed Display Entries"
+msgstr ""
 
 #: field.sstr.routing_label.label:5044
 msgid "Routing Label"
@@ -1190,6 +1241,20 @@ msgstr "مخطط تصنيف رمز الاستدعاء"
 #: class.aufh.label:7033
 msgid "Unfulfilled Hold Targets"
 msgstr "استهدافات الحجز غير المُنجز"
+
+#: field.sre.creator.label:4847 field.ssubn.creator.label:4949
+#: field.sdistn.creator.label:5011 field.siss.creator.label:5103
+#: field.sitem.creator.label:5214 field.sin.creator.label:5259
+#: field.act.creator.label:6871 field.acqpron.creator.label:7695
+#: field.acqpl.creator.label:8450 field.acqpo.creator.label:8497
+#: field.acqpoh.creator.label:8540 field.acqpon.creator.label:8572
+#: field.jub.creator.label:8653 field.acqlih.creator.label:8701
+#: field.acqlin.creator.label:8766 field.acqdfa.creator.label:9372
+#: field.acqcle.creator.label:9473 field.acqscle.creator.label:9501
+#: field.uvs.creator.label:10282 field.cfdfs.creator.label:10542
+#: field.rocit.creator.label:11247
+msgid "Creator"
+msgstr "المُنشىء"
 
 #: field.acp.holds_count.label:6824
 msgid "Has Holds"
@@ -1816,6 +1881,10 @@ msgstr "مُعرف الإعارة غير المُفهرس"
 msgid "Match Set Type"
 msgstr "نوع مجموعة التطابق"
 
+#: field.puwoum.work_ou.label:7526
+msgid "Working Location"
+msgstr "موقع العمل"
+
 #: field.rp.func.label:276
 msgid "Population Function"
 msgstr "الوظيفة الترويجية"
@@ -1880,6 +1949,10 @@ msgstr "بادئة"
 #: field.ahrn.pub.label:5956
 msgid "Pub?"
 msgstr "منشور؟"
+
+#: field.cmf.display_xpath.label:2840
+msgid "Display XPath"
+msgstr ""
 
 #: field.jub.expected_recv_time.label:8651
 msgid "Expected Receive Date"
@@ -2032,9 +2105,9 @@ msgstr "خريطة مجموعة ضبط حدود الإعارة"
 msgid "Is Active"
 msgstr "أنه فعّال"
 
-#: field.czs.attrs.label:1190
-msgid "Attrs"
-msgstr "الخصائص"
+#: field.au.usr_work_ou_map.label:3434
+msgid "User/Working Location Map"
+msgstr "خريطة مستخدم/موقع العمل"
 
 #: field.acsaf.nfi.label:2473
 msgid "Non-filing Indicator"
@@ -2197,6 +2270,10 @@ msgstr "مسار X"
 msgid "Record Matching Definition"
 msgstr "تعريف مطابقة التسجيلة"
 
+#: field.ahf.heading_xpath.label:2701
+msgid "Heading XPath"
+msgstr ""
+
 #: field.mrd.date2.label:3843
 msgid "Date2"
 msgstr "تاريخ2"
@@ -2251,6 +2328,10 @@ msgstr "التكلفة الفعلية"
 msgid "Email Gateway"
 msgstr "بوابة البريد الإلكتروني"
 
+#: field.puwoum.id.label:7524
+msgid "User/Working Location Map ID"
+msgstr "معرف خريطة مستخدم/موقع العمل"
+
 #: class.crainm.label:1106
 msgid "SVF Record Attribute to Indexing Normalizer Map"
 msgstr "خاصية تسجيلة SVF لـِ خريطة تسوية الفهرسة"
@@ -2266,6 +2347,10 @@ msgstr "الإرجاعات"
 #: field.actscsf.field.label:6267 field.ascsf.field.label:7329
 msgid "Field Identifier"
 msgstr "مُعرّف الحقل"
+
+#: field.cmf.display_field.label:2844
+msgid "Display Field?"
+msgstr ""
 
 #: field.cblvl.code.label:5414
 msgid "Bib Level Code"
@@ -2307,10 +2392,13 @@ msgstr "خريطة تاج التمويل"
 msgid "Call Number/Volume"
 msgstr "رمز الاستدعاء/المجلد"
 
-#: field.uvsbrem.session.label:10321 field.uvus.session.label:10347
-#: field.uvu.session.label:10386 field.uvva.session.label:10440
-msgid "Session"
-msgstr "الجلسة"
+#: class.spt.label:5704
+msgid "Prediction Pattern Template"
+msgstr ""
+
+#: field.bre.display_entries.label:3135
+msgid "Display Fields"
+msgstr ""
 
 #: field.atul.user_data.label:1538
 msgid "Event User Data"
@@ -2542,6 +2630,10 @@ msgstr "المجموع الإجمالي المُشترك لكافة التموي
 msgid "Locale"
 msgstr "محلي"
 
+#: class.mwde.label:3797
+msgid "Wide Display Entry"
+msgstr ""
+
 #: field.rb.recalc_interval.label:312
 msgid "Recalculation Interval"
 msgstr "فاصل إعادة الحساب"
@@ -2724,6 +2816,10 @@ msgstr "الحماية العمرية"
 msgid "Fiscal Calendar Name"
 msgstr "اسم التقويم المالي"
 
+#: field.afs.error_msg.label:10172
+msgid "Error Message"
+msgstr ""
+
 #: class.czs.label:1180 field.czs.name.label:1182 field.cza.source.label:1210
 msgid "Z39.50 Source"
 msgstr "مصدر Z39.50"
@@ -2733,6 +2829,10 @@ msgstr "مصدر Z39.50"
 #: field.aur.eg_bib.label:7574
 msgid "Bib Record"
 msgstr "التسجيلة الببليوغرافية"
+
+#: field.aea.key.label:9407
+msgid "Key"
+msgstr ""
 
 #: field.clfm.code.label:6616
 msgid "LitF Code"
@@ -2902,19 +3002,9 @@ msgstr "نسبة الحجز/النُسخة حسب المكتبة"
 msgid "Alert Message"
 msgstr "رسالة التنبيه"
 
-#: field.sre.creator.label:4847 field.ssubn.creator.label:4949
-#: field.sdistn.creator.label:5011 field.siss.creator.label:5103
-#: field.sitem.creator.label:5214 field.sin.creator.label:5259
-#: field.act.creator.label:6871 field.acqpron.creator.label:7695
-#: field.acqpl.creator.label:8450 field.acqpo.creator.label:8497
-#: field.acqpoh.creator.label:8540 field.acqpon.creator.label:8572
-#: field.jub.creator.label:8653 field.acqlih.creator.label:8701
-#: field.acqlin.creator.label:8766 field.acqdfa.creator.label:9372
-#: field.acqcle.creator.label:9473 field.acqscle.creator.label:9501
-#: field.uvs.creator.label:10282 field.cfdfs.creator.label:10542
-#: field.rocit.creator.label:11247
-msgid "Creator"
-msgstr "المُنشىء"
+#: field.acp.tags.label:7203 class.acpt.label:12130
+msgid "Copy Tags"
+msgstr ""
 
 #: field.asvq.id.label:2124
 msgid "Question ID"
@@ -2923,6 +3013,10 @@ msgstr "مُعرف السؤال"
 #: class.acqpon.label:8568
 msgid "PO Note"
 msgstr "ملاحظة الـ PO"
+
+#: field.aeas.attr_maps.label:9425
+msgid "Mapped EDI Attributes"
+msgstr ""
 
 #: field.czs.transmission_format.label:1188
 msgid "Transmission Format"
@@ -3011,6 +3105,10 @@ msgstr "التعبير المُشَغِل"
 #: field.rxbt.total.label:9274
 msgid "Total Billing Amount"
 msgstr "المجموع الإجمالي لمقدار الفاتورة"
+
+#: field.afsg.rollback_group.label:10138
+msgid "Rollback Group"
+msgstr ""
 
 #: field.circ.xact_finish.label:4173 field.combcirc.xact_finish.label:4246
 #: field.acirc.xact_finish.label:4335 field.bresv.xact_finish.label:4558
@@ -3191,6 +3289,14 @@ msgstr "استخدام الكل"
 #: class.atreact.label:1321
 msgid "Trigger Event Reactor"
 msgstr "إطلاق حدث ردات الفعل"
+
+#: class.mde.label:3726
+msgid "Display Field Entry"
+msgstr ""
+
+#: field.rhcrpbap.pickup_library_ratio.label:10706
+msgid "Hold/Copy Ratio at Pickup Library"
+msgstr "نسبة مُعدل الحجز/النسخة في مكتبة الاستقبال"
 
 #: field.acqf.combined_balance.label:8129
 msgid "Combined Balance"
@@ -3392,9 +3498,9 @@ msgstr "وقت/تاريخ الإكمال"
 msgid "Note"
 msgstr "الملاحظة"
 
-#: class.ccnbi.label:4631
-msgid "Call Number Bucket Item"
-msgstr "نُسخة سلة رمز الاستدعاء"
+#: field.acqexr.to_currency.label:7637
+msgid "To Currency"
+msgstr "إلى عملة"
 
 #: class.xbet.label:9950
 msgid "Between Expression"
@@ -3490,6 +3596,10 @@ msgstr "المكتبة مشبعة"
 msgid "Shelving Location Name"
 msgstr "اسم موقع الرف"
 
+#: field.afsg.container.label:10136
+msgid "Container ID"
+msgstr ""
+
 #: field.atc.id.label:2355 field.artc.id.label:7366 field.ahtc.id.label:7401
 #: field.iatc.id.label:11103
 msgid "Transit ID"
@@ -3552,6 +3662,10 @@ msgstr "المُطالبات المُسترجعة"
 msgid "Request Library"
 msgstr "مكتبة الطلب"
 
+#: field.aeasm.attr_set.label:9444
+msgid "Attribute Set"
+msgstr ""
+
 #: field.hasholdscount.count.label:11589
 msgid "Holds Count"
 msgstr "تعداد الحجوزات"
@@ -3605,9 +3719,9 @@ msgstr "مُعرف نوع البيانات"
 msgid "Failure Cleanup"
 msgstr "فشل المسح"
 
-#: field.ccmm.circulate.label:1920 field.act.circulate.label:6882
-msgid "Circulate?"
-msgstr "إعارة؟"
+#: field.bre.wide_display_entry.label:3138
+msgid "Wide Display Entries"
+msgstr ""
 
 #: field.chmw.usr_grp.label:1769 field.chmm.usr_grp.label:1857
 msgid "User Permission Group"
@@ -3633,9 +3747,9 @@ msgstr "مخطط التصنيف"
 msgid "Billing Line Item"
 msgstr "فاتورة القيد"
 
-#: field.chmm.age_hold_protect_rule.label:1871
-msgid "Copy Age Hold Protection Rule"
-msgstr "شرط حماية الحجز العمرية لـِ النُسخة"
+#: field.brav.attr_val_maps.label:4506
+msgid "Resource Attribute Value Maps"
+msgstr "خرائط قيمة خاصية المصدر"
 
 #: field.cxt.prefix.label:2728
 msgid "Namespace Prefix"
@@ -3662,6 +3776,10 @@ msgstr "نُسخة الفهرس"
 #: field.rccbs.last_billing_note.label:10972
 msgid "Last Billing Note"
 msgstr "ملاحظة الفاتورة الأخيرة"
+
+#: field.abaafm.axis.label:2588
+msgid "Axis"
+msgstr "محور"
 
 #: field.czs.port.label:1185
 msgid "Port"
@@ -3702,6 +3820,10 @@ msgstr "فتح مُلخص الإعارة لـِ المستخدم"
 #: field.auch.source_circ.label:4400
 msgid "Source Circulation"
 msgstr "إعارة المصدر"
+
+#: field.afsg.container_type.label:10137
+msgid "Container Type"
+msgstr ""
 
 #: field.acqf.propagate.label:8117 field.acqfsum.propagate.label:8359
 msgid "Propagate"
@@ -4039,6 +4161,10 @@ msgstr "إجراء (نوع الحدث)"
 msgid "Hours of Operation"
 msgstr "ساعات العملية"
 
+#: field.atevdef.retention_interval.label:1409
+msgid "Retention Interval"
+msgstr ""
+
 #: field.cmrtm.blvl_val.label:10567
 msgid "BLvl Value"
 msgstr "قيمة المستوى الببليوغرافي"
@@ -4184,9 +4310,11 @@ msgstr "نسخة الفاتورة غير الببليوغرافية"
 msgid "Filters"
 msgstr "التصفيات والفرز"
 
-#: field.cmc.fields.label:2773
-msgid "Fields"
-msgstr "الحُقول"
+#: field.aua.country.label:3948 field.aal.country.label:3978
+#: field.acqpa.country.label:7843 field.acqpca.country.label:7908
+#: field.stgma.country.label:9604 field.stgba.country.label:9620
+msgid "Country"
+msgstr "الدولة"
 
 #: field.ccmm.total_copy_hold_ratio.label:1928
 msgid "Minimum Total Copy/Hold Ratio"
@@ -4224,6 +4352,10 @@ msgstr "العناوين"
 #: field.acp.peer_records.label:6822
 msgid "Peer Records"
 msgstr "التسجيلات النظيرة"
+
+#: field.acqedi.attr_set.label:9377 class.aeas.label:9419
+msgid "EDI Attribute Set"
+msgstr ""
 
 #: field.vmsp.children.label:749
 msgid "Expression Tree Children"
@@ -4569,6 +4701,11 @@ msgstr "نوع العملية"
 msgid "End Time"
 msgstr "وقت الانتهاء"
 
+#: field.sunit.status_changed_time.label:5170
+#: field.acp.status_changed_time.label:6807
+msgid "Copy Status Changed Time"
+msgstr "وقت تغيير حالة النُسخة"
+
 #: field.ateo.id.label:1260
 msgid "Output ID"
 msgstr "مُعرف المَخرج/الناتج"
@@ -4789,9 +4926,9 @@ msgstr "مشاركة العمق"
 msgid "Use Permission"
 msgstr "استخدام الصلاحيات"
 
-#: field.rhcrpbap.pickup_library_ratio.label:10706
-msgid "Hold/Copy Ratio at Pickup Library"
-msgstr "نسبة مُعدل الحجز/النسخة في مكتبة الاستقبال"
+#: class.mcde.label:3772
+msgid "Compressed Display Entry"
+msgstr ""
 
 #: class.rtf.label:9053
 msgid "Template Folder"
@@ -4850,6 +4987,10 @@ msgstr "نوع المُطالبة"
 #: field.acirc.payments.label:4343 field.rodcirc.payments.label:11198
 msgid "Transaction Payments"
 msgstr "عمليات الدفع"
+
+#: field.ahf.heading_type.label:2697
+msgid "Heading Type"
+msgstr ""
 
 #: field.abaafm.field.label:2587 field.aalink.field.label:6393
 msgid "Authority Field"
@@ -4915,6 +5056,10 @@ msgstr "مقدار الإنفاق"
 #: field.crad.string_len.label:967
 msgid "String Length"
 msgstr "طول السترينغ"
+
+#: field.bre.flat_display_entries.label:3136
+msgid "Flat Display Entries"
+msgstr ""
 
 #: class.rr.label:9118
 msgid "Report"
@@ -5043,6 +5188,10 @@ msgstr "مَخرج/ناتج خطأ الحدث"
 #: field.sre.last_xact_id.label:4852
 msgid "Last Transaction ID"
 msgstr "مُعرف آخر عملية"
+
+#: field.acpt.staff_note.label:12136
+msgid "Staff Note"
+msgstr ""
 
 #: class.alhr.label:5885
 msgid "Last Captured Hold Request"
@@ -5207,9 +5356,9 @@ msgstr "أوزان الإعارة"
 msgid "Entry ID"
 msgstr "مُعرف المَدخل"
 
-#: field.brav.attr_val_maps.label:4506
-msgid "Resource Attribute Value Maps"
-msgstr "خرائط قيمة خاصية المصدر"
+#: field.chmm.age_hold_protect_rule.label:1871
+msgid "Copy Age Hold Protection Rule"
+msgstr "شرط حماية الحجز العمرية لـِ النُسخة"
 
 #: field.qfr.id.label:9888 field.qrc.from_relation.label:9911
 msgid "From Relation ID"
@@ -5279,6 +5428,10 @@ msgstr "مُعرف ملاحظة طلب الشراء"
 #: field.ahopl.usr_first_given_name.label:5846
 msgid "User First Given Name"
 msgstr "اسم المستخدم الأول المُعطى"
+
+#: field.erccpo.circ_lib.label:9778
+msgid "Circulation Library"
+msgstr ""
 
 #: field.cust.fm_class.label:3514
 msgid "Fieldmapper Class"
@@ -5624,9 +5777,9 @@ msgstr "مدخل صيغة التوزيع"
 msgid "Address ID"
 msgstr "مُعرف العنوان"
 
-#: field.rccbs.patron_county.label:10976
-msgid "User County"
-msgstr "محافظة المستخدم"
+#: field.afsg.rollback_time.label:10139
+msgid "Rollback Time"
+msgstr ""
 
 #: field.acqf.tags.label:8124
 msgid "Tags"
@@ -5663,6 +5816,10 @@ msgstr "مجموعة صلاحيات الطالب"
 #: class.ccvm.label:1128
 msgid "SVF Record Attribute Coded Value Map"
 msgstr "خريطة قيمة خاصية التسجيلة المكودة لـِ SVF"
+
+#: field.cmf.display_field_map.label:2845 class.cdfm.label:3822
+msgid "Display Field Map"
+msgstr ""
 
 #: class.mvr.label:117
 msgid "Virtual Record"
@@ -5777,6 +5934,11 @@ msgstr "نمط الانتخاب؟"
 #: field.qcb.id.label:9873
 msgid "Case Branch ID"
 msgstr "مُعرف قضية الفرع"
+
+#: field.uvsbrem.session.label:10321 field.uvus.session.label:10347
+#: field.uvu.session.label:10386 field.uvva.session.label:10440
+msgid "Session"
+msgstr "الجلسة"
 
 #: field.sasum.id.label:5275
 msgid "Native ID"
@@ -6028,6 +6190,10 @@ msgstr "تصفح الحقل"
 msgid "Type Depth"
 msgstr "نوع العمق"
 
+#: field.ahf.heading_purpose.label:2698
+msgid "Heading Purpose"
+msgstr ""
+
 #: field.acqpro.email.label:7668 field.acqpc.email.label:7881
 msgid "Email"
 msgstr "البريد الإلكتروني"
@@ -6055,6 +6221,10 @@ msgstr "مجموعة بروفايل المستفيد"
 msgid "User Home Library Short (Policy) Name"
 msgstr "الاسم المختصر (سياسة) لمكتبة المستخدم  الرئيسية"
 
+#: class.ahf.label:2694
+msgid "Authority Heading Fields"
+msgstr ""
+
 #: field.acqii.fund.label:7808 class.acqf.label:8108
 #: field.acqfa.fund.label:8384 field.acqpoi.fund.label:8612
 #: field.acqlid.fund.label:8807 field.acqdfe.fund.label:9340
@@ -6080,6 +6250,10 @@ msgstr "مُعرف مدخل الخريطة"
 #: field.au.prefix.label:3357
 msgid "Prefix/Title"
 msgstr "البادئة / العنوان"
+
+#: field.ahf.thesaurus_override_xpath.label:2705
+msgid "Thesaurus Override XPath"
+msgstr ""
 
 #: class.cubn.label:6339
 msgid "User Bucket Note"
@@ -6273,9 +6447,9 @@ msgstr "صيغة التوزيع"
 msgid "Main Entry"
 msgstr "المدخل الرئيسي"
 
-#: field.acqexr.to_currency.label:7637
-msgid "To Currency"
-msgstr "إلى عملة"
+#: class.ccnbi.label:4631
+msgid "Call Number Bucket Item"
+msgstr "نُسخة سلة رمز الاستدعاء"
 
 #: field.rsr.topic_subject.label:9225
 msgid "Topic Subjects (normalized)"
@@ -6428,6 +6602,10 @@ msgstr "عمر النسخة"
 msgid "Primary Identification Type"
 msgstr "نوع المعرف الأساسي"
 
+#: field.czs.attrs.label:1190
+msgid "Attrs"
+msgstr "الخصائص"
+
 #: field.rccbs.total_owed.label:10965 field.rmocbbol.billed.label:11277
 #: field.rmocbbcol.billed.label:11302 field.rmocbbhol.billed.label:11330
 msgid "Total Billed"
@@ -6491,6 +6669,10 @@ msgstr "المُستخلصات البسيطة لـِ التسجيلة"
 msgid "Distribution Formula Application"
 msgstr "تطبيق صيغة التوزيع"
 
+#: field.circ.circ_lib.label:4337
+msgid "Checkout / Renewal Library"
+msgstr ""
+
 #: field.acsbf.authority_field.label:2504
 msgid "Controlling Authority Field"
 msgstr "حقل تحكم بالإسناد"
@@ -6534,6 +6716,10 @@ msgstr "رمز استدعاء ديوي/البادئة"
 #: field.acqfsrcat.amount.label:8303
 msgid "Total Allocated from Funding Source"
 msgstr "المجموع الإجمالي المخصص من مصدر التمويل"
+
+#: field.erccpo.total_count.label:9784
+msgid "Total copies attached"
+msgstr ""
 
 #: class.rhcrpbap.label:10669
 msgid "Hold/Copy Ratio per Bib and Pickup Library"
@@ -6625,6 +6811,10 @@ msgstr "مجموعة الإعدادات"
 msgid "Combined?"
 msgstr "اتحاد/مُشترك؟"
 
+#: class.mfde.label:3747
+msgid "Flat Display Entry"
+msgstr ""
+
 #: field.sunit.active_date.label:5152 field.acp.active_date.label:6788
 msgid "Active Date/Time"
 msgstr "وقت/تاريخ التفعيل"
@@ -6664,6 +6854,10 @@ msgstr "نوع الضبط"
 #: field.qxp.cast_type.label:9856 field.xcast.cast_type.label:10015
 msgid "Cast Type"
 msgstr "نوع الخام"
+
+#: class.aacct.label:4405
+msgid "All Circulation Combined Types"
+msgstr ""
 
 #: class.ancihu.label:2331
 msgid "Non-cataloged In House Use"
@@ -6752,6 +6946,10 @@ msgstr "قُيود البحث"
 #: field.cmrcsubfld.code.label:931
 msgid "MARC Subfield"
 msgstr "الحقل الفرعي لـِ مارك"
+
+#: field.afsg.name.label:10133
+msgid "Fieldset Group Name"
+msgstr ""
 
 #: class.mbts.label:2148
 msgid "Billable Transaction Summary"
@@ -6996,6 +7194,10 @@ msgstr "تطبيق على النُسخ"
 msgid "Billed Cost per Item"
 msgstr "تكلفة الفاتورة حسب النُسخة"
 
+#: class.aea.label:9403
+msgid "EDI Attribute"
+msgstr ""
+
 #: field.jub.claim_policy.label:8655 field.acqlih.claim_policy.label:8714
 #: class.acqclp.label:9511
 msgid "Claim Policy"
@@ -7008,6 +7210,11 @@ msgstr "ملاحظة المُزود"
 #: field.auoi.org_unit.label:813
 msgid "Allowed Org Unit"
 msgstr "السماح لـِ الوحدة التنظيمية"
+
+#: field.atc.cancel_time.label:2365 field.artc.cancel_time.label:7773
+#: field.ahtc.cancel_time.label:7809 field.iatc.cancel_time.label:11647
+msgid "Cancel Date/Time"
+msgstr ""
 
 #: class.xcast.label:10008
 msgid "Cast Expression"
@@ -7035,6 +7242,10 @@ msgstr "تعبير الوظيفة/الإجراء"
 msgid "Body"
 msgstr "الجسم"
 
+#: field.ahf.component_xpath.label:2702
+msgid "Heading Component XPath"
+msgstr ""
+
 #: field.acqft.name.label:11355
 msgid "Fund Tag Name"
 msgstr "عنوان تاج التمويل"
@@ -7058,6 +7269,10 @@ msgstr "قاعدة الغرامة الدورية"
 #: field.atev.complete_time.label:1440
 msgid "Complete Time"
 msgstr "وقت الإتمام"
+
+#: class.acptcm.label:12153
+msgid "Copy Tag Copy Map"
+msgstr ""
 
 #: class.acqda.label:9400
 msgid "Debit Attribution"
@@ -7105,6 +7320,10 @@ msgstr "مُعرف قيمة العمود"
 msgid "Total Spent from Fund"
 msgstr "إجمالي مبلغ الإنفاق للتمويل"
 
+#: field.mwde.creators.label:3808
+msgid "Creators"
+msgstr ""
+
 #: field.acqcl.lineitem_detail.label:9459
 #: field.acrlid.lineitem_detail.label:11040
 msgid "Lineitem Detail"
@@ -7137,6 +7356,10 @@ msgstr "فئة المستخدم الإحصائية"
 #: class.auss.label:3997
 msgid "User Saved Search"
 msgstr "بحث المستخدم المحفوظ"
+
+#: field.mwde.subject.label:3807
+msgid "Subject"
+msgstr ""
 
 #: field.chddv.ceiling_date.label:3261
 msgid "Ceiling Date"
@@ -7233,6 +7456,11 @@ msgstr "ضبط الحساب"
 msgid "Hold Request"
 msgstr "طلب الحجز"
 
+#: class.acqct.label:7617 field.acqf.currency_type.label:8114
+#: field.acqfsum.currency_type.label:8356
+msgid "Currency Type"
+msgstr "نوع العملة"
+
 #: field.bre.notes.label:3078
 msgid "Non-MARC Record Notes"
 msgstr "ملاحظات التسجيلة بدون مارك"
@@ -7265,9 +7493,17 @@ msgstr "محذوفة؟"
 msgid "Circulation Chain Summary"
 msgstr "مُلخص سلسلة الإعارة"
 
+#: field.erccpo.deleted_count.label:9782
+msgid "Total deleted copies"
+msgstr ""
+
 #: field.sunit.circulate.label:5149 field.acp.circulate.label:6785
 msgid "Can Circulate"
 msgstr "يمكن الإعارة"
+
+#: field.afsg.id.label:10132
+msgid "Fieldset Group ID"
+msgstr ""
 
 #: class.acqlia.label:8782
 msgid "Line Item Attribute"
@@ -7389,6 +7625,10 @@ msgstr "طاقم الإنشاء"
 #: field.uvuv.res_time.label:10481
 msgid "Result Time"
 msgstr "وقت النتيجة"
+
+#: field.ccmm.circulate.label:1920 field.act.circulate.label:6882
+msgid "Circulate?"
+msgstr "إعارة؟"
 
 #: field.acqlid.recv_time.label:8805
 msgid "Actual Receive Date"
@@ -7783,9 +8023,9 @@ msgstr "قبول عضو طاقم المكتبة"
 msgid "Address Alert ID"
 msgstr "مُعرف تنبيه العنوان"
 
-#: field.abaafm.axis.label:2588
-msgid "Axis"
-msgstr "محور"
+#: field.ahf.format.label:2700
+msgid "Heading XSLT Format"
+msgstr ""
 
 #: class.rodcirc.label:11171
 msgid "Overdue Circulation"
@@ -7798,6 +8038,10 @@ msgstr "مُفعل؟"
 #: field.actsc.allow_freetext.label:6294
 msgid "Free Text"
 msgstr "نص حر"
+
+#: field.erccpo.last_edit_time.label:9780
+msgid "Last Edit Date"
+msgstr ""
 
 #: field.ausp.stop_date.label:3926
 msgid "Stop Date"
@@ -8196,11 +8440,9 @@ msgstr "الفاصل الزمني لـِ الإجراء"
 msgid "Date of Birth"
 msgstr "تاريخ الميلاد"
 
-#: field.aua.country.label:3948 field.aal.country.label:3978
-#: field.acqpa.country.label:7843 field.acqpca.country.label:7908
-#: field.stgma.country.label:9604 field.stgba.country.label:9620
-msgid "Country"
-msgstr "الدولة"
+#: field.cmc.fields.label:2773
+msgid "Fields"
+msgstr "الحُقول"
 
 #: field.bre.creator.label:3062
 msgid "Record Creator"
@@ -8224,6 +8466,10 @@ msgstr "تعريف بارمترات الوظيفة"
 #: field.afs.creation_time.label:9654
 msgid "Creation Time"
 msgstr "وقت الإنشاء"
+
+#: field.rccbs.patron_county.label:10976
+msgid "User County"
+msgstr "محافظة المستخدم"
 
 #: field.acqlid.collection_code.label:8813
 #: field.acqdfe.collection_code.label:9342
@@ -8421,10 +8667,14 @@ msgstr "مُعرف سياسة المُطالبة"
 msgid "Standing Penalties"
 msgstr "العقوبات القائمة"
 
-#: class.acqct.label:7617 field.acqf.currency_type.label:8114
-#: field.acqfsum.currency_type.label:8356
-msgid "Currency Type"
-msgstr "نوع العملة"
+#: class.erccpo.label:9775
+msgid "Library Holdings Count with Deleted"
+msgstr ""
+
+#: field.bre.metarecord.label:3076 class.mmr.label:3615
+#: field.rsr.metarecord.label:9210
+msgid "Metarecord"
+msgstr "ميتاداتا التسجيلة"
 
 #: field.aout.can_have_users.label:6425
 msgid "Can Have Users?"
@@ -8463,9 +8713,9 @@ msgstr "الوظيفة او الآلية"
 msgid "OPAC/Patron Visible"
 msgstr "إظهار الأوباك/المستفيد"
 
-#: class.xex.label:10040
-msgid "Exists Expression"
-msgstr "يوجد تعبير"
+#: field.erccpo.has_only_deleted_copies.label:9781
+msgid "Has Only Deleted Copies 0/1"
+msgstr ""
 
 #: field.aur.volume.label:7580
 msgid "Volume"

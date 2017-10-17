@@ -20,14 +20,41 @@ angular.module('egCoreMod')
 }])
 
 .factory('egStartup', 
-       ['$q','$rootScope','$location','$window','egIDL','egAuth','egEnv',
-function($q,  $rootScope,  $location,  $window,  egIDL,  egAuth,  egEnv) {
+       ['$q','$rootScope','$location','$window','egIDL','egAuth','egEnv','egOrg',
+function($q,  $rootScope,  $location,  $window,  egIDL,  egAuth,  egEnv , egOrg ) {
 
     var service = { promise : null }
+
+    // Some org settings affect every page.  Load them during startup.  
+    // Other startup data loaders can be added by appending to egEnv.loaders.
+    // egEnv.loaders functions must return a promise.
+    egEnv.loaders.push(
+        function() {
+            return egOrg.settings([
+                'webstaff.format.dates',
+                'webstaff.format.date_and_time',
+                'ui.staff.max_recent_patrons', // affects navbar
+                'lib.timezone'
+            ]).then(
+                function(set) {
+                    $rootScope.egDateFormat = 
+                        set['webstaff.format.dates'] || 'shortDate';
+                    $rootScope.egDateAndTimeFormat = 
+                        set['webstaff.format.date_and_time'] || 'short';
+
+                    // default to 1 for backwards compat.
+                    if (set['ui.staff.max_recent_patrons'] === null)
+                        set['ui.staff.max_recent_patrons'] = 1
+                }
+            );
+        }
+    );
 
     // returns true if we are staying on the current page
     // false if we are redirecting to login
     service.expiredAuthHandler = function() {
+        if (lf.isOffline) return true; // Only set by the offline UI
+
         console.debug('egStartup.expiredAuthHandler()');
         egAuth.logout(); // clean up
 

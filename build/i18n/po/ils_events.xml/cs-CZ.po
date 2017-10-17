@@ -1,21 +1,19 @@
-# Czech translation for evergreen
-# Copyright (c) 2017 Rosetta Contributors and Canonical Ltd 2017
-# This file is distributed under the same license as the evergreen package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
-#
 msgid ""
 msgstr ""
-"Project-Id-Version: evergreen\n"
-"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: 2017-08-25 14:21-0400\n"
-"PO-Revision-Date: 2017-04-09 07:00+0000\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: Czech <cs@li.org>\n"
+"Project-Id-Version: Evergreen 1.4\n"
+"Report-Msgid-Bugs-To: open-ils-dev@list.georgialibraries.org\n"
+"POT-Creation-Date: 2017-09-03 23:33-0400\n"
+"PO-Revision-Date: 2017-09-24 17:57+0000\n"
+"Last-Translator: Eva Cerninakova <Unknown>\n"
+"Language-Team: UISK <PetrKubiska@seznam.cz>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2017-08-28 05:37+0000\n"
-"X-Generator: Launchpad (build 18446)\n"
+"X-Launchpad-Export-Date: 2017-09-25 05:10+0000\n"
+"X-Generator: Launchpad (build 18463)\n"
+"X-Poedit-Country: CZECH REPUBLIC\n"
+"X-Poedit-Language: Czech\n"
+"X-Poedit-SourceCharset: utf-8\n"
 
 #: 1208.TITLE_LAST_COPY:71
 msgid "The last copy attached to a title is being removed or deleted"
@@ -152,7 +150,7 @@ msgid ""
 "will be specified by an 'org' key within the event object"
 msgstr ""
 "Exemlář má být směrován do jiné knihovny. Cíl umístění bude určeno klíčem "
-"\"org\" během objektu události."
+"'org' během objektu události."
 
 #: 1554.CONFIG_RULES_CIRC_DURATION_NOT_FOUND:317
 msgid "The requested config_rules_circ_duration was not found"
@@ -265,6 +263,10 @@ msgstr "Bylo dosaženo maximálního možného počtu prodloužení"
 msgid "This account is marked as inactive"
 msgstr "Tento účet je označen jako neaktivní"
 
+#: 11008.SERIAL_DISTRIBUTION_NOT_EMPTY:1052
+msgid "The distribution still has dependent objects"
+msgstr "Distribuce má stále připojené objekty"
+
 #: 8003.OFFLINE_PARAM_ERROR:948
 msgid "Missing params in offline upload"
 msgstr "Chybějící parametry při nahrání offline souboru"
@@ -272,6 +274,10 @@ msgstr "Chybějící parametry při nahrání offline souboru"
 #: 1637.REPORTER_REPORT_FOLDER_NOT_FOUND:562
 msgid "The requested reporter_report_folder was not found"
 msgstr "Požadovaný reporter_report_folder nebyl nalezen"
+
+#: 11010.SERIAL_CAPTION_AND_PATTERN_NOT_EMPTY:1058
+msgid "The prediction pattern still has dependent objects"
+msgstr "Schéma predikce má stále připojené objekty"
 
 #: 1545.PERM_EX_NOT_FOUND:293
 msgid "The requested perm_ex was not found"
@@ -452,6 +458,10 @@ msgstr "Požadovaný config_metabib_field nebyl nalezen"
 msgid "The requested actor_org_address was not found"
 msgstr "Požadovaný actor_org_address nebyl nalezen"
 
+#: 11009.SERIAL_STREAM_NOT_EMPTY:1055
+msgid "The stream still has dependent objects"
+msgstr "Řada exemplářů mů stále připojené objekty"
+
 #: 11103.TRANSIT_CHECKIN_INTERVAL_BLOCK:1028
 msgid "Checkin attempted on item during minimum transit checkin interval."
 msgstr ""
@@ -492,7 +502,7 @@ msgstr "Požadovaný metabib_metarecord_source_map nebyl nalezen"
 
 #: 7009.CIRC_CLAIMS_RETURNED:874
 msgid "Requested circulation is marked claims returned"
-msgstr "Požadovaná výpůjčka je označena jako \"údajně vrácená\""
+msgstr "Požadovaná výpůjčka je označena jako Údajně vrácená"
 
 #: 4.CACHE_MISS:24
 msgid "A cached object could not be retrieved by the given reference."
@@ -546,6 +556,12 @@ msgstr "Nelze vytvořit nebo otevřít offline soubor nebo adresář."
 msgid "A record already exists with the requested TCN value"
 msgstr "Záznam s požadovanou hodnotou TCN  již existuje."
 
+#: 1225.TRANSIT_ABORT_NOT_ALLOWED:133
+msgid ""
+"The transit on this item may not be canceled due to the state the item is in"
+msgstr ""
+"Přeprava této jednotky nemusí být zrušena kvůli stavu, ve kterém jednotka je"
+
 #: 1.UNKNOWN:17
 msgid "Placeholder event.  Used for development only"
 msgstr "Událost ve vyhrazeném prostoru. Použito pouze pro development"
@@ -580,7 +596,7 @@ msgid ""
 "'name' field) that is already in use."
 msgstr ""
 "Pokoušíte  se vytvořit objekt v rámci jedinečného identifikátoru (jako je "
-"např. pole \"Název\"), který je již používán."
+"např. pole 'Název'), který je již používán."
 
 #: 1854.ACQ_FUND_SPENT_BALANCE_NOT_FOUND:645
 msgid "The requested acq.fund_spent_balance was not found"
@@ -677,11 +693,9 @@ msgstr "Požadovaný asset_stat_cat_entry nebyl nalezen"
 msgid "The requested config_non_cataloged_type was not found"
 msgstr "Požadovaný config_non_cataloged_type  nebyl nalezen"
 
-#: 1225.TRANSIT_ABORT_NOT_ALLOWED:133
-msgid ""
-"The transit on this item may not be aborted due to the state the item is in"
-msgstr ""
-"Přesun tohoto exempláře nemůže být zrušen vzhledem ke stavu exmpláře."
+#: 1716.COPY_LOCATION_NOT_EMPTY:716
+msgid "The copy location is not empty"
+msgstr "Toto umístění není prázdné"
 
 #: 1542.CONFIG_LANGUAGE_MAP_NOT_FOUND:284
 msgid "The requested config_language_map was not found"
@@ -762,10 +776,6 @@ msgstr "Požadovaná pracovní stanice neexistuje"
 #: 1628.MONEY_BILLING_NOT_FOUND:534
 msgid "The requested money_billing was not found"
 msgstr "Požadovaný money_billing nebyl nalezen"
-
-#: 1716.COPY_LOCATION_NOT_EMPTY:716
-msgid "The copy location is not empty"
-msgstr "Toto umístění není prázdné"
 
 #: 1507.CONTAINER_ITEM_NOT_FOUND:215
 msgid ""
@@ -951,7 +961,7 @@ msgstr "K požadovanému exempláři je připojeno upozornění"
 
 #: 7006.COPY_IS_REFERENCE:865
 msgid "Copy is reference material"
-msgstr "Exemplář je označen jako \"příruční knihovna\""
+msgstr "Exemplář je označen jako Příruční knihovna"
 
 #: 1547.CONFIG_ITEM_FORM_MAP_NOT_FOUND:299
 msgid "The requested config_item_form_map was not found"
@@ -1014,7 +1024,7 @@ msgstr "Požadovaný actor_stat_cat was nebyl nalezen"
 
 #: 7027.PATRON_PASSWORD_WAS_NOT_STRONG:831
 msgid "The user attempted to set their password to a weak value."
-msgstr "Uživatel se pokusil o nastavení \"slabého\" hesla."
+msgstr "Uživatel se pokusil o nastavení slabého hesla."
 
 #: 9001.REPORT_REPORT_EXISTS:980
 msgid "A report with the given name and folder already exists"
@@ -1342,3 +1352,31 @@ msgstr ""
 #: 1604.MONEY_USER_SUMMARY_NOT_FOUND:463
 msgid "The requested money_user_summary was not found"
 msgstr "Požadovaný money_user_summary nebyl nalezen"
+
+#~ msgid "Copy has is marked as lost"
+#~ msgstr "Exemplář byl označen jako ztracený"
+
+#~ msgid "The requested acq.po_lineitem was not found"
+#~ msgstr "Požadovaný acq.po_lineitem nebyl nalezen"
+
+#~ msgid ""
+#~ "The transit on this item may not be aborted due to the state the item is in"
+#~ msgstr ""
+#~ "Přesun tohoto exempláře nemůže být zrušen vzhledem ke stavu exmpláře."
+
+#~ msgid "This requested item is currently on the holds shelf"
+#~ msgstr "Požadovaný exemplář se nyní nachází na regále s rezervacemi"
+
+#~ msgid "The selecte bill has already been voided"
+#~ msgstr "Označený poplatek již byl zrušen"
+
+#~ msgid ""
+#~ "A *TERRIBLE* problem has occurred: a credit card transaction was processed "
+#~ "successfuly, but the patron's payment could not be recorded within "
+#~ "Evergreen.  Please seek assistance."
+#~ msgstr ""
+#~ "Došlo k *ZÁVAŽNÉMU* problému: transakce kreditní kartou úspěšně proběhla, "
+#~ "ale Evergreen nemohl nahrát platbu čtenáře. Prosím vyhledejte pomoc."
+
+#~ msgid "Copy has is marked as missing"
+#~ msgstr "Exemplář byl označen jako nezvěstný"

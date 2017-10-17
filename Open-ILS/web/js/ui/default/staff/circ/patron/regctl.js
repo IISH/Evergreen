@@ -2,7 +2,7 @@
 angular.module('egCoreMod')
 // toss tihs onto egCoreMod since the page app may vary
 
-.factory('patronRegSvc', ['$q', 'egCore', function($q, egCore) {
+.factory('patronRegSvc', ['$q', 'egCore', 'egLovefield', function($q, egCore, egLovefield) {
 
     var service = {
         field_doc : {},            // config.idl_field_doc
@@ -251,6 +251,11 @@ angular.module('egCoreMod')
                     });
                 });
             });
+
+            egLovefield.setListInOfflineCache('asv', service.surveys)
+            egLovefield.setListInOfflineCache('asvq', service.survey_questions)
+            egLovefield.setListInOfflineCache('asva', service.survey_answers)
+
         });
     }
 
@@ -270,6 +275,7 @@ angular.module('egCoreMod')
                 );
             });
             service.stat_cats = cats;
+            return egLovefield.setStatCatsCache(cats);
         });
     };
 
@@ -364,7 +370,7 @@ angular.module('egCoreMod')
     // some org settings require the retrieval of additional data
     service.process_org_settings = function(settings) {
 
-        var promises = [];
+        var promises = [egLovefield.setSettingsCache(settings)];
 
         if (settings['sms.enable']) {
             // fetch SMS carriers
@@ -434,14 +440,23 @@ angular.module('egCoreMod')
     }
 
     service.get_field_doc = function() {
+        var to_cache = [];
         return egCore.pcrud.search('fdoc', {
             fm_class: ['au', 'ac', 'aua', 'actsc', 'asv', 'asvq', 'asva']})
-        .then(null, null, function(doc) {
-            if (!service.field_doc[doc.fm_class()]) {
-                service.field_doc[doc.fm_class()] = {};
+        .then(
+            function () {
+                return egLovefield.setListInOfflineCache('fdoc', to_cache)
+            },
+            null,
+            function(doc) {
+                if (!service.field_doc[doc.fm_class()]) {
+                    service.field_doc[doc.fm_class()] = {};
+                }
+                service.field_doc[doc.fm_class()][doc.field()] = doc;
+                to_cache.push(doc);
             }
-            service.field_doc[doc.fm_class()][doc.field()] = doc;
-        });
+        );
+
     };
 
     service.get_user_settings = function() {
@@ -470,6 +485,8 @@ angular.module('egCoreMod')
                 }}
             ]
         }, {}, {atomic : true}).then(function(setting_types) {
+
+            egCore.env.absorbList(setting_types, 'cust'); // why not...
 
             angular.forEach(setting_types, function(stype) {
                 service.user_setting_types[stype.name()] = stype;

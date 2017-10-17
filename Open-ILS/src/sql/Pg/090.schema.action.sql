@@ -173,9 +173,20 @@ CREATE TRIGGER mat_summary_change_tgr AFTER UPDATE ON action.circulation FOR EAC
 CREATE TRIGGER mat_summary_remove_tgr AFTER DELETE ON action.circulation FOR EACH ROW EXECUTE PROCEDURE money.mat_summary_delete ();
 
 CREATE OR REPLACE FUNCTION action.push_circ_due_time () RETURNS TRIGGER AS $$
+DECLARE
+    proper_tz TEXT := COALESCE(
+        oils_json_to_text((
+            SELECT value
+              FROM  actor.org_unit_ancestor_setting('lib.timezone',NEW.circ_lib)
+              LIMIT 1
+        )),
+        CURRENT_SETTING('timezone')
+    );
 BEGIN
-    IF (EXTRACT(EPOCH FROM NEW.duration)::INT % EXTRACT(EPOCH FROM '1 day'::INTERVAL)::INT) = 0 THEN
-        NEW.due_date = (NEW.due_date::DATE + '1 day'::INTERVAL - '1 second'::INTERVAL)::TIMESTAMPTZ;
+
+    IF (EXTRACT(EPOCH FROM NEW.duration)::INT % EXTRACT(EPOCH FROM '1 day'::INTERVAL)::INT) = 0 -- day-granular duration
+        AND SUBSTRING((NEW.due_date AT TIME ZONE proper_tz)::TIME::TEXT FROM 1 FOR 8) <> '23:59:59' THEN -- has not yet been pushed
+        NEW.due_date = ((NEW.due_date AT TIME ZONE proper_tz)::DATE + '1 day'::INTERVAL - '1 second'::INTERVAL) || ' ' || proper_tz;
     END IF;
 
     RETURN NEW;
@@ -257,6 +268,47 @@ CREATE OR REPLACE VIEW action.all_circulation AS
         JOIN actor.usr p ON (circ.usr = p.id)
         LEFT JOIN actor.usr_address a ON (p.mailing_address = a.id)
         LEFT JOIN actor.usr_address b ON (p.billing_address = b.id);
+
+CREATE OR REPLACE VIEW action.all_circulation_slim AS
+    SELECT * FROM action.circulation
+UNION ALL
+    SELECT
+        id,
+        NULL AS usr,
+        xact_start,
+        xact_finish,
+        unrecovered,
+        target_copy,
+        circ_lib,
+        circ_staff,
+        checkin_staff,
+        checkin_lib,
+        renewal_remaining,
+        grace_period,
+        due_date,
+        stop_fines_time,
+        checkin_time,
+        create_time,
+        duration,
+        fine_interval,
+        recurring_fine,
+        max_fine,
+        phone_renewal,
+        desk_renewal,
+        opac_renewal,
+        duration_rule,
+        recurring_fine_rule,
+        max_fine_rule,
+        stop_fines,
+        workstation,
+        checkin_workstation,
+        copy_location,
+        checkin_scan_time,
+        parent_circ
+    FROM action.aged_circulation
+;
+
+
 
 CREATE OR REPLACE FUNCTION action.age_circ_on_delete () RETURNS TRIGGER AS $$
 DECLARE
@@ -494,7 +546,8 @@ CREATE TABLE action.transit_copy (
 	prev_hop		INT				REFERENCES action.transit_copy (id) DEFERRABLE INITIALLY DEFERRED,
 	copy_status		INT				NOT NULL REFERENCES config.copy_status (id) DEFERRABLE INITIALLY DEFERRED,
 	persistant_transfer	BOOL				NOT NULL DEFAULT FALSE,
-	prev_dest       INT				REFERENCES actor.org_unit (id) DEFERRABLE INITIALLY DEFERRED
+	prev_dest		INT				REFERENCES actor.org_unit (id) DEFERRABLE INITIALLY DEFERRED,
+	cancel_time		TIMESTAMP WITH TIME ZONE
 );
 CREATE INDEX active_transit_dest_idx ON "action".transit_copy (dest); 
 CREATE INDEX active_transit_source_idx ON "action".transit_copy (source);
@@ -756,8 +809,24 @@ CREATE TRIGGER action_hold_request_aging_tgr
 	FOR EACH ROW
 	EXECUTE PROCEDURE action.age_hold_on_delete ();
 
+CREATE TABLE action.fieldset_group (
+    id              SERIAL  PRIMARY KEY,
+    name            TEXT        NOT NULL,
+    create_time     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    complete_time   TIMESTAMPTZ,
+    container       INT,        -- Points to a container of some type ...
+    container_type  TEXT,       -- One of 'biblio_record_entry', 'user', 'call_number', 'copy'
+    can_rollback    BOOL        DEFAULT TRUE,
+    rollback_group  INT         REFERENCES action.fieldset_group (id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+    rollback_time   TIMESTAMPTZ,
+    creator         INT         NOT NULL REFERENCES actor.usr (id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+    owning_lib      INT         NOT NULL REFERENCES actor.org_unit (id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+);
+
 CREATE TABLE action.fieldset (
     id              SERIAL          PRIMARY KEY,
+    fieldset_group  INT             REFERENCES action.fieldset_group (id)
+                                    ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
     owner           INT             NOT NULL REFERENCES actor.usr (id)
                                     DEFERRABLE INITIALLY DEFERRED,
 	owning_lib      INT             NOT NULL REFERENCES actor.org_unit (id)
@@ -770,6 +839,7 @@ CREATE TABLE action.fieldset (
     applied_time    TIMESTAMPTZ,
     classname       TEXT            NOT NULL, -- an IDL class name
     name            TEXT            NOT NULL,
+    error_msg       TEXT,
     stored_query    INT             REFERENCES query.stored_query (id)
                                     DEFERRABLE INITIALLY DEFERRED,
     pkey_value      TEXT,
@@ -895,13 +965,13 @@ $$ LANGUAGE 'plpgsql';
 -- same as action.circ_chain, but returns action.all_circulation 
 -- rows which may include aged circulations.
 CREATE OR REPLACE FUNCTION action.all_circ_chain (ctx_circ_id INTEGER) 
-    RETURNS SETOF action.all_circulation AS $$
+    RETURNS SETOF action.all_circulation_slim AS $$
 DECLARE
-    tmp_circ action.all_circulation%ROWTYPE;
-    circ_0 action.all_circulation%ROWTYPE;
+    tmp_circ action.all_circulation_slim%ROWTYPE;
+    circ_0 action.all_circulation_slim%ROWTYPE;
 BEGIN
 
-    SELECT INTO tmp_circ * FROM action.all_circulation WHERE id = ctx_circ_id;
+    SELECT INTO tmp_circ * FROM action.all_circulation_slim WHERE id = ctx_circ_id;
 
     IF tmp_circ IS NULL THEN
         RETURN NEXT tmp_circ;
@@ -910,7 +980,7 @@ BEGIN
 
     -- find the front of the chain
     WHILE TRUE LOOP
-        SELECT INTO tmp_circ * FROM action.all_circulation 
+        SELECT INTO tmp_circ * FROM action.all_circulation_slim 
             WHERE id = tmp_circ.parent_circ;
         IF tmp_circ IS NULL THEN
             EXIT;
@@ -925,7 +995,7 @@ BEGIN
             EXIT;
         END IF;
         RETURN NEXT tmp_circ;
-        SELECT INTO tmp_circ * FROM action.all_circulation 
+        SELECT INTO tmp_circ * FROM action.all_circulation_slim 
             WHERE parent_circ = tmp_circ.id;
     END LOOP;
 
@@ -940,14 +1010,14 @@ CREATE OR REPLACE FUNCTION action.summarize_all_circ_chain
 DECLARE
 
     -- first circ in the chain
-    circ_0 action.all_circulation%ROWTYPE;
+    circ_0 action.all_circulation_slim%ROWTYPE;
 
     -- last circ in the chain
-    circ_n action.all_circulation%ROWTYPE;
+    circ_n action.all_circulation_slim%ROWTYPE;
 
     -- circ chain under construction
     chain action.circ_chain_summary;
-    tmp_circ action.all_circulation%ROWTYPE;
+    tmp_circ action.all_circulation_slim%ROWTYPE;
 
 BEGIN
     
@@ -979,7 +1049,6 @@ BEGIN
 
 END;
 $$ LANGUAGE 'plpgsql';
-
 
 CREATE OR REPLACE FUNCTION action.usr_visible_holds (usr_id INT) RETURNS SETOF action.hold_request AS $func$
 DECLARE
@@ -1189,113 +1258,170 @@ END;
 $func$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION action.apply_fieldset(
-	fieldset_id IN INT,        -- id from action.fieldset
-	table_name  IN TEXT,       -- table to be updated
-	pkey_name   IN TEXT,       -- name of primary key column in that table
-	query       IN TEXT        -- query constructed by qstore (for query-based
-	                           --    fieldsets only; otherwise null
+    fieldset_id IN INT,        -- id from action.fieldset
+    table_name  IN TEXT,       -- table to be updated
+    pkey_name   IN TEXT,       -- name of primary key column in that table
+    query       IN TEXT        -- query constructed by qstore (for query-based
+                               --    fieldsets only; otherwise null
 )
 RETURNS TEXT AS $$
 DECLARE
-	statement TEXT;
-	fs_status TEXT;
-	fs_pkey_value TEXT;
-	fs_query TEXT;
-	sep CHAR;
-	status_code TEXT;
-	msg TEXT;
-	update_count INT;
-	cv RECORD;
+    statement TEXT;
+    where_clause TEXT;
+    fs_status TEXT;
+    fs_pkey_value TEXT;
+    fs_query TEXT;
+    sep CHAR;
+    status_code TEXT;
+    msg TEXT;
+    fs_id INT;
+    fsg_id INT;
+    update_count INT;
+    cv RECORD;
+    fs_obj action.fieldset%ROWTYPE;
+    fs_group action.fieldset_group%ROWTYPE;
+    rb_row RECORD;
 BEGIN
-	-- Sanity checks
-	IF fieldset_id IS NULL THEN
-		RETURN 'Fieldset ID parameter is NULL';
-	END IF;
-	IF table_name IS NULL THEN
-		RETURN 'Table name parameter is NULL';
-	END IF;
-	IF pkey_name IS NULL THEN
-		RETURN 'Primary key name parameter is NULL';
-	END IF;
-	--
-	statement := 'UPDATE ' || table_name || ' SET';
-	--
-	SELECT
-		status,
-		quote_literal( pkey_value )
-	INTO
-		fs_status,
-		fs_pkey_value
-	FROM
-		action.fieldset
-	WHERE
-		id = fieldset_id;
-	--
-	IF fs_status IS NULL THEN
-		RETURN 'No fieldset found for id = ' || fieldset_id;
-	ELSIF fs_status = 'APPLIED' THEN
-		RETURN 'Fieldset ' || fieldset_id || ' has already been applied';
-	END IF;
-	--
-	sep := '';
-	FOR cv IN
-		SELECT  col,
-				val
-		FROM    action.fieldset_col_val
-		WHERE   fieldset = fieldset_id
-	LOOP
-		statement := statement || sep || ' ' || cv.col
-					 || ' = ' || coalesce( quote_literal( cv.val ), 'NULL' );
-		sep := ',';
-	END LOOP;
-	--
-	IF sep = '' THEN
-		RETURN 'Fieldset ' || fieldset_id || ' has no column values defined';
-	END IF;
-	--
-	-- Add the WHERE clause.  This differs according to whether it's a
-	-- single-row fieldset or a query-based fieldset.
-	--
-	IF query IS NULL        AND fs_pkey_value IS NULL THEN
-		RETURN 'Incomplete fieldset: neither a primary key nor a query available';
-	ELSIF query IS NOT NULL AND fs_pkey_value IS NULL THEN
-	    fs_query := rtrim( query, ';' );
-	    statement := statement || ' WHERE ' || pkey_name || ' IN ( '
-	                 || fs_query || ' );';
-	ELSIF query IS NULL     AND fs_pkey_value IS NOT NULL THEN
-		statement := statement || ' WHERE ' || pkey_name || ' = '
-				     || fs_pkey_value || ';';
-	ELSE  -- both are not null
-		RETURN 'Ambiguous fieldset: both a primary key and a query provided';
-	END IF;
-	--
-	-- Execute the update
-	--
-	BEGIN
-		EXECUTE statement;
-		GET DIAGNOSTICS update_count = ROW_COUNT;
-		--
-		IF UPDATE_COUNT > 0 THEN
-			status_code := 'APPLIED';
-			msg := NULL;
-		ELSE
-			status_code := 'ERROR';
-			msg := 'No eligible rows found for fieldset ' || fieldset_id;
-    	END IF;
-	EXCEPTION WHEN OTHERS THEN
-		status_code := 'ERROR';
-		msg := 'Unable to apply fieldset ' || fieldset_id
-			   || ': ' || sqlerrm;
-	END;
-	--
-	-- Update fieldset status
-	--
-	UPDATE action.fieldset
-	SET status       = status_code,
-	    applied_time = now()
-	WHERE id = fieldset_id;
-	--
-	RETURN msg;
+    -- Sanity checks
+    IF fieldset_id IS NULL THEN
+        RETURN 'Fieldset ID parameter is NULL';
+    END IF;
+    IF table_name IS NULL THEN
+        RETURN 'Table name parameter is NULL';
+    END IF;
+    IF pkey_name IS NULL THEN
+        RETURN 'Primary key name parameter is NULL';
+    END IF;
+
+    SELECT
+        status,
+        quote_literal( pkey_value )
+    INTO
+        fs_status,
+        fs_pkey_value
+    FROM
+        action.fieldset
+    WHERE
+        id = fieldset_id;
+
+    --
+    -- Build the WHERE clause.  This differs according to whether it's a
+    -- single-row fieldset or a query-based fieldset.
+    --
+    IF query IS NULL        AND fs_pkey_value IS NULL THEN
+        RETURN 'Incomplete fieldset: neither a primary key nor a query available';
+    ELSIF query IS NOT NULL AND fs_pkey_value IS NULL THEN
+        fs_query := rtrim( query, ';' );
+        where_clause := 'WHERE ' || pkey_name || ' IN ( '
+                     || fs_query || ' )';
+    ELSIF query IS NULL     AND fs_pkey_value IS NOT NULL THEN
+        where_clause := 'WHERE ' || pkey_name || ' = ';
+        IF pkey_name = 'id' THEN
+            where_clause := where_clause || fs_pkey_value;
+        ELSIF pkey_name = 'code' THEN
+            where_clause := where_clause || quote_literal(fs_pkey_value);
+        ELSE
+            RETURN 'Only know how to handle "id" and "code" pkeys currently, received ' || pkey_name;
+        END IF;
+    ELSE  -- both are not null
+        RETURN 'Ambiguous fieldset: both a primary key and a query provided';
+    END IF;
+
+    IF fs_status IS NULL THEN
+        RETURN 'No fieldset found for id = ' || fieldset_id;
+    ELSIF fs_status = 'APPLIED' THEN
+        RETURN 'Fieldset ' || fieldset_id || ' has already been applied';
+    END IF;
+
+    SELECT * INTO fs_obj FROM action.fieldset WHERE id = fieldset_id;
+    SELECT * INTO fs_group FROM action.fieldset_group WHERE id = fs_obj.fieldset_group;
+
+    IF fs_group.can_rollback THEN
+        -- This is part of a non-rollback group.  We need to record the current values for future rollback.
+
+        INSERT INTO action.fieldset_group (can_rollback, name, creator, owning_lib, container, container_type)
+            VALUES (FALSE, 'ROLLBACK: '|| fs_group.name, fs_group.creator, fs_group.owning_lib, fs_group.container, fs_group.container_type);
+
+        fsg_id := CURRVAL('action.fieldset_group_id_seq');
+
+        FOR rb_row IN EXECUTE 'SELECT * FROM ' || table_name || ' ' || where_clause LOOP
+            IF pkey_name = 'id' THEN
+                fs_pkey_value := rb_row.id;
+            ELSIF pkey_name = 'code' THEN
+                fs_pkey_value := rb_row.code;
+            ELSE
+                RETURN 'Only know how to handle "id" and "code" pkeys currently, received ' || pkey_name;
+            END IF;
+            INSERT INTO action.fieldset (fieldset_group,owner,owning_lib,status,classname,name,pkey_value)
+                VALUES (fsg_id, fs_obj.owner, fs_obj.owning_lib, 'PENDING', fs_obj.classname, fs_obj.name || ' ROLLBACK FOR ' || fs_pkey_value, fs_pkey_value);
+
+            fs_id := CURRVAL('action.fieldset_id_seq');
+            sep := '';
+            FOR cv IN
+                SELECT  DISTINCT col
+                FROM    action.fieldset_col_val
+                WHERE   fieldset = fieldset_id
+            LOOP
+                EXECUTE 'INSERT INTO action.fieldset_col_val (fieldset, col, val) ' || 
+                    'SELECT '|| fs_id || ', '||quote_literal(cv.col)||', '||cv.col||' FROM '||table_name||' WHERE '||pkey_name||' = '||fs_pkey_value;
+            END LOOP;
+        END LOOP;
+    END IF;
+
+    statement := 'UPDATE ' || table_name || ' SET';
+
+    sep := '';
+    FOR cv IN
+        SELECT  col,
+                val
+        FROM    action.fieldset_col_val
+        WHERE   fieldset = fieldset_id
+    LOOP
+        statement := statement || sep || ' ' || cv.col
+                     || ' = ' || coalesce( quote_literal( cv.val ), 'NULL' );
+        sep := ',';
+    END LOOP;
+
+    IF sep = '' THEN
+        RETURN 'Fieldset ' || fieldset_id || ' has no column values defined';
+    END IF;
+    statement := statement || ' ' || where_clause;
+
+    --
+    -- Execute the update
+    --
+    BEGIN
+        EXECUTE statement;
+        GET DIAGNOSTICS update_count = ROW_COUNT;
+
+        IF update_count = 0 THEN
+            RAISE data_exception;
+        END IF;
+
+        IF fsg_id IS NOT NULL THEN
+            UPDATE action.fieldset_group SET rollback_group = fsg_id WHERE id = fs_group.id;
+        END IF;
+
+        IF fs_group.id IS NOT NULL THEN
+            UPDATE action.fieldset_group SET complete_time = now() WHERE id = fs_group.id;
+        END IF;
+
+        UPDATE action.fieldset SET status = 'APPLIED', applied_time = now() WHERE id = fieldset_id;
+
+    EXCEPTION WHEN data_exception THEN
+        msg := 'No eligible rows found for fieldset ' || fieldset_id;
+        UPDATE action.fieldset SET status = 'ERROR', applied_time = now() WHERE id = fieldset_id;
+        RETURN msg;
+
+    END;
+
+    RETURN msg;
+
+EXCEPTION WHEN OTHERS THEN
+    msg := 'Unable to apply fieldset ' || fieldset_id || ': ' || sqlerrm;
+    UPDATE action.fieldset SET status = 'ERROR', applied_time = now() WHERE id = fieldset_id;
+    RETURN msg;
+
 END;
 $$ LANGUAGE plpgsql;
 
@@ -1502,4 +1628,61 @@ CREATE TRIGGER maintain_usr_circ_history_tgr
     AFTER INSERT OR UPDATE ON action.circulation 
     FOR EACH ROW EXECUTE PROCEDURE action.maintain_usr_circ_history();
 
+CREATE OR REPLACE VIEW action.all_circulation_combined_types AS 
+ SELECT acirc.id AS id,
+    acirc.xact_start,
+    acirc.circ_lib,
+    acirc.circ_staff,
+    acirc.create_time,
+    ac_acirc.circ_modifier AS item_type,
+    'regular_circ'::text AS circ_type
+   FROM action.circulation acirc,
+    asset.copy ac_acirc
+  WHERE acirc.target_copy = ac_acirc.id
+UNION ALL
+ SELECT ancc.id::BIGINT AS id,
+    ancc.circ_time AS xact_start,
+    ancc.circ_lib,
+    ancc.staff AS circ_staff,
+    ancc.circ_time AS create_time,
+    cnct_ancc.name AS item_type,
+    'non-cat_circ'::text AS circ_type
+   FROM action.non_cataloged_circulation ancc,
+    config.non_cataloged_type cnct_ancc
+  WHERE ancc.item_type = cnct_ancc.id
+UNION ALL
+ SELECT aihu.id::BIGINT AS id,
+    aihu.use_time AS xact_start,
+    aihu.org_unit AS circ_lib,
+    aihu.staff AS circ_staff,
+    aihu.use_time AS create_time,
+    ac_aihu.circ_modifier AS item_type,
+    'in-house_use'::text AS circ_type
+   FROM action.in_house_use aihu,
+    asset.copy ac_aihu
+  WHERE aihu.item = ac_aihu.id
+UNION ALL
+ SELECT ancihu.id::BIGINT AS id,
+    ancihu.use_time AS xact_start,
+    ancihu.org_unit AS circ_lib,
+    ancihu.staff AS circ_staff,
+    ancihu.use_time AS create_time,
+    cnct_ancihu.name AS item_type,
+    'non-cat_circ'::text AS circ_type
+   FROM action.non_cat_in_house_use ancihu,
+    config.non_cataloged_type cnct_ancihu
+  WHERE ancihu.item_type = cnct_ancihu.id
+UNION ALL
+ SELECT aacirc.id AS id,
+    aacirc.xact_start,
+    aacirc.circ_lib,
+    aacirc.circ_staff,
+    aacirc.create_time,
+    ac_aacirc.circ_modifier AS item_type,
+    'aged_circ'::text AS circ_type
+   FROM action.aged_circulation aacirc,
+    asset.copy ac_aacirc
+  WHERE aacirc.target_copy = ac_aacirc.id;
+
 COMMIT;
+

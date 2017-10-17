@@ -34,8 +34,8 @@ angular.module('egCheckinApp', ['ngRoute', 'ui.bootstrap',
  * Manages checkin
  */
 .controller('CheckinCtrl',
-       ['$scope','$q','$window','$location','egCore','checkinSvc','egGridDataProvider','egCirc',
-function($scope , $q , $window , $location , egCore , checkinSvc , egGridDataProvider , egCirc)  {
+       ['$scope','$q','$window','$location', '$timeout','egCore','checkinSvc','egGridDataProvider','egCirc', 'egItem',
+function($scope , $q , $window , $location , $timeout , egCore , checkinSvc , egGridDataProvider , egCirc, itemSvc)  {
 
     $scope.focusMe = true;
     $scope.checkins = checkinSvc.checkins;
@@ -57,6 +57,14 @@ function($scope , $q , $window , $location , egCore , checkinSvc , egGridDataPro
     ]).then(function(set) {
         suppress_popups = set['ui.circ.suppress_checkin_popups'];
     });
+
+    $scope.sort_money = function (a,b) {
+        var ma = parseFloat(a);
+        var mb = parseFloat(b);
+        if (ma < mb) return -1;
+        if (ma > mb) return 1;
+        return 0
+    }
 
     // checkin & hold capture modifiers
     var modifiers = [
@@ -318,5 +326,63 @@ function($scope , $q , $window , $location , egCore , checkinSvc , egGridDataPro
         });
     }
 
+    $scope.add_copies_to_bucket = function(items){
+        var itemsIds = [];
+        angular.forEach(items, function(cp){
+            itemsIds.push(cp.acp.id());
+        });
+
+        itemSvc.add_copies_to_bucket(itemsIds);
+    }
+
+    $scope.showBibHolds = function(items){
+        var recordIds = [];
+        angular.forEach(items, function(i){
+            recordIds.push(i.acn.record());
+        });
+        angular.forEach(recordIds, function (r) {
+            var url = egCore.env.basePath + 'cat/catalog/record/' + r + '/holds';
+            $timeout(function() { $window.open(url, '_blank') });
+        });
+    }
+
+    $scope.showLastCircs = function(items){
+        var itemIds = [];
+        angular.forEach(items, function(cp){
+            itemIds.push(cp.acp.id());
+        });
+        angular.forEach(itemIds, function (id) {
+            var url = egCore.env.basePath + 'cat/item/' + id + '/circs';
+            $timeout(function() { $window.open(url, '_blank') });
+        });
+    }
+
+    $scope.selectedHoldingsVolCopyEdit = function (items) {
+        var itemObjs = [];
+        angular.forEach(items, function(i){
+            var h = egCore.idl.toHash(i);
+            itemObjs.push({
+                'call_number.record.id': h.record.doc_id,
+                'id' : h.acp.id
+            });
+        });
+        itemSvc.spawnHoldingsEdit(itemObjs,false,false);
+    }
+
+    $scope.show_mark_missing_pieces = function(items){
+        angular.forEach(items, function(i){
+            i.acp.call_number(i.acn);
+            i.acp.call_number().record(i.record);
+            itemSvc.mark_missing_pieces(i.acp);
+        });
+    }
+
+    $scope.printSpineLabels = function(items){
+        var copy_ids = [];
+        angular.forEach(items, function(item) {
+            if (item.acp) copy_ids.push(item.acp.id());
+        });
+        itemSvc.print_spine_labels(copy_ids);
+    }
 }])
 

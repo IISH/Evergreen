@@ -342,7 +342,7 @@ sub create_hold {
         $hold->expire_time(undef) if ($hold->expire_time && $U->datecmp($hold->expire_time) == -1);
 
     # set the configured expire time
-    unless($hold->expire_time) {
+    unless($hold->expire_time || $U->is_true($hold->frozen)) {
         $hold->expire_time(calculate_expire_time($recipient->home_ou));
     }
 
@@ -620,7 +620,7 @@ sub retrieve_holds {
 
         $hold->transit(
             $e->search_action_hold_transit_copy([
-                {hold => $hold->id},
+                {hold => $hold->id, cancel_time => undef},
                 {order_by => {ahtc => 'source_send_time desc'}, limit => 1}])->[0]
         );
 
@@ -807,7 +807,7 @@ sub cancel_hold {
 
             my $hid = $hold->id;
             $logger->warn("! canceling hold [$hid] that is in transit");
-            my $transid = $e->search_action_hold_transit_copy({hold=>$hold->id},{idlist=>1})->[0];
+            my $transid = $e->search_action_hold_transit_copy({hold=>$hold->id,cancel_time=>undef},{idlist=>1})->[0];
 
             if( $transid ) {
                 my $trans = $e->retrieve_action_transit_copy($transid);
@@ -1011,7 +1011,7 @@ sub update_hold_impl {
 
             # update the transit to reflect the new pickup location
             my $transit = $e->search_action_hold_transit_copy(
-                {hold=>$hold->id, dest_recv_time => undef})->[0]
+                {hold=>$hold->id, cancel_time => undef, dest_recv_time => undef})->[0]
                 or return $e->die_event;
 
             $transit->prev_dest($transit->dest); # mark the previous destination on the transit
@@ -1293,6 +1293,7 @@ sub _hold_status {
         my $transit    = $e->search_action_hold_transit_copy({
                             hold           => $hold->id,
                             target_copy    => $copy->id,
+                            cancel_time     => undef,
                             dest_recv_time => {'!=' => undef},
                          })->[0];
         my $start_time = ($transit) ? $transit->dest_recv_time : $hold->capture_time;
@@ -1972,7 +1973,7 @@ sub _reset_hold {
             # We don't want the copy to remain "in transit"
             $copy->status(OILS_COPY_STATUS_RESHELVING);
             $logger->warn("! reseting hold [$hid] that is in transit");
-            my $transid = $e->search_action_hold_transit_copy({hold=>$hold->id},{idlist=>1})->[0];
+            my $transid = $e->search_action_hold_transit_copy({hold=>$hold->id,cancel_time=>undef},{idlist=>1})->[0];
 
             if( $transid ) {
                 my $trans = $e->retrieve_action_transit_copy($transid);
@@ -2049,7 +2050,7 @@ sub flesh_hold_transits {
             $apputils->simplereq(
                 'open-ils.cstore',
                 "open-ils.cstore.direct.action.hold_transit_copy.search.atomic",
-                { hold => $hold->id },
+                { hold => $hold->id, cancel_time => undef },
                 { order_by => { ahtc => 'id desc' }, limit => 1 }
             )->[0]
         );
@@ -3376,15 +3377,14 @@ sub uber_hold_impl {
     my($e, $hold_id, $args) = @_;
     $args ||= {};
 
-    my $hold = $e->retrieve_action_hold_request(
-        [
-            $hold_id,
-            {
-                flesh => 1,
-                flesh_fields => { ahr => [ 'current_copy', 'usr', 'notes' ] }
-            }
-        ]
-    ) or return $e->event;
+    my $flesh_fields = ['current_copy', 'usr', 'notes'];
+    push (@$flesh_fields, 'requestor') if $args->{include_requestor};
+    push (@$flesh_fields, 'cancel_cause') if $args->{include_cancel_cause};
+
+    my $hold = $e->retrieve_action_hold_request([
+        $hold_id,
+        {flesh => 1, flesh_fields => {ahr => $flesh_fields}}
+    ]) or return $e->event;
 
     if($hold->usr->id ne $e->requestor->id) {
         # caller is asking for someone else's hold
@@ -3404,12 +3404,13 @@ sub uber_hold_impl {
     $hold->usr($user->id);
 
 
-    my( $mvr, $volume, $copy, $issuance, $part, $bre ) = find_hold_mvr($e, $hold, $args->{suppress_mvr});
+    my( $mvr, $volume, $copy, $issuance, $part, $bre ) = find_hold_mvr($e, $hold, $args);
 
     flesh_hold_notices([$hold], $e) unless $args->{suppress_notices};
     flesh_hold_transits([$hold]) unless $args->{suppress_transits};
 
     my $details = retrieve_hold_queue_status_impl($e, $hold);
+    $hold->usr($user) if $args->{include_usr}; # re-flesh
 
     my $resp = {
         hold    => $hold,
@@ -3445,13 +3446,14 @@ sub uber_hold_impl {
 # hold is all about
 # -----------------------------------------------------
 sub find_hold_mvr {
-    my( $e, $hold, $no_mvr ) = @_;
+    my( $e, $hold, $args ) = @_;
 
     my $tid;
     my $copy;
     my $volume;
     my $issuance;
     my $part;
+    my $no_mvr = $args->{suppress_mvr};
 
     if( $hold->hold_type eq OILS_HOLD_TYPE_METARECORD ) {
         my $mr = $e->retrieve_metabib_metarecord($hold->target)
@@ -3493,7 +3495,7 @@ sub find_hold_mvr {
 
     if(!$copy and ref $hold->current_copy ) {
         $copy = $hold->current_copy;
-        $hold->current_copy($copy->id);
+        $hold->current_copy($copy->id) unless $args->{include_current_copy};
     }
 
     if(!$volume and $copy) {

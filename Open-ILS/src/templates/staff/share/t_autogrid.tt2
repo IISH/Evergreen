@@ -8,13 +8,13 @@
 
   <div class="eg-grid-primary-label">{{mainLabel}}</div>
 
-  <div class="btn-group" 
+  <div class="btn-group" style="margin-top: 4px"
     is-open="gridMenuIsOpen" ng-if="menuLabel && showMenu" uib-dropdown>
     <button type="button" class="btn btn-default eg-grid-menu-item" uib-dropdown-toggle>
       {{menuLabel}}<span class="caret"></span>
     </button>
     <ul class="scrollable-menu" uib-dropdown-menu>
-      <li ng-repeat="item in menuItems | filter : { standalone : 'false' }" ng-class="{divider: item.divider}">
+      <li ng-repeat="item in menuItems | filter : { standalone : 'false' }" ng-if="!item.checkbox && !item.hidden()" ng-class="{divider: item.divider}">
         <a ng-if="!item.divider" href a-disabled="item.disabled()"
           ng-click="item.handler()">{{item.label}}</a>
       </li>
@@ -36,6 +36,11 @@
       ng-click="item.handler(item, item.handlerData)">
         {{item.label}}
     </button>
+  </div>
+
+  <!-- Always show checkbox items as a
+       horizontal row of buttons -->
+  <div class="btn-group" ng-if="showMenu">
     <div ng-if="item.checkbox"
       class="btn btn-default eg-grid-menu-item"
       ng-repeat="item in menuItems">
@@ -218,6 +223,7 @@
     </div>
     <div class="eg-grid-cell"
         eg-grid-column-drag-dest
+        ng-class="{'eg-grid-column-last-mod' : lastModColumn==col.name}"
         column="{{col.name}}"
         eg-right-click="onContextMenu($event)"
         ng-repeat="col in columns"
@@ -247,6 +253,10 @@
     <div class="eg-grid-cell eg-grid-cell-conf-header">
       <div class="eg-grid-conf-cell-entry">[% l('Expand') %]</div>
       <div class="eg-grid-conf-cell-entry">[% l('Shrink') %]</div>
+      <div class="eg-grid-conf-cell-entry">[% l('Left') %]</div>
+      <div class="eg-grid-conf-cell-entry">[% l('Right') %]</div>
+      <div class="eg-grid-conf-cell-entry">[% l('Far Left') %]</div>
+      <div class="eg-grid-conf-cell-entry">[% l('Far Right') %]</div>
       <div class="eg-grid-conf-cell-entry" ng-if="!disableMultiSort">[% l('Sort') %]</div>
     </div>
     <div class="eg-grid-cell"
@@ -256,13 +266,37 @@
       <div class="eg-grid-conf-cell-entry">
         <a href="" title="[% l('Make column wider') %]"
           ng-click="modifyColumnFlex(col,1)">
-          <span class="glyphicon glyphicon-fast-forward"></span>
+          <span class="glyphicon glyphicon-resize-full"></span>
         </a>
       </div>
       <div class="eg-grid-conf-cell-entry">
         <a href="" title="[% l('Make column narrower') %]"
           ng-click="modifyColumnFlex(col,-1)">
+          <span class="glyphicon glyphicon-resize-small"></span>
+        </a>
+      </div>
+      <div class="eg-grid-conf-cell-entry">
+        <a href="" title="[% l('Move column left') %]"
+          ng-click="modifyColumnPos(col, -1)">
+          <span class="glyphicon glyphicon-backward"></span>
+        </a>
+      </div>
+      <div class="eg-grid-conf-cell-entry">
+        <a href="" title="[% l('Move column right') %]"
+          ng-click="modifyColumnPos(col, 1)">
+          <span class="glyphicon glyphicon-forward"></span>
+        </a>
+      </div>
+      <div class="eg-grid-conf-cell-entry">
+        <a href="" title="[% l('Move column far left') %]"
+          ng-click="modifyColumnPos(col, -10000)">
           <span class="glyphicon glyphicon-fast-backward"></span>
+        </a>
+      </div>
+      <div class="eg-grid-conf-cell-entry">
+        <a href="" title="[% l('Move column far right') %]"
+          ng-click="modifyColumnPos(col, 10000)">
+          <span class="glyphicon glyphicon-fast-forward"></span>
         </a>
       </div>
       <div class="eg-grid-conf-cell-entry" ng-if="!disableMultiSort">
@@ -316,7 +350,7 @@
           <!-- otherwise, simply display the item value, which may 
                pass through datatype-specific filtering. -->
           <span ng-if="!col.template" style="padding-left:5px; padding-right:10px;">
-            {{itemFieldValue(item, col) | egGridValueFilter:col}}
+            {{itemFieldValue(item, col) | egGridValueFilter:col:item}}
           </span>
       </div>
     </div>

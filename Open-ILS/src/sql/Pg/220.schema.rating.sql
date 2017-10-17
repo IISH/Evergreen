@@ -78,7 +78,9 @@ INSERT INTO rating.popularity_parameter (id,name,func,require_horizon,require_im
     (13,'Bib has attributes and copies','rating.generic_fixed_rating_by_copy',FALSE,FALSE,FALSE),
     (14,'Bib has attributes and copies or URIs','rating.generic_fixed_rating_by_copy_or_uri',FALSE,FALSE,FALSE),
     (15,'Bib has attributes','rating.generic_fixed_rating_global',FALSE,FALSE,FALSE),
-    (16,'Copy Count','rating.copy_count',FALSE,FALSE,TRUE);
+    (16,'Copy Count','rating.copy_count',FALSE,FALSE,TRUE),
+    (17,'Circulation Library Count', 'rating.org_unit_count',FALSE,FALSE, TRUE),
+    (18, 'In-House Use Over Time', 'rating.inhouse_over_time',TRUE,FALSE,TRUE);
 
 
 CREATE TABLE rating.badge (
@@ -835,7 +837,7 @@ BEGIN
               FROM  asset.copy cp
                     JOIN precalc_copy_filter_bib_list c ON (cp.id = c.copy)
                     JOIN asset.call_number cn ON (cn.id = cp.call_number)
-                    LEFT JOIN action.all_circulation circ ON (
+                    LEFT JOIN action.all_circulation_slim circ ON (
                         circ.target_copy = cp.id
                         AND stop_fines NOT IN (
                             'LOST',
@@ -928,6 +930,88 @@ BEGIN
             JOIN asset.call_number cn ON (cn.id = cp.call_number)
       WHERE cn.owning_lib = ANY (badge.orgs) GROUP BY 1;
 
+END;
+$f$ LANGUAGE PLPGSQL STRICT;
+
+CREATE OR REPLACE FUNCTION rating.org_unit_count(badge_id INT)
+    RETURNS TABLE (record INT, value NUMERIC) AS $f$
+DECLARE
+    badge   rating.badge_with_orgs%ROWTYPE;
+BEGIN
+
+    SELECT * INTO badge FROM rating.badge_with_orgs WHERE id = badge_id;
+
+    PERFORM rating.precalc_bibs_by_copy(badge_id);
+
+    DELETE FROM precalc_copy_filter_bib_list WHERE id NOT IN (
+        SELECT id FROM precalc_filter_bib_list
+            INTERSECT
+        SELECT id FROM precalc_bibs_by_copy_list
+    );
+    ANALYZE precalc_copy_filter_bib_list;
+
+    -- Use circ rather than owning lib here as that means "on the shelf at..."
+    RETURN QUERY
+     SELECT f.id::INT AS bib,
+            COUNT(DISTINCT cp.circ_lib)::NUMERIC
+     FROM asset.copy cp
+          JOIN precalc_copy_filter_bib_list f ON (cp.id = f.copy)
+     WHERE cp.circ_lib = ANY (badge.orgs) GROUP BY 1;
+
+END;
+$f$ LANGUAGE PLPGSQL STRICT;
+
+CREATE OR REPLACE FUNCTION rating.inhouse_over_time(badge_id INT)
+    RETURNS TABLE (record BIGINT, value NUMERIC) AS $f$
+DECLARE
+    badge   rating.badge_with_orgs%ROWTYPE;
+    iage    INT     := 1;
+    iint    INT     := NULL;
+    iscale  NUMERIC := NULL;
+BEGIN
+
+    SELECT * INTO badge FROM rating.badge_with_orgs WHERE id = badge_id;
+
+    IF badge.horizon_age IS NULL THEN
+        RAISE EXCEPTION 'Badge "%" with id % requires a horizon age but has none.',
+            badge.name,
+            badge.id;
+    END IF;
+
+    PERFORM rating.precalc_bibs_by_copy(badge_id);
+
+    DELETE FROM precalc_copy_filter_bib_list WHERE id NOT IN (
+        SELECT id FROM precalc_filter_bib_list
+            INTERSECT
+        SELECT id FROM precalc_bibs_by_copy_list
+    );
+
+    ANALYZE precalc_copy_filter_bib_list;
+
+    iint := EXTRACT(EPOCH FROM badge.importance_interval);
+    IF badge.importance_age IS NOT NULL THEN
+        iage := (EXTRACT(EPOCH FROM badge.importance_age) / iint)::INT;
+    END IF;
+
+    -- if iscale is smaller than 1, scaling slope will be shallow ... BEWARE!
+    iscale := COALESCE(badge.importance_scale, 1.0);
+
+    RETURN QUERY
+     SELECT bib,
+            SUM( uses * GREATEST( iscale * (iage - cage), 1.0 ))
+      FROM (
+         SELECT cn.record AS bib,
+                (1 + EXTRACT(EPOCH FROM AGE(u.use_time)) / iint)::INT AS cage,
+                COUNT(u.id)::INT AS uses
+          FROM  action.in_house_use u
+                JOIN precalc_copy_filter_bib_list cf ON (u.item = cf.copy)
+                JOIN asset.copy cp ON (cp.id = u.item)
+                JOIN asset.call_number cn ON (cn.id = cp.call_number)
+          WHERE u.use_time >= NOW() - badge.horizon_age
+                AND cn.owning_lib = ANY (badge.orgs)
+          GROUP BY 1, 2
+      ) x
+      GROUP BY 1;
 END;
 $f$ LANGUAGE PLPGSQL STRICT;
 

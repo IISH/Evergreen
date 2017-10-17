@@ -411,7 +411,7 @@ sub fetch_hold_transit_by_hold {
 
     $transit = $self->simplereq(
         'open-ils.cstore',
-        'open-ils.cstore.direct.action.hold_transit_copy.search', { hold => $holdid } );
+        'open-ils.cstore.direct.action.hold_transit_copy.search', { hold => $holdid, cancel_time => undef } );
 
     $evt = OpenILS::Event->new('ACTION_HOLD_TRANSIT_COPY_NOT_FOUND', holdid => $holdid) unless $transit;
 
@@ -763,6 +763,18 @@ sub find_org {
     return undef;
 }
 
+sub find_org_by_shortname {
+    my( $self, $org_tree, $shortname )  = @_;
+    return undef unless $org_tree and defined $shortname;
+    return $org_tree if ( $org_tree->shortname eq $shortname );
+    return undef unless ref($org_tree->children);
+    for my $c (@{$org_tree->children}) {
+        my $o = $self->find_org_by_shortname($c, $shortname);
+        return $o if $o;
+    }
+    return undef;
+}
+
 sub fetch_non_cat_type_by_name_and_org {
     my( $self, $name, $orgId ) = @_;
     $logger->debug("Fetching non cat type $name at org $orgId");
@@ -978,7 +990,7 @@ sub fetch_open_transit_by_copy {
     my($transit, $evt);
     $transit = $self->cstorereq(
         'open-ils.cstore.direct.action.transit_copy.search',
-        { target_copy => $copyid, dest_recv_time => undef });
+        { target_copy => $copyid, dest_recv_time => undef, cancel_time => undef });
     $evt = OpenILS::Event->new('ACTION_TRANSIT_COPY_NOT_FOUND') unless $transit;
     return ($transit, $evt);
 }
@@ -1460,6 +1472,12 @@ sub get_org_tree {
     $ORG_TREE{$locale} = $tree;
     $cache->put_cache("orgtree.$locale", $tree);
     return $tree;
+}
+
+sub get_global_flag {
+    my($self, $flag) = @_;
+    return undef unless ($flag);
+    return OpenILS::Utils::CStoreEditor->new->retrieve_config_global_flag($flag);
 }
 
 sub get_org_descendants {
@@ -2046,10 +2064,11 @@ sub basic_opac_copy_query {
     return {
         select => {
             acp => ['id', 'barcode', 'circ_lib', 'create_date', 'active_date',
-                    'age_protect', 'holdable', 'copy_number'],
+                    'age_protect', 'holdable', 'copy_number', 'circ_modifier'],
             acpl => [
                 {column => 'name', alias => 'copy_location'},
-                {column => 'holdable', alias => 'location_holdable'}
+                {column => 'holdable', alias => 'location_holdable'},
+                {column => 'url', alias => 'location_url'}
             ],
             ccs => [
                 {column => 'id', alias => 'status_code'},
@@ -2061,7 +2080,7 @@ sub basic_opac_copy_query {
                 {column => 'id', alias => 'call_number'},
                 {column => 'owning_lib', alias => 'call_number_owning_lib'}
             ],
-            circ => ['due_date'],
+            circ => ['due_date',{column => 'circ_lib', alias => 'circ_circ_lib'}],
             acnp => [
                 {column => 'label', alias => 'call_number_prefix_label'},
                 {column => 'id', alias => 'call_number_prefix'}

@@ -54,21 +54,20 @@ autoreconf -i
 Installing prerequisites
 ------------------------
 
-  * **PostgreSQL**: Version 9.4 is recommended. 
-    The minimum supported version is 9.3.
-  * **Linux**: Evergreen 2.8 has been tested on Debian Jessie (8.0), 
-    Debian Wheezy (7.0), Ubuntu Xenial Xerus (16.04), 
+  * **PostgreSQL**: The minimum supported version is 9.4.
+  * **Linux**: Evergreen has been tested on Debian Stretch (9), 
+    Debian Jessie (8), Debian Wheezy (7), Ubuntu Xenial Xerus (16.04), 
     and Ubuntu Trusty Tahr (14.04).
     If you are running an older version of these distributions, you may want 
     to upgrade before upgrading Evergreen. For instructions on upgrading these
     distributions, visit the Debian or Ubuntu websites.
-  * **OpenSRF**: The minimum supported version of OpenSRF is 2.5.0.
+  * **OpenSRF**: The minimum supported version of OpenSRF is 3.0.0.
 
 
 Evergreen has a number of prerequisite packages that must be installed
 before you can successfully configure, compile, and install Evergreen.
 
-1. Begin by installing the most recent version of OpenSRF (2.5.0 or later).
+1. Begin by installing the most recent version of OpenSRF (3.0.0 or later).
    You can download OpenSRF releases from http://evergreen-ils.org/opensrf-downloads/
 2. On some distributions, it is necessary to install PostgreSQL 9.4+ from external
    repositories.
@@ -77,12 +76,12 @@ before you can successfully configure, compile, and install Evergreen.
     PostgreSQL, so steps are taken to automatically utilize the 
     PostgreSQL community's apt sources. 
     (For complete details, see: https://wiki.postgresql.org/wiki/Apt)
-  * Debian (Jessie) and Ubuntu (Xenial) comes with PostgreSQL 9.4+,
+  * Debian (Jessie/Stretch) and Ubuntu (Xenial) comes with PostgreSQL 9.4+,
     so no additional steps are required.
 +
 3. Issue the following commands as the *root* Linux account to install
    prerequisites using the `Makefile.install` prerequisite installer,
-   substituting `debian-jessie`, `debian-wheezy`,
+   substituting `debian-stretch`, `debian-jessie`, `debian-wheezy`,
    `ubuntu-xenial`, or `ubuntu-trusty` for <osname> below:
 +
 [source, bash]
@@ -94,8 +93,8 @@ make -f Open-ILS/src/extras/Makefile.install <osname>
    issuing the following commands as the *root* Linux account:
 +
 [NOTE]
-You should skip this step if installing on Ubuntu Trusty, Ubuntu Xenial or Debian Jessie. The Ubuntu
-and Debian Jessie targets use libdbd-pgsql from packages.
+You should skip this step if installing on Ubuntu Trusty/Xenial or Debian Jessie/Stretch. The Ubuntu
+and Debian Jessie/Stretch targets use libdbd-pgsql from packages.
 +
 .Debian Wheezy
 [source, bash]
@@ -135,8 +134,8 @@ make -f Open-ILS/src/extras/Makefile.install <osname>-translator
 make -f Open-ILS/src/extras/Makefile.install <osname>-packager
 ------------------------------------------------------------------------------
 
-Optional: Extra steps for web staff client
-------------------------------------------
+Extra steps for web staff client
+--------------------------------
 
 [NOTE]
 Skip this entire section if you are using an official release tarball downloaded
@@ -146,8 +145,7 @@ Install dependencies for web staff client
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [NOTE]
-You may skip this section if you are installing on either Debian Jessie,
-Ubuntu Trusty, or Ubuntu Xenial and you have installed the previously described
+You may skip this section if you have installed the previously described
 'Optional: Developer Additions'.  You will still need to do the following
 steps in <<install_files_for_web_staff_client,Install files for web staff client>>.
 
@@ -160,13 +158,6 @@ environment variable `PATH`.
 [source,sh]
 ------------------------------------------------------------------------------
 % sudo npm install -g grunt-cli
-------------------------------------------------------------------------------
-+
-3. Install Bower
-+
-[source,sh]
-------------------------------------------------------------------------------
-% sudo npm install -g bower
 ------------------------------------------------------------------------------
 
 [[install_files_for_web_staff_client]]
@@ -186,8 +177,7 @@ cd $EVERGREEN_ROOT/Open-ILS/web/js/ui/default/staff/
 +
 [source,sh]
 ------------------------------------------------------------------------------
-npm install   # fetch Grunt dependencies
-bower install # fetch JS dependencies
+npm install   # fetch JS dependencies
 ------------------------------------------------------------------------------
 +
 3. Run the build script.
@@ -228,7 +218,7 @@ Installation instructions
 +
 [source, bash]
 ------------------------------------------------------------------------------
-make STAFF_CLIENT_STAMP_ID=rel_2_12_6 install
+make STAFF_CLIENT_STAMP_ID=rel_3_0_0 install
 ------------------------------------------------------------------------------
 +
 2. The server portion of the staff client expects `http://hostname/xul/server`
@@ -253,6 +243,16 @@ change the ownership on the files:
 [source, bash]
 ------------------------------------------------------------------------------
 chown -R opensrf:opensrf /openils
+------------------------------------------------------------------------------
+
+Run ldconfig
+------------
+
+On Debian Stretch, run the following command as the root user:
+
+[source, bash]
+------------------------------------------------------------------------------
+ldconfig
 ------------------------------------------------------------------------------
 
 Additional Instructions for Developers
@@ -296,7 +296,7 @@ mkdir /etc/apache2/ssl
 cd /etc/apache2/ssl
 ------------------------------------------------------------------------------
 +
-.Ubuntu Trusty, Ubuntu Xenial, and Debian Jessie
+.Ubuntu Trusty/Xenial and Debian Jessie/Stretch
 [source,bash]
 ------------------------------------------------------------------------------------
 cp Open-ILS/examples/apache_24/eg_24.conf       /etc/apache2/sites-available/eg.conf
@@ -354,7 +354,7 @@ place.
 </IfModule>
 ------------------------------------------------------------------------------
 +
-.Ubuntu Trusty, Ubuntu Xenial, Debian Jessie (`/etc/apache2/mods-available/mpm_prefork.conf`)
+.Ubuntu Trusty/Xenial, Debian Jessie/Stretch (`/etc/apache2/mods-available/mpm_prefork.conf`)
 [source,bash]
 ------------------------------------------------------------------------------
 <IfModule mpm_prefork_module>
@@ -366,7 +366,7 @@ place.
 </IfModule>
 ------------------------------------------------------------------------------
 +
-. (Ubuntu Trusty, Ubuntu Xenial, Debian Jessie) As the *root* user,
+. (Ubuntu Trusty/Xenial, Debian Jessie/Stretch) As the *root* user,
     enable the mpm_prefork module:
 +
 [source,bash]
@@ -383,7 +383,7 @@ a2dissite default  # OPTIONAL: disable the default site (the "It Works" page)
 a2ensite eg.conf
 ------------------------------------------------------------------------------
 +
-(Ubuntu Trusty, Ubuntu Xenial, Debian Jessie):
+(Ubuntu Trusty/Xenial, Debian Jessie/Stretch):
 +
 [source,bash]
 ------------------------------------------------------------------------------
@@ -447,8 +447,8 @@ To enable the default set of hooks, issue the following command as the
 cp -b /openils/conf/action_trigger_filters.json.example /openils/conf/action_trigger_filters.json
 ------------------------------------------------------------------------------
 
-For more information about configuring and using action triggers, see
-<<_notifications_action_triggers,Notifications / Action Triggers>>.
+For more information about configuring and running action triggers, see
+<<_processing_action_triggers,Notifications / Action Triggers>>.
 
 Creating the Evergreen database
 -------------------------------
@@ -472,6 +472,7 @@ command below based on your operating system.
 
 [source, bash]
 ------------------------------------------------------------------------------
+make -f Open-ILS/src/extras/Makefile.install postgres-server-debian-stretch
 make -f Open-ILS/src/extras/Makefile.install postgres-server-debian-jessie
 make -f Open-ILS/src/extras/Makefile.install postgres-server-debian-wheezy
 make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-trusty
@@ -481,7 +482,7 @@ make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-xenial
 For a standalone PostgreSQL server, install the following Perl modules for your
 distribution as the *root* Linux account:
 
-.(Debian Wheezy, Ubuntu Trusty, and Ubuntu Xenial) 
+.(Debian and Ubuntu) 
 No extra modules required for these distributions.
 
 You need to create a PostgreSQL superuser to create and access the database.

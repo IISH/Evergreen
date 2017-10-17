@@ -55,25 +55,30 @@ function($scope,  $q,  $routeParams,  $timeout,  egCore , egUser,  patronSvc , $
     }
 
     $scope.items_out_display = 'main';
-    $scope.show_main_list = function() {
+    $scope.show_main_list = function(refresh_grid) {
         // don't need a full reset_page() to swap tabs
         $scope.items_out_display = 'main';
         patronSvc.items_out = [];
-        provider.refresh();
+        // only refresh the grid when navigating from a tab that 
+        // shares the same grid.
+        if (refresh_grid) provider.refresh();
     }
 
-    $scope.show_alt_list = function() {
+    $scope.show_alt_list = function(refresh_grid) {
         // don't need a full reset_page() to swap tabs
         $scope.items_out_display = 'alt';
         patronSvc.items_out = [];
-        provider.refresh();
+        // only refresh the grid when navigating from a tab that 
+        // shares the same grid.
+        if (refresh_grid) provider.refresh();
     }
 
     $scope.show_noncat_list = function() {
         // don't need a full reset_page() to swap tabs
         $scope.items_out_display = 'noncat';
         patronSvc.items_out = [];
-        provider.refresh();
+        // Grid refresh is not necessary because switching to the
+        // noncat_list always involves instantiating a new grid.
     }
 
     // Reload the user to pick up changes in items out, fines, etc.
@@ -84,7 +89,7 @@ function($scope,  $q,  $routeParams,  $timeout,  egCore , egUser,  patronSvc , $
         patronSvc.items_out = []; 
         $scope.main_list = [];
         $scope.alt_list = [];
-        provider.refresh() 
+        $timeout(provider.refresh);  // allow scope changes to propagate
     }
 
     var provider = egGridDataProvider.instance({});
@@ -93,25 +98,31 @@ function($scope,  $q,  $routeParams,  $timeout,  egCore , egUser,  patronSvc , $
     function fetch_circs(id_list, offset, count) {
         if (!id_list.length) return $q.when();
 
+        var deferred = $q.defer();
+        var rendered = 0;
+
         // fetch the lot of circs and stream the results back via notify
-        return egCore.pcrud.search('circ', {id : id_list},
+        egCore.pcrud.search('circ', {id : id_list},
             {   flesh : 4,
                 flesh_fields : {
                     circ : ['target_copy', 'workstation', 'checkin_workstation'],
-                    acp : ['call_number', 'holds_count'],
-                    acn : ['record'],
+                    acp : ['call_number', 'holds_count', 'status', 'circ_lib'],
+                    acn : ['record', 'owning_lib'],
                     bre : ['simple_record']
                 },
                 // avoid fetching the MARC blob by specifying which 
                 // fields on the bre to select.  More may be needed.
                 // note that fleshed fields are explicitly selected.
                 select : { bre : ['id'] },
-                limit  : count,
-                offset : offset,
+                // TODO: LP#1697954 Fetch all circs on grid render 
+                // to support client-side sorting.  Migrate to server-side
+                // sorting to avoid the need for fetching all items.
+                //limit  : count,
+                //offset : offset,
                 // we need an order-by to support paging
                 order_by : {circ : ['xact_start']} 
 
-        }).then(null, null, function(circ) {
+        }).then(deferred.resolve, null, function(circ) {
             circ.circ_lib(egCore.org.get(circ.circ_lib())); // local fleshing
 
             if (circ.target_copy().call_number().id() == -1) {
@@ -124,22 +135,34 @@ function($scope,  $q,  $routeParams,  $timeout,  egCore , egUser,  patronSvc , $
             }
 
             patronSvc.items_out.push(circ); // toss it into the cache
-            return circ;
+
+            // We fetch all circs for client-side sorting, but only
+            // notify the caller for the page of requested circs.  
+            if (rendered++ >= offset && rendered <= count)
+                deferred.notify(circ);
         });
+
+        return deferred.promise;
     }
 
     function fetch_noncat_circs(id_list, offset, count) {
         if (!id_list.length) return $q.when();
 
-        return egCore.pcrud.search('ancc', {id : id_list},
+        var deferred = $q.defer();
+        var rendered = 0;
+
+        egCore.pcrud.search('ancc', {id : id_list},
             {   flesh : 1,
                 flesh_fields : {ancc : ['item_type','staff']},
-                limit  : count,
-                offset : offset,
+                // TODO: LP#1697954 Fetch all circs on grid render 
+                // to support client-side sorting.  Migrate to server-side
+                // sorting to avoid the need for fetching all items.
+                //limit  : count,
+                //offset : offset,
                 // we need an order-by to support paging
                 order_by : {circ : ['circ_time']} 
 
-        }).then(null, null, function(noncat_circ) {
+        }).then(deferred.resolve, null, function(noncat_circ) {
 
             // calculate the virtual due date from the item type duration
             var seconds = egCore.date.intervalToSeconds(
@@ -152,8 +175,14 @@ function($scope,  $q,  $routeParams,  $timeout,  egCore , egUser,  patronSvc , $
             noncat_circ.circ_lib(egCore.org.get(noncat_circ.circ_lib()));
 
             patronSvc.items_out.push(noncat_circ); // cache it
-            return noncat_circ;
+
+            // We fetch all noncat circs for client-side sorting, but
+            // only notify the caller for the page of requested circs.  
+            if (rendered++ >= offset && rendered <= count)
+                deferred.notify(noncat_circ);
         });
+
+        return deferred.promise;
     }
 
 
@@ -207,6 +236,7 @@ function($scope,  $q,  $routeParams,  $timeout,  egCore , egUser,  patronSvc , $
         var id_list = $scope[$scope.items_out_display + '_list'];
 
         // see if we have the requested range cached
+        // Note this items_out list is reset w/ each items-out tab change
         if (patronSvc.items_out[offset]) {
             return provider.arrayNotifier(
                 patronSvc.items_out, offset, count);

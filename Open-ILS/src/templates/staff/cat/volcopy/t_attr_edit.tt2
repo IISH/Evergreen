@@ -41,7 +41,7 @@
             </div>
         </div>
         <div class="col-md-2">
-            <button class="btn btn-default pull-right" ng-click="clearWorking()" type="button">Clear</button>
+            <button class="btn btn-default pull-right" ng-click="clearWorking()" type="button">[% l('Clear') %]</button>
         </div>
     </div>
 
@@ -183,7 +183,7 @@
                 <div class="col-md-6" ng-class="{'bg-success': working.location !== undefined}">
                     <select class="form-control"
                         ng-disabled="!defaults.attributes.location" ng-model="working.location"
-                        ng-options="l.id() as l.name() for l in location_list"
+                        ng-options="l.id() as i18n.ou_qualified_location_name(l) for l in location_list"
                     ></select>
                 </div>
                 <div class="col-md-6" ng-class="{'bg-success': working.opac_visible !== undefined}">
@@ -400,6 +400,15 @@
                         ng-disabled="!defaults.attributes.floating" ng-model="working.floating"
                         ng-options="a.id() as a.name() for a in floating_list"
                     ></select>
+                </div>
+                <div class="col-md-6">
+                    <button
+                      class="btn btn-default"
+                      ng-disabled="!defaults.copy_tags"
+                      ng-click="copy_tags_dialog(workingGridControls.selectedItems())"
+                      type="button">
+                        [% l('Copy Tags') %]
+                    </button>
                 </div>
             </div>
         </div>

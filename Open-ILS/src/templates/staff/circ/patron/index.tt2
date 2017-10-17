@@ -11,6 +11,7 @@
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/services/user.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/services/eframe.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/services/date.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/services/user-bucket.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/circ/services/patrons.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/circ/services/billing.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/circ/services/circ.js"></script>
@@ -18,6 +19,7 @@
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/circ/services/holds.js"></script>
 [% INCLUDE 'staff/circ/share/hold_strings.tt2' %]
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/cat/services/record.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/services/patron_search.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/circ/patron/app.js"></script>
 <script src="[% ctx.media_prefix %]/js/ui/default/staff/circ/patron/regctl.js"></script>
 
@@ -35,6 +37,8 @@
 <script>
 angular.module('egCoreMod').run(['egStrings', function(s) {
   s.ANNOTATE_PAYMENT_MSG = "[% l('Please annotate this payment') %]";
+  s.CONFIRM_ADJUST_TO_ZERO = 
+    "[% |l('{{xactIds}}') -%]Are you sure you would like to adjust to zero the balance on bills [_1]?[% END %]";
   s.CONFIRM_VOID_BILLINGS = 
     "[% l('Are you sure you would like to void $[_1] for these line-item billings? [_2]','{{amount|number:2}}','{{billIds}}') %]";
   s.CONFIRM_REFUND_PAYMENT = 
@@ -51,7 +55,17 @@ angular.module('egCoreMod').run(['egStrings', function(s) {
   s.PAYMENT_OVER_MAX = "[% l('Payments over $[_1] are denied by policy.', '{{max_amount}}') %]";
   s.PATRON_NOTE_DELETE_CONFIRM_TITLE = "[% l('Delete Note?') %]";
   s.PATRON_NOTE_DELETE_CONFIRM = "[% l('Delete the note titled \"[_1]\" created on [_2]?', '{{note_title}}', '{{create_date | date}}') %]";
+  s.PATRON_PURGE_CONFIRM_TITLE = "[% l('Completely Purge Patron Account?') %]";
+  s.PATRON_PURGE_CONFIRM = "[% l('Completely OBLITERATE this patron account, including bills, payments, bookbags, etc? This is IRREVERSIBLE.') %]";
+  s.PATRON_PURGE_LAST_CHANCE = "[% l('Last chance, are you sure you want to completely delete this account?') %]";
+  s.PATRON_PURGE_STAFF_PROMPT = "[% l('The account you are attempting to delete has STAFF_LOGIN privileges. Please enter the barcode for a destination account to receive miscellaneous staff artifacts (reports, etc.) from the account to be deleted.') %]";
+  s.PATRON_PURGE_STAFF_BAD_BARCODE = "[% l('Could not retrieve a destination account with the barcode provided. Aborting the purge...') %]";
+  s.PATRON_PURGE_OVERRIDE_PROMPT = "[% l('The account has open transactions (circulations and/or unpaid bills). Purge anyway?') %]";
   s.PATRON_EDIT_COLLISION = "[% l('Patron record was modified by another user while you were editing it. Your changes were not saved; please reapply them.') %]";
+  s.OPT_IN_DIALOG_TITLE = "[% l('Verify Permission to Share Personal Information') %]";
+  s.OPT_IN_DIALOG = "[% l('Does patron [_1], [_2] from [_3] ([_4]) consent to having their personal information shared with your library?', '{{family_name}}', '{{first_given_name}}', '{{org_name}}', '{{org_shortname}}') %]";
+  s.BUCKET_ADD_SUCCESS = "[% l('Successfully added [_1] users to bucket [_2].', '{{count}}', '{{name}}') %]";
+  s.BUCKET_ADD_FAIL = "[% l('Failed to add [_1] users to bucket [_2].', '{{count}}', '{{name}}') %]";
 }]);
 </script>
 
@@ -77,6 +91,8 @@ angular.module('egCoreMod').run(['egStrings', function(s) {
                 '{{patron().first_given_name()}}',
                 '{{patron().second_given_name()}}') %]
           </div>
+
+          <p ng-show="patron().notes().length > 0"><a class='patron-summary-has-notes' href="./circ/patron/{{patron().id()}}/notes"><span class="label label-warning">Notes &nbsp;{{patron().notes().length}}</span></a></p>
           <div ng-show="tab != 'search'">
             <a href ng-click="toggle_expand_summary()"
               title="[% l('Collapse Patron Summary Display') %]"
@@ -193,6 +209,11 @@ angular.module('egCoreMod').run(['egStrings', function(s) {
           <li>
             <a href="./booking/legacy/booking/return?patron_barcode={{patron().card().barcode()}}" target="_top">
               [% l('Booking: Return Reservations') %]
+            </a>
+          </li>
+          <li>
+            <a href ng-click="purge_account()" a-disabled="patron().super_user() == 't' || patron().id() == auth_user_id">
+              [% l('Completely Purge Account') %]
             </a>
           </li>
        </ul>

@@ -4,7 +4,7 @@ module.exports = function(grunt) {
   var config = { 
     pkg: grunt.file.readJSON('package.json'),
 
-    // copy the files we care about from bower-fetched dependencies
+    // copy the files we care about from fetched dependencies
     // into our build directory
     copy: {
 
@@ -15,28 +15,41 @@ module.exports = function(grunt) {
           filter: 'isFile',
           expand : true,
           src: [
-            'bower_components/angular/angular.min.js',
-            'bower_components/angular/angular.min.js.map',
-            'bower_components/angular-animate/angular-animate.min.js',
-            'bower_components/angular-animate/angular-animate.min.js.map',
-            'bower_components/angular-sanitize/angular-sanitize.min.js',
-            'bower_components/angular-sanitize/angular-sanitize.min.js.map',
-            'bower_components/angular-route/angular-route.min.js',
-            'bower_components/angular-route/angular-route.min.js.map',
-            'bower_components/angular-bootstrap/ui-bootstrap.min.js',
-            'bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js',
-            'bower_components/angular-hotkeys/build/hotkeys.min.js',
-            'bower_components/angular-file-saver/dist/angular-file-saver.bundle.min.js',
-            'bower_components/angular-location-update/angular-location-update.min.js',
-            'bower_components/angular-tree-control/angular-tree-control.js',
-            'bower_components/ngtoast/dist/ngToast.min.js',
-            'bower_components/jquery/dist/jquery.min.js',
-            'bower_components/angular-cookies/angular-cookies.min.js',
-            'bower_components/angular-cookies/angular-cookies.min.js.map',
-            'bower_components/iframe-resizer/js/iframeResizer.min.js',
-            'bower_components/iframe-resizer/js/iframeResizer.map',
-            'bower_components/iframe-resizer/js/iframeResizer.contentWindow.min.js',
-            'bower_components/angular-order-object-by/src/ng-order-object-by.js'
+            'node_modules/angular/angular.min.js',
+            'node_modules/angular/angular.min.js.map',
+            'node_modules/angular-animate/angular-animate.min.js',
+            'node_modules/angular-animate/angular-animate.min.js.map',
+            'node_modules/angular-sanitize/angular-sanitize.min.js',
+            'node_modules/angular-sanitize/angular-sanitize.min.js.map',
+            'node_modules/angular-route/angular-route.min.js',
+            'node_modules/angular-route/angular-route.min.js.map',
+            'node_modules/angular-ui-bootstrap/dist/ui-bootstrap.js',
+            'node_modules/angular-ui-bootstrap/dist/ui-bootstrap-tpls.js',
+            'node_modules/angular-hotkeys/build/hotkeys.min.js',
+            'node_modules/angular-file-saver/dist/angular-file-saver.bundle.min.js',
+            'node_modules/angular-location-update/angular-location-update.min.js',
+            'node_modules/angular-tree-control/angular-tree-control.js',
+            'node_modules/ng-toast/dist/ngToast.min.js',
+            'node_modules/angular-cookies/angular-cookies.min.js',
+            'node_modules/angular-cookies/angular-cookies.min.js.map',
+            'node_modules/iframe-resizer/js/iframeResizer.min.js',
+            'node_modules/iframe-resizer/js/iframeResizer.map',
+            'node_modules/iframe-resizer/js/iframeResizer.contentWindow.min.js',
+            'node_modules/angular-order-object-by/src/ng-order-object-by.js',
+            'node_modules/angular-tablesort/js/angular-tablesort.js',
+            'node_modules/lovefield/dist/lovefield.min.js',
+            'node_modules/lovefield/dist/lovefield.min.js.map',
+            'node_modules/moment/min/moment-with-locales.min.js',
+            'node_modules/moment-timezone/builds/moment-timezone-with-data.min.js'
+          ]
+        },
+        {
+          dest: '../common/build/js/', 
+          flatten: true,
+          filter: 'isFile',
+          expand : true,
+          src: [
+            'node_modules/jquery/dist/jquery.min.js'
           ]
         }]
       },
@@ -48,12 +61,13 @@ module.exports = function(grunt) {
           filter : 'isFile',
           expand : true,
           src : [
-            'bower_components/angular-hotkeys/build/hotkeys.min.css',
-            'bower_components/bootstrap/dist/css/bootstrap.min.css', 
-            'bower_components/ngtoast/dist/ngToast.min.css',
-            'bower_components/ngtoast/dist/ngToast-animations.min.css',
-            'bower_components/angular-tree-control/css/tree-control.css',
-            'bower_components/angular-tree-control/css/tree-control-attribute.css',
+            'node_modules/angular-hotkeys/build/hotkeys.min.css',
+            'node_modules/bootstrap/dist/css/bootstrap.min.css', 
+            'node_modules/ng-toast/dist/ngToast.min.css',
+            'node_modules/ng-toast/dist/ngToast-animations.min.css',
+            'node_modules/angular-tree-control/css/tree-control.css',
+            'node_modules/angular-tree-control/css/tree-control-attribute.css',
+            'node_modules/angular-tablesort/tablesort.css'
           ]
         }]
       },
@@ -65,10 +79,11 @@ module.exports = function(grunt) {
           filter : 'isFile',
           expand : true,
           src : [
-            'bower_components/bootstrap/dist/fonts/glyphicons-halflings-regular.eot',
-            'bower_components/bootstrap/dist/fonts/glyphicons-halflings-regular.svg',
-            'bower_components/bootstrap/dist/fonts/glyphicons-halflings-regular.ttf',
-            'bower_components/bootstrap/dist/fonts/glyphicons-halflings-regular.woff'
+            'node_modules/bootstrap/dist/fonts/glyphicons-halflings-regular.eot',
+            'node_modules/bootstrap/dist/fonts/glyphicons-halflings-regular.svg',
+            'node_modules/bootstrap/dist/fonts/glyphicons-halflings-regular.ttf',
+            'node_modules/bootstrap/dist/fonts/glyphicons-halflings-regular.woff',
+            'node_modules/bootstrap/dist/fonts/glyphicons-halflings-regular.woff2'
           ]
         }]
       },
@@ -80,16 +95,16 @@ module.exports = function(grunt) {
           filter : 'isFile',
           expand : true,
           src : [
-            'bower_components/angular-tree-control/images/sample.png',
-            'bower_components/angular-tree-control/images/node-opened-2.png',
-            'bower_components/angular-tree-control/images/folder.png',
-            'bower_components/angular-tree-control/images/node-closed.png',
-            'bower_components/angular-tree-control/images/node-closed-light.png',
-            'bower_components/angular-tree-control/images/node-opened.png',
-            'bower_components/angular-tree-control/images/node-opened-light.png',
-            'bower_components/angular-tree-control/images/folder-closed.png',
-            'bower_components/angular-tree-control/images/node-closed-2.png',
-            'bower_components/angular-tree-control/images/file.png'
+            'node_modules/angular-tree-control/images/sample.png',
+            'node_modules/angular-tree-control/images/node-opened-2.png',
+            'node_modules/angular-tree-control/images/folder.png',
+            'node_modules/angular-tree-control/images/node-closed.png',
+            'node_modules/angular-tree-control/images/node-closed-light.png',
+            'node_modules/angular-tree-control/images/node-opened.png',
+            'node_modules/angular-tree-control/images/node-opened-light.png',
+            'node_modules/angular-tree-control/images/folder-closed.png',
+            'node_modules/angular-tree-control/images/node-closed-2.png',
+            'node_modules/angular-tree-control/images/file.png'
           ]
         }]
       }
@@ -106,7 +121,7 @@ module.exports = function(grunt) {
             'build/css/ngToast.min.css',
             'build/css/ngToast-animations.min.css',
             'build/css/tree-control.css',
-            'build/css/tree-control-attribute.css',
+            'build/css/tree-control-attribute.css'
           ]
         }
       }
@@ -117,21 +132,36 @@ module.exports = function(grunt) {
       options: {
         banner: '/*! <%= pkg.name %> <%= grunt.template.today("yyyy-mm-dd") %> */\n'
       },
+      dev: {
+        files: [{
+          expand: true,
+          src: ['build/js/ui-bootstrap.js', 'build/js/ui-bootstrap-tpls.js'],
+          dest: 'build/js',
+          cwd: '.',
+          rename: function (dst, src) {
+            return src.replace('.js', '.min.js');
+          }
+        }]
+      },
       build: {
         src: [
             // These are concatenated in order in the final build file.
             // The order is important.
-            'build/js/jquery.min.js',
+            '../common/build/js/jquery.min.js',
             'build/js/angular.min.js',
             'build/js/angular-animate.min.js',
             'build/js/angular-sanitize.min.js',
             'build/js/angular-route.min.js',
             'build/js/ui-bootstrap.min.js',
-            'build/js/ui-bootstrap-tpls.min.js',
+            'build/js/ui-bootstrap-tpls.js',
             'build/js/hotkeys.min.js',
             'build/js/angular-tree-control.js',
             'build/js/ngToast.min.js',
+            'build/js/lovefield.min.js',
+            'bulid/js/moment-with-locales.min.js',
+            'build/js/moment-timezone-with-data.min.js',
             // NOTE: OpenSRF must be installed
+            // XXX: Should not be hard-coded
             '/openils/lib/javascript/JSON_v1.js',
             '/openils/lib/javascript/opensrf.js',
             '/openils/lib/javascript/opensrf_ws.js',
@@ -150,20 +180,21 @@ module.exports = function(grunt) {
             'services/audio.js',
             'services/coresvc.js',
             'services/navbar.js',
-            'services/statusbar.js',
             'services/ui.js',
             'services/date.js',
             'services/op_change.js',
+            'services/file.js',
+            'services/i18n.js'
         ],
         dest: 'build/js/<%= pkg.name %>.<%= pkg.version %>.min.js'
-      }
+      },
     },
 
     // bare concat operation; useful for testing concat w/o minification
     // to more easily detect if concat order is incorrect
     concat: {
       options: {
-       separator: ';',
+       separator: ';'
       }
     },
 
@@ -172,19 +203,19 @@ module.exports = function(grunt) {
       // Generate test/data/IDL2js.js for unit tests.
       // note: the output of this script is *not* part of the final build.
       idl2js : {
-        command : 'cd test/data && perl idl2js.pl',
+        command : 'cd test/data && perl idl2js.pl'
       },
 
       // Remove the unit test IDL2js.js file.  We don't need it after testing
       rmidl2js : {
-        command : 'rm test/data/IDL2js.js',
+        command : 'rm test/data/IDL2js.js'
       }
     },
 
     // unit tests configuration
     karma : {
       unit: {
-        configFile: 'test/karma.conf.js',
+        configFile: 'test/karma.conf.js'
         //background: true  // for now, visually babysit unit tests
       }
     }
@@ -204,7 +235,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-karma');
   grunt.loadNpmTasks('grunt-exec');
 
-  // note: "grunt concat" is not requried 
+  // note: "grunt concat" is not required 
   grunt.registerTask('build', ['copy', 'cssmin', 'uglify']);
 
   // test only, no minification

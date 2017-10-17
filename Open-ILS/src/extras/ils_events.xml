@@ -130,7 +130,7 @@
 		<desc xml:lang="en-US">The patron's account has expired</desc>
 	</event>
 	<event code='1225' textcode='TRANSIT_ABORT_NOT_ALLOWED'>
-		<desc xml:lang="en-US">The transit on this item may not be aborted due to the state the item is in</desc>
+		<desc xml:lang="en-US">The transit on this item may not be canceled due to the state the item is in</desc>
 	</event>
 
 	<event code='1226' textcode='REFUND_EXCEEDS_DESK_PAYMENTS'>
@@ -1048,6 +1048,15 @@
         <desc xml:lang="en-US">Renewal attempt failed because the "hold / available copies" ratio exceeds the configured limit</desc>
     </event>
 
+    <event code='11008' textcode='SERIAL_DISTRIBUTION_NOT_EMPTY'>
+        <desc xml:lang="en-US">The distribution still has dependent objects</desc>
+    </event>
+    <event code='11009' textcode='SERIAL_STREAM_NOT_EMPTY'>
+        <desc xml:lang="en-US">The stream still has dependent objects</desc>
+    </event>
+    <event code='11010' textcode='SERIAL_CAPTION_AND_PATTERN_NOT_EMPTY'>
+        <desc xml:lang="en-US">The prediction pattern still has dependent objects</desc>
+    </event>
 </ils_events>
 
 

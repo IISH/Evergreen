@@ -80,7 +80,7 @@
     END;
 
     BLOCK get_ccvm_icon;
-        ctx.media_prefix _ '/images/format_icons/' _ ccvm.ctype _ '/' _ ccvm.code _ '.png';
+        ctx.media_prefix _ '/images/format_icons/' _ ccvm.ctype _ '/' _ ccvm.code _ '.png' _ ctx.cache_key;
     END;
 
     # Extract MARC fields from XML
@@ -731,6 +731,17 @@
             args.bibid.push(bibid.textContent);
         END;
         args.bibid = args.bibid.0; 
+
+        IF args.ebook_test_id;
+            args.ebook.ebook_id = args.ebook_test_id;
+            args.ebook.vendor = 'ebook_test';
+        ELSIF args.oneclickdigital_id;
+            args.ebook.ebook_id = args.oneclickdigital_id;
+            args.ebook.vendor = 'oneclickdigital';
+        ELSIF args.overdrive_id;
+            args.ebook.ebook_id = args.overdrive_id;
+            args.ebook.vendor = 'overdrive';
+        END;
 
     END;
 

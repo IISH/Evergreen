@@ -12,7 +12,7 @@
     <div class="pad-vert"></div>
     <div class="row">
       <div class="col-md-4">[% l('Transit Date:') %]</div>
-      <div class="col-md-8">{{transit.source_send_time() | date:'short'}}</div>
+      <div class="col-md-8">{{transit.source_send_time() | date:$root.egDateAndTimeFormat}}</div>
     </div>
     <div class="row">
       <div class="col-md-4">[% l('Transit Source:') %]</div>
@@ -25,7 +25,7 @@
   </div>
   <div class="modal-footer">
     <input type="submit" class="btn btn-primary" ng-click="ok()"
-        value="[% l('Abort Transit then Checkout') %]"/>
+        value="[% l('Cancel Transit then Checkout') %]"/>
     <button class="btn btn-warning" 
         ng-click="cancel()">[% l('Cancel') %]</button>
   </div>

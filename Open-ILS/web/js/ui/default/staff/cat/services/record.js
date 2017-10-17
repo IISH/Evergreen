@@ -223,3 +223,111 @@ angular.module('egCoreMod')
         ]
     }
 })
+
+/**
+ * Utility functions for translating bib record display fields into
+ * various formats / structures.
+ *
+ * Note that 'mwde' objects (which are proper IDL objects) only contain
+ * the prescribed fields from the IDL (and database view), while the
+ * 'mfde' hash-based objects contain all configured display fields,
+ * including local/custom fields.
+ *
+ * Example:
+ *
+ *  --
+ *  // Display well-known fields
+ *
+ *  $scope.record = copy.call_number().record();
+ *
+ *  // translate wide display entry values inline
+ *  egBibDisplay.mwdeJSONToJS($scope.record.wide_display_entry());
+ *
+ *  <div>Title:</div>
+ *  <div>{{record.wide_display_entry().title()}}</div>
+ *
+ *  ---
+ *  //  Display any field using known keys
+ *
+ *  $scope.all_display_fields = 
+ *      egBibDisplay.mfdeToHash(record.flat_display_entries());
+ *
+ *  <div>Title:</div>
+ *  <div>{{all_display_fields.title}}</div>
+ *
+ *  ---
+ *  // Display all fields dynamically, using confgured labels
+ *
+ *  $scope.all_display_fields_with_meta = 
+ *      egBibDisplay.mfdeToMetaHash(record.flat_display_entries());
+ *
+ *  <div ng-repeat="(key, content) in all_display_fields_with_meta">
+ *    <div>Field Label</div><div>{{content.label}}</div>
+ *    <div ng-if="content.multi == 't'">
+ *      <div ng-repeat="val in content.value">
+ *        <div>Field Value</div><div>{{val}}</div>
+ *      </div>
+ *    </div>
+ *    <div ng-if="content.multi == 'f'">
+ *      <div>Field Value</div><div>{{content.value}}</div>
+ *    </div>
+ *  </div>
+ *
+ */
+.factory('egBibDisplay', ['$q', 'egCore', function($q, egCore) {
+    var service = {};
+
+    /**
+     * Converts JSON-encoded values within a mwde object to Javascript
+     * native strings, numbers, and arrays.
+     */
+    service.mwdeJSONToJS = function(entry) {
+        angular.forEach(egCore.idl.classes.mwde.fields, function(f) {
+            if (f.virtual) return;
+            entry[f.name](JSON.parse(entry[f.name]()));
+        });
+    }
+
+    /**
+     * Converts a list of 'mfde' entry objects to a simple key=>value hash.
+     * Non-multi values are strings or numbers.
+     * Multi values are arrays of strings or numbers.
+     */
+    service.mfdeToHash = function(entries) {
+        var hash = service.mfdeToMetaHash(entries);
+        angular.forEach(hash, 
+            function(sub_hash, name) { hash[name] = sub_hash.value });
+        return hash;
+    }
+
+    /**
+     * Converts a list of 'mfde' entry objects to a nested hash like so:
+     * {name => field_name, label => field_label, value => scalar_or_array}
+     * The scalar_or_array value is a string/number or an array of
+     * string/numbers
+     */
+    service.mfdeToMetaHash = function(entries) {
+        var hash = {};
+        angular.forEach(entries, function(entry) {
+
+            if (!hash[entry.name()]) {
+                hash[entry.name()] = {
+                    name : entry.name(),
+                    label : entry.label(),
+                    multi : entry.multi() == 't',
+                    value : entry.multi() == 't' ? [] : null
+                }
+            }
+
+            if (entry.multi() == 't') {
+                hash[entry.name()].value.push(entry.value());
+            } else {
+                hash[entry.name()].value = entry.value();
+            }
+        });
+
+        return hash;
+    }
+
+    return service;
+}])

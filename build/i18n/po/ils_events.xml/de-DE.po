@@ -1,20 +1,20 @@
 # German translation for evergreen
-# Copyright (c) 2017 Rosetta Contributors and Canonical Ltd 2017
+# Copyright (c) 2010 Rosetta Contributors and Canonical Ltd 2010
 # This file is distributed under the same license as the evergreen package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2010.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: evergreen\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: 2017-08-25 14:21-0400\n"
-"PO-Revision-Date: 2017-04-09 07:00+0000\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2017-09-03 23:33-0400\n"
+"PO-Revision-Date: 2012-01-11 15:59+0000\n"
+"Last-Translator: Daniel Winzen <d@winzen4.de>\n"
 "Language-Team: German <de@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2017-08-28 05:38+0000\n"
+"X-Launchpad-Export-Date: 2017-09-05 04:42+0000\n"
 "X-Generator: Launchpad (build 18446)\n"
 
 #: 1208.TITLE_LAST_COPY:71
@@ -254,12 +254,20 @@ msgstr ""
 msgid "This account is marked as inactive"
 msgstr ""
 
+#: 11008.SERIAL_DISTRIBUTION_NOT_EMPTY:1052
+msgid "The distribution still has dependent objects"
+msgstr ""
+
 #: 8003.OFFLINE_PARAM_ERROR:948
 msgid "Missing params in offline upload"
 msgstr ""
 
 #: 1637.REPORTER_REPORT_FOLDER_NOT_FOUND:562
 msgid "The requested reporter_report_folder was not found"
+msgstr ""
+
+#: 11010.SERIAL_CAPTION_AND_PATTERN_NOT_EMPTY:1058
+msgid "The prediction pattern still has dependent objects"
 msgstr ""
 
 #: 1545.PERM_EX_NOT_FOUND:293
@@ -432,6 +440,10 @@ msgstr ""
 msgid "The requested actor_org_address was not found"
 msgstr ""
 
+#: 11009.SERIAL_STREAM_NOT_EMPTY:1055
+msgid "The stream still has dependent objects"
+msgstr ""
+
 #: 11103.TRANSIT_CHECKIN_INTERVAL_BLOCK:1028
 msgid "Checkin attempted on item during minimum transit checkin interval."
 msgstr ""
@@ -521,6 +533,11 @@ msgstr ""
 
 #: 1704.TCN_EXISTS:728
 msgid "A record already exists with the requested TCN value"
+msgstr ""
+
+#: 1225.TRANSIT_ABORT_NOT_ALLOWED:133
+msgid ""
+"The transit on this item may not be canceled due to the state the item is in"
 msgstr ""
 
 #: 1.UNKNOWN:17
@@ -647,9 +664,8 @@ msgstr ""
 msgid "The requested config_non_cataloged_type was not found"
 msgstr ""
 
-#: 1225.TRANSIT_ABORT_NOT_ALLOWED:133
-msgid ""
-"The transit on this item may not be aborted due to the state the item is in"
+#: 1716.COPY_LOCATION_NOT_EMPTY:716
+msgid "The copy location is not empty"
 msgstr ""
 
 #: 1542.CONFIG_LANGUAGE_MAP_NOT_FOUND:284
@@ -728,10 +744,6 @@ msgstr ""
 
 #: 1628.MONEY_BILLING_NOT_FOUND:534
 msgid "The requested money_billing was not found"
-msgstr ""
-
-#: 1716.COPY_LOCATION_NOT_EMPTY:716
-msgid "The copy location is not empty"
 msgstr ""
 
 #: 1507.CONTAINER_ITEM_NOT_FOUND:215

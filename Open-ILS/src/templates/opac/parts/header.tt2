@@ -106,17 +106,20 @@
         END;
     END;
 
-    # Dojo is required to use the copy locations advanced search filter,
-    # therefore, it should always be enabled.
-    want_dojo = 1;
+    # Dojo is required for the copy locations advanced search filter
+    IF ctx.page == 'advanced';
+        want_dojo = 1;
+    END;
+
+    # ... and for code that tweaks visibility of types on the added
+    # content tab
+    IF ctx.page == 'record' AND (ctx.expand_addedcontent OR ctx.expand_all);
+        want_dojo = 1;
+    END;
 
     use_autosuggest = ctx.get_cgf("opac.use_autosuggest");
 
     IF use_autosuggest.enabled == "t";
-        want_dojo = 1;
-    END;
-
-    IF ctx.google_books_preview;
         want_dojo = 1;
     END;
 
@@ -143,5 +146,14 @@
 
     MACRO img_alt(text) BLOCK;
         html_text_attr('alt', text);
+    END;
+
+    # Browser cache-busting key
+    # Fall back to the eg_cache_hash (set by autogen) so that we don't have to
+    # add conditionals into the rest of the templates
+    IF ctx.cache_key AND ctx.cache_key != "?" _ ctx.eg_cache_hash;
+        ctx.cache_key = "?v=" _ ctx.cache_key;
+    ELSE;
+        ctx.cache_key = "?" _ ctx.eg_cache_hash;
     END;
 %]

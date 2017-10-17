@@ -37,6 +37,7 @@ CREATE TABLE container.copy_bucket (
 	btype		TEXT				NOT NULL DEFAULT 'misc' REFERENCES container.copy_bucket_type (code) DEFERRABLE INITIALLY DEFERRED,
 	description TEXT,
 	pub		BOOL				NOT NULL DEFAULT FALSE,
+	owning_lib	INT				REFERENCES actor.org_unit (id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
 	create_time	TIMESTAMP WITH TIME ZONE	NOT NULL DEFAULT NOW(),
 	CONSTRAINT cb_name_once_per_owner UNIQUE (owner,name,btype)
 );
@@ -55,16 +56,28 @@ CREATE TABLE container.copy_bucket_item (
 					ON UPDATE CASCADE
 					DEFERRABLE
 					INITIALLY DEFERRED,
-	target_copy	INT	NOT NULL
-				REFERENCES asset."copy" (id)
-					ON DELETE CASCADE
-					ON UPDATE CASCADE
-					DEFERRABLE
-					INITIALLY DEFERRED,
+	target_copy	INT	NOT NULL,
     pos         INT,
 	create_time	TIMESTAMP WITH TIME ZONE	NOT NULL DEFAULT NOW()
 );
 CREATE INDEX copy_bucket_item_bucket_idx ON container.copy_bucket_item (bucket);
+
+CREATE OR REPLACE FUNCTION evergreen.container_copy_bucket_item_target_copy_inh_fkey() RETURNS TRIGGER AS $f$
+BEGIN
+        PERFORM 1 FROM asset.copy WHERE id = NEW.target_copy;
+        IF NOT FOUND THEN
+                RAISE foreign_key_violation USING MESSAGE = FORMAT(
+                        $$Referenced asset.copy id not found, target_copy:%s$$, NEW.target_copy
+                );
+        END IF;
+        RETURN NEW;
+END;
+$f$ LANGUAGE PLPGSQL VOLATILE COST 50;
+
+CREATE CONSTRAINT TRIGGER inherit_copy_bucket_item_target_copy_fkey
+        AFTER UPDATE OR INSERT OR DELETE ON container.copy_bucket_item
+        DEFERRABLE FOR EACH ROW EXECUTE PROCEDURE evergreen.container_copy_bucket_item_target_copy_inh_fkey();
+
 
 CREATE TABLE container.copy_bucket_item_note (
     id      SERIAL      PRIMARY KEY,
@@ -91,6 +104,7 @@ CREATE TABLE container.call_number_bucket (
 	btype	TEXT	NOT NULL DEFAULT 'misc' REFERENCES container.call_number_bucket_type (code) DEFERRABLE INITIALLY DEFERRED,
 	description TEXT,
 	pub	BOOL	NOT NULL DEFAULT FALSE,
+	owning_lib	INT				REFERENCES actor.org_unit (id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
 	create_time	TIMESTAMP WITH TIME ZONE	NOT NULL DEFAULT NOW(),
 	CONSTRAINT cnb_name_once_per_owner UNIQUE (owner,name,btype)
 );
@@ -146,6 +160,7 @@ CREATE TABLE container.biblio_record_entry_bucket (
 	btype	TEXT	NOT NULL DEFAULT 'misc' REFERENCES container.biblio_record_entry_bucket_type (code) DEFERRABLE INITIALLY DEFERRED,
 	description TEXT,
 	pub	BOOL	NOT NULL DEFAULT FALSE,
+	owning_lib	INT				REFERENCES actor.org_unit (id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
 	create_time	TIMESTAMP WITH TIME ZONE	NOT NULL DEFAULT NOW(),
 	CONSTRAINT breb_name_once_per_owner UNIQUE (owner,name,btype)
 );
@@ -199,6 +214,7 @@ CREATE TABLE container.user_bucket (
 	btype	TEXT	NOT NULL DEFAULT 'misc' REFERENCES container.user_bucket_type (code) DEFERRABLE INITIALLY DEFERRED,
 	description TEXT,
 	pub	BOOL	NOT NULL DEFAULT FALSE,
+	owning_lib	INT				REFERENCES actor.org_unit (id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
 	create_time	TIMESTAMP WITH TIME ZONE	NOT NULL DEFAULT NOW(),
 	CONSTRAINT ub_name_once_per_owner UNIQUE (owner,name,btype)
 );

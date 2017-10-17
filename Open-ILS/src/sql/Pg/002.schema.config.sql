@@ -44,13 +44,14 @@ INSERT INTO config.internal_flag (name) VALUES ('ingest.reingest.force_on_same_m
 INSERT INTO config.internal_flag (name) VALUES ('ingest.disable_located_uri');
 INSERT INTO config.internal_flag (name) VALUES ('ingest.disable_metabib_full_rec');
 INSERT INTO config.internal_flag (name) VALUES ('ingest.disable_metabib_rec_descriptor');
-INSERT INTO config.internal_flag (name) VALUES ('ingest.disable_metabib_field_entry');
 INSERT INTO config.internal_flag (name) VALUES ('ingest.assume_inserts_only');
 INSERT INTO config.internal_flag (name) VALUES ('ingest.skip_browse_indexing');
 INSERT INTO config.internal_flag (name) VALUES ('ingest.skip_search_indexing');
 INSERT INTO config.internal_flag (name) VALUES ('ingest.skip_facet_indexing');
+INSERT INTO config.internal_flag (name) VALUES ('ingest.skip_display_indexing');
 INSERT INTO config.internal_flag (name) VALUES ('serial.rematerialize_on_same_holding_code');
 INSERT INTO config.internal_flag (name) VALUES ('ingest.metarecord_mapping.preserve_on_delete');
+
 
 CREATE TABLE config.global_flag (
     label   TEXT    NOT NULL
@@ -91,8 +92,8 @@ CREATE TRIGGER no_overlapping_deps
     BEFORE INSERT OR UPDATE ON config.db_patch_dependencies
     FOR EACH ROW EXECUTE PROCEDURE evergreen.array_overlap_check ('deprecates');
 
-INSERT INTO config.upgrade_log (version, applied_to) VALUES ('1055', :eg_version); -- berick/phasefx
-INSERT INTO config.upgrade_log (version, applied_to) VALUES ('2.12.6', :eg_version);
+INSERT INTO config.upgrade_log (version, applied_to) VALUES ('1077', :eg_version); -- csharp/gmcharlt
+INSERT INTO config.upgrade_log (version, applied_to) VALUES ('3.0.0', :eg_version);
 
 CREATE TABLE config.bib_source (
 	id		SERIAL	PRIMARY KEY,
@@ -211,9 +212,11 @@ CREATE TABLE config.metabib_field (
 	browse_xpath   TEXT,
 	browse_sort_xpath TEXT,
 	facet_xpath	TEXT,
+	display_xpath	TEXT,
 	authority_xpath TEXT,
 	joiner      TEXT,
-	restrict	BOOL    DEFAULT FALSE NOT NULL
+	restrict	BOOL    DEFAULT FALSE NOT NULL,
+    display_field BOOL NOT NULL DEFAULT FALSE
 );
 COMMENT ON TABLE config.metabib_field IS $$
 XPath used for record indexing ingest
@@ -225,6 +228,12 @@ or identifier.
 $$;
 
 CREATE UNIQUE INDEX config_metabib_field_class_name_idx ON config.metabib_field (field_class, name);
+
+CREATE TABLE config.display_field_map (
+    name    TEXT   PRIMARY KEY,
+    field   INTEGER REFERENCES config.metabib_field (id),
+    multi   BOOLEAN DEFAULT FALSE
+);
 
 CREATE TABLE config.ts_config_list (
 	id			TEXT PRIMARY KEY,
@@ -342,7 +351,8 @@ BEGIN
         UPDATE  config.hard_due_date
           SET   ceiling_date = temp_value.ceiling_date
           WHERE id = temp_value.hard_due_date
-                AND ceiling_date <> temp_value.ceiling_date; -- Time is equal if we've already updated the chdd
+                AND ceiling_date <> temp_value.ceiling_date -- Time is equal if we've already updated the chdd
+                AND temp_value.ceiling_date >= NOW(); -- Don't update ceiling dates to the past
 
         IF FOUND THEN
             updated := updated + 1;
@@ -1219,5 +1229,14 @@ ALTER TABLE config.marc_subfield
                 hidden IS NOT NULL
            )
           );
+
+CREATE TABLE config.copy_tag_type (
+    code            TEXT NOT NULL PRIMARY KEY,
+    label           TEXT NOT NULL,
+    owner           INTEGER NOT NULL -- REFERENCES actor.org_unit (id) DEFERRABLE INITIALLY DEFERRED
+);
+
+CREATE INDEX config_copy_tag_type_owner_idx
+    ON config.copy_tag_type (owner);
 
 COMMIT;

@@ -6,13 +6,15 @@ module.exports = function(config){
     logLevel: config.LOG_INFO,
 
     files : [
+      '../common/build/js/jquery.min.js',
+      'build/js/lovefield.min.js',
       'build/js/angular.min.js',
       'build/js/angular-route.min.js',
-      'bower_components/angular-mocks/angular-mocks.js', // testing only
-      'bower_components/angular-file-saver/dist/angular-file-saver.bundle.min.js',
-      'bower_components/ngtoast/dist/ngToast.min.js',
-      'bower_components/angular-sanitize/angular-sanitize.min.js',
-      'build/js/ui-bootstrap.min.js',
+      'node_modules/angular-mocks/angular-mocks.js', // testing only
+      'node_modules/angular-file-saver/dist/angular-file-saver.bundle.min.js',
+      'node_modules/ng-toast/dist/ngToast.min.js',
+      'node_modules/angular-sanitize/angular-sanitize.min.js',
+      'build/js/ui-bootstrap.js',
       'build/js/hotkeys.min.js',
       'build/js/angular-cookies.min.js',
       /* OpenSRF must be installed first */
@@ -42,10 +44,13 @@ module.exports = function(config){
       'services/user.js',
       'services/startup.js',
       'services/ui.js',
-      'services/statusbar.js',
       'services/grid.js',
       'services/op_change.js',
+      'services/patron_search.js',
+      'services/lovefield.js',
       'services/navbar.js', 'services/date.js',
+      'services/user-bucket.js',
+      'services/i18n.js',
       // load app scripts
       'app.js',
       'circ/**/*.js',

@@ -2,12 +2,15 @@
 
 <eg-grid
   id-field="index"
-  features="-sort,-multisort"
+  features="clientsort"
   main-label="[% l('Items Checked In') %]"
   items-provider="gridDataProvider"
   grid-controls="gridControls"
-  persist-key="{{grid_persist_key}}">
-
+  persist-key="{{grid_persist_key}}"
+  dateformat="{{$root.egDateAndTimeFormat}}">
+  
+  <eg-grid-action handler="add_copies_to_bucket" label="[% l('Add Items to Bucket') %]">
+  </eg-grid-action>
   <eg-grid-action 
     handler="fetchLastCircPatron"
     label="[% l('Retrieve Last Patron Who Circulated Item') %]">
@@ -16,22 +19,41 @@
     handler="showBackdateDialog"
     label="[% l('Backdate Post-Checkin') %]">
   </eg-grid-action>
-  <eg-grid-action 
+  <eg-grid-action
     handler="showMarkDamaged"
     label="[% l('Mark Items Damaged') %]">
   </eg-grid-action>
+  <eg-grid-action
+    handler="show_mark_missing_pieces"
+    label="[% l('Mark Missing Pieces') %]">
+  </eg-grid-action>
   <eg-grid-action 
     handler="abortTransit"
-    label="[% l('Abort Transits') %]">
+    label="[% l('Cancel Transits') %]">
+  </eg-grid-action>
+  <!-- Show Group -->
+  <eg-grid-action handler="showBibHolds" group="[% l('Show') %]"
+    label="[% l('Record Holds') %]">
+  </eg-grid-action>
+  <eg-grid-action handler="showLastCircs" group="[% l('Show') %]"
+    label="[% l('Last Few Circs') %]">
   </eg-grid-action>
 
+  <!-- Edit Group -->
+  <eg-grid-action handler="selectedHoldingsVolCopyEdit" group="[% l('Edit') %]"
+    label="[% l('Volumes and Items') %]">
+  </eg-grid-action>
+
+  <eg-grid-action handler="printSpineLabels" group="[% l('Print') %]"
+    label="[% l('Spine Labels') %]">
+  </eg-grid-action>
   <eg-grid-field label="[% l('Alert Msg') %]"   
     path="acp.alert_message"></eg-grid-field>
 
   <eg-grid-field label="[% l('Balance Owed') %]"     
-    path='mbts.balance_owed'></eg-grid-field>
+    path='mbts.balance_owed' comparator="sort_money"></eg-grid-field>
 
-  <eg-grid-field label="[% l('Barcode') %]" path="acp_barcode">
+  <eg-grid-field label="[% l('Barcode') %]" path="copy_barcode">
     <!-- FIXME: ng-if / ng-disabled not working since the contents 
         are $interpolate'd and not $compile'd.
         I want to hide / disable the href when there is no acp ID 
@@ -45,13 +67,13 @@
     path='circ.id'></eg-grid-field>
 
   <eg-grid-field label="[% l('Checkin Date') %]"    
-    path='circ.checkin_time' dateformat='short'></eg-grid-field>
+    path='circ.checkin_time' datatype="timestamp"></eg-grid-field>
 
   <eg-grid-field label="[% l('Family Name') %]"    
     path='au.family_name'></eg-grid-field>
 
   <eg-grid-field label="[% l('Finish') %]"    
-    path='circ.stop_fines_time'></eg-grid-field>
+    path='circ.stop_fines_time' datatype="timestamp"></eg-grid-field>
 
   <eg-grid-field label="[% l('Location') %]"    
     path='acp.location.name'></eg-grid-field>
@@ -69,7 +91,7 @@
   </eg-grid-field>
 
   <eg-grid-field label="[% l('Due Date') %]"    
-    path='circ.due_date' dateformat='short' hidden></eg-grid-field>
+    path='circ.due_date' dateonlyinterval="duration" datecontext="circ_lib" datatype="timestamp" hidden></eg-grid-field>
 
   <eg-grid-field label="[% l('Author') %]"      
     path="author" hidden></eg-grid-field>
@@ -77,6 +99,8 @@
   <eg-grid-field label="[% l('Call Number') %]" 
     path="acn.label" hidden></eg-grid-field>
 
+  <eg-grid-field path="acp.circ_modifier.name" label="[% l('Circulation Modifier') %]"></eg-grid-field>
+  <eg-grid-field path="acp.circ_lib.shortname" label="[% l('Circulation Library') %]"></eg-grid-field>
   <eg-grid-field path="circ.*" parent-idl-class="circ" hidden></eg-grid-field>
   <eg-grid-field path="acp.*" parent-idl-class="acp" hidden></eg-grid-field>
   <eg-grid-field path="acn.*" parent-idl-class="acn" hidden></eg-grid-field>

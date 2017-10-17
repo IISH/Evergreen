@@ -68,7 +68,7 @@
         </a>
 
         <ul uib-dropdown-menu>
-          <li>
+          <li ng-if="username">
             <a href="./circ/patron/bcsearch" target="_self"
               eg-accesskey="[% l('f1') %]" 
               eg-accesskey-desc="[% l('Check Out') %]">
@@ -76,8 +76,24 @@
               [% l('Check Out') %]
             </a>
           </li>
-          <li>
+          <li ng-if="!username">
+            <a href="" ng-click="rs.active_tab('checkout')" target="_self"
+              eg-accesskey="[% l('f1') %]" 
+              eg-accesskey-desc="[% l('Check Out') %]">
+              <span class="glyphicon glyphicon-export"></span>
+              [% l('Check Out') %]
+            </a>
+          </li>
+          <li ng-if="username">
             <a href="./circ/checkin/checkin" target="_self"
+              eg-accesskey="[% l('f2') %]" 
+              eg-accesskey-desc="[% l('Check In') %]">
+              <span class="glyphicon glyphicon-import"></span>
+              [% l('Check In') %]
+            </a>
+          </li>
+          <li ng-if="!username">
+            <a href="" ng-click="rs.active_tab('checkin')" target="_self"
               eg-accesskey="[% l('f2') %]" 
               eg-accesskey-desc="[% l('Check In') %]">
               <span class="glyphicon glyphicon-import"></span>
@@ -98,7 +114,7 @@
               [% l('Pull List for Hold Requests') %]
             </a>
           </li>
-          <li>
+          <li ng-if="username">
             <a href="./circ/renew/renew" target="_self"
               eg-accesskey="[% l('ctrl+f2') %]" 
               eg-accesskey-desc="[% l('Renew items') %]">
@@ -106,7 +122,15 @@
               [% l('Renew Items') %]
             </a>
           </li>
-          <li>
+          <li ng-if="!username">
+            <a href="" ng-click="rs.active_tab('renew')" target="_self"
+              eg-accesskey="[% l('ctrl+f2') %]" 
+              eg-accesskey-desc="[% l('Renew items') %]">
+              <span class="glyphicon glyphicon-refresh"></span>
+              [% l('Renew Items') %]
+            </a>
+          </li>
+          <li ng-if="username">
             <a href="./circ/patron/register" target="_self"
               eg-accesskey="[% l('shift+f1') %]" 
               eg-accesskey-desc="[% l('Register Patron') %]">
@@ -114,7 +138,15 @@
               [% l('Register Patron') %]
             </a>
           </li>
-          <li>
+          <li ng-if="!username">
+            <a href="" ng-click="rs.active_tab('register')" target="_self"
+              eg-accesskey="[% l('shift+f1') %]" 
+              eg-accesskey-desc="[% l('Register Patron') %]">
+              <span class="glyphicon glyphicon-user"></span>
+              [% l('Register Patron') %]
+            </a>
+          </li>
+          <li ng-if="showRecentPatron">
             <a href="./circ/patron/last" target="_self"
               eg-accesskey="[% l('f8') %]" 
               eg-accesskey-desc="[% l('Retrieve Last Patron') %]">
@@ -122,10 +154,23 @@
               [% l('Retrieve Last Patron') %]
             </a>
           </li>
+          <li ng-if="showRecentPatrons">
+            <a href="./circ/patron/search?show_recent=1" target="_self"
+              eg-accesskey-desc="[% l('Retrieve Recent Patrons') %]">
+              <span class="glyphicon glyphicon-share-alt"></span>
+              [% l('Retrieve Recent Patrons') %]
+            </a>
+          </li>
           <li>
             <a href="./circ/patron/pending/list" target="_self">
               <span class="glyphicon glyphicon-thumbs-up"></span>
               [% l('Pending Patrons') %]
+            </a>
+          </li>
+          <li>
+            <a href="./circ/patron/bucket/view" target="_self">
+              <span class="glyphicon glyphicon-list-alt"></span>
+              [% l('User Buckets') %]
             </a>
           </li>
           <li class="divider"></li>
@@ -135,8 +180,16 @@
               <span>[% l('Verify Credentials') %]</span>
             </a>
           </li>
-          <li>
+          <li ng-if="username">
             <a href="./circ/in_house_use/index" target="_self"
+              eg-accesskey="[% l('f6') %]" 
+              eg-accesskey-desc="[% l('Record In-House Use') %]">
+              <span class="glyphicon glyphicon-pencil"></span>
+              <span>[% l('Record In-House Use') %]</span>
+            </a>
+          </li>
+          <li ng-if="!username">
+            <a href="" ng-click="rs.active_tab('in_house_use')" target="_self"
               eg-accesskey="[% l('f6') %]" 
               eg-accesskey-desc="[% l('Record In-House Use') %]">
               <span class="glyphicon glyphicon-pencil"></span>
@@ -175,6 +228,13 @@
               eg-accesskey-desc="[% l('Reprint Last Receipt') %]">
               <span class="glyphicon glyphicon-print"></span>
               <span>[% l('Reprint Last Receipt') %]</span>
+            </a>
+          </li>
+          <li class="divider"></li>
+          <li>
+            <a href="./offline-interface" target="_self">
+              <span class="glyphicon glyphicon-alert"></span>
+              <span>[% l('Offline Circulation') %]</span>
             </a>
           </li>
         </ul>
@@ -424,6 +484,12 @@
             </a>
           </li>
           <li>
+            <a href="./admin/serials/index" target="_self">
+              <span class="glyphicon glyphicon-paperclip"></span>
+              [% l('Serials Administration') %]
+            </a>
+          </li>
+          <li>
             <a href="./admin/booking/index" target="_self">
               <span class="glyphicon glyphicon-calendar"></span>
               [% l('Booking Administration') %]
@@ -444,7 +510,7 @@
       <li>
         <a ng-cloak ng-show="username" title="{{currentToken()}}"
           ng-init="workstation = '[% l('<no workstation>') %]'">
-            [% l('{{username}} @ {{workstation}}') %]
+            {{username}} @ {{workstation}}
         </a>
       </li>
 
@@ -489,6 +555,23 @@
             <a href="./login" ng-click="logout()" target="_self">
               <span class="glyphicon glyphicon-log-out"></span>
               [% l('Log Out') %]
+            </a>
+          </li>
+          <li>
+            <a href="./about" target="_self">
+              <span class="glyphicon glyphicon-question-sign"></span>
+              [% l('About') %]
+            </a>
+          </li>
+          <li class="divider"></li>
+          <li class="disabled">
+            <a href disabled="disabled">
+              <span
+                title="[% l('Hatch Connection Status') %]"
+                class="glyphicon glyphicon-transfer"
+                ng-class="{'connect-status-ok' : hatchConnected()}">
+              </span>
+              [% l('Hatch') %]
             </a>
           </li>
         </ul>

@@ -503,6 +503,28 @@ function($scope,  $q , $routeParams , $timeout , $window , $uibModal , bucketSvc
         });
     }
 
+    $scope.print_labels = function() {
+        var cp_list = []
+        angular.forEach($scope.gridControls.selectedItems(), function (i) {
+            cp_list.push(i.id);
+        })
+
+        egCore.net.request(
+            'open-ils.actor',
+            'open-ils.actor.anon_cache.set_value',
+            null, 'print-labels-these-copies', {
+                copies : cp_list
+            }
+        ).then(function(key) {
+            if (key) {
+                var url = egCore.env.basePath + 'cat/printlabels/' + key;
+                $timeout(function() { $window.open(url, '_blank') });
+            } else {
+                alert('Could not create anonymous cache key!');
+            }
+        });
+    }
+
     $scope.requestItems = function() {
         var copy_list = $scope.gridControls.selectedItems().map(
             function (i) {
@@ -672,6 +694,84 @@ function($scope,  $q , $routeParams , $timeout , $window , $uibModal , bucketSvc
                 null // onprogress
             )
         }
+    }
+
+    $scope.applyTags = function(copies) {
+        return $uibModal.open({
+            templateUrl: './cat/bucket/copy/t_apply_tags',
+            animation: true,
+            controller:
+                   ['$scope','$uibModalInstance',
+            function($scope , $uibModalInstance) {
+
+                $scope.tag_map = [];
+
+                egCore.pcrud.retrieveAll('cctt', {order_by : { cctt : 'label' }}, {atomic : true}).then(function(list) {
+                    $scope.tag_types = list;
+                    $scope.tag_type = $scope.tag_types[0].code(); // just pick a default
+                });
+
+                $scope.getTags = function(val) {
+                    return egCore.pcrud.search('acpt',
+                        {
+                            owner :  egCore.org.fullPath(egCore.auth.user().ws_ou(), true),
+                            label : { 'startwith' : {
+                                        transform: 'evergreen.lowercase',
+                                        value : [ 'evergreen.lowercase', val ]
+                                    }},
+                            tag_type : $scope.tag_type
+                        },
+                        { order_by : { 'acpt' : ['label'] } }, { atomic: true }
+                    ).then(function(list) {
+                        return list.map(function(item) {
+                            return item.label();
+                        });
+                    });
+                }
+
+                $scope.addTag = function() {
+                    var tagLabel = $scope.selectedLabel;
+                    // clear the typeahead
+                    $scope.selectedLabel = "";
+
+                    egCore.pcrud.search('acpt',
+                        {
+                            owner : egCore.org.fullPath(egCore.auth.user().ws_ou(), true),
+                            label : tagLabel,
+                            tag_type : $scope.tag_type
+                        },
+                        { order_by : { 'acpt' : ['label'] } }, { atomic: true }
+                    ).then(function(list) {
+                        if (list.length > 0) {
+                            var newMap = new egCore.idl.acptcm();
+                            newMap.isnew(1);
+                            newMap.tag(egCore.idl.Clone(list[0]));
+                            $scope.tag_map.push(newMap);
+                        }
+                    });
+                }
+
+                $scope.ok = function() {
+                    var promises = [];
+                    angular.forEach($scope.tag_map, function(map) {
+                        if (map.isdeleted()) return;
+                        angular.forEach(copies, function (cp) {
+                            var m = new egCore.idl.acptcm();
+                            m.isnew(1);
+                            m.copy(cp.id);
+                            m.tag(map.tag().id());
+                            promises.push(egCore.pcrud.create(m));
+                        });
+                    });
+                    return $q.all(promises).then(function(){$uibModalInstance.close()});
+                }
+
+                $scope.cancel = function($event) {
+                    $uibModalInstance.dismiss();
+                    $event.preventDefault();
+                }
+            }]
+        });
     }
 
     // fetch the bucket;  on error show the not-allowed message

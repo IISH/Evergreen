@@ -216,9 +216,9 @@ sub flesh_user_penalties {
     if (ref($raw_penalties) eq 'ARRAY' && @$raw_penalties) {
         my $here_prox = ($here) ? $U->get_org_unit_proximity($e, $here, $user->home_ou())
             : undef;
-        # Filter out those that do not apply and deflesh the standing_penalty.
+        # Filter out those that do not apply
         $applied_penalties = [map
-            { $_->standing_penalty($_->standing_penalty->id()) }
+            { $_->standing_penalty }
                 grep {
                     !defined($_->standing_penalty->ignore_proximity())
                     || ((defined($here_prox))
@@ -242,11 +242,10 @@ sub name {
 
 sub format_name {
     my $u = shift;
-    return OpenILS::SIP::clean_text(
-        sprintf('%s %s %s', 
-            ($u->first_given_name || ''),
-            ($u->second_given_name || ''),
-            ($u->family_name || '')));
+    return sprintf('%s %s %s',
+                   ($u->first_given_name || ''),
+                   ($u->second_given_name || ''),
+                   ($u->family_name || ''));
 }
 
 sub home_library {
@@ -259,19 +258,18 @@ sub home_library {
 sub __addr_string {
     my $addr = shift;
     return "" unless $addr;
-    my $return = OpenILS::SIP::clean_text(
-        join( ' ', map {$_ || ''} (
-            $addr->street1,
-            $addr->street2,
-            $addr->city . ',',
-            $addr->county,
-            $addr->state,
-            $addr->country,
-            $addr->post_code
-            )
-        )
-    );
-    $return =~ s/\s+/ /sg;     # Compress any run of of whitespace to one space
+    my $return = join( ' ', map {$_ || ''}
+                           (
+                               $addr->street1,
+                               $addr->street2,
+                               $addr->city . ',',
+                               $addr->county,
+                               $addr->state,
+                               $addr->country,
+                               $addr->post_code
+                           )
+                       );
+    $return =~ s/\s+/ /sg; # Compress any run of of whitespace to one space
     return $return;
 }
 
@@ -290,7 +288,7 @@ sub address {
 
 sub email_addr {
     my $self = shift;
-    return OpenILS::SIP::clean_text($self->{user}->email);
+    return $self->{user}->email;
 }
 
 sub home_phone {
@@ -322,7 +320,7 @@ sub ptype {
         [$self->{user}->profile->id, {no_i18n => 1}])->name
         if $use_code =~ /true/io;
 
-    return OpenILS::SIP::clean_text($self->{user}->profile->name);
+    return $self->{user}->profile->name;
 }
 
 sub language {
@@ -336,64 +334,39 @@ sub language {
 sub charge_ok {
     my $self = shift;
     my $u = $self->{user};
+    my $circ_is_blocked = 0;
 
     # compute expiration date for borrowing privileges
     my $expire = DateTime::Format::ISO8601->new->parse_datetime(cleanse_ISO8601($u->expire_date));
 
-    # determine whether patron should be allowed to circulate materials:
-    # not barred, doesn't owe too much wrt fines/fees, privileges haven't
-    # expired
-    my $circ_is_blocked = 
+    $circ_is_blocked =
         (($u->barred eq 't') or
-         ($u->standing_penalties and @{$u->standing_penalties}) or
-         (CORE::time > $expire->epoch));
+          (@{$u->standing_penalties} and grep { ( $_->block_list // '') =~ /CIRC/ } @{$u->standing_penalties}) or
+          (CORE::time > $expire->epoch));
 
     return
-        !$circ_is_blocked and
-        $u->active eq 't' and
+        !$circ_is_blocked &&
+        $u->active eq 't' &&
         $u->card->active eq 't';
 }
 
 sub renew_ok {
     my $self = shift;
     my $u = $self->{user};
-    my $e = $self->{editor};
-    my $renew_block_penalty = 'f';
+    my $renew_is_blocked = 0;
 
     # compute expiration date for borrowing privileges
     my $expire = DateTime::Format::ISO8601->new->parse_datetime(cleanse_ISO8601($u->expire_date));
 
-    # if barred or expired, forget it and save us the CPU
-    return 0 if(($u->barred eq 't') or (CORE::time > $expire->epoch));
-
-    # flesh penalties so we can look close at the block list
-    my $penalty_flesh = {
-        flesh => 2,
-        flesh_fields => {
-            au => [
-                "standing_penalties",
-            ],
-            ausp => [
-                "standing_penalty",
-            ],
-            csp => [
-                "block_list",
-            ],
-        }
-    };
-    my $user = $e->retrieve_actor_user([ $u->id, $penalty_flesh ]);
-    foreach( @{ $user->standing_penalties } )
-    {
-        # archived penalty - ignore
-        next if ( $_->stop_date && ( CORE::time >  DateTime::Format::ISO8601->new->parse_datetime(cleanse_ISO8601($_->stop_date))->epoch ) );
-        # check to see if this penalty blocks renewals
-        $renew_block_penalty = 't' if $_->standing_penalty->block_list =~ /RENEW/;
-    }
+    $renew_is_blocked =
+        (($u->barred eq 't') or
+         (@{$u->standing_penalties} and grep { ( $_->block_list // '') =~ /RENEW/ } @{$u->standing_penalties}) or
+         (CORE::time > $expire->epoch));
 
     return
+        !$renew_is_blocked &&
         $u->active eq 't' &&
-        $u->card->active eq 't' &&
-        $renew_block_penalty eq 'f';
+        $u->card->active eq 't';
 }
 
 sub recall_ok {
@@ -405,7 +378,21 @@ sub recall_ok {
 
 sub hold_ok {
     my $self = shift;
-    return $self->charge_ok;
+    my $u = $self->{user};
+    my $hold_is_blocked = 0;
+
+    # compute expiration date for borrowing privileges
+    my $expire = DateTime::Format::ISO8601->new->parse_datetime(cleanse_ISO8601($u->expire_date));
+
+    $hold_is_blocked =
+        (($u->barred eq 't') or
+         (@{$u->standing_penalties} and grep { ( $_->block_list // '') =~ /HOLD/ } @{$u->standing_penalties}) or
+         (CORE::time > $expire->epoch));
+
+    return
+        !$hold_is_blocked &&
+        $u->active eq 't' &&
+        $u->card->active eq 't';
 }
 
 # return true if the card provided is marked as lost
@@ -482,7 +469,7 @@ sub too_many_charged {      # not implemented
 sub too_many_overdue { 
     my $self = shift;
     return scalar( # PATRON_EXCEEDS_OVERDUE_COUNT
-        grep { $_ == OILS_PENALTY_PATRON_EXCEEDS_OVERDUE_COUNT } @{$self->{user}->standing_penalties}
+        grep { $_->id == OILS_PENALTY_PATRON_EXCEEDS_OVERDUE_COUNT } @{$self->{user}->standing_penalties}
     );
 }
 
@@ -507,7 +494,7 @@ sub too_many_lost {
 sub excessive_fines { 
     my $self = shift;
     return scalar( # PATRON_EXCEEDS_FINES
-        grep { $_ == OILS_PENALTY_PATRON_EXCEEDS_FINES } @{$self->{user}->standing_penalties}
+        grep { $_->id == OILS_PENALTY_PATRON_EXCEEDS_FINES } @{$self->{user}->standing_penalties}
     );
 }
 
@@ -589,7 +576,7 @@ sub __format_holds {
 
         } else {
             push(@response, 
-                OpenILS::SIP::clean_text($self->__hold_to_title($hold)));
+                $self->__hold_to_title($hold));
         }
     }
 
@@ -788,7 +775,7 @@ sub overdue_items {
         if($return_datatype eq 'barcode') {
             push( @o, __circ_to_barcode($self->{editor}, $circid));
         } else {
-            push( @o, OpenILS::SIP::clean_text(__circ_to_title($self->{editor}, $circid)));
+            push( @o, __circ_to_title($self->{editor}, $circid));
         }
     }
     @overdues = @o;
@@ -845,7 +832,7 @@ sub charged_items_impl {
         if($return_datatype eq 'barcode' or $force_bc) {
             push( @c, __circ_to_barcode($self->{editor}, $circid));
         } else {
-            push( @c, OpenILS::SIP::clean_text(__circ_to_title($self->{editor}, $circid)));
+            push( @c, __circ_to_title($self->{editor}, $circid));
         }
     }
 
@@ -873,7 +860,7 @@ sub fine_items {
            } else {
                $line .= $xact->last_billing_note;
            }
-           push @fines, OpenILS::SIP::clean_text($line);
+           push @fines, $line;
        }
     };
     my $log_status = $@ ? 'ERROR: ' . $@ : 'OK';
@@ -910,7 +897,7 @@ sub block {
 
     # retrieve the un-fleshed user object for update
     $u = $e->retrieve_actor_user($u->id);
-    my $note = OpenILS::SIP::clean_text($u->alert_message) || "";
+    my $note = $u->alert_message || "";
     $note = "<sip> CARD BLOCKED BY SELF-CHECK MACHINE. $blocked_card_msg</sip>\n$note"; # XXX Config option
     $note =~ s/\s*$//;  # kill trailng whitespace
     $u->alert_message($note);
@@ -952,7 +939,7 @@ sub enable {
 
     # retrieve the un-fleshed user object for update
     $u = $e->retrieve_actor_user($u->id);
-    my $note = OpenILS::SIP::clean_text($u->alert_message) || "";
+    my $note = $u->alert_message || "";
     $note =~ s#<sip>.*</sip>##;
     $note =~ s/^\s*//;  # kill leading whitespace
     $note =~ s/\s*$//;  # kill trailng whitespace
@@ -988,7 +975,7 @@ sub inet_privileges {
     my $e = OpenILS::SIP->editor();
     $INET_PRIVS = $e->retrieve_all_config_net_access_level() unless $INET_PRIVS;
     my ($level) = grep { $_->id eq $self->{user}->net_access_level } @$INET_PRIVS;
-    my $name = OpenILS::SIP::clean_text($level->name);
+    my $name = $level->name;
     syslog('LOG_DEBUG', "OILS: Patron inet_privs = $name");
     return $name;
 }

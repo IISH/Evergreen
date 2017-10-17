@@ -59,10 +59,11 @@
 
 <eg-grid
   id-field="index"
-  features="-sort,-multisort"
+  features="clientsort"
   items-provider="gridDataProvider"
   grid-controls="gridControls"
-  persist-key="circ.patron.checkout">
+  persist-key="circ.patron.checkout"
+  dateformat="{{$root.egDateAndTimeFormat}}">
 
   <eg-grid-field label="[% l('Alert Msg') %]"   
     path="acp.alert_message"></eg-grid-field>
@@ -87,7 +88,7 @@
     path="acn.label"></eg-grid-field>
 
   <eg-grid-field label="[% l('Due Date') %]"    
-    path='circ.due_date' dateformat='short'></eg-grid-field>
+    path='circ.due_date' datecontext="circ_lib" dateonlyinterval="duration" datatype="timestamp"></eg-grid-field>
 
   <eg-grid-field label="[% l('Family Name') %]"    
     path='au.family_name'></eg-grid-field>
@@ -106,7 +107,9 @@
 
   <eg-grid-field label="[% l('Author') %]"      
     path="author" hidden></eg-grid-field>
-
+  <eg-grid-field path="acp.circ_modifier.name" label="[% l('Circulation Modifier') %]"></eg-grid-field>
+  <eg-grid-field path="acp.circ_lib.shortname" label="[% l('Circulation Library') %]"></eg-grid-field>
+  <eg-grid-field path="acn.owning_lib.shortname" label="[% l('Owning Library') %]"></eg-grid-field>
   <eg-grid-field path="circ.*" parent-idl-class="circ" hidden></eg-grid-field>
   <eg-grid-field path="acp.*" parent-idl-class="acp" hidden></eg-grid-field>
   <eg-grid-field path="acn.*" parent-idl-class="acn" hidden></eg-grid-field>

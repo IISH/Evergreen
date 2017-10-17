@@ -32,7 +32,8 @@ CREATE TABLE asset.copy_location (
 	label_prefix	TEXT,
 	label_suffix	TEXT,
 	checkin_alert	BOOL	NOT NULL DEFAULT FALSE,
-	deleted		BOOL	NOT NULL DEFAULT FALSE
+	deleted		BOOL	NOT NULL DEFAULT FALSE,
+	url		TEXT
 );
 CREATE UNIQUE INDEX acl_name_once_per_lib ON asset.copy_location (name, owning_lib) WHERE deleted = FALSE OR deleted IS FALSE;
 
@@ -535,6 +536,15 @@ CREATE TABLE asset.copy_template (
 	mint_condition BOOL
 );
 
+CREATE TABLE asset.copy_vis_attr_cache (
+    id              BIGSERIAL   PRIMARY KEY,
+    record          BIGINT      NOT NULL, -- No FKEYs, managed by user triggers.
+    target_copy     BIGINT      NOT NULL,
+    vis_attr_vector INT[]
+);
+CREATE INDEX copy_vis_attr_cache_record_idx ON asset.copy_vis_attr_cache (record);
+CREATE INDEX copy_vis_attr_cache_copy_idx ON asset.copy_vis_attr_cache (target_copy);
+
 CREATE OR REPLACE FUNCTION asset.opac_ou_record_copy_count (org INT, rid BIGINT) RETURNS TABLE (depth INT, org_unit INT, visible BIGINT, available BIGINT, unshadow BIGINT, transcendant INT) AS $f$
 DECLARE
     ans RECORD;
@@ -544,16 +554,21 @@ BEGIN
 
     FOR ans IN SELECT u.id, t.depth FROM actor.org_unit_ancestors(org) AS u JOIN actor.org_unit_type t ON (u.ou_type = t.id) LOOP
         RETURN QUERY
+        WITH org_list AS (SELECT ARRAY_AGG(id)::BIGINT[] AS orgs FROM actor.org_unit_descendants(ans.id) x),
+             available_statuses AS (SELECT ARRAY_AGG(id) AS ids FROM config.copy_status WHERE is_available),
+             mask AS (SELECT c_attrs FROM asset.patron_default_visibility_mask() x)
         SELECT  ans.depth,
                 ans.id,
                 COUNT( av.id ),
-                SUM( CASE WHEN cp.status IN (0,7,12) THEN 1 ELSE 0 END ),
+                SUM( (cp.status = ANY (available_statuses.ids))::INT ),
                 COUNT( av.id ),
                 trans
-          FROM  
-                actor.org_unit_descendants(ans.id) d
-                JOIN asset.opac_visible_copies av ON (av.record = rid AND av.circ_lib = d.id)
-                JOIN asset.copy cp ON (cp.id = av.copy_id)
+          FROM  mask,
+                available_statuses,
+                org_list,
+                asset.copy_vis_attr_cache av
+                JOIN asset.copy cp ON (cp.id = av.target_copy AND av.record = rid)
+          WHERE cp.circ_lib = ANY (org_list.orgs) AND av.vis_attr_vector @@ mask.c_attrs::query_int
           GROUP BY 1,2,6;
 
         IF NOT FOUND THEN
@@ -575,16 +590,20 @@ BEGIN
 
     FOR ans IN SELECT u.org_unit AS id FROM actor.org_lasso_map AS u WHERE lasso = i_lasso LOOP
         RETURN QUERY
+        WITH org_list AS (SELECT ARRAY_AGG(id)::BIGINT[] AS orgs FROM actor.org_unit_descendants(ans.id) x),
+             available_statuses AS (SELECT ARRAY_AGG(id) AS ids FROM config.copy_status WHERE is_available),
+             mask AS (SELECT c_attrs FROM asset.patron_default_visibility_mask() x)
         SELECT  -1,
                 ans.id,
                 COUNT( av.id ),
-                SUM( CASE WHEN cp.status IN (0,7,12) THEN 1 ELSE 0 END ),
+                SUM( (cp.status = ANY (available_statuses.ids))::INT ),
                 COUNT( av.id ),
                 trans
-          FROM
-                actor.org_unit_descendants(ans.id) d
-                JOIN asset.opac_visible_copies av ON (av.record = rid AND av.circ_lib = d.id)
-                JOIN asset.copy cp ON (cp.id = av.copy_id)
+          FROM  mask,
+                org_list,
+                asset.copy_vis_attr_cache av
+                JOIN asset.copy cp ON (cp.id = av.target_copy AND av.record = rid)
+          WHERE cp.circ_lib = ANY (org_list.orgs) AND av.vis_attr_vector @@ mask.c_attrs::query_int
           GROUP BY 1,2,6;
 
         IF NOT FOUND THEN
@@ -714,17 +733,22 @@ BEGIN
 
     FOR ans IN SELECT u.id, t.depth FROM actor.org_unit_ancestors(org) AS u JOIN actor.org_unit_type t ON (u.ou_type = t.id) LOOP
         RETURN QUERY
+        WITH org_list AS (SELECT ARRAY_AGG(id)::BIGINT[] AS orgs FROM actor.org_unit_descendants(ans.id) x),
+             available_statuses AS (SELECT ARRAY_AGG(id) AS ids FROM config.copy_status WHERE is_available),
+             mask AS (SELECT c_attrs FROM asset.patron_default_visibility_mask() x)
         SELECT  ans.depth,
                 ans.id,
                 COUNT( av.id ),
-                SUM( CASE WHEN cp.status IN (0,7,12) THEN 1 ELSE 0 END ),
+                SUM( (cp.status = ANY (available_statuses.ids))::INT ),
                 COUNT( av.id ),
                 trans
-          FROM  
-                actor.org_unit_descendants(ans.id) d
-                JOIN asset.opac_visible_copies av ON (av.circ_lib = d.id)
-                JOIN asset.copy cp ON (cp.id = av.copy_id)
+          FROM  mask,
+                org_list,
+                available_statuses,
+                asset.copy_vis_attr_cache av
+                JOIN asset.copy cp ON (cp.id = av.target_copy)
                 JOIN metabib.metarecord_source_map m ON (m.metarecord = rid AND m.source = av.record)
+          WHERE cp.circ_lib = ANY (org_list.orgs) AND av.vis_attr_vector @@ mask.c_attrs::query_int
           GROUP BY 1,2,6;
 
         IF NOT FOUND THEN
@@ -746,17 +770,22 @@ BEGIN
 
     FOR ans IN SELECT u.org_unit AS id FROM actor.org_lasso_map AS u WHERE lasso = i_lasso LOOP
         RETURN QUERY
+        WITH org_list AS (SELECT ARRAY_AGG(id)::BIGINT[] AS orgs FROM actor.org_unit_descendants(ans.id) x),
+             available_statuses AS (SELECT ARRAY_AGG(id) AS ids FROM config.copy_status WHERE is_available),
+             mask AS (SELECT c_attrs FROM asset.patron_default_visibility_mask() x)
         SELECT  -1,
                 ans.id,
                 COUNT( av.id ),
-                SUM( CASE WHEN cp.status IN (0,7,12) THEN 1 ELSE 0 END ),
+                SUM( (cp.status = ANY (available_statuses.ids))::INT ),
                 COUNT( av.id ),
                 trans
-          FROM
-                actor.org_unit_descendants(ans.id) d
-                JOIN asset.opac_visible_copies av ON (av.circ_lib = d.id)
-                JOIN asset.copy cp ON (cp.id = av.copy_id)
+          FROM  mask,
+                org_list,
+                available_statuses,
+                asset.copy_vis_attr_cache av
+                JOIN asset.copy cp ON (cp.id = av.target_copy)
                 JOIN metabib.metarecord_source_map m ON (m.metarecord = rid AND m.source = av.record)
+          WHERE cp.circ_lib = ANY (org_list.orgs) AND av.vis_attr_vector @@ mask.c_attrs::query_int
           GROUP BY 1,2,6;
 
         IF NOT FOUND THEN
@@ -903,6 +932,60 @@ BEGIN
     RETURN NULL;
 END;
 $F$ LANGUAGE PLPGSQL;
+
+CREATE TABLE asset.copy_tag (
+    id              SERIAL PRIMARY KEY,
+    tag_type        TEXT REFERENCES config.copy_tag_type (code)
+                    ON UPDATE CASCADE ON DELETE CASCADE,
+    label           TEXT NOT NULL,
+    value           TEXT NOT NULL,
+    index_vector    tsvector NOT NULL,
+    staff_note      TEXT,
+    pub             BOOLEAN DEFAULT TRUE,
+    owner           INTEGER NOT NULL REFERENCES actor.org_unit (id)
+);
+
+CREATE INDEX asset_copy_tag_label_idx
+    ON asset.copy_tag (label);
+CREATE INDEX asset_copy_tag_label_lower_idx
+    ON asset.copy_tag (evergreen.lowercase(label));
+CREATE INDEX asset_copy_tag_index_vector_idx
+    ON asset.copy_tag
+    USING GIN(index_vector);
+CREATE INDEX asset_copy_tag_tag_type_idx
+    ON asset.copy_tag (tag_type);
+CREATE INDEX asset_copy_tag_owner_idx
+    ON asset.copy_tag (owner);
+
+CREATE OR REPLACE FUNCTION asset.set_copy_tag_value () RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.value IS NULL THEN
+        NEW.value = NEW.label;        
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE 'plpgsql';
+
+-- name of following trigger chosen to ensure it runs first
+CREATE TRIGGER asset_copy_tag_do_value
+    BEFORE INSERT OR UPDATE ON asset.copy_tag
+    FOR EACH ROW EXECUTE PROCEDURE asset.set_copy_tag_value();
+CREATE TRIGGER asset_copy_tag_fti_trigger
+    BEFORE UPDATE OR INSERT ON asset.copy_tag
+    FOR EACH ROW EXECUTE PROCEDURE oils_tsearch2('default');
+
+CREATE TABLE asset.copy_tag_copy_map (
+    id              BIGSERIAL PRIMARY KEY,
+    copy            BIGINT,
+    tag             INTEGER REFERENCES asset.copy_tag (id)
+                    ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE INDEX asset_copy_tag_copy_map_copy_idx
+    ON asset.copy_tag_copy_map (copy);
+CREATE INDEX asset_copy_tag_copy_map_tag_idx
+    ON asset.copy_tag_copy_map (tag);
 
 COMMIT;
 

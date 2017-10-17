@@ -1,21 +1,19 @@
-# Czech translation for evergreen
-# Copyright (c) 2017 Rosetta Contributors and Canonical Ltd 2017
-# This file is distributed under the same license as the evergreen package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
-#
 msgid ""
 msgstr ""
-"Project-Id-Version: evergreen\n"
-"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: 2017-08-25 14:21-0400\n"
-"PO-Revision-Date: 2017-04-09 07:00+0000\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: Czech <cs@li.org>\n"
+"Project-Id-Version: Evergreen 1.4\n"
+"Report-Msgid-Bugs-To: open-ils-dev@list.georgialibraries.org\n"
+"POT-Creation-Date: 2017-09-03 23:33-0400\n"
+"PO-Revision-Date: 2017-09-25 11:30+0000\n"
+"Last-Translator: Eva Cerninakova <Unknown>\n"
+"Language-Team: UISK <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2017-08-28 05:34+0000\n"
-"X-Generator: Launchpad (build 18446)\n"
+"X-Launchpad-Export-Date: 2017-09-26 05:10+0000\n"
+"X-Generator: Launchpad (build 18463)\n"
+"X-Poedit-Country: CZECH REPUBLIC\n"
+"X-Poedit-Language: Czech\n"
+"X-Poedit-SourceCharset: utf-8\n"
 
 #: 950.data.seed-values.sql:8080
 msgid "Estonia "
@@ -23,48 +21,44 @@ msgstr "Estonsko "
 
 #: 950.data.seed-values.sql:117
 msgid "Series Title"
-msgstr "Název edice"
+msgstr "Series Title"
 
-# id::clfm.value__p
 #: 950.data.seed-values.sql:7069 950.data.seed-values.sql:7875
 #: 950.data.seed-values.sql:8580 950.data.seed-values.sql:8601
 msgid "Poetry"
-msgstr "Poezie"
+msgstr "Poetry"
 
-# id::clm.value__pau
 #: 950.data.seed-values.sql:6882
 msgid "Palauan"
-msgstr "Palauština"
+msgstr "Palauan"
 
 #: 950.data.seed-values.sql:1592
 msgid ""
 "Allows users to save and load sets of filters for filter dialogs, available "
 "in certain staff interfaces"
 msgstr ""
-"Povolí uživatelům a ukádat a stahovat sady filtrů pro dialog filtrů, které "
-"jsou k dispozici v některých rozhraních pro personál"
+"Allows users to save and load sets of filters for filter dialogs, available "
+"in certain staff interfaces"
 
-# id::clm.value__kir
 #: 950.data.seed-values.sql:6769
 msgid "Kyrgyz"
-msgstr "Kyrgyzština"
+msgstr "Kyrgyz"
 
 #: 950.data.seed-values.sql:5306
 msgid "Z39.50 Source"
-msgstr "Z39.50 zdroj"
+msgstr "Z39.50 Source"
 
 #: 950.data.seed-values.sql:7570
 msgid "film reel"
-msgstr "filmový pás"
+msgstr "film reel"
 
 #: 950.data.seed-values.sql:1651
 msgid "Allow a user to modify a popularity badge parameter"
-msgstr "Povolit uživateli upravovat parametry známek popularity"
+msgstr "Allow a user to modify a popularity badge parameter"
 
-# id::clm.value__nor
 #: 950.data.seed-values.sql:6860
 msgid "Norwegian"
-msgstr "Norština"
+msgstr "Norwegian"
 
 # id::cza.label__3 id::cza.label__12 id::cza.label__21
 #: 950.data.seed-values.sql:414 950.data.seed-values.sql:435
@@ -74,24 +68,23 @@ msgstr "LCCN"
 
 #: 950.data.seed-values.sql:15621
 msgid "Rollover Distribution Formulae Funds"
-msgstr "Překlopit fondy distribučních formulí"
+msgstr "Rollover Distribution Formulae Funds"
 
 #: 950.data.seed-values.sql:35
 msgid "Alerting block on Circ"
-msgstr "Upozornění s blokací výpůjček"
+msgstr "Alerting block on Circ"
 
-# id::clm.value__dua
 #: 950.data.seed-values.sql:6653
 msgid "Duala"
-msgstr "Dualština"
+msgstr "Duala"
 
 #: 950.data.seed-values.sql:15377
 msgid "Upload Merge on Single Match by Default"
-msgstr "Standardně sloučit při nahrávání při jedné shodě."
+msgstr "Upload Merge on Single Match by Default"
 
 #: 950.data.seed-values.sql:7842
 msgid "Full score"
-msgstr "Velká partitura"
+msgstr "Full score"
 
 #: 950.data.seed-values.sql:4673
 msgid ""
@@ -99,11 +92,11 @@ msgid ""
 "Suggesting a field makes it appear when suggested fields are shown. If the "
 "field is shown or required this setting is ignored."
 msgstr ""
-"Pole \"číslo identifikačního dokladu 2\" (ident_value2) na kartě "
-"registračních údajů čtenáře zobrazeno jako navrhované. Navrhované pole je "
-"viditelné, pokud  je na kartě registračních údajů čtenáře aktivována volba "
-"\" zobrazit navrhovaná pole\". Pokud je aktivní volba \"zobrazit povinná "
-"pole\", toto nastavení je ignorováno."
+"Pole číslo identifikačního dokladu 2 (ident_value2) na kartě registračních "
+"údajů čtenáře zobrazeno jako navrhované. Navrhované pole je viditelné, pokud "
+" je na kartě registračních údajů čtenáře aktivována volba Zobrazit "
+"navrhovaná pole. Pokud je aktivní volba Zobrazit povinná pole, toto "
+"nastavení je ignorováno."
 
 #: 950.data.seed-values.sql:4904
 msgid "Require at least one address for Patron Registration"
@@ -119,7 +112,7 @@ msgstr ""
 
 #: 950.data.seed-values.sql:1564
 msgid "Allows a user to create/retrieve/update/delete address alerts"
-msgstr "Povolí uživatelo vytvořit / zobrazit / smazat adresu upozornění."
+msgstr "Allows a user to create/retrieve/update/delete address alerts"
 
 #: 950.data.seed-values.sql:8199
 msgid "Nunavut "
@@ -179,11 +172,11 @@ msgid ""
 "holds shelf.  This gives staff time to process the item before it shows as "
 "ready-for-pickup. Examples: \"5 days\", \"1 hour\""
 msgstr ""
-"Účelem je poskytnout časový interval poté co exempláře přejde do statusu "
-"\"na regále s rezervacemi\" než se čtenářům zobrazí, že je opravdu na regále "
-"s rezervacemi. To poskytne personálu dostatek času pro zpracování rezervace "
-"než se exemplář  zobrazí jako  \"připraveno pro vyzvednutí\". Příklad: \"5 "
-"dnů\", \"1 hodina\"."
+"Účelem je poskytnout časový interval poté, co exempláře přejde do statusu Na "
+"regále s rezervacemi, než se čtenářům zobrazí, že je opravdu na regále s "
+"rezervacemi. To poskytne personálu dostatek času pro zpracování rezervace "
+"než se exemplář  zobrazí jako připravený k vyzvednutí. Příklad: \"5 dnů\", "
+"\"1 hodina\"."
 
 # id::clm.value__hit
 #: 950.data.seed-values.sql:6722
@@ -252,8 +245,8 @@ msgstr "Eckertovo zobrazení"
 #: 950.data.seed-values.sql:4436
 msgid "Suggest claims_never_checked_out_count field on patron registration"
 msgstr ""
-"Navrhnout pole \"počet údajně nikdy nevypůjčených\" "
-"(claims_never_checked_out_count) na kartě registračních údajů čtenáře."
+"Navrhnout pole Počet údajně nikdy nevypůjčených - "
+"claims_never_checked_out_count - na kartě registračních údajů čtenáře."
 
 #: 950.data.seed-values.sql:3161
 msgid "Hard boundary"
@@ -271,10 +264,6 @@ msgstr "Švýcarsko "
 msgid "Virgin Mobile"
 msgstr "Virgin Mobile"
 
-#: 950.data.seed-values.sql:13286
-msgid "Repertoire de vedettes-matiere"
-msgstr "Adresář předmětových hesel"
-
 #: 950.data.seed-values.sql:8132
 msgid "Jamaica "
 msgstr "Jamaica "
@@ -291,6 +280,10 @@ msgstr "CREATE_ORG_UNIT"
 #: 950.data.seed-values.sql:332
 msgid "Available"
 msgstr "Dostupné"
+
+#: 950.data.seed-values.sql:16792
+msgid "Item Print Label - Width for Left Label"
+msgstr "Tiskový štítek jednotky - Šířka pro levý štítek"
 
 # id::crcd.name__6
 #: 950.data.seed-values.sql:289
@@ -354,9 +347,9 @@ msgid ""
 "this OU and others with the same value. If set to an empty value, transits "
 "will not be suppressed."
 msgstr ""
-"Pokud je v tomto nastavení ne-prázdná hodnota, \"nerezervační\" přepravy "
-"mezi touto a dalšími organizačními jednotkami se stejnou hodnotou budou "
-"potlačeny.  Pokud je nastaven prázdní hodnot, přeprava nebude potlačena."
+"Pokud je v tomto nastavení ne-prázdná hodnota, nerezervační přepravy mezi "
+"touto a dalšími organizačními jednotkami se stejnou hodnotou budou "
+"potlačeny.  Pokud je nastavena prázdná hodnota, přeprava nebude potlačena."
 
 #: 950.data.seed-values.sql:15050
 msgid ""
@@ -456,8 +449,8 @@ msgid ""
 "the org unit"
 msgstr ""
 "Obejít přednastavenou výpůjční knihovnu \"zde\"přednanastavenou knihovnou "
-"pro předkatalogizované exempláře. Hodnotou by měla být zkratka organizační "
-"jednotky."
+"pro předkatalogizované exempláře. Hodnotou by měla být \"zkratka\" "
+"organizační jednotky."
 
 # id::clm.value__ori
 #: 950.data.seed-values.sql:6870
@@ -466,7 +459,8 @@ msgstr "Urijština"
 
 #: 950.data.seed-values.sql:746
 msgid "Allow a user to add/remove users to/from the \"User\" group"
-msgstr "Povolit uživateli přidat/odebrat uživatele do/ze skupiny uživatelů"
+msgstr ""
+"Povolit uživateli přidat/odebrat uživatele do/ze skupiny \"Uživatelé\""
 
 #: 950.data.seed-values.sql:120
 msgid "Abbreviated Title"
@@ -505,9 +499,9 @@ msgid ""
 "Showing a field makes it appear with required fields even when not required. "
 "If the field is required this setting is ignored."
 msgstr ""
-"Pole  \"večerní telefon\" (evening_phone)  bude zobrazeno na kartě "
-"registračních údajů čtenáře spolu s povinnými poli poli i pokud není "
-"povinné. Pokud jde o povinné  pole, je toto nastavení ignorováno."
+"Pole  Telefonní číslo večer  bude zobrazeno na kartě registračních údajů "
+"čtenáře spolu s povinnými poli poli i pokud není povinné. Pokud jde o "
+"povinné  pole, je toto nastavení ignorováno."
 
 #: 950.data.seed-values.sql:4511
 msgid ""
@@ -515,10 +509,18 @@ msgid ""
 "Suggesting a field makes it appear when suggested fields are shown. If the "
 "field is shown or required this setting is ignored."
 msgstr ""
-"Pole pro telefon přes den (day_phone) bude na kartě registračních údajů "
+"Pole Telefonní číslo ve dne - day_phone -  bude na kartě registračních údajů "
 "čtenáře zobrazeno jako navrhované. Navrhované pole se zobrazí spolu s "
 "povinnými poli i když není povinné. Pokud jde o povinné pole, je toto "
 "nastavení ignorováno."
+
+#: 950.data.seed-values.sql:16862
+msgid ""
+"This setting is used to set the default height (in number of lines) to use "
+"for call number wrapping in the left print label."
+msgstr ""
+"Toto  nastavení je použito pro nastavení výchozí výšky (v počtu řádků) pro "
+"zalomení  signatury v levém tiskovém štítku"
 
 #: 950.data.seed-values.sql:772
 msgid "Allow a user to renew an item past the maximum renewal count"
@@ -584,12 +586,12 @@ msgstr ""
 #: 950.data.seed-values.sql:3380
 msgid "When true, don't target any copies at this org unit for holds"
 msgstr ""
-"Pokud je nastaveno na \"pravda\", nepoužívat žádné exempláře z této "
+"Pokud je nastavena hodnota Pravda,  nepoužívat žádné exempláře z této "
 "organizační jednotky  jako cíl rezervace"
 
 #: 950.data.seed-values.sql:4562
 msgid "Regex for email field on patron registration"
-msgstr "Regulární výraz pro pole \"e-mail\" v registračních údajích čtenáře"
+msgstr "Regulární výraz pro pole E-mail v registračních údajích čtenáře"
 
 #: 950.data.seed-values.sql:4052
 msgid "Courier Code"
@@ -598,6 +600,10 @@ msgstr "Kód kurýra"
 #: 950.data.seed-values.sql:6561
 msgid "Apache languages"
 msgstr "Apačské jazyky"
+
+#: 950.data.seed-values.sql:17195
+msgid "Orders Include PO Name"
+msgstr "Objednávky zahrnují jméno objednávky"
 
 #: 950.data.seed-values.sql:1302
 msgid "ADMIN_ASSET_COPY_TEMPLATE"
@@ -624,7 +630,7 @@ msgstr "Obsah includu header_text"
 
 #: 950.data.seed-values.sql:12381
 msgid "Invalid value for \"deposit_amount\""
-msgstr "Neplatná hodnota \"výše vkladu\""
+msgstr "Neplatná hodnota \"výše_vkladu\""
 
 #: 950.data.seed-values.sql:8341
 msgid "Inclusive dates of collection"
@@ -661,9 +667,7 @@ msgstr "Průvodku pro chybějící kusy je nutné formátovat pro tisk"
 
 #: 950.data.seed-values.sql:3584
 msgid "Change reshelving status interval"
-msgstr ""
-"Upravit  interval změny statutu exempláře z \" vráceno, dosud nezařazeno\" "
-"na \" dostupné\""
+msgstr "Upravit  interval změny statutu exempláře z Dnes vráceno na Dostupné"
 
 #: 950.data.seed-values.sql:3070
 msgid ""
@@ -690,7 +694,7 @@ msgid ""
 "registration screen. Suggesting a field makes it appear when suggested "
 "fields are shown. If the field is shown or required this setting is ignored."
 msgstr ""
-"Pole \"počet údajně nikdy nevypůjčených\" (claims_never_checked_out_count) "
+"Pole počet_údajně_nikdy_ nevypůjčených  - claims_never_checked_out_count - "
 "bude na kartě registračních údajů čtenáře zobrazeno jako navrhované,  tj. "
 "objeví se, když je zvoleno zobrazení navrhovaných polí. Pokud je toto pole "
 "zobrazeno nebo je povinné, toto nastavení je ignorováno."
@@ -807,7 +811,7 @@ msgid ""
 "registration screen. Showing a field makes it appear with required fields "
 "even when not required. If the field is required this setting is ignored."
 msgstr ""
-"Pole \"údajně nikdy nevypůjčeno\" (claims_never_checked_out_count) bude "
+"Pole údajně_nikdy_nevypůjčeno - claims_never_checked_out_count - bude "
 "zobrazeno v rozhraní registračních údajů čtenáře, což znamená, že pole bude "
 "viditelné spolu s povinnými poli, i když není povinné. Pokud jde povinné  "
 "pole, toto nastavení bude ignorováno."
@@ -823,6 +827,10 @@ msgid ""
 msgstr ""
 "Násobitel důležitosti maximální popularity pro hledání s využitím relevance "
 "upravené podle populary (desetinné číslo mezi 1,0 a 2,0)"
+
+#: 950.data.seed-values.sql:17175
+msgid "Number of Retrievable Recent Patrons"
+msgstr "Počet posledních čtenářů, které lze načíst"
 
 #: 950.data.seed-values.sql:7933
 msgid "Bonne"
@@ -912,7 +920,7 @@ msgstr "Svatština"
 #: 950.data.seed-values.sql:4724
 msgid "Regex for other_phone field on patron registration"
 msgstr ""
-"Regulární výraz pro pole \"další telefon\" (other_phone) v registračních "
+"Regulární výraz pro pole Další telefon  - other_phone -  v registračních "
 "údajích čtenáře"
 
 # id::clm.value__inc
@@ -992,7 +1000,7 @@ msgstr "Sandawština"
 #: 950.data.seed-values.sql:748
 msgid "Allow a user to add/remove users to/from the \"Patron\" group"
 msgstr ""
-"Povolit uživateli přidat / odebrat uživatele do / ze skupiny čtenářů."
+"Povolit uživateli přidat/odebrat uživatele do/ze skupiny \"Čtenáři\"."
 
 #: 950.data.seed-values.sql:788
 msgid "Allow a user to run reports"
@@ -1013,7 +1021,7 @@ msgstr "Neplatná hodnota \"copy_number\" (číslo exempláře)"
 #: 950.data.seed-values.sql:4826
 msgid "The county field will be required on the patron registration screen."
 msgstr ""
-"Pole \"okres\"bude vyžadováno na na kartě registračních údajů čtenáře "
+"Pole Okres bude vyžadováno na na kartě registračních údajů čtenáře "
 "vyžadováno jako povinné."
 
 #: 950.data.seed-values.sql:337
@@ -1038,14 +1046,21 @@ msgstr ""
 "dostane pod toto procento, při pokusu utratit peníze z tohoto fondu obdží "
 "personál varovnou zprávu."
 
+#: 950.data.seed-values.sql:16744
+msgid "Item Print Label - Left Margin for Left Label"
+msgstr "Tiskový štítek jednotky - Levý okraj pro levý štítek"
+
+#: 950.data.seed-values.sql:5382
+msgid "Circulation History"
+msgstr "Historie výpůjček"
+
 #: 950.data.seed-values.sql:3215
 msgid "Hard stalling interval"
 msgstr "Tvrdý interval pro odklad"
 
-# id::cam.value__f
 #: 950.data.seed-values.sql:7038
 msgid "Specialized"
-msgstr "Specializovaný"
+msgstr "Specialista"
 
 # id::i18n_l.description__en-US
 #: 950.data.seed-values.sql:370
@@ -1097,9 +1112,9 @@ msgid ""
 "screen. Suggesting a field makes it appear when suggested fields are shown. "
 "If the field is shown or required this setting is ignored."
 msgstr ""
-"Pole \"Počet údajně vrácených\" (claims_returned_count) se na kartě "
+"Pole Počet údajně vrácených  - claims_returned_count - se na kartě "
 "registračních údajů zobrazí jako navrhované.  Navrhovaná pole jsou zobrazena "
-"když je aktivována volba \"zobrazit navrhovaná pole\". Pokud je toto pole "
+"když je aktivována volba Zobrazit navrhovaná pole. Pokud je toto pole "
 "zobrazeno nebo je  povinné,  toto nastavení bude ignorováno."
 
 #: 950.data.seed-values.sql:1400
@@ -1182,6 +1197,10 @@ msgstr "DELETE_INVOICE_METHOD"
 #: 950.data.seed-values.sql:341
 msgid "On order"
 msgstr "Objednáno"
+
+#: 950.data.seed-values.sql:17255
+msgid "Order Copies Always Include Call Number (Even if Empty)"
+msgstr "Exempláže objednávek vždy zahrnují signatury (i když jsou prázdné)"
 
 #: 950.data.seed-values.sql:8117
 msgid "Iceland "
@@ -1284,7 +1303,7 @@ msgid ""
 msgstr ""
 "Časové období, po jehož uplynutí není povoleno naúčtování negativního "
 "poplatku (refundace) na výpůjční poplatky.  Funguje pouze, pokud je "
-"nastavena hodnota \"pravda\" pro volbu \" Zakázat účtování negativních "
+"nastavena hodnota \"Pravda\" pro volbu \"Zakázat účtování negativních "
 "poplatků\"."
 
 #: 950.data.seed-values.sql:8262
@@ -1297,7 +1316,7 @@ msgstr "Rhode Island "
 
 #: 950.data.seed-values.sql:904
 msgid "Allows staff to manually change a patron's claims returned count"
-msgstr "Povolit personálu manuálně změnit počet \"údajně vrácených\"."
+msgstr "Povolit personálu manuálně změnit počet Údajně vrácených."
 
 #: 950.data.seed-values.sql:2571
 msgid "Untargeted expiration"
@@ -1349,16 +1368,16 @@ msgstr "Pracovní log: Maximum zaznamenaných akcí"
 
 #: 950.data.seed-values.sql:4688
 msgid "Suggest juvenile field on patron registration"
-msgstr "Navrhnout pole \"nezletilý\" na kartě registračních údajů čtenáře"
+msgstr "Navrhnout pole Nezletilý na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:6751
 msgid "Kara-Kalpak"
 msgstr "Karakalpačtina"
 
-# id::clm.value__swa
-#: 950.data.seed-values.sql:6955
-msgid "Swahili"
-msgstr "Svahilština"
+#: 950.data.seed-values.sql:1529
+msgid "Allows a user to cancel a transit on a copy with status of LOST"
+msgstr ""
+"Povolí uživateli zrušit přepravu exempláře se statusem ZTRACENO (čtenářem)"
 
 #: 950.data.seed-values.sql:11623
 msgid "Non-library Item"
@@ -1372,7 +1391,7 @@ msgstr "Povolit uživateli upravit dobu  uzavření knihovny pro danou lokaci"
 msgid ""
 "The Example for validation on the post_code field in patron registration."
 msgstr ""
-"Příklad pro validaci pole \"poštovní směrovací číslo\" (post_code) na kartě "
+"Příklad pro validaci pole Poštovní směrovací číslo  - post_code - na kartě "
 "registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:1596
@@ -1396,8 +1415,8 @@ msgid ""
 msgstr ""
 "Aplikuje nastavenou pokutu na čtenářské konto. Požadované jmenované proměnné "
 "pro systémové prostředí jsou \"uživatel\", které se vztahuje k objektu "
-"uživatele a  \"kontextová organizace\" (context_org), která se vztahuje k "
-"objektu organizační jednotky (org_unit), ke které pokuta směřuje."
+"uživatele a \"context_org\" tj. kontextová organizace, která se vztahuje k "
+"objektu organizační jednotky org_unit, ke které pokuta směřuje."
 
 #: 950.data.seed-values.sql:8230
 msgid "Zimbabwe "
@@ -1544,7 +1563,7 @@ msgid ""
 "Visible, and in the Patron Summary sidebar the value will display as "
 "<Hidden> unless the field label is clicked."
 msgstr ""
-"Pokud je nastavena hodnota \"pravda\", sloupec Datum narození v seznamech "
+"Pokud je nastavena hodnota Pravda, sloupec Datum narození v seznamech "
 "čtenářů standardně nebude zobrazen a v přehledu informací o čtenáři se "
 "hodnota údaje zobrazí jako <Skrytá>, pokud se neklikne na označení pole."
 
@@ -1566,7 +1585,7 @@ msgstr "Maithilština"
 
 #: 950.data.seed-values.sql:1694
 msgid "Circulators"
-msgstr "Personál u výpůjčního pultu (\"circulators\")"
+msgstr "Personál u výpůjčního pultu"
 
 #: 950.data.seed-values.sql:8006
 msgid "Algeria "
@@ -1663,6 +1682,14 @@ msgstr "UPDATE_LIT_FORM"
 msgid "CREATE_XML_TRANSFORM"
 msgstr "CREATE_XML_TRANSFORM"
 
+#: 950.data.seed-values.sql:17222
+msgid ""
+"Emit Owning Library ID Rather Than Short Name. Takes effect only if "
+"INCLUDE_OWNING_LIB is in use"
+msgstr ""
+"Emitovat ID vlastnické knihovny nikoliv  zkratku organizační jednotky. Platí "
+"pouze pokud se používá INCLUDE_OWNING_LIB"
+
 #: 950.data.seed-values.sql:7929
 msgid "Space oblique Mercator"
 msgstr "Prostorové nepřímé Mercatorovo zobrazení"
@@ -1687,6 +1714,17 @@ msgstr "Sloučení pouze při shodě"
 #: 950.data.seed-values.sql:155 950.data.seed-values.sql:5298
 msgid "Accession Number"
 msgstr "Přírůstkové číslo"
+
+#: 950.data.seed-values.sql:16702
+msgid ""
+"Set the preferred font family for item print labels. You can specify a list "
+"of CSS fonts, separated by commas, in order of preference; the system will "
+"use the first font it finds with a matching name. For example, \"Arial, "
+"Helvetica, serif\""
+msgstr ""
+"Nastavit výběr rodiny písem pro tisk štítků. Můžete specifikovat seznam CSS "
+"fontů oddělených čárkou v pořadí podle preference; systém použije první font "
+"ze seznamu, který najde. Příklad: \"Arial, Helvetica, serif\""
 
 #: 950.data.seed-values.sql:3332
 msgid "Org Unit Target Weight"
@@ -1743,10 +1781,6 @@ msgstr "Aceh(ština)"
 #: 950.data.seed-values.sql:1408
 msgid "DELETE_METABIB_SEARCH_ALIAS"
 msgstr "DELETE_METABIB_SEARCH_ALIAS"
-
-#: 950.data.seed-values.sql:576
-msgid "Allow a user to mark an item as 'missing'"
-msgstr "Povolit uživateli označit exemplář jako \"postrádaný\""
 
 #: 950.data.seed-values.sql:3899 950.data.seed-values.sql:3902
 msgid "PayflowPro password"
@@ -1875,13 +1909,17 @@ msgstr "Samoobslužná výpůjčka"
 msgid "Sichuan Yi"
 msgstr "S'čchuanština"
 
+#: 950.data.seed-values.sql:16696
+msgid "Item Print Label Font Family"
+msgstr "Rodina fontů pro tisk štítků jednotek"
+
 #: 950.data.seed-values.sql:4790
 msgid ""
 "The second_given_name field will be shown on the patron registration screen. "
 "Showing a field makes it appear with required fields even when not required. "
 "If the field is required this setting is ignored."
 msgstr ""
-"Pole \"druhé jméno\" (second_given_name) se zobrazí na kartě registračních "
+"Pole Druhé jméno - second_given_name - se zobrazí na kartě registračních "
 "údajů čtenáře. Bude zobrazeno s povinnými poli dokonce i když není povinné. "
 "Pokud je  pole povinné, toto nastavení bude ignorováno."
 
@@ -1911,9 +1949,9 @@ msgid ""
 "field makes it appear with required fields even when not required. If the "
 "field is required this setting is ignored."
 msgstr ""
-"Pole \"stát\" bude zobrazeno na kartě registračních údajů čtenáře s "
-"povinnými poli dokonce i když toto pole není povinné. Jestliže je pole "
-"povinné, toto nastavení je ignorováno."
+"Pole Stát bude zobrazeno na kartě registračních údajů čtenáře s povinnými "
+"poli dokonce i když toto pole není povinné. Jestliže je pole povinné, toto "
+"nastavení je ignorováno."
 
 #: 950.data.seed-values.sql:8078
 msgid "Timor"
@@ -1943,6 +1981,11 @@ msgstr "Uzavřít výsledky čteářského hledání při tomto čísle."
 #: 950.data.seed-values.sql:6556
 msgid "Albanian"
 msgstr "Albánština"
+
+#: 950.data.seed-values.sql:17258
+msgid "Order Copies Always Include Item Type (Even if Empty)"
+msgstr ""
+"Exempláře objednávek vždy zahrnují typ exempláře (i když jsou prázdné)"
 
 #: 950.data.seed-values.sql:12393
 msgid "Bad format for stat cat data, should be like: CAT 1|VALUE 1"
@@ -2117,10 +2160,10 @@ msgid ""
 "screen. Suggesting a field makes it appear when suggested fields are shown. "
 "If the field is shown or required this setting is ignored."
 msgstr ""
-"Pole \"vedoucí účet\" (master_account) bude  na kartě registračních údajů "
+"Pole Vedoucí účet - master_account - bude  na kartě registračních údajů "
 "čtenáře zobrazeno jako navrhované. Zobrazí se, když je aktivována volba "
-"\"zobrazit navržená pole\". Pokud je pole zobrazeno nebo povinné, toto "
-"nastavení je ignorováno."
+"Zobrazit navržená pole. Pokud je pole zobrazeno nebo povinné, toto nastavení "
+"je ignorováno."
 
 # id::clm.value__ind
 #: 950.data.seed-values.sql:6738
@@ -2142,8 +2185,8 @@ msgid ""
 "In-Transit items checked in this close to the transit start time will be "
 "prevented from checking in"
 msgstr ""
-"Exemplářům \"v přepravě\" vráceným v takto blízkém čase od začátky přepravy "
-"bude zamezeno vrácení"
+"Exemplářům v přepravě vráceným v takto blízkém čase od začátky přepravy bude "
+"zamezeno vrácení"
 
 #: 950.data.seed-values.sql:8260
 msgid "Syria "
@@ -2164,6 +2207,10 @@ msgstr "Umístění exempláře předchozích čísel"
 #: 950.data.seed-values.sql:13128
 msgid "Established Heading Linking Entry -- Personal Name"
 msgstr "Záznam odkazující na systemizované záhlaví -- osobní jméno"
+
+#: 950.data.seed-values.sql:17166
+msgid "Define the time zone in which a library physically resides"
+msgstr "Definice časového pásma, ve kterém se knihovna fyzicky nachází"
 
 #: 950.data.seed-values.sql:896
 msgid "Allows a user to delete an MFHD record"
@@ -2220,9 +2267,9 @@ msgstr "Velikost  hřbetních a vnitřních štítků"
 msgid "Minimum Item Price"
 msgstr "Minimální cena exempláře"
 
-#: 950.data.seed-values.sql:16187
-msgid "Vandelay Generate Default Barcodes"
-msgstr "Vandelay Generování standardních kódů"
+#: 950.data.seed-values.sql:13164
+msgid "Author axis"
+msgstr "Osa autorů"
 
 #: 950.data.seed-values.sql:13104
 msgid "Heading -- General Subdivision"
@@ -2279,8 +2326,8 @@ msgstr "Potvrzení o platbě musí být zformátováno pro tisk"
 #: 950.data.seed-values.sql:4697
 msgid "Show master_account field on patron registration"
 msgstr ""
-"Zobrazit pole  \"vedoucí účet\" ( master_account) na kartě registračních "
-"údajů čtenáře"
+"Zobrazit pole  Vedoucí účet -  master_account - na kartě registračních údajů "
+"čtenáře"
 
 #: 950.data.seed-values.sql:11642
 msgid "The information is to be or has been deleted."
@@ -2288,7 +2335,7 @@ msgstr "Informace  mají být nebo již jsou smazány"
 
 #: 950.data.seed-values.sql:3476
 msgid "Obscure the Date of Birth field"
-msgstr "Zakrýt pole \"datum narození\""
+msgstr "Zakrýt pole Datum narození"
 
 #: 950.data.seed-values.sql:8018
 msgid "American Samoa "
@@ -2337,7 +2384,7 @@ msgstr "Ukázky"
 #: 950.data.seed-values.sql:768
 msgid "Allow a user to add/remove users to/from the \"Vendor\" group"
 msgstr ""
-"Povolit uživateli přidat / odebrat uživatele ze skupiny \"dodavatelů\""
+"Povolit uživateli přidat/odebrat uživatele do/ze skupiny \"Dodavatelé\""
 
 #: 950.data.seed-values.sql:6723
 msgid "Hmong"
@@ -2381,7 +2428,7 @@ msgid ""
 "The Regular Expression for validation on the post_code field in patron "
 "registration."
 msgstr ""
-"Regulární výraz pro validaci pole PSČ  (post_code) na kartě registračních "
+"Regulární výraz pro validaci pole PSČ   - post_code - na kartě registračních "
 "údajů čtenáře"
 
 #: 950.data.seed-values.sql:6819
@@ -2417,7 +2464,7 @@ msgstr "Poplatek za upozornění"
 msgid "Lost items are usable on checkin instead of going 'home' first"
 msgstr ""
 "Ztracené exempláře je možné využít ihned  po vrácení namísto toho, aby se "
-"nejdříve vrátily \"domů\"."
+"nejdříve vrátily do domovské knihovny."
 
 #: 950.data.seed-values.sql:3452
 msgid ""
@@ -2455,11 +2502,11 @@ msgstr ""
 
 #: 950.data.seed-values.sql:2827
 msgid "How long a persistent login lasts.  E.g. '2 weeks'"
-msgstr "Délka trvání trvalého přihlášení. Např. \"2 týdny\""
+msgstr "Délka trvání trvalého přihlášení. Např. '2 týdny'"
 
 #: 950.data.seed-values.sql:4763
 msgid "The prefix field will be required on the patron registration screen."
-msgstr "Pole \"prefix\" bude požadovánona kartě registračních údajů čtenáře"
+msgstr "Pole Prefix bude požadovánona kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:12059
 msgid "A missing pieces patron letter needs to be formatted for printing."
@@ -2473,15 +2520,7 @@ msgstr "Registrace čtenáře: Klonování čtenáře připojí kopii adresy"
 #: 950.data.seed-values.sql:4529
 msgid "The dob field will be required on the patron registration screen."
 msgstr ""
-"Pole \"datum narození\" bude požadováno na kartě registračních údajů čtenáře"
-
-#: 950.data.seed-values.sql:718
-msgid ""
-"Allow a user to abort a copy transit if the user is at the transit "
-"destination or source"
-msgstr ""
-"Povolit uživateli zrušit přepravu exempláře pokud je uživatel v cílové nebo "
-"zdrojové destinaci přepravy."
+"Pole Datum narození bude požadováno na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:7658
 msgid "audio roll"
@@ -2552,7 +2591,7 @@ msgstr "VIEW_MERGE_PROFILE"
 
 #: 950.data.seed-values.sql:9451
 msgid "A patron acquisition request has been marked On-Order."
-msgstr "Akviziční požadavek čtenáře byl označen jako \"objednáno\""
+msgstr "U akvizičního požadavku čtenáře došlo ke změně na Objednáno."
 
 #: 950.data.seed-values.sql:740
 msgid "Allow a user to bar a patron"
@@ -2607,7 +2646,7 @@ msgstr ""
 #: 950.data.seed-values.sql:756
 msgid "Allow a user to add/remove users to/from the \"GlobalAdmin\" group"
 msgstr ""
-"Povolit uživateli přidat / odebrat uživatele ze skupiny \"globální "
+"Povolit uživateli přidat/odebrat uživatele do/ze skupiny \"Globální "
 "administrátor\" (GlobalAdmin)"
 
 # id::clm.value__jpr
@@ -2644,6 +2683,15 @@ msgstr "Povoli uživateli vytvořit seznam pro vyzvednutí"
 msgid "Allow a user to modify an authority record"
 msgstr "Povolit uživatel upravit autoritní záznam"
 
+#: 950.data.seed-values.sql:17147
+msgid ""
+"If enabled, adds a \"Digital Bookplate\" option to the query type selectors "
+"in the public catalog for search on copy tags."
+msgstr ""
+"Pokud je tato volba aktivována, bude volba \"Digitální ex-libris přidána do "
+"selektoru typu dotazu  pro hledání podle příznaku exempláře ve veřejném "
+"katalogu."
+
 # id::clfm.value__m
 #: 950.data.seed-values.sql:7068
 msgid "Mixed forms"
@@ -2674,6 +2722,10 @@ msgstr "Gayo"
 msgid "Standards/specifications"
 msgstr "Standardy/specifikace"
 
+#: 950.data.seed-values.sql:17163
+msgid "Library time zone"
+msgstr "Časové pásmo knihovny"
+
 #: 950.data.seed-values.sql:7946
 msgid "Cordiform"
 msgstr "Srdcovité zobrazení"
@@ -2694,7 +2746,7 @@ msgstr "Přihlášení do AuthorizeNet"
 #: 950.data.seed-values.sql:4607
 msgid "Regex for evening_phone field on patron registration"
 msgstr ""
-"Regulární výraz pro pole \"telefon večer\" (evening_phone) na kartě "
+"Regulární výraz pro pole Telefonní číslo večer  - evening_phone -  na kartě "
 "registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:682
@@ -2714,8 +2766,8 @@ msgstr "Oromština"
 #: 950.data.seed-values.sql:4490
 msgid "Require day_phone field on patron registration"
 msgstr ""
-"Požadovat na kartě registračních údajů čtenáře pole \"telefon přes den\" "
-"(day_phone)"
+"Požadovat pole Telefon ve dne - day_phone - na  na kartě registračních údajů "
+"čtenáře"
 
 #: 950.data.seed-values.sql:4520
 msgid ""
@@ -2732,9 +2784,8 @@ msgid ""
 "days."
 msgstr ""
 "Obvykle poplatky za zpozdné nejsou účtovány pokud je knihovna zavřená. Pokud "
-"nastavena hodnota \"pravda\", poplatky za zpozdné budou účtovány i během "
-"období plánovaných uzavření knihovny nebo ve dnech v týdnu, kdy je knihovna "
-"zavřená."
+"nastavena hodnota Pravda, poplatky za zpozdné budou účtovány i během období "
+"plánovaných uzavření knihovny nebo ve dnech v týdnu, kdy je knihovna zavřená."
 
 #: 950.data.seed-values.sql:4122
 msgid "If enabled username changing via the OPAC will be disabled"
@@ -2800,7 +2851,7 @@ msgstr ""
 
 #: 950.data.seed-values.sql:16167
 msgid "Show county field on patron registration"
-msgstr "Zobrazit na kartě registračních údajů čtenáře pole \"okres\""
+msgstr "Zobrazit pole Okres  na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:5369
 msgid "URL Verification Queue"
@@ -2826,9 +2877,19 @@ msgid ""
 "field makes it appear with required fields even when not required. If the "
 "field is required this setting is ignored."
 msgstr ""
-"Pole \"datum narození\" bude zobrazeno na kartě registračních údajů čtenáře "
-"s požadovanými poli i když pole není povinné. Pokud je pole povinné, toto "
+"Pole Datum narození bude zobrazeno na kartě registračních údajů čtenáře s "
+"požadovanými poli i když pole není povinné. Pokud je pole povinné, toto "
 "nastavení je ignorováno."
+
+#: 950.data.seed-values.sql:17112
+msgid ""
+"Format Dates with this pattern (examples: \"yyyy-MM-dd\" for \"2010-04-26\", "
+"\"MMM d, yyyy\" for \"Apr 26, 2010\").  This will be used in areas where a "
+"date without a timestamp is sufficient, like Date of Birth."
+msgstr ""
+"Formátovat data podle tohoto vzoru(příklady: \"yyyy-MM-dd\" pror \"2010-04-"
+"26\", \"d. MMM  yyyy\" for \"26. duben 2010\"). Tento formát bude použit "
+"všude, kde není potřeba datum s časovým razítkem, např. pro  datum narození."
 
 #: 950.data.seed-values.sql:15808
 msgid "Leave transaction open when long overdue balance equals zero"
@@ -2948,7 +3009,7 @@ msgstr "Minimální předpokládané čekání"
 
 #: 950.data.seed-values.sql:4400
 msgid "Suggest alias field on patron registration"
-msgstr "Navrhnout na kartě registračních údajů čtenáře pole \"alias\""
+msgstr "Navrhnout na kartě registračních údajů čtenáře pole Alias"
 
 #: 950.data.seed-values.sql:6829
 msgid "Maltese"
@@ -2957,6 +3018,15 @@ msgstr "Maltština"
 #: 950.data.seed-values.sql:6742
 msgid "Inupiaq"
 msgstr "Inupiak"
+
+#: 950.data.seed-values.sql:16798
+msgid ""
+"Set the default width for the leftmost item print label. Please include a "
+"unit of measurement that is valid CSS. For example, \"1in\" or \"2.5cm\""
+msgstr ""
+"Natavení výchozí šířky pro tiskový štítek jednotky nejvíce vlevo. Prosím, "
+"použit měrné jednotky, které jsou platné pro CSS. Např. \"1in\"nebor "
+"\"2.5cm\""
 
 #: 950.data.seed-values.sql:4095
 msgid ""
@@ -2981,9 +3051,9 @@ msgid ""
 "This setting changes the top and bottom panes for that interface into left "
 "and right panes."
 msgstr ""
-"Hlavním vstupním bodem v tomto rozhraní jsou \"Správa exemplářů\", \"Akce "
-"pro vybrané řádky\", \"Editovat vlastnosti / signatury /změnit čárové kódy "
-"exempláře\". Toto nastavení změní horní a spodní panel rozhraní na levý a "
+"Hlavním vstupním bodem v tomto rozhraní jsou Správa exemplářů, Akce pro "
+"vybrané řádky, Editovat vlastnosti / signatury /změnit čárové kódy "
+"exempláře. Toto nastavení změní horní a spodní panel rozhraní na levý a "
 "pravý panel."
 
 #: 950.data.seed-values.sql:1492
@@ -3009,6 +3079,10 @@ msgstr "Bislama"
 #: 950.data.seed-values.sql:6547
 msgid "Acoli"
 msgstr "Ačoli"
+
+#: 950.data.seed-values.sql:13166
+msgid "Topic"
+msgstr "Téma"
 
 #: 950.data.seed-values.sql:7127 950.data.seed-values.sql:7128
 #: 950.data.seed-values.sql:7202 950.data.seed-values.sql:7203
@@ -3053,7 +3127,7 @@ msgid ""
 msgstr ""
 "Přeskočit transkci offline vrácení (vyvolat výjimku při zpracování) jestliže "
 "čas změny statutu je novější než zaznamenaný čas transakce.  Pozor! Tuto "
-"výjimku  spustí také změna statusu z \"Dnes vráceno\" na \"Volné\""
+"výjimku  spustí také změna statusu z Dnes vráceno na Volné"
 
 #: 950.data.seed-values.sql:3740
 msgid ""
@@ -3167,10 +3241,6 @@ msgstr ""
 msgid "user_request.create"
 msgstr "user_request.create"
 
-#: 950.data.seed-values.sql:13282
-msgid "Canadian Subject Headings"
-msgstr "Kanadské věcné třídění"
-
 #: 950.data.seed-values.sql:124
 msgid "Alternate Title"
 msgstr "Další název"
@@ -3185,14 +3255,18 @@ msgid ""
 "Suggesting a field makes it appear when suggested fields are shown. If the "
 "field is shown or required this setting is ignored."
 msgstr ""
-"Pole sufix bude na kartě registračních údajů čtenáře zobrazí jako "
-"navrhované. Navrhovaná pole se zobrazí, pokud je aktivována volba \"zobrazit "
-"navrhovaná pole\".  Pokud je pole zobrazeno nebo je požadováno jako povinné, "
+"Pole Sufix bude na kartě registračních údajů čtenáře zobrazí jako "
+"navrhované. Navrhovaná pole se zobrazí, pokud je aktivována volba Zobrazit "
+"navrhovaná pole.  Pokud je pole zobrazeno nebo je požadováno jako povinné, "
 "toto nastavení bude ignorováno."
 
 #: 950.data.seed-values.sql:1142
 msgid "UPDATE_IMPORT_ITEM_ATTR_DEF"
 msgstr "UPDATE_IMPORT_ITEM_ATTR_DEF"
+
+#: 950.data.seed-values.sql:8205
+msgid "Ohio "
+msgstr "Ohio "
 
 #: 950.data.seed-values.sql:468
 msgid "Your Bookmobile"
@@ -3201,12 +3275,16 @@ msgstr "Vaše pojízdná knihovna"
 #: 950.data.seed-values.sql:758
 msgid "Allow a user to add/remove users to/from the \"LocalAdmin\" group"
 msgstr ""
-"Povolit u�ivateli p� / odebrat u�ivatele do / ze skupiny lok�� "
-"administr�r�ocalAdmin)"
+"Povolit uživateli přidat/odebrat uživatele do/ze skupiny \"Lokální "
+"administrátor\""
 
 #: 950.data.seed-values.sql:16256
 msgid "Default circulation modifier value for imported items"
-msgstr "V� hodnota modifik�ru v�y pro importovan�xempl�"
+msgstr "Výchozí hodnota modifikátoru výpůjčky pro importovaný exemplář"
+
+#: 950.data.seed-values.sql:15023
+msgid "Kid's OPAC Search Filter"
+msgstr "Vyhledávací filtr pro dětský katalog"
 
 #: 950.data.seed-values.sql:6906
 msgid "Yakut"
@@ -3214,15 +3292,15 @@ msgstr "Jakutština"
 
 #: 950.data.seed-values.sql:3251
 msgid "Canceled holds display count"
-msgstr "Po� zobrazen�u�en�zervac�"
+msgstr "Počet zobrazených zrušených rezervací"
 
 #: 950.data.seed-values.sql:600
 msgid "Allow a user to remove other users from permission groups"
-msgstr "Povolit u�ivateli odebrat jin��ivatele ze skupiny opr��"
+msgstr "Povolit uživateli odebrat jiné uživatele ze skupiny oprávnění"
 
 #: 950.data.seed-values.sql:508
 msgid "Allow a user to log in to the OPAC"
-msgstr "Povolit u�ivateli p��en�o OPACu"
+msgstr "Povolit uživateli přihlášení do OPACu"
 
 #: 950.data.seed-values.sql:7739
 msgid "Passion music"
@@ -3319,9 +3397,9 @@ msgstr "Přednastavená cena exemplářů"
 msgid "Negative Balance Interval for Overdues"
 msgstr "Časový interval pro záporné poplatky (refundace) za vrácené po lhůtě"
 
-#: 950.data.seed-values.sql:15281
-msgid "Default provider to use during ACQ file upload"
-msgstr "Výchozí dodavatel pro použití během nahrání souborů v akvizici"
+#: 950.data.seed-values.sql:1698
+msgid "Allow batch update via buckets"
+msgstr "Povolit dávkovou aktualizaci prostřednictvím skupin"
 
 #: 950.data.seed-values.sql:6764
 msgid "Khoisan (Other)"
@@ -3330,6 +3408,16 @@ msgstr "Khoisanské jazyky (ostatní)"
 #: 950.data.seed-values.sql:650
 msgid "Allow a user to update a copy location"
 msgstr "Povolit uživateli změnit umístění exempláře"
+
+#: 950.data.seed-values.sql:15011
+msgid ""
+"If this is unset, staff can view User Trigger Events regardless of age. When "
+"this is set to an interval, it represents the age of the oldest possible "
+"User Trigger Event that can be viewed."
+msgstr ""
+"Nastavený interval definuje  stáří nejstarší možné spuštěné události "
+"uživatele, kterou lze zobrazit. Pokud zde  není nic nastaveno, zobrazí se  "
+"personálu spuštěné události uživatele bez ohledu na jejich stáří."
 
 #: 950.data.seed-values.sql:1568
 msgid "Allows a user to create/retrieve/update/delete copy location groups"
@@ -3352,7 +3440,7 @@ msgstr "Songhajština"
 #: 950.data.seed-values.sql:4895
 msgid "Regex for phone fields on patron registration"
 msgstr ""
-"Regulární výraz pro pole \"telefon\" na kartě registračních údajů čtenáře"
+"Regulární výraz pro pole Telefon na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:4907
 msgid ""
@@ -3414,6 +3502,14 @@ msgstr ""
 msgid "Czech"
 msgstr "Čeština"
 
+#: 950.data.seed-values.sql:16846
+msgid ""
+"This setting allows you to inject arbitrary CSS into the item print label "
+"template.  For example, \".printlabel { text-transform: uppercase; }\""
+msgstr ""
+"Toto nastavení umožňuje vkládat libovolné CSS do tiskové šablony štítků "
+"jednotek. Například \".printlabel {text-transform: uppercase;}\""
+
 # id::clm.value__mni
 #: 950.data.seed-values.sql:6831
 msgid "Manipuri"
@@ -3428,8 +3524,8 @@ msgstr ""
 #: 950.data.seed-values.sql:752
 msgid "Allow a user to add/remove users to/from the \"Circulator\" group"
 msgstr ""
-"Povolit uživateli přidat / odebrat uživatele do / ze skupiny personálu u "
-"výpůjčnínho pultu (\"ciruculator\")"
+"Povolit uživateli přidat/odebrat uživatele do/ze skupiny \"Personál u "
+"výpůjčního pultu\""
 
 #: 950.data.seed-values.sql:14740
 msgid "Login via opensrf"
@@ -3466,7 +3562,7 @@ msgstr "MERGE_BIB_RECORDS"
 
 #: 950.data.seed-values.sql:7001
 msgid "Undetermined"
-msgstr "Nezjištěno"
+msgstr "Neurčeno"
 
 #: 950.data.seed-values.sql:6968
 msgid "Terena"
@@ -3566,7 +3662,7 @@ msgid ""
 "interface."
 msgstr ""
 "Výchozí status, pokud je exemplář vytvořen s polužitím běžného rozhraní pro "
-"vytvoření signatur / exemplářů."
+"vytvoření signatur/exemplářů."
 
 #: 950.data.seed-values.sql:692
 msgid "Allow a user to update an organization unit setting"
@@ -3579,6 +3675,10 @@ msgstr "Verizon Wireless"
 #: 950.data.seed-values.sql:6869
 msgid "Ojibwa"
 msgstr "Odžibwejština"
+
+#: 950.data.seed-values.sql:16728
+msgid "Item Print Label Font Weight"
+msgstr "Šířka fontu pro tiskové šablony štítků jednotek"
 
 #: 950.data.seed-values.sql:7530
 msgid "roll"
@@ -3638,7 +3738,7 @@ msgstr "Kanadská francouzština"
 
 #: 950.data.seed-values.sql:872
 msgid "Allow a user to mark an item status as 'reshelving'"
-msgstr "Povolit uživateli označit status exempláře jako \"dnes vrácený\""
+msgstr "Povolit uživateli označit status exempláře jako 'Dnes vrácený'"
 
 #: 950.data.seed-values.sql:11779
 msgid "Cat: Maintain 001/003/035 according to the MARC21 specification"
@@ -3719,6 +3819,10 @@ msgstr "katrografický pohyblivý obraz"
 #: 950.data.seed-values.sql:8757
 msgid "Genealogical tables"
 msgstr "Genealogické tabulky"
+
+#: 950.data.seed-values.sql:17207
+msgid "Orders Include Copy Item Types"
+msgstr "Objednávky zahrnují typ položky exempláře"
 
 #: 950.data.seed-values.sql:7866 950.data.seed-values.sql:8571
 #: 950.data.seed-values.sql:8592
@@ -3862,7 +3966,7 @@ msgstr "Pro bibliografický záznam ve frontě pro import je vyžadován e-mail"
 
 #: 950.data.seed-values.sql:870
 msgid "Allow a user to mark an item status as 'in transit'"
-msgstr "Povolit uživateli označit exemplář jako \"v přepravě\""
+msgstr "Povolit uživateli označit exemplář jako 'V přepravě'"
 
 #: 950.data.seed-values.sql:3677
 msgid ""
@@ -3878,12 +3982,11 @@ msgid ""
 "Do Not Print as options)."
 msgstr ""
 "Zakázat pokus o automatický tisk z rozhraní  služebního klienta pro typy  "
-"výpisů / potvrzení uvedené v tomto seznamu. Možné hodnoty jsou \"Checkout\" "
-"(výpůjčky), \"Bill Pay\" (platby) , \"Hold Slip\" (průvodky rezervaci), "
-"\"Transit Slip\" (průvodky pro přepravu), a \"Hold/Transit Slip\" (průvodky "
-"rezervací v přepravě). Jde o jiné nastavení než zaškrtávací pole "
-"\"Automatický tisk\" v příslušných rozhraních, které zcela  zakáže pokusy o "
-"automatický tisk spíše než podporu  tichého tisku potlačením tiskového "
+"výpisů / potvrzení uvedené v tomto seznamu. Možné hodnoty jsou \"Výpůjčky\", "
+"\"Platby\" , \"Průvodky rezervací, \"Průvodky přepravy\" a \"Průvodky "
+"rezervací pro přepravu\". Jde o jiné nastavení než zaškrtávací pole "
+"Automatický tisk v příslušných rozhraních, které zcela  zakáže pokusy o "
+"automatický tisk, nikoliv podporu  tichého tisku potlačením tiskového "
 "dialogu. Zaškrtávají pole pro automatický tisk v těchto rozhraních nemá vliv "
 "na chování tohoto nastavení. V případě průvodek rezervací, přepravy a "
 "přepravy rezervací to také potlačí dialog, který předchází tiskovému dialogu "
@@ -3926,9 +4029,9 @@ msgid ""
 "field makes it appear with required fields even when not required. If the "
 "field is required this setting is ignored."
 msgstr ""
-"Pole \"blokování transakcí\" bude zobrazeno na kartě registračních údajů "
-"čtenáře spolu s povinnými poli i když není povinné. Pokud je pole povinné, "
-"je toto nastavení ignorováno."
+"Pole Blokování transakcí bude zobrazeno na kartě registračních údajů čtenáře "
+"spolu s povinnými poli i když není povinné. Pokud je pole povinné, je toto "
+"nastavení ignorováno."
 
 #: 950.data.seed-values.sql:812
 msgid "Allow a user to view a fund"
@@ -4035,7 +4138,7 @@ msgstr "kazeta s filmem"
 
 #: 950.data.seed-values.sql:3085
 msgid "Claim Return Copy Status"
-msgstr "Status \"údajně vráceného\" exempláře"
+msgstr "Status Údajně vráceného exempláře"
 
 # id::clm.value__chk id::clm.value__-tru
 #: 950.data.seed-values.sql:6621 950.data.seed-values.sql:6983
@@ -4072,7 +4175,7 @@ msgid ""
 "If true combines the Volume/Copy Creator and Item Attribute Editor in some "
 "instances."
 msgstr ""
-"Pokud je nastavena hodnota \"pravda\", na některých místech je zkombinováno "
+"Pokud je nastavena hodnota Pravda, na některých místech je zkombinováno "
 "rozhraní pro tvorbu signatur exemplářů s editorem vlastnotsí exemplářů."
 
 # id::clm.value__sga
@@ -4125,10 +4228,6 @@ msgstr "Nezletilí"
 #: 950.data.seed-values.sql:8094
 msgid "Georgia "
 msgstr "Georgia "
-
-#: 950.data.seed-values.sql:13284
-msgid "Art and Architecture Thesaurus"
-msgstr "Tezaurus Art and Architecture"
 
 #: 950.data.seed-values.sql:7974 950.data.seed-values.sql:8668
 #: 950.data.seed-values.sql:8678
@@ -4244,7 +4343,7 @@ msgid ""
 "The amount of time an item will be held on the shelf before the hold "
 "expires. For example: \"2 weeks\" or \"5 days\""
 msgstr ""
-"Doba, po kterou bude exmplář uložen jako \"rezervace k vyzvednutí\", než "
+"Doba, po kterou bude exmplář uložen jako Rezervace k vyzvednutí, než "
 "rezervace vyprší. Například \"2 týdny\" nebo \"5 dnů\""
 
 #: 950.data.seed-values.sql:16287
@@ -4330,6 +4429,14 @@ msgstr "Němčina"
 msgid "Holds Retarget Interval"
 msgstr "Interval pro přesměrování rezervací na nové cíle"
 
+#: 950.data.seed-values.sql:16878
+msgid ""
+"This setting is used to set the default width (in number of characters) to "
+"use for call number wrapping in the left print label."
+msgstr ""
+"Toto nastavení použito pro definici výchozí šířky (v počtu znaků), které "
+"bude použito pro zalomení signatur v tiskových štítcích"
+
 #: 950.data.seed-values.sql:12365
 msgid "Import failed due to barcode collision"
 msgstr "Import se nezdařil kvůli kolizi čárových kódů"
@@ -4371,6 +4478,10 @@ msgstr ""
 #: 950.data.seed-values.sql:7006
 msgid "Vietnamese"
 msgstr "Vietnamština"
+
+#: 950.data.seed-values.sql:17243
+msgid "Order Lineitems Include Pagination Info"
+msgstr "Položky objednávky zahrnují informace o stránkování"
 
 #: 950.data.seed-values.sql:1380
 msgid "CREATE_MERGE_PROFILE"
@@ -4462,14 +4573,6 @@ msgstr "Sundština"
 msgid "User may delete a patron statistical category entry map"
 msgstr ""
 "Uživatel může smazat mapu položek čtenářských statistických kategorií"
-
-#: 950.data.seed-values.sql:720
-msgid ""
-"Allow a user to abort a copy transit if the user is not at the transit "
-"source or dest"
-msgstr ""
-"Povolit uživateli zrušit přepravu exemplářů pokud uživatel není v cílové "
-"nebo zdrojové destinaci přepravy,"
 
 #: 950.data.seed-values.sql:11073
 msgid "A hold request history needs to be formatted for printing."
@@ -4592,17 +4695,26 @@ msgstr "Povolit uživateli vrátit exemplář"
 msgid "Literary Form"
 msgstr "Literární žánr"
 
-#: 950.data.seed-values.sql:8235
-msgid "South Africa "
-msgstr "Jižní Afrika "
+#: 950.data.seed-values.sql:1190
+msgid "UPDATE_ORG_UNIT_SETTING.patron.password.use_phone"
+msgstr "UPDATE_ORG_UNIT_SETTING.patron.password.use_phone"
 
 #: 950.data.seed-values.sql:8173
 msgid "Mauritania "
 msgstr "Mauritánie "
 
+#: 950.data.seed-values.sql:16718
+msgid ""
+"Set the default font size for item print labels. Please include a unit of "
+"measurement that is valid CSS. For example, \"12pt\" or \"16px\" or \"1em\""
+msgstr ""
+"Nastavení výcozího fontu pro tisk štítků jednotek. Prosím, použijte měrné "
+"jednotky, které jsou validní v CSS. Například \"12pt\" nebo \"16px\" nebo "
+"\"1em\""
+
 #: 950.data.seed-values.sql:15201 950.data.seed-values.sql:15207
 msgid "Link Checker's Review Attempt interface's saved columns"
-msgstr "Uložené sloupce rozhraní"
+msgstr "Uložené slopuce revizních pokusů v rozhraní pro kontrolu odkazů"
 
 # id::crcd.name__5
 #: 950.data.seed-values.sql:287
@@ -4637,7 +4749,7 @@ msgid ""
 "field makes it appear with required fields even when not required. If the "
 "field is required this setting is ignored."
 msgstr ""
-"Pole \"sufix\" bude zobrazeno na kartě registračních údajů čtenáře spolu s "
+"Pole Sufix bude zobrazeno na kartě registračních údajů čtenáře spolu s "
 "povinnými  poli, i když není povinné. Pokud je pole povinné, toto nastavení "
 "je ignorováno."
 
@@ -4777,6 +4889,10 @@ msgstr "Směrování odkazu viz -- jméno korporace"
 msgid "Upload Default Provider"
 msgstr "Poskytovatel pro standardní nahrání"
 
+#: 950.data.seed-values.sql:17237
+msgid "Order Lineitems Include Edition Info"
+msgstr "Položky objednávky zahrnují informace o vydání"
+
 #: 950.data.seed-values.sql:11791
 msgid ""
 "Circ: Use original circulation library on opac renewal instead of user home "
@@ -4893,12 +5009,12 @@ msgstr ""
 "nastavení specifikuje hloubku, která spolu s fyzickou lokací OPACu určuje, "
 "které části organizační hierarchie mají být viditelné v OPACu. Například "
 "instalace Evergreenu bude mít  třístupňovou hierarchii "
-"'(Konsocium/Systém/Knihovna), kde systém má hloubku \"1\" a knihovna má "
-"hloubku \"2\". Pokud  zde  v takovéto instalaci bude nastavení  obsahovat "
-"hloubku \"1\", pak každá knihovna v systému, ke které daná fyzická lokace "
-"patří, bude viditelná, a všechno ostatní bude skryto. Hloubka \"0\" způsobí, "
-"že každá organizační jednotka bude viditelná. OPAC ve služebním klientovi "
-"toto nastavení ignoruje."
+"(Konsocium/Systém/Knihovna), kde systém má hloubku 1 a knihovna má hloubku "
+"2. Pokud  zde  v takovéto instalaci bude nastavení  obsahovat hloubku 1, pak "
+"každá knihovna v systému, ke které daná fyzická lokace patří, bude "
+"viditelná, a všechno ostatní bude skryto. Hloubka 0 způsobí, že každá "
+"organizační jednotka bude viditelná. OPAC ve služebním klientovi je  toto "
+"nastavení ignororváno."
 
 #: 950.data.seed-values.sql:1048
 msgid "UPDATE_ORG_TYPE"
@@ -4971,8 +5087,8 @@ msgid ""
 "Allows a user to add/remove/edit users in the \"Acquisitions "
 "Administrators\" group"
 msgstr ""
-"Povolit uživateli přidat / odebrat / změnit uživatele ve skupině "
-"administrátorů akvizice (Acquisitions Administrators)"
+"Povolit uživateli přidat/odebrat/změnit uživatele ve skupině \"Administrátor "
+"akvizice\""
 
 #: 950.data.seed-values.sql:7049
 msgid "Mixed materials"
@@ -5064,10 +5180,10 @@ msgid ""
 "Suggesting a field makes it appear when suggested fields are shown. If the "
 "field is shown or required this setting is ignored."
 msgstr ""
-"Pole \"telefon veečer\" (evening_phone) bude na kartě registračních údajů "
-"čtenáře zobrazeno jako navrhované. Navrhovaná pole se zobrazí při aktivaci "
-"volby \"zobrazit navrhovaná pole\". Pokud je toto pole zobrazené nebo "
-"povinné, toto nastavení je ignorováno."
+"Pole Telefonní číslo večer bude na kartě registračních údajů čtenáře "
+"zobrazeno jako navrhované. Navrhovaná pole se zobrazí při aktivaci volby "
+"Zobrazit navrhovaná pole. Pokud je toto pole zobrazené nebo povinné, toto "
+"nastavení je ignorováno."
 
 #: 950.data.seed-values.sql:7386
 msgid "tactile text"
@@ -5099,7 +5215,7 @@ msgstr "Vokální party"
 
 #: 950.data.seed-values.sql:4778
 msgid "Suggest prefix field on patron registration"
-msgstr "Navrhnout pole \"prefix\" na kartě registračních údajů čtenáře"
+msgstr "Navrhnout pole Prefix na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:7410
 msgid "sounds"
@@ -5113,8 +5229,8 @@ msgid ""
 msgstr ""
 "Přeskočit transakci offline výpůjčky (vyvolat výjimku při zpracování) pokud "
 "čas změny statusu exempláře je novější než zaznamenaný čas transakce. POZOR: "
-" Vyvolání této výjimky může být spustit změna statusu ze \"Dnes vráceno\" na "
-"\"Volné\"."
+" Vyvolání této výjimky může být spustit změna statusu z Dnes vráceno na "
+"Volné."
 
 #: 950.data.seed-values.sql:8045
 msgid "Caribbean Netherlands "
@@ -5161,6 +5277,10 @@ msgstr "EIAJ"
 msgid "Phoenician"
 msgstr "Foiničtina"
 
+#: 950.data.seed-values.sql:16712
+msgid "Item Print Label Font Size"
+msgstr "Velkost fontu tiskových štítků jednotek"
+
 #: 950.data.seed-values.sql:1016
 msgid "UPDATE_BIB_LEVEL"
 msgstr "UPDATE_BIB_LEVEL"
@@ -5193,6 +5313,16 @@ msgstr "Povolit uživateli upravit známky popularity"
 msgid "CED videodisc"
 msgstr "CED videodisk"
 
+#: 950.data.seed-values.sql:16734
+msgid ""
+"Set the default font weight for item print labels. Please use the CSS "
+"specification for values for font-weight.  For example, \"normal\", "
+"\"bold\", \"bolder\", or \"lighter\""
+msgstr ""
+"Nastavení výchozího fontu pro tisk štítků jednotek. Prosím, použijte "
+"specifikaci hodnot  CSS pro font-weight. Například  \"normal\", \"bold\", "
+"\"bolder\", nebo \"lighter\""
+
 #: 950.data.seed-values.sql:6880
 msgid "Panjabi"
 msgstr "Paňdžábština"
@@ -5217,7 +5347,7 @@ msgstr "Historie"
 #: 950.data.seed-values.sql:4517
 msgid "Show calendar widget for dob field on patron registration"
 msgstr ""
-"Na kartě registračních údajů čtenáře zobrazit v poli \"datum narození\" "
+"V poli Datum narození na kartě registračních údajů čtenáře zobrazit  "
 "miniaplikaci kalendáře"
 
 #: 950.data.seed-values.sql:5299
@@ -5373,7 +5503,7 @@ msgstr "Žánr"
 
 #: 950.data.seed-values.sql:4679
 msgid "Show juvenile field on patron registration"
-msgstr "Zobrazit pole \"nezletilý\" na kartě registračních údajů čtenáře"
+msgstr "Zobrazit pole Nezletilý na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:3278
 msgid "Default hold shelf expire interval"
@@ -5387,9 +5517,8 @@ msgid ""
 msgstr ""
 "Sestavit a přenést soubor na vzdálený server. Je požadován paremetr "
 "\"vzdálený hostitel\" (remote_host), který určuje cílový server. Volitelnými "
-"parametry jsou \"vzdálený uživatel\" (remote_user), \"vzdálené heslo\" "
-"(remote_password), \"vzdálený účet\" (remote_account), \"port\", \"typ\" "
-"(type)(FTP, SFTP nebo SCP) a \"debug\"."
+"parametry jsou Vzdálený uživatel, Vzdálené heslo, Vzdálený účet,Port, Typ "
+"(FTP, SFTP nebo SCP) a Debug."
 
 #: 950.data.seed-values.sql:2773
 msgid ""
@@ -5419,7 +5548,7 @@ msgstr "Veřejný klíč Stripe"
 
 #: 950.data.seed-values.sql:3728
 msgid "Minimum Transit Checkin Interval"
-msgstr "Minimální interval pro registraci / vrácení  exemplářů v přepravě"
+msgstr "Minimální interval pro registraci/vrácení  exemplářů v přepravě"
 
 #: 950.data.seed-values.sql:15227
 msgid ""
@@ -5466,14 +5595,12 @@ msgstr "Povolit uživateli vytvořit nový finanční fond"
 #: 950.data.seed-values.sql:766
 msgid "Allow a user to add/remove users to/from the \"SIP-Client\" group"
 msgstr ""
-"Povolit uživateli přidat/odebrat  uživatele do/ze skupiny SIP klienta (SIP-"
-"Client)"
+"Povolit uživateli přidat/odebrat  uživatele do/ze skupiny \"SIP klient\""
 
 #: 950.data.seed-values.sql:4481
 msgid "Regex for day_phone field on patron registration"
 msgstr ""
-"Regulkární výraz pro pole \"denní telefon\" (day_phone) na kartě "
-"registračních údajů čtenáře"
+"Regulární výraz pro pole Telefon ve dne na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:776
 msgid "Allow staff to override overdue count failure"
@@ -5521,13 +5648,17 @@ msgstr "Počet sekund čekání mezi pokusy o testování URL"
 msgid "UPDATE_TRANSLATION"
 msgstr "UPDATE_TRANSLATION"
 
+#: 950.data.seed-values.sql:13163
+msgid "Title axis"
+msgstr "Osa názvů"
+
 #: 950.data.seed-values.sql:7646
 msgid "computer card"
 msgstr "počítačová karta"
 
 #: 950.data.seed-values.sql:578
 msgid "Allow a user to mark an item as 'claims returned'"
-msgstr "Povolit uživateli označit exemplář jako \"údajně vrácený\""
+msgstr "Povolit uživateli označit exemplář jako 'Údajně vrácený'"
 
 #: 950.data.seed-values.sql:12370
 msgid "Overlay failed due to missing system id"
@@ -5564,7 +5695,7 @@ msgstr "Lidová hudba"
 
 #: 950.data.seed-values.sql:866
 msgid "Allow a user to mark an item status as 'missing'"
-msgstr "Povolit uživateli označit exemplář jako \"postrádaný\""
+msgstr "Povolit uživateli označit exemplář jako 'Postrádaný'"
 
 #: 950.data.seed-values.sql:13083
 msgid "Heading -- Uniform Title"
@@ -5592,8 +5723,8 @@ msgid ""
 "field makes it appear with required fields even when not required. If the "
 "field is required this setting is ignored."
 msgstr ""
-"Pole \"alias\" bude zobrazeno na kartě registračních údajů čtenáře i když "
-"není povinné. Pokud je pole povinné, toto nastavení je ignorováno."
+"Pole Alias bude zobrazeno na kartě registračních údajů čtenáře i když není "
+"povinné. Pokud je pole povinné, toto nastavení je ignorováno."
 
 #: 950.data.seed-values.sql:16474
 msgid "Void long overdue item billing when claims returned"
@@ -5627,7 +5758,7 @@ msgstr "Hi-8 mm."
 
 #: 950.data.seed-values.sql:4841
 msgid "Show State field on patron registration"
-msgstr "Zobrazit pole \"stát\" na kartě registračních údajů čtenáře"
+msgstr "Zobrazit pole Stát na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:572
 msgid "Allow a user to record payments in the Billing Interface"
@@ -5712,6 +5843,14 @@ msgstr "Wakashské jazyky"
 #: 950.data.seed-values.sql:6962 950.data.seed-values.sql:6970
 msgid "Tajik"
 msgstr "Tadžičtina"
+
+#: 950.data.seed-values.sql:15030
+msgid "General/Adult Materials"
+msgstr "Všeobecné materiály / materiály pro dospělé"
+
+#: 950.data.seed-values.sql:17216
+msgid "Orders Include Copy Collection Codes"
+msgstr "Objednávky zahrnují kódy sbírek exemplářů"
 
 #: 950.data.seed-values.sql:992
 msgid "DELETE_ORG_TYPE"
@@ -5814,8 +5953,7 @@ msgstr "Cincinnati, Ohio, USA"
 #: 950.data.seed-values.sql:760
 msgid "Allow a user to add/remove users to/from the \"LibraryManager\" group"
 msgstr ""
-"Povolit uživateli přidat / odebrat uživatele do / ze skupiny manažerů "
-"knihovny (LibraryManager)"
+"Povolit uživateli přidat/odebrat uživatele do/ze skupiny \"Manažer knihovny\""
 
 #: 950.data.seed-values.sql:914
 msgid "ASSIGN_GROUP_PERM"
@@ -5879,7 +6017,7 @@ msgid ""
 "COPY_NOT_AVAILABLE event is overridden"
 msgstr ""
 "Seznam ID statutů exempláře, který bude blokovat výpůjčku dokonce i když je "
-"obejita obecná událost \"exemplář není dostupný\" (COPY_NOT_AVAILABLE)"
+"obejita obecná událost Exemplář není dostupný  - COPY_NOT_AVAILABLE"
 
 #: 950.data.seed-values.sql:339
 msgid "Reshelving"
@@ -5905,6 +6043,10 @@ msgstr "Identifikátor"
 #: 950.data.seed-values.sql:7750
 msgid "Rondos"
 msgstr "Rondo"
+
+#: 950.data.seed-values.sql:1696
+msgid "Administer copy tag"
+msgstr "Spravovat štíky exemplářů"
 
 #: 950.data.seed-values.sql:333
 msgid "Checked out"
@@ -5941,8 +6083,7 @@ msgstr "Kartografický dokument"
 #: 950.data.seed-values.sql:4616
 msgid "Require evening_phone field on patron registration"
 msgstr ""
-"Požadovat na kartě registračních údajů čtenáře pole \"večerní telefon\" "
-"(evening_phone)"
+"Požadovat na kartě registračních údajů čtenáře pole Telefonní číslo večer"
 
 #: 950.data.seed-values.sql:1236
 msgid "Allow a user to create trigger reactors"
@@ -5975,8 +6116,7 @@ msgstr "ADMIN_USER_SETTING_TYPE"
 
 #: 950.data.seed-values.sql:4571
 msgid "Require email field on patron registration"
-msgstr ""
-"Požadovat na kartě registračních údajů čtenáře pole \"e-mail\" (email)"
+msgstr "Požadovat na kartě registračních údajů čtenáře pole E-mail"
 
 #: 950.data.seed-values.sql:6628
 msgid "Chuvash"
@@ -6011,6 +6151,14 @@ msgstr "Tato pobočka"
 msgid "Ragtime music"
 msgstr "Ragtime"
 
+#: 950.data.seed-values.sql:17267
+msgid ""
+"Lineitem Identifier Fields (LIN/PIA) Use Vendor-Encoded ID Value When "
+"Available"
+msgstr ""
+"Pole pro identifikátor položky (LIN/PIA) používají  hodnotu ID kódovanou "
+"dodavatelem, pokud je k dispozici"
+
 #: 950.data.seed-values.sql:7752
 msgid "Songs"
 msgstr "Písně"
@@ -6021,7 +6169,7 @@ msgstr "Výchozí sada pro shodu záznamů"
 
 #: 950.data.seed-values.sql:9471
 msgid "A patron acquisition request has been marked Cancelled."
-msgstr "Akviziční požadavek čtenáře byl označen jako \"zrušený\""
+msgstr "U akvizičního požadavku čtenáře došlo ke změně na Zrušeno"
 
 #: 950.data.seed-values.sql:1092
 msgid "DELETE_AUTHORITY_IMPORT_QUEUE"
@@ -6045,6 +6193,10 @@ msgstr "CREATE_CIRC_DURATION"
 #: 950.data.seed-values.sql:13658
 msgid "Iridium"
 msgstr "Iridium"
+
+#: 950.data.seed-values.sql:17141
+msgid "Enable Digital Bookplate Search"
+msgstr "Povolit vyhledávání digitálního ex-libris"
 
 #: 950.data.seed-values.sql:13450
 msgid "Rogers Wireless"
@@ -6097,7 +6249,7 @@ msgstr "Povolit uživateli uzavřít přepravu exempláře"
 
 #: 950.data.seed-values.sql:862
 msgid "Allow a user to mark an item status as 'bindery'"
-msgstr "Povolit uživateli aplikovat status exempláře \"ve vazbě\""
+msgstr "Povolit uživateli aplikovat status exempláře 'Ve vazbě'"
 
 #: 950.data.seed-values.sql:918
 msgid "CREATE_BIB_LEVEL"
@@ -6133,7 +6285,7 @@ msgid ""
 "basically becomes \"grace periods can only be consumed by closed dates\"."
 msgstr ""
 "Pokud je volba aktivní a je nastaveno aktivováno automatické rozšíření,  "
-"odložené lhůty se rozšíří na všechna uzavření knihovny, které protínají, v "
+"odložené lhůty se rozšíří na všechna uzavření knihovny, které zashaují,  v "
 "rámci pevně stanovených limitů. To v podstatě znamená, že \"odloženou lhůtu "
 "lze spotřebovat pouze pro dobu uzavření knihovny\"."
 
@@ -6163,7 +6315,7 @@ msgstr "Výpůjčky plní související rezervace"
 
 #: 950.data.seed-values.sql:864
 msgid "Allow a user to mark an item status as 'lost'"
-msgstr "Povolit uživateli označit exemplář jako \"ztracený\""
+msgstr "Povolit uživateli označit status exempláře jako 'Ztracený čtenářem'"
 
 #: 950.data.seed-values.sql:16545 950.data.seed-values.sql:16546
 msgid "Email checkout receipts by default?"
@@ -6172,7 +6324,7 @@ msgstr "Používat standardně e-mailový výpis výpůjček?"
 #: 950.data.seed-values.sql:1621
 msgid "Allow a user to add/remove users to/from the \"Volunteers\" group"
 msgstr ""
-"Povolit uživateli přidat/odebrat uživatele do/ze skupiny \"dobrovolníci\""
+"Povolit uživateli přidat/odebrat uživatele do/ze skupiny \"Dobrovolníci\""
 
 #: 950.data.seed-values.sql:8687 950.data.seed-values.sql:8704
 #: 950.data.seed-values.sql:8720 950.data.seed-values.sql:8736
@@ -6200,10 +6352,10 @@ msgid ""
 "Suggesting a field makes it appear when suggested fields are shown. If the "
 "field is shown or required this setting is ignored."
 msgstr ""
-"Pole \"aktivní\" bude na kartě registračních údajů čtenáře zobrazeno jako "
-"navrhované. Navrhovaná pole se zobrazí, pokud je aktivována volba \"zobrazit "
-"navrhovaná pole\". Pokud je pole zobrazeno nebo je povinné, toto nastavení "
-"je ignorováno."
+"Pole Aktivní bude na kartě registračních údajů čtenáře zobrazeno jako "
+"navrhované. Navrhovaná pole se zobrazí, pokud je aktivována volba Zobrazit "
+"navrhovaná pole. Pokud je pole zobrazeno nebo je povinné, toto nastavení je "
+"ignorováno."
 
 #: 950.data.seed-values.sql:6889
 msgid "Ponape"
@@ -6211,7 +6363,7 @@ msgstr "Pohnpeiština (ponape)"
 
 #: 950.data.seed-values.sql:574
 msgid "Allow a user to mark an item as 'lost'"
-msgstr "Povolit uživateli označit exemplář jako \"ztracený\""
+msgstr "Povolit uživateli označit  exemplář jako 'Ztracený čtenářem'"
 
 #: 950.data.seed-values.sql:1700
 msgid "Cataloging Administrator"
@@ -6239,8 +6391,8 @@ msgid ""
 "of the do_print variable to false to cancel printing."
 msgstr ""
 "Při tisku mjusí být načtena plná cesta URL k Javacsriptu. Měla by být "
-"implementována funkce \"uživatelský tisk\" (print_custom) pro manipulaci s "
-"DOM. Může změnit hodnotu proměnné \"tisknout\" (do_print) na "
+"implementována funkce Uživatelský tisk  - print_custom - pro manipulaci s "
+"DOM. Může změnit hodnotu proměnné Tisknout\"  - do_print - na "
 "\"nepravda\"čímž dojde ke zrušení tisku."
 
 #: 950.data.seed-values.sql:8116
@@ -6292,13 +6444,17 @@ msgstr ""
 "Pokud je výpůjční knihovna také knihovnou pro vyzvednutí, používat exempláře "
 "z této knihovny jako cíl rezervace i když je knihovna zavřená."
 
+#: 950.data.seed-values.sql:17231
+msgid "Buyer ID Qualifier Includes Vendcode"
+msgstr "Kvalifikátor ID kupujícího zahrnuje kód dodavatele"
+
 #: 950.data.seed-values.sql:8070
 msgid "Delaware "
 msgstr "Delaware "
 
 #: 950.data.seed-values.sql:4355
 msgid "Show active field on patron registration"
-msgstr "Zobrazit pole \"aktivní\" na kartě registračních údajů čtenáře"
+msgstr "Zobrazit pole Aktivní na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:824
 msgid "Lowest level permission required to access the ACQ interface"
@@ -6392,7 +6548,7 @@ msgid ""
 "Default, Minimal, and None"
 msgstr ""
 "Výchozí sady klávesových zkratek pro služebního klienta (jméno souboru bez "
-"\".keyset\") Např.: Výchozí, minimální, žádný"
+".keyset) Např.: Výchozí, minimální, žádný"
 
 #: 950.data.seed-values.sql:7414
 msgid "performed music"
@@ -6421,7 +6577,7 @@ msgid ""
 "returned.  E.g. '6 months'"
 msgstr ""
 "Při vrácení ztracených exemplářů po takto dlouhé době nebudou  zrušeny "
-"naúčtované poplatky. Např. \"6 měsíců\"."
+"naúčtované poplatky. Např. '6 měsíců'"
 
 #: 950.data.seed-values.sql:2747
 msgid ""
@@ -6479,7 +6635,7 @@ msgstr "Nahrát výchozí profil propadu kvůli nedostatečné kvalitě"
 msgid ""
 "The Example for validation on the day_phone field in patron registration."
 msgstr ""
-"Příklad pro validaci pole \"telefon přes den\" (day_phone) na kartě "
+"Příklad pro validaci pole Telefonní číslo  přes den - day_phone -  na kartě "
 "registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:14051
@@ -6532,6 +6688,10 @@ msgstr "Administrátor výpůjčního protokolu"
 msgid "Manx"
 msgstr "Manština (manx)"
 
+#: 950.data.seed-values.sql:16856
+msgid "Item Print Label - Call Number Wrap Filter Height"
+msgstr "Tiskové štítky jednotek - Výška filtru pro zarovnání signatur"
+
 #: 950.data.seed-values.sql:13136
 msgid "Subdivision Linking Entry -- Chronological Subdivision"
 msgstr "Záznam odkazující na podtřídění -- chronologické podtřídění"
@@ -6540,9 +6700,17 @@ msgstr "Záznam odkazující na podtřídění -- chronologické podtřídění"
 msgid "Dyula"
 msgstr "Djula"
 
+#: 950.data.seed-values.sql:17201
+msgid "Orders Include Copy Funds"
+msgstr "Objednávky obsahuje fond pro exemplář"
+
 #: 950.data.seed-values.sql:1637
 msgid "Allow a user to mark an item status as 'reserves'"
-msgstr "Povolit uživateli označit status exempláře jako 'rezervovaný zdroj'"
+msgstr "Povolit uživateli označit status exempláře jako 'Rezervovaný zdroj'"
+
+#: 950.data.seed-values.sql:17213
+msgid "Orders Include Copy Locations"
+msgstr "Objednávka zahrnuje umístění exempláře"
 
 #: 950.data.seed-values.sql:8149
 msgid "Laos "
@@ -6570,8 +6738,8 @@ msgstr "Lule sami"
 msgid ""
 "When a circ is marked as claims-never-checked-out, mark the copy as missing"
 msgstr ""
-"Pokud je výpůjčka označena jako \"údajně nikdy nevypůjčená\", označit "
-"exemplář jako postrádaný."
+"Pokud je výpůjčka označena jako Údajně_nikdy_nevypůjčená, označit exemplář "
+"jako postrádaný."
 
 #: 950.data.seed-values.sql:6826
 msgid "Mon-Khmer (Other)"
@@ -6656,12 +6824,11 @@ msgstr "Mezinárodní"
 
 #: 950.data.seed-values.sql:3094
 msgid "Mark item damaged voids overdues"
-msgstr ""
-"Při označení exempláře jako \"poškozeného\" dojde ke zrušení zpozdného"
+msgstr "Při označení exempláře jako Poškozený dojde ke zrušení zpozdného"
 
 #: 950.data.seed-values.sql:4760
 msgid "Require prefix field on patron registration"
-msgstr "Požadovat pole \"prefix\" na kartě registračních údajů čtenáře"
+msgstr "Požadovat pole Prefix na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:1284
 msgid "ADMIN_ACQ_CLAIM"
@@ -6679,7 +6846,7 @@ msgstr "DELETE_RELEVANCE_ADJUSTMENT"
 #: 950.data.seed-values.sql:4373
 msgid "Show alert_message field on patron registration"
 msgstr ""
-"Zobrazit pole \"upozornění\" (alert_message) na kartě registračních údajů "
+"Zobrazit pole Upozornění  - alert_message -  na kartě registračních údajů "
 "čtenáře"
 
 # id::i18n_l.description__es-US
@@ -6714,7 +6881,7 @@ msgstr "ADMIN_AGE_PROTECT_RULE"
 #: 950.data.seed-values.sql:874
 msgid "Allow a user to mark an item status as 'on holds shelf'"
 msgstr ""
-"Povolit uživateli  aplikovat status exempláře \"rezevace k vyzvednutí\""
+"Povolit uživateli  aplikovat status exempláře 'Rezervace k vyzvednutí'"
 
 #: 950.data.seed-values.sql:8033
 msgid "Brazil "
@@ -6727,17 +6894,17 @@ msgid ""
 "the-desk pickups for their holds"
 msgstr ""
 "Pokud knihovna podporuje veřejně přístupný regál s rezervacemi i rezervace k "
-"vyzvednutí u výpůjčního pultu, nastavte tuto hodnotu jako \"pravda\". Tím "
-"umožníte čtenářům aktivovat pro jejich rezervace volbu \"rezervace k "
-"vyzvednutí u výpůjčního pultu\"."
+"vyzvednutí u výpůjčního pultu, nastavte tuto hodnotu jako Pravda. Tím "
+"umožníte čtenářům aktivovat pro jejich rezervace volbu Rezervace k "
+"vyzvednutí u výpůjčního pultu."
 
 #: 950.data.seed-values.sql:1508
 msgid ""
 "Allows editing of a hold's request time, and/or its Cut-in-line/Top-of-queue "
 "flag."
 msgstr ""
-"Povolit uživateli změnit čas rezervací a(nebo) příznak \"proniknou do "
-"fronty\" (cut-in-line) / \"vrchol fronty\" (top-of-queue)."
+"Povolit uživateli změnit čas rezervací a(nebo) příznak Vnucení rezervace do  "
+"fronty /Vrchol  fronty."
 
 #: 950.data.seed-values.sql:5003
 msgid ""
@@ -6778,8 +6945,8 @@ msgid ""
 "items, or blank the field for a possible performance improvement)"
 msgstr ""
 "OPAC: zobrazit dialog návrhů automatického dokončení pod polem základného "
-"vyhledávání (uvést \"viditelné v OPACu\" [\"opac_visible\"] do hodnoty pole "
-"k omezení exemplářů viditelných v OPACu, nebo nechat pole volné pro možné "
+"vyhledávání (uvést Viditelné v OPACu -'opac_visible' -  do hodnoty pole k "
+"omezení exemplářů viditelných v OPACu, nebo nechat pole volné pro možné "
 "zlepšené výkonu)"
 
 #: 950.data.seed-values.sql:8179
@@ -6842,7 +7009,7 @@ msgstr "Honduras "
 #: 950.data.seed-values.sql:750
 msgid "Allow a user to add/remove users to/from the \"Staff\" group"
 msgstr ""
-"Povolit uživateli přidat / odebrat uživatele do / ze skupiny \"Personál\""
+"Povolit uživateli přidat/odebrat uživatele do/ze skupiny \"Personál\""
 
 #: 950.data.seed-values.sql:1238
 msgid "Allow a user to delete trigger reactors"
@@ -6893,8 +7060,11 @@ msgid ""
 "The Regular Expression for validation on the email field in patron "
 "registration."
 msgstr ""
-"Regulární výraz pro valicaci pole \"e-mail\" na kartě registračních údajů "
-"čtenáře"
+"Regulární výraz pro valicaci pole E-mail na kartě registračních údajů čtenáře"
+
+#: 950.data.seed-values.sql:17246
+msgid "Order Lineitem Notes Include Copy Spec Codes"
+msgstr "Poznámnky k položce objednávky zahrnují  speciální kódy exempláře"
 
 #: 950.data.seed-values.sql:1306
 msgid "ADMIN_CIRC_MATRIX_MATCHPOINT"
@@ -6968,6 +7138,10 @@ msgstr "Jako výchozí  při nahrádní  sloučit při nejlepší shodě"
 msgid "Heading -- Genre/Form Term"
 msgstr "Záhlaví -- termín žánru/formy"
 
+#: 950.data.seed-values.sql:1700
+msgid "Administer serial prediction pattern templates"
+msgstr "Spravovat šablony  vzorů pro generování seriálů"
+
 #: 950.data.seed-values.sql:6902
 msgid "Rundi"
 msgstr "Rundština"
@@ -7016,9 +7190,7 @@ msgstr "Procházet seznamy publikovaných knih"
 
 #: 950.data.seed-values.sql:784
 msgid "Allow staff to force checkout of Missing/Lost type items"
-msgstr ""
-"Povolit personálu vynutit výpůjčky exemlářů typu \"Postrádané\" / "
-"\"Ztracené\""
+msgstr "Povolit personálu vynutit výpůjčky exemlářů typu Postrádané/Ztracené"
 
 #: 950.data.seed-values.sql:399 950.data.seed-values.sql:400
 msgid "Arabic (Jordan)"
@@ -7030,10 +7202,10 @@ msgid ""
 "Suggesting a field makes it appear when suggested fields are shown. If the "
 "field is shown or required this setting is ignored."
 msgstr ""
-"Pole \"stát\" bude na kartě registračních údajů čtenáře zobrazeno jako "
-"navrhované. Navrhovaná pole se zobrazí, pokud je aktivována volba \"zobrazit "
-"navrhovaná pole\". Pokud je pole zobrazeno nebo je povinné, je toto "
-"nastavení ignorováno."
+"Pole Stát bude na kartě registračních údajů čtenáře zobrazeno jako "
+"navrhované. Navrhovaná pole se zobrazí, pokud je aktivována volba Zobrazit "
+"navrhovaná pole. Pokud je pole zobrazeno nebo je povinné, je toto nastavení "
+"ignorováno."
 
 # id::clm.value__udm
 #: 950.data.seed-values.sql:6996
@@ -7159,10 +7331,6 @@ msgstr "Zdrženo: Přijato se změnou"
 msgid "User may unset a default entry in a patron statistical category"
 msgstr "Uživatel smí zrušit výchozí údaj čtenářské statistické kategorie"
 
-#: 950.data.seed-values.sql:13280
-msgid "Medical Subject Headings"
-msgstr "Medical Subject Headings"
-
 #: 950.data.seed-values.sql:15763 950.data.seed-values.sql:15769
 msgid "Void Long-Overdue Item Billing When Returned"
 msgstr "Při vácení zrušit naúčtované poplatky za dlouhodobě nevrácené"
@@ -7271,10 +7439,11 @@ msgid ""
 "See description of the day_phone regex for important information about "
 "capture groups with it."
 msgstr ""
-"Regulární výraz pro validaci pole \" telefon\" na kartě registračních údajů "
+"Regulární výraz pro validaci pole Telefon na kartě registračních údajů "
 "čtenáře. Aplikuje se  na všechna pole obsahující telefonní číslo, která "
 "nemají vlastní nastavení. Poznámka: viz popis regulárního výrazu pro pole "
-"\"telefon ve dne\" (day_phone) kde jsou důležité informace o skupinách."
+"telefon ve dne  - day_phone - kde jsou důležité informace o skupinách pro "
+"zachycení."
 
 #: 950.data.seed-values.sql:11729 950.data.seed-values.sql:11920
 #: 950.data.seed-values.sql:11921
@@ -7340,7 +7509,7 @@ msgstr "Povolit uživateli vytvořit, změnit a smazat reaktor spoštěče"
 #: 950.data.seed-values.sql:4868
 msgid "Regex for post_code field on patron registration"
 msgstr ""
-"Regulární výraz pro pole \"PSČ\" (post_code) na kartě registračních údajů "
+"Regulární výraz pro pole PSČ  - post_code na kartě registračních údajů "
 "čtenáře"
 
 #: 950.data.seed-values.sql:8318
@@ -7477,9 +7646,9 @@ msgid ""
 "Suggesting a field makes it appear when suggested fields are shown. If the "
 "field is shown or required this setting is ignored."
 msgstr ""
-"Pole \"nezletilý\"  bude na kartě registračních údajů čtenáře zobrazeno jako "
-"navrhované. Navrhovaná pole se zobrazí, pokud je aktivována volba \"zobrazit "
-"navrhovaná pole\". Pokud je pole zobrazeno nebo povinné, je toto nastavení "
+"Pole Nezletilý  bude na kartě registračních údajů čtenáře zobrazeno jako "
+"navrhované. Navrhovaná pole se zobrazí, pokud je aktivována volba Zobrazit "
+"navrhovaná pole. Pokud je pole zobrazeno nebo povinné, je toto nastavení "
 "ignorováno."
 
 # id::clm.value__abk
@@ -7492,6 +7661,11 @@ msgstr "Abchazština"
 #: 950.data.seed-values.sql:8532 950.data.seed-values.sql:8562
 msgid "Comics/graphic novels"
 msgstr "Komiksy/grafické romány"
+
+#: 950.data.seed-values.sql:17252
+msgid "Order Lineitem Notes Always Present (Even if Empty)"
+msgstr ""
+"Poznámky k položkám objednávek jsou vždy zobrazeny (i když jsou prázdné)"
 
 #: 950.data.seed-values.sql:8159
 msgid "Madagascar "
@@ -7525,7 +7699,7 @@ msgid ""
 "Showing a field makes it appear with required fields even when not required. "
 "If the field is required this setting is ignored."
 msgstr ""
-"Pole \"vedoucí účet\" (master_account) bude zobrazeno na kartě registračních "
+"Pole Vedoucí účet  - master_account - bude zobrazeno na kartě registračních "
 "údajů čtenáře i když není povinné. Pokud je pole povinné, je toto nastavení "
 "ignorováno."
 
@@ -7576,8 +7750,8 @@ msgid ""
 "Historical Circulations use most recent xact_finish date instead of last "
 "circ's."
 msgstr ""
-"V historii výpůjček používat nejnovější \"přesný čas ukončení výpůjčky\" "
-"(xact_finish date) místo naposledy půjčeno (last circ´s)."
+"V historii výpůjček používat nejnovější Čas ukončení výpůjčky  - xact_finish "
+"date -  místo naposledy půjčeno (last circ´s)."
 
 #: 950.data.seed-values.sql:1030
 msgid "UPDATE_ITEM_FORM"
@@ -7610,8 +7784,8 @@ msgstr "Povolit uživateli upravit finanční zdroj"
 msgid ""
 "The evening_phone field will be required on the patron registration screen."
 msgstr ""
-"Pole \"telefon večer\" (evening_phone) bude požadováno na kartě "
-"registračních údajů čtenáře"
+"Pole Telefonní číslo večer bude požadováno na kartě registračních údajů "
+"čtenáře."
 
 #: 950.data.seed-values.sql:660
 msgid "Allow a user to view which users have checked out a given copy"
@@ -7864,6 +8038,23 @@ msgstr "Odkazy zkratek pro stránkování prohlížení v OPACu"
 msgid "Plates"
 msgstr "Obrazové přílohy"
 
+#: 950.data.seed-values.sql:17128
+msgid ""
+"Format Date+Time with this pattern (examples: \"yy-MM-dd h:m:s.SSS a\" for "
+"\"16-04-05 2:07:20.666 PM\", \"yyyy-dd-MMM HH:mm\" for \"2016-05-Apr "
+"14:07\").  This will be used in areas of the client where a date with a "
+"timestamp is needed, like Checkout, Due Date, or Record Created."
+msgstr ""
+"Formátovat datum+čas podle tohoto vzoru (např. : \"yy-MM-dd h:m:s.SSS a\" "
+"pro \"16-04-05 2:07:20.666 PM\", \"yyyy-dd-MMM HH:mm\" for \"2016-05-Apr "
+"14:07\").  Formátování bude použito v těch částek služebního klienta, kde je "
+"potřeba použití data s časovým razítkem, např. čas výpůjčky, data vrácení, "
+"vytvoření záznamu."
+
+#: 950.data.seed-values.sql:17106
+msgid "Format Dates with this pattern"
+msgstr "Formátovat datum podle tohoto vzoru"
+
 #: 950.data.seed-values.sql:8278
 msgid "Egypt "
 msgstr "Egypt "
@@ -8007,8 +8198,8 @@ msgstr "Kpelle"
 #: 950.data.seed-values.sql:4598
 msgid "Example for evening_phone field on patron registration"
 msgstr ""
-"Příklad pro pole \"telefon večer\" (evening_phone) na kartě registračních "
-"údajů čtenáře"
+"Příklad pro pole Telefonní číslo večer  - evening_phone -  na kartě "
+"registračních údajů čtenáře"
 
 # id::clm.value__kbd
 #: 950.data.seed-values.sql:6762
@@ -8059,7 +8250,7 @@ msgstr "Ghana "
 
 #: 950.data.seed-values.sql:4526
 msgid "Require dob field on patron registration"
-msgstr "Požadovat na kartě registračních údajů čtenáře \"datum narození\""
+msgstr "Požadovat pole Datum narození na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:844
 msgid "Allow a user to create/view/update/delete a provider"
@@ -8133,9 +8324,9 @@ msgstr "Čtenář: heslo z telefonního čísla"
 msgid "Allow a user to view report output"
 msgstr "Povolit uživateli zobrazit výstup zprávy"
 
-#: 950.data.seed-values.sql:1190
-msgid "UPDATE_ORG_UNIT_SETTING.patron.password.use_phone"
-msgstr "UPDATE_ORG_UNIT_SETTING.patron.password.use_phone"
+#: 950.data.seed-values.sql:368
+msgid "Lost and Paid"
+msgstr "Ztraceno a zaplaceno"
 
 #: 950.data.seed-values.sql:930
 msgid "CREATE_ITEM_TYPE"
@@ -8169,7 +8360,7 @@ msgstr ""
 #: 950.data.seed-values.sql:4643
 msgid "Show ident_value field on patron registration"
 msgstr ""
-"Zobrazit pole \"číslo identifikačního dokladu\" (ident_value) na kartě "
+"Zobrazit pole číslo identifikačního dokladu -  ident_value -  na kartě "
 "registračních údajů čtenáře"
 
 # id::clm.value__gon
@@ -8216,8 +8407,8 @@ msgid ""
 msgstr ""
 "Celkové číslo aktivních výpůjček pro daného čtenáře je v rozhraní pro "
 "zobrazení čtenářského konta uvedeno v postranní liště s přehledem údajů o "
-"čtenáři a pod navigačním tlačítkem \"Výpůjčky\"\". Toto nastavení zamezí, "
-"abys se \"údajně vrácené\" výpůjčky započítaly do tohoto čísla."
+"čtenáři a pod navigačním tlačítkem Výpůjčky. Toto nastavení zamezí, abys se "
+"Údajně vrácené výpůjčky započítaly do tohoto čísla."
 
 #: 950.data.seed-values.sql:648
 msgid "Allow a user to create a new copy location"
@@ -8230,8 +8421,8 @@ msgstr "Eritrea "
 #: 950.data.seed-values.sql:4715
 msgid "Example for other_phone field on patron registration"
 msgstr ""
-"Příklad pro pole \"další telefon\" (other_phone) na kartě registračních "
-"údajů čtenáře"
+"Příklad pro pole Další telefon - other_phone - na kartě registračních údajů "
+"čtenáře"
 
 #: 950.data.seed-values.sql:1288
 msgid "ADMIN_ACQ_CLAIM_TYPE"
@@ -8240,6 +8431,10 @@ msgstr "ADMIN_ACQ_CLAIM_TYPE"
 #: 950.data.seed-values.sql:1390
 msgid "DELETE_BIBLIO_FINGERPRINT"
 msgstr "DELETE_BIBLIO_FINGERPRINT"
+
+#: 950.data.seed-values.sql:17261
+msgid "Order Copies Always Include Location (Even if Empty)"
+msgstr "Exempláře na objednávkách vždy zahrnují lokaci (i když jsou prázdné)"
 
 #: 950.data.seed-values.sql:7758
 msgid "Teatro lirico"
@@ -8275,9 +8470,10 @@ msgstr "Uživatel smí smazat statistickou kategorii exempláře."
 msgid "Creoles and Pidgins, French-based (Other)"
 msgstr "Kreolština a jiné pigdiny na základě francouzštiny"
 
-#: 950.data.seed-values.sql:8205
-msgid "Ohio "
-msgstr "Ohio "
+# id::clm.value__swa
+#: 950.data.seed-values.sql:6955
+msgid "Swahili"
+msgstr "Svahilština"
 
 #: 950.data.seed-values.sql:6789 950.data.seed-values.sql:6932
 msgid "Sami"
@@ -8357,7 +8553,7 @@ msgstr "Dobrovolníci"
 
 #: 950.data.seed-values.sql:762
 msgid "Allow a user to add/remove users to/from the \"Cat1\" group"
-msgstr "Povolit uživateli přidat / odebrat uživatele do / ze skupiny Kat1."
+msgstr "Povolit uživateli přidat/odebrat uživatele do/ze skupiny \"Kat1.\""
 
 #: 950.data.seed-values.sql:550
 msgid "Allow a user to edit a copy"
@@ -8387,7 +8583,7 @@ msgstr "mikroskopický"
 
 #: 950.data.seed-values.sql:3197
 msgid "Hold Shelf Status Delay"
-msgstr "Prodleva statusu \"regál s rezervacemi\""
+msgstr "Prodleva statusu Rezervace k vyzvednutí"
 
 #: 950.data.seed-values.sql:16230
 msgid "Apply this prefix to any auto-generated item call numbers"
@@ -8411,8 +8607,8 @@ msgid ""
 "for example, COPY_HOLDS)"
 msgstr ""
 "Povolit uživateli vytvořit rezervaci pro dalšího uživatele. Pokud je hodnota "
-"nastavena na \"pravda\", je nutné se ještě ujistit, že uživatel má oprávnění "
-"vytvořit typ požadované rezervace, např. rezervace exempláře (copy_holds)."
+"nastavena na Pravda, je nutné se ještě ujistit, že uživatel má oprávnění "
+"vytvořit typ požadované rezervace, např. rezervace exempláře - COPY_HOLDS)"
 
 # id::cam.value__
 #: 950.data.seed-values.sql:7032
@@ -8480,8 +8676,8 @@ msgstr "Betacam SP"
 #: 950.data.seed-values.sql:4706
 msgid "Suggest master_account field on patron registration"
 msgstr ""
-"Navrhnout pole \"vedoucí účet\" (master_account) na kartě registračních "
-"údajů čtenáře"
+"Navrhnout pole Vedoucí účet  - master_account - na kartě registračních údajů "
+"čtenáře"
 
 #: 950.data.seed-values.sql:3272
 msgid ""
@@ -8490,8 +8686,8 @@ msgid ""
 "will be checked out. Examples: \"3 weeks\", \"7 days\""
 msgstr ""
 "Při předpovídání doby, po kterou bude čtenář čekat na splnění rezervace, je "
-"toto výchozí odhadovaná délka času za níž bude exemplář vypůjčen. Např. \"3 "
-"týdny\", \"7 dní\"."
+"toto výchozí odhadovaná délka času, během kterého bude exemplář vypůjčen. "
+"Např. \"3 týdny\", \"7 dnů\"."
 
 #: 950.data.seed-values.sql:16155
 msgid ""
@@ -8567,10 +8763,10 @@ msgid ""
 "Suggesting a field makes it appear when suggested fields are shown. If the "
 "field is shown or required this setting is ignored."
 msgstr ""
-"Pole \"datum narození\" bude na kartě registračních údajů čtenáře zobrazeno "
-"jako navrhované. Navrhovaná pole se zobrazí, pokud je aktivována volba "
-"\"zobrazit navrhovaná pole\". Pokud je pole zobrazeno nebo je povinné, je "
-"toto nastavení ignorováno."
+"Pole Datum narození bude na kartě registračních údajů čtenáře zobrazeno jako "
+"navrhované. Navrhovaná pole se zobrazí, pokud je aktivována volba Zobrazit "
+"navrhovaná pole. Pokud je pole zobrazeno nebo je povinné, je toto nastavení "
+"ignorováno."
 
 #: 950.data.seed-values.sql:1362
 msgid "CREATE_BIB_BTYPE"
@@ -8583,11 +8779,19 @@ msgstr "Tokelau "
 #: 950.data.seed-values.sql:1619
 msgid "Allow a user to add/remove users to/from the \"Data Review\" group"
 msgstr ""
-"Povolit uživateli přidat/odebrat uživatele ze skupiny \"Kontrola dat\""
+"Povolit uživateli přidat/odebrat uživatele do/ze skupiny \"Kontrola dat\""
+
+#: 950.data.seed-values.sql:16808
+msgid "Item Print Label - Height for Right Label"
+msgstr "Šablona pro tisk štítků jednotek - Výška pro pravý štítek"
 
 #: 950.data.seed-values.sql:8210
 msgid "Pennsylvania "
 msgstr "Pennsylvánie "
+
+#: 950.data.seed-values.sql:12368 950.data.seed-values.sql:12369
+msgid "Import failed due to system id collision"
+msgstr "Import se nezdařil kvůli kolizi systémových ID"
 
 #: 950.data.seed-values.sql:7470
 msgid "projected"
@@ -8626,7 +8830,7 @@ msgid ""
 "balances after a set period of time. "
 msgstr ""
 "Výchozí nastavení pro zabránění naúčtavání záporných poplatků (refundace) "
-"vztahujících se  k výpůjčkám. Nastavení této hodnoty na \"nepravda\" zakáže "
+"vztahujících se  k výpůjčkám. Nastavení této hodnoty na Pravda zakáže "
 "naúčtování záporných poplatků vždy nebo, spolu s nastavením časového "
 "intervalu,  po uplynutí určité doby. "
 
@@ -8695,8 +8899,8 @@ msgstr ""
 #: 950.data.seed-values.sql:4625
 msgid "Show evening_phone field on patron registration"
 msgstr ""
-"Zobrazit pole \"telefon večer\" (evening_phone) na kartě registračních údajů "
-"čtenáře"
+"Zobrazit pole Telefonní číslo večer - evening_phone - na kartě registračních "
+"údajů čtenáře"
 
 #: 950.data.seed-values.sql:14750
 msgid "Verification via srfsh"
@@ -8709,8 +8913,8 @@ msgstr "Povolit uživateli, yby určil, zda jiný uživatel může půjčit exem
 #: 950.data.seed-values.sql:704
 msgid "Allow a user to override the copy_is_reference event"
 msgstr ""
-"Povolit uživateli obejít událost \"exemplář pro prezenční výpůjčku\" "
-"(copy_is_reference)"
+"Povolit uživateli obejít událost Exemplář pouze  pro prezenční výpůjčku - "
+"copy_is_reference"
 
 #: 950.data.seed-values.sql:6588
 msgid "Beja"
@@ -8744,7 +8948,7 @@ msgstr "Datum vydání a datum copyrightu"
 
 #: 950.data.seed-values.sql:3305
 msgid "Has Local Copy Block"
-msgstr "Blok \"Má lokální exemplář\""
+msgstr "Blokace typu Je k dispozici lokální exemplář"
 
 #: 950.data.seed-values.sql:6909
 msgid "Samaritan Aramaic"
@@ -8761,6 +8965,10 @@ msgstr "Povolit uživateli zobrazení nákupu od dodavatele"
 #: 950.data.seed-values.sql:16239
 msgid "Vandelay Default Copy Location"
 msgstr "Přednastavené umístění exempláře pro Vandelay"
+
+#: 950.data.seed-values.sql:17234
+msgid "Buyer ID Qualifier Only Contains Vendcode"
+msgstr "Kvalifikátor ID kupujícího obsahuje pouze kód dodavatele"
 
 #: 950.data.seed-values.sql:8684 950.data.seed-values.sql:8701
 #: 950.data.seed-values.sql:8717 950.data.seed-values.sql:8733
@@ -8786,7 +8994,7 @@ msgstr "Mali "
 
 #: 950.data.seed-values.sql:7195 950.data.seed-values.sql:7890
 msgid "Direct electronic"
-msgstr "Direct electronic"
+msgstr "eletronický zdroj s přímým přístupem"
 
 #: 950.data.seed-values.sql:7783 950.data.seed-values.sql:7812
 #: 950.data.seed-values.sql:8446 950.data.seed-values.sql:8476
@@ -8840,6 +9048,10 @@ msgstr "Formátovat datum podle tohoto vzoru"
 #: 950.data.seed-values.sql:6777
 msgid "Kru"
 msgstr "Kru"
+
+#: 950.data.seed-values.sql:17204
+msgid "Orders Include Copy Call Numbers"
+msgstr "Objednávky obsahují signatury exemplářů"
 
 #: 950.data.seed-values.sql:8238
 msgid "South Sudan "
@@ -8958,7 +9170,7 @@ msgid ""
 msgstr ""
 "Při předpovídání času, po který bude čtenář čekat na splnění rezervaci, toto "
 "je minimum odhadované délky času předpokládaného do půjčení exempláře. "
-"Příklad: \"2 týdny\", 5 \"dní\""
+"Příklad: \"2 týdny\", 5 \"dnů\""
 
 #: 950.data.seed-values.sql:1296
 msgid "ADMIN_ACQ_FUND_TAG"
@@ -9009,6 +9221,10 @@ msgid ""
 msgstr ""
 "Doba před vypršením rezervace, při které má být čtenáři odesláno upozornění. "
 "Příklad: \"5 dnů\", \"1 hodina\""
+
+#: 950.data.seed-values.sql:17225
+msgid "Orders Include Copy Quantities"
+msgstr "Objednávky obsahují množství"
 
 #: 950.data.seed-values.sql:14902
 msgid "Auto-Override Permitted Hold Blocks (Patrons)"
@@ -9169,11 +9385,11 @@ msgid ""
 "digits of phone number\" feature, if enabled. Ex: \"[2-9]\\\\d{2}-\\\\d{3}-"
 "(\\\\d{4})( x\\\\d+)?\" will ignore the extension on a NANP number."
 msgstr ""
-"Regulární výraz pro validaci pole \"telefon ve dne (day_phone) na kartě "
-"registračních údajů čtenáře. Poznámka: první zachycená skupina bude použita "
-"pro nastavení \"poslední čtyři číslice telefonního čísla\". Např.  \"[2-9]\\"
-"\\d{2}-\\\\d{3}-(\\\\d{4})( x\\\\d+)?\"  bude ignorovat rozšíření čísla NANP "
-"(North American Numbering Plan)."
+"Regulární výraz pro validaci pole Telefonní číslo  ve dne - day_phone - na "
+"kartě registračních údajů čtenáře. Poznámka: první zachycená skupina bude "
+"použita pro nastavení \"poslední čtyři číslice telefonního čísla\". Např.  "
+"\"[2-9]\\\\d{2}-\\\\d{3}-(\\\\d{4})( x\\\\d+)?\"  bude ignorovat rozšíření "
+"čísla NANP  - North American Numbering Plan."
 
 #: 950.data.seed-values.sql:7928
 msgid "Robinson"
@@ -9260,8 +9476,8 @@ msgstr "Bulharština"
 msgid ""
 "The Example for validation on the evening_phone field in patron registration."
 msgstr ""
-"Příklad pro validaci pole \"telefon večer\" (evening_phone) na kartě "
-"registračních údajů čtenáře"
+"Příklad pro validaci pole Telefonní číslo večer na kartě registračních údajů "
+"čtenáře."
 
 #: 950.data.seed-values.sql:8339
 msgid "Continuing resource ceased publication"
@@ -9367,8 +9583,8 @@ msgid ""
 "for this setting should be the top org in the org hierarchy, otherwise "
 "patrons can trample their user settings when jumping between orgs."
 msgstr ""
-"Aktuálně používání  SMS zahrnuje akce \"Rezervace k vyzvednutní a  \"Poslat "
-"textovou zprávu\" pro signatury v OPACu. Pokud toto nastavení není "
+"Aktuálně používání  SMS zahrnuje akce Rezervace k vyzvednutí a  Poslat "
+"textovou zprávu pro signatury v OPACu. Pokud toto nastavení není "
 "aktivnováno, možnost zaslání SMS nebude uživatelům nabídnuta. Pokud pečlivě "
 "nehlídáte uživatele a jejich využívání OPACu,  jako kontextová organizační "
 "jednotky by měla být uvedena nejvyšší organizační jednotka v  hierarchii,  "
@@ -9496,7 +9712,7 @@ msgid ""
 "Showing a field makes it appear with required fields even when not required. "
 "If the field is required this setting is ignored."
 msgstr ""
-"Pole \"číslo dokladu\" (ident_value) bude zobrazena při registraci čtenáře. "
+"Pole Číslo dokladu   - ident_value - bude zobrazena při registraci čtenáře. "
 "Při této volbě se pole zobrazí s povinnými poli i když není povinné. Pokud "
 "je pole povinné, je toto nastavení ignorováno."
 
@@ -9594,8 +9810,8 @@ msgstr "Bugiština"
 msgid ""
 "Default status when a copy is created using the \"Fast Add\" interface."
 msgstr ""
-"Výchozí status při vytvoření exempláře s použitím volby \"Rychlé přidání "
-"exempláře\"."
+"Výchozí status při vytvoření exempláře s použitím volby Rychlé přidání "
+"exempláře."
 
 #: 950.data.seed-values.sql:1524
 msgid ""
@@ -9616,10 +9832,6 @@ msgstr "Přednahrání pro čtečku e-knih"
 #: 950.data.seed-values.sql:5372
 msgid "Friends"
 msgstr "Přátelé"
-
-#: 950.data.seed-values.sql:13285
-msgid "Sears List of Subject Headings"
-msgstr "Mrtvá větev věcného třídění"
 
 #: 950.data.seed-values.sql:3758
 msgid "Mark barcode(s) of subordinate user(s) in a patron merge as inactive"
@@ -9652,10 +9864,10 @@ msgid ""
 "Suggesting a field makes it appear when suggested fields are shown. If the "
 "field is shown or required this setting is ignored."
 msgstr ""
-"Pole \"alias\" bude na kartě registračních údajů čtenáře zobrazeno jako "
-"navrhované. Navrhovaná pole se zobrazí, pokud je aktivní volba \"zobrazit "
-"navrhovaná pole\". Pokud je pole zobrazeno nebo je povinné, je toto "
-"nastavení ignorováno."
+"Pole Alias bude na kartě registračních údajů čtenáře zobrazeno jako "
+"navrhované. Navrhovaná pole se zobrazí, pokud je aktivní volba Zobrazit "
+"navrhovaná pole. Pokud je pole zobrazeno nebo je povinné, je toto nastavení "
+"ignorováno."
 
 #: 950.data.seed-values.sql:3506
 msgid ""
@@ -9665,7 +9877,7 @@ msgid ""
 msgstr ""
 "Přeskočit transakce offline prodloužení (při zpracování vyvolat výjimku) "
 "pokud čas změny statusu je novější než čas zaznamenané transakce. POZOR: "
-"může být vyvoláno i změnou statusu z \"dnes vráceno\" na \"volné\"."
+"může být vyvoláno i změnou statusu z Dnes vráceno na Dostupné."
 
 #: 950.data.seed-values.sql:6707
 msgid "Greek, Ancient (to 1453)"
@@ -9710,7 +9922,7 @@ msgstr "Turečtina"
 
 #: 950.data.seed-values.sql:7490
 msgid "Published"
-msgstr "Publikováno"
+msgstr "Vydáno"
 
 #: 950.data.seed-values.sql:4814
 msgid "Suggest suffix field on patron registration"
@@ -9767,11 +9979,11 @@ msgid ""
 "the copy's circ lib is the same as the hold's pickup lib."
 msgstr ""
 "Pokud je  v dané organizační jednotce nebo jejích podřízených jednotkách "
-"hodnota nastavena na \"pravda\", program pro směřování rezervací bude "
-"přiřazovat k rezervacím exempláře z této organizační jednotky i když je tato "
-"organizační jednotka zavřené (Podle tabulky actor.org_unit.closed_date) "
-"pouze tehdy, jestliže se výpůjční knihovna shoduje s knihovnou pro "
-"vyzvednutí rezervace."
+"hodnota nastavena na Pravda, program pro směřování rezervací bude přiřazovat "
+"k rezervacím exempláře z této organizační jednotky i když je tato "
+"organizační jednotka zavřená (podle nastavení v tabulce "
+"actor.org_unit.closed_date) POUZE tehdy, jestliže se výpůjční knihovna "
+"shoduje s knihovnou pro vyzvednutí rezervace."
 
 #: 950.data.seed-values.sql:4977
 msgid ""
@@ -9780,9 +9992,10 @@ msgid ""
 "closed (according to the actor.org_unit.closed_date table)."
 msgstr ""
 "Pokud je  v dané organizační jednotce nebo jejích podřízených jednotkách "
-"hodnota nastavena na \"pravda\", program pro směřování rezervací bude "
-"přiřazovat k rezervacím exempláře z této organizační jednotky i když je tato "
-"organizační jednotka zavřené (podle  tabulky actor.org_unit.closed_date)."
+"hodnota nastavena na Pravda, program pro směřování rezervací bude přiřazovat "
+"k rezervacím exempláře z této organizační jednotky i když je tato "
+"organizační jednotka zavřené (podle nastavení v tabulce "
+"actor.org_unit.closed_date)."
 
 #: 950.data.seed-values.sql:1514
 msgid "Allows viewing of configurable user setting types."
@@ -9808,8 +10021,8 @@ msgstr ""
 msgid ""
 "The day_phone field will be required on the patron registration screen."
 msgstr ""
-"Pole \"telefon ve dne \" (day_phone) bude požadováno na kartě registračních "
-"údajů čtenáře jako povinné"
+"Pole Telefonní číslo  ve dne  - day_phone - bude požadováno na kartě "
+"registračních údajů čtenáře jako povinné"
 
 #: 950.data.seed-values.sql:3137
 msgid ""
@@ -9827,7 +10040,7 @@ msgid ""
 "screen. Showing a field makes it appear with required fields even when not "
 "required. If the field is required this setting is ignored."
 msgstr ""
-"Pole \"počte údajně vrácených\" (claims_returned_count) bude zobrazeno na "
+"Pole Počet údajně vrácených  - claims_returned_count - bude zobrazeno na "
 "kartě registračních údajů čtenáře s požadovanými poli i v případě, že není "
 "povinné. Pokud je pole povinné, bude toto nastavení  ignorováno."
 
@@ -9961,22 +10174,29 @@ msgid ""
 "When true, the patron summary sidebar will collapse after a new patron sub-"
 "interface is selected."
 msgstr ""
-"Pokud je nastaveno hodnota \"pravda\" boční lišta s přehledem údajů o "
-"čtenáři se zavře při volbě jiné karty čtenářského konta"
+"Pokud je nastavena hodnota Pravda,  boční lišta s přehledem údajů o čtenáři "
+"se zavře při volbě jiné karty čtenářského konta."
 
 #: 950.data.seed-values.sql:7973 950.data.seed-values.sql:8667
 #: 950.data.seed-values.sql:8677
 msgid "Playing cards"
 msgstr "Hrací karty"
 
+#: 950.data.seed-values.sql:16782
+msgid ""
+"Set the default height for the leftmost item print label. Please include a "
+"unit of measurement that is valid CSS. For example, \"1in\" or \"2.5cm\""
+msgstr ""
+"Nastavení výchozí výšky levého tiskového štítku. Použijte prosím měrné "
+"jedntoky, které jsou platné v  CSS. Například \"1in\" nebo \"2,5cm\""
+
 #: 950.data.seed-values.sql:644
 msgid "Allow a user to create a new in-house-use "
-msgstr "Povolit živateli vytvořit novou prezenční výpůjčku "
+msgstr "Povolit uživateli vytvořit novou prezenční výpůjčku "
 
 #: 950.data.seed-values.sql:4535
 msgid "Show dob field on patron registration"
-msgstr ""
-"Zobrazit pole \"datum narození\" na kartě registračních údajů čtenáře"
+msgstr "Zobrazit pole Datum narození na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:1276
 msgid "Allows user records to be merged"
@@ -9984,7 +10204,7 @@ msgstr "Povolí sloučení uživatelských záznamů"
 
 #: 950.data.seed-values.sql:1635
 msgid "Allow a user to mark an item status as 'discard'"
-msgstr "Povolit uživateli označit status exempláře jako 'vyřazeno'"
+msgstr "Povolit uživateli označit status exempláře jako 'Vyřazeno'"
 
 #: 950.data.seed-values.sql:5079
 msgid "Default Merge Profile (Z39.50 and Record Buckets)"
@@ -10000,7 +10220,7 @@ msgid ""
 "This can be \"enum\" or \"chron\"."
 msgstr ""
 "Výchozí zobrazení seskupení distribucí seriálů v OPACu. Může to být "
-"\"číslování\" nebo \"chronologie\" (\"enum\" nebo \"chron\")."
+"\"číslování\" nebo \"chronologie\"."
 
 #: 950.data.seed-values.sql:16756
 msgid "OverDrive Basic Token"
@@ -10031,6 +10251,10 @@ msgstr "Maroko "
 msgid "CREATE_HOURS_OF_OPERATION"
 msgstr "CREATE_HOURS_OF_OPERATION"
 
+#: 950.data.seed-values.sql:16901
+msgid "Display related headings (see-also) in browse"
+msgstr "Při procházení zobrazovat související záhlaví (viz též)"
+
 #: 950.data.seed-values.sql:8133
 msgid "Jordan "
 msgstr "Jordánsko "
@@ -10055,8 +10279,7 @@ msgstr "Němčina, dolní (plattdeutsch)"
 
 #: 950.data.seed-values.sql:4544
 msgid "Suggest dob field on patron registration"
-msgstr ""
-"Navrhnout  pole \"datum narození\" na kartě registračních údajů čtenáře"
+msgstr "Navrhnout  pole Datum narození na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:1572
 msgid "Allows a user to view circ- and hold-related action/trigger events"
@@ -10069,23 +10292,27 @@ msgid "Allow a user to create/view/update/delete a copy location order"
 msgstr ""
 "Povolit uživateli vytvořit / zobrazit / změnit / smazat pořadí lokací"
 
+#: 950.data.seed-values.sql:8235
+msgid "South Africa "
+msgstr "Jižní Afrika "
+
 #: 950.data.seed-values.sql:4799
 msgid ""
 "The second_given_name field will be suggested on the patron registration "
 "screen. Suggesting a field makes it appear when suggested fields are shown. "
 "If the field is shown or required this setting is ignored."
 msgstr ""
-"Pole \"druhé jméno\" (second_given_name) bude na kartě registračních údajů "
+"Pole Druhé jméno  - second_given_name - bude na kartě registračních údajů "
 "čtenáře zobrazeno jako navrhované.  Navrhovaná pole se zobrazí, pokud je "
-"aktivována volba \"zobrazit navrhovaná pole\". Pokud je pole zobrazené nebo "
-"je povinné, bude toto nastavení ignorováno."
+"aktivována volba Zobrazit navrhovaná pole. Pokud je pole zobrazené nebo je "
+"povinné, bude toto nastavení ignorováno."
 
 #: 950.data.seed-values.sql:910
 msgid ""
 "Allows staff to manually change a patron's claims never checkout out count"
 msgstr ""
-"Povolí uživateli manuální úpravu čtenářova \"počtu údajně nikdy "
-"nevypůjčených\""
+"Povolí uživateli manuální úpravu  Počtu údajně nikdy nevypůjčených ve "
+"čtenářském kontě"
 
 #: 950.data.seed-values.sql:1360
 msgid "ADMIN_Z3950_SOURCE"
@@ -10185,7 +10412,7 @@ msgstr "Doba pro automatické prodloužení při výpůjčce"
 #: 950.data.seed-values.sql:4499
 msgid "Show day_phone field on patron registration"
 msgstr ""
-"Zobrazit pole \"telefon přes den na kartě registračních údajů čtenáře"
+"Zobrazit pole Telefonní číslo ve dne na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:16458 950.data.seed-values.sql:16461
 msgid "Void lost item processing fee when claims returned"
@@ -10251,12 +10478,12 @@ msgstr "Unikátní přihlášení Mgt"
 msgid "Record In-House Use: # of uses threshold for Are You Sure? dialog."
 msgstr ""
 "Zaznamenat prezenční výpůjčku: práh pro maximální počet použití (výpůjček) v "
-"dialogu \"Opravu chcete zaznamenat prezenční výpůjčku?\""
+"dialogu Opravu chcete zaznamenat prezenční výpůjčku?"
 
 #: 950.data.seed-values.sql:4733
 msgid "Require other_phone field on patron registration"
 msgstr ""
-"Požadovat pole \"jiný telefon\" (other_phone) na kartě registračních údajů "
+"Požadovat pole Další telefon - other_phone - na kartě registračních údajů "
 "čtenáře"
 
 #: 950.data.seed-values.sql:6551
@@ -10299,9 +10526,9 @@ msgid ""
 "Suggesting a field makes it appear when suggested fields are shown. If the "
 "field is shown or required this setting is ignored."
 msgstr ""
-"Pole \"upozornění\" (alert_message) se na kartě registračních údajů čtenáře "
+"Pole Upozornění  - alert_message -  se na kartě registračních údajů čtenáře "
 "zobrazí jako navrhované. Navrhovaná pole jsou zobrazena, pokud je aktivována "
-"volba \"zobrazit navrhovaná pole\". Pokud je pole zobrazeno nebo je povinné, "
+"volba Zobrazit navrhovaná pole. Pokud je pole zobrazeno nebo je povinné, "
 "bude toto nastavení ignorováno."
 
 #: 950.data.seed-values.sql:1224
@@ -10317,6 +10544,10 @@ msgstr "Fidžijština"
 #: 950.data.seed-values.sql:1653
 msgid "Allow a user to create an authority record"
 msgstr "Povolit uživateli vytvořit autoritní záznam"
+
+#: 950.data.seed-values.sql:17240
+msgid "Order Lineitems Include Author Info"
+msgstr "Položky objednávky obsahují informace o autorovi"
 
 #: 950.data.seed-values.sql:8252
 msgid "Swaziland "
@@ -10435,7 +10666,7 @@ msgstr "Užvatel smí vytvořit položku ve statistické kategorii pro exemplá�
 #: 950.data.seed-values.sql:4670
 msgid "Suggest ident_value2 field on patron registration"
 msgstr ""
-"Navrhnou pole \"číslo druhého identifikačního dokladu\" (ident_value2)na "
+"Navrhnou pole Číslo druhého identifikačního dokladu - ident_value2 - na "
 "kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:6773
@@ -10490,13 +10721,13 @@ msgid ""
 "a field makes it appear with required fields even when not required. If the "
 "field is required this setting is ignored."
 msgstr ""
-"Pole \"nezletilý\" (juvenile) bude zobrazeno na kartě registračních údajů "
-"čtenáře spolu s povinnými poli i v případě, že není povinné. Pokud je pole "
-"povinne, bude toto nastavení ignorováno"
+"Pole Nezletilý bude zobrazeno na kartě registračních údajů čtenáře spolu s "
+"povinnými poli i v případě, že není povinné. Pokud je pole povinne, bude "
+"toto nastavení ignorováno"
 
 #: 950.data.seed-values.sql:4886
 msgid "Example for phone fields on patron registration"
-msgstr "Příklad pro pole \"telefon\" na kartě registračních údajů čtenáře"
+msgstr "Příklad pro pole Telefon na kartě registračních údajů čtenáře"
 
 # id::clm.value__hin
 #: 950.data.seed-values.sql:6721
@@ -10545,7 +10776,7 @@ msgstr "Záznam odkazující na podrozdělení -- všeobecné podrozdělení"
 msgid ""
 "The Example for validation on the other_phone field in patron registration."
 msgstr ""
-"Příklad pro validaci pole \"další telefon\"(other_phone) na kartě "
+"Příklad pro validaci pole Další telefon  - other_phone - na kartě "
 "registračních údajů čtenáře."
 
 #: 950.data.seed-values.sql:7940
@@ -10596,7 +10827,7 @@ msgstr "Galicijština"
 #: 950.data.seed-values.sql:4382
 msgid "Suggest alert_message field on patron registration"
 msgstr ""
-"Navrhnout pole \"upozornění\" (alert_message) na kartě registračních údajů "
+"Navrhnout pole Upozornění  - alert_message - na kartě registračních údajů "
 "čtenáře"
 
 #: 950.data.seed-values.sql:790
@@ -10617,13 +10848,13 @@ msgid ""
 "Showing a field makes it appear with required fields even when not required. "
 "If the field is required this setting is ignored."
 msgstr ""
-"Pole \"upozornění\" (alert_message) bude zobrazeno na kartě registračních "
+"Pole Upozornění - alert_message - bude zobrazeno na kartě registračních "
 "údajů čtenáře i v případě, že není povinné. Pokud je pole povinné, bude toto "
 "nastavení ignorováno."
 
 #: 950.data.seed-values.sql:4850
 msgid "Suggest State field on patron registration"
-msgstr "Navrhnout pole \"stát\" na kartě registračních údajů čtenáře"
+msgstr "Navrhnout pole Stát na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:8038
 msgid "Burma "
@@ -10660,10 +10891,10 @@ msgid ""
 "Suggesting a field makes it appear when suggested fields are shown. If the "
 "field is shown or required this setting is ignored."
 msgstr ""
-"Pole \"další telefon\" (other_phone) bude navrženo na kartě registračních "
+"Pole Další telefon - other_phone - bude navrženo na kartě registračních "
 "údajů čtenáře. Navrhovaná pole se zobrazí, pokud je aktivována volba "
-"\"zobrazit navrhovaná pole\". Pokud je pole zobrazeno nebo je povinné, bude "
-"toto nastavení ignorováno."
+"Zobrazit navrhovaná pole. Pokud je pole zobrazeno nebo je povinné, bude toto "
+"nastavení ignorováno."
 
 #: 950.data.seed-values.sql:3737
 msgid "Suppress Hold Transits Group"
@@ -10710,6 +10941,14 @@ msgstr "Wolofština"
 msgid "Set the default font size for spine and pocket labels"
 msgstr "Nastavit výchozí velikost fontu pro hřbetní a knižní štítky"
 
+#: 950.data.seed-values.sql:731
+msgid ""
+"Allow a user to cancel a copy transit if the user is at the transit "
+"destination or source"
+msgstr ""
+"Povolit uživatel zrušit přepravu exempláře pokud se uživatel nachází ve "
+"výchozí nebo cílové destinaci"
+
 #: 950.data.seed-values.sql:14798
 msgid "Max user activity entries to retrieve (staff client)"
 msgstr ""
@@ -10736,6 +10975,10 @@ msgstr "Glóbus"
 #: 950.data.seed-values.sql:570
 msgid "* no longer applicable"
 msgstr "* již nelze použít"
+
+#: 950.data.seed-values.sql:16872
+msgid "Item Print Label - Call Number Wrap Filter Width"
+msgstr "Tiskový štítek exempláře - Šířka filtru pro zalomení signatur"
 
 #: 950.data.seed-values.sql:6631
 msgid "Coptic"
@@ -10917,6 +11160,10 @@ msgid ""
 "Default display grouping for serials distributions presented in the OPAC."
 msgstr "Výchozí seskupení pro zobrazení distribucí seriálů v OPACu"
 
+#: 950.data.seed-values.sql:15281
+msgid "Default provider to use during ACQ file upload"
+msgstr "Výchozí dodavatel pro použití během nahrání souborů v akvizici"
+
 #: 950.data.seed-values.sql:13966
 msgid "AT&T Enterprise Paging"
 msgstr "Stránkování AT&T Enterprise"
@@ -10939,7 +11186,7 @@ msgstr "Směrování odkazu viz též --věcné téma"
 
 #: 950.data.seed-values.sql:9461
 msgid "A patron acquisition request has been marked Received."
-msgstr "Akviziční požadavek čtenáře byl označen jako \"přijato\""
+msgstr "U akvizičního požadavku čtenáře došlo ke změně na Přijato"
 
 #: 950.data.seed-values.sql:4182
 msgid "Patron Opt-In Default"
@@ -10978,7 +11225,7 @@ msgstr "Prohlížení dočasných termínů"
 #: 950.data.seed-values.sql:754
 msgid "Allow a user to add/remove users to/from the \"Cataloger\" group"
 msgstr ""
-"Povolit uživateli přidat/odebrat uživatel do/ze skupiny \"Katalogizátoři\""
+"Povolit uživateli přidat/odebrat uživatel do/ze skupiny \"Katalogizátor\""
 
 #: 950.data.seed-values.sql:786
 msgid "Allow a user to place multiple holds on a single title"
@@ -11011,7 +11258,7 @@ msgstr "Seznamů na stránku"
 #: 950.data.seed-values.sql:4070
 msgid "Use external \"library information URL\" in copy table, if available"
 msgstr ""
-"Použít externí URL pro informace o knihovně v tabulce exemplářů, pokud "
+"Použít externí \"URL pro informace o knihovně\" v tabulce exemplářů, pokud "
 "existuje"
 
 #: 950.data.seed-values.sql:6613
@@ -11028,7 +11275,7 @@ msgstr "CREATE_INVOICE"
 
 #: 950.data.seed-values.sql:4832
 msgid "Require State field on patron registration"
-msgstr "Vyžadovat pole \"stát\" na kartě registračních údajů čtenáře"
+msgstr "Vyžadovat pole Stát na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:4502
 msgid ""
@@ -11036,7 +11283,7 @@ msgid ""
 "a field makes it appear with required fields even when not required. If the "
 "field is required this setting is ignored."
 msgstr ""
-"Pole \"telefon ve dne\" (day_phone) bude zobrazeno na kartě registračních "
+"Pole Telefon ve dne  - day_phone - bude zobrazeno na kartě registračních "
 "údajů čtenáře i když není povinné. Pokud je pole povinné, toto nastavení "
 "bude ignorováno"
 
@@ -11179,6 +11426,10 @@ msgstr "Ukraina "
 msgid "Serials and magazines"
 msgstr "Seriály a časopisy"
 
+#: 950.data.seed-values.sql:17228
+msgid "Orders Include Copy IDs"
+msgstr "Objednávky obsahují ID exempláře"
+
 # id::clm.value__umb
 #: 950.data.seed-values.sql:7000
 msgid "Umbundu"
@@ -11205,7 +11456,7 @@ msgstr "zpoždění_max"
 #: 950.data.seed-values.sql:4061
 msgid "Library information URL (such as \"http://example.com/about.html\")"
 msgstr ""
-"URL pro informace o knihovně (např. \"http://example.com/about.html!)"
+"URL pro informace o knihovně (např. \"http://priklad.cz/o_knihovne.html\")"
 
 # id::clfm.value__j
 #: 950.data.seed-values.sql:7067
@@ -11222,11 +11473,7 @@ msgstr "Faerské ostrovy "
 
 #: 950.data.seed-values.sql:4364
 msgid "Suggest active field on patron registration"
-msgstr "Navrhnout pole \"aktivní\" na kartě registračních údajů čtenáře"
-
-#: 950.data.seed-values.sql:13279
-msgid "LC subject headings for children's literature"
-msgstr "Věcné třídění Kongresové knihovny pro dětskou literaturu"
+msgstr "Navrhnout pole Aktivní na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:7733 950.data.seed-values.sql:7854
 #: 950.data.seed-values.sql:7873 950.data.seed-values.sql:7990
@@ -11267,8 +11514,8 @@ msgstr ""
 msgid ""
 "The other_phone field will be required on the patron registration screen."
 msgstr ""
-"Pole \"další telefon\" (other_phone) bude na kartě registračních údajů "
-"čtenáře vyžadováno jako povinné."
+"Pole Další telefonní číslo  - other_phone - bude na kartě registračních "
+"údajů čtenáře vyžadováno jako povinné."
 
 # id::clm.value__cpp
 #: 950.data.seed-values.sql:6636
@@ -11313,10 +11560,6 @@ msgstr ""
 msgid "Regular print reproduction"
 msgstr "Reprodukce běžným písmem"
 
-#: 950.data.seed-values.sql:13281
-msgid "National Agricultural Library subject authority file"
-msgstr "Věcné autority National Agricultural Library"
-
 #: 950.data.seed-values.sql:7878 950.data.seed-values.sql:8583
 #: 950.data.seed-values.sql:8604
 msgid "Interviews"
@@ -11342,6 +11585,11 @@ msgstr "Všechny knihy"
 msgid "Serbia "
 msgstr "Srbsko "
 
+#: 950.data.seed-values.sql:17249
+msgid "Lineitem Title, Author, etc. Fields Are Present Even if Empty"
+msgstr ""
+"Pole pro název položky, autora atd. jsou vždy zobrazeny (i když jsou prázdné)"
+
 #: 950.data.seed-values.sql:7769
 msgid "Single map"
 msgstr "Samostatná mapa"
@@ -11361,8 +11609,8 @@ msgstr "Midwest, USA"
 #: 950.data.seed-values.sql:4472
 msgid "Example for day_phone field on patron registration"
 msgstr ""
-"Příklad pro pole \"denní telefon\" (day_phone) na kartě registračních údajů "
-"čtenáře"
+"Příklad pro pole Telefonní číslo ve dne - day_phone - na kartě registračních "
+"údajů čtenáře"
 
 # id::clm.value__sla
 #: 950.data.seed-values.sql:6927
@@ -11410,6 +11658,11 @@ msgstr "Goodsovo homolosinové zobrazení"
 msgid "Allow a user to place a volume level hold"
 msgstr "Povolit uživateli zadat rezervaci na úrovni signatury"
 
+#: 950.data.seed-values.sql:17264
+msgid "Order Copies Always Include Collection Code (Even if Empty)"
+msgstr ""
+"Exempláře na objednávce vždy obsahují kódy sbírky (i když jsou prázdné)"
+
 #: 950.data.seed-values.sql:422 950.data.seed-values.sql:443
 #: 950.data.seed-values.sql:5302
 msgid "Publisher"
@@ -11456,6 +11709,10 @@ msgstr "Slovníky"
 #: 950.data.seed-values.sql:8588
 msgid "Conference proceedings"
 msgstr "Materiály z konferencí"
+
+#: 950.data.seed-values.sql:13165
+msgid "Subject axis"
+msgstr "Předmětová osa"
 
 #: 950.data.seed-values.sql:8031
 msgid "Belize "
@@ -11589,11 +11846,6 @@ msgstr "Chansony, polyfonní"
 msgid "Staff"
 msgstr "Personál"
 
-#: 950.data.seed-values.sql:1518
-msgid "Allows a user to abort a transit on a copy with status of MISSING"
-msgstr ""
-"Povolí uživateli zrušit přepravu exempláře se statusem \"postrádané\""
-
 #: 950.data.seed-values.sql:6569
 msgid "Arawak"
 msgstr "Arawacké jazyky"
@@ -11602,7 +11854,7 @@ msgstr "Arawacké jazyky"
 msgid "Allow a user to add/remove users to/from the \"Supercat\" group"
 msgstr ""
 "Povolit uživateli přidat/odebrat uživatele do/ze skupiny "
-"\"superkatalogizátoři\""
+"\"Superkatalogizátor\""
 
 #: 950.data.seed-values.sql:13124
 msgid "See Also From Tracing -- Form Subdivision"
@@ -11645,7 +11897,7 @@ msgid ""
 "field makes it appear with required fields even when not required. If the "
 "field is required this setting is ignored."
 msgstr ""
-"Pole \"aktivní\" bude zobrazeno na kartě registračních údajů čtenáře spolu s "
+"Pole Aktivní bude zobrazeno na kartě registračních údajů čtenáře spolu s "
 "povinnými poli i když není povinné. Pokud je pole povinné, bude toto "
 "nastavení ignorováno."
 
@@ -11694,7 +11946,7 @@ msgstr "Tato specializovaná knihovna"
 
 #: 950.data.seed-values.sql:1631
 msgid "Allow a user to mark an item status as 'cataloging'"
-msgstr "Povolit uživatel označit status exempláře jako \"katalogizace\""
+msgstr "Povolit uživatel označit status exempláře jako  'Katalogizace'"
 
 #: 950.data.seed-values.sql:473
 msgid "Example Consortium"
@@ -11763,10 +12015,10 @@ msgid ""
 "Suggesting a field makes it appear when suggested fields are shown. If the "
 "field is shown or required this setting is ignored."
 msgstr ""
-"Pole \"číslo identifikačního dokladu\" (ident_value field) bude na kartě "
+"Pole Číslo identifikačního dokladu  - ident_value field - bude na kartě "
 "registračních údajů čtenáře zobrazeno jako navrhované. Navrhovaná pole se "
-"zobrazí, pokud je aktivnována volba \"zobrazit navrhovaná pole\".  Pokud je "
-"toto pole zobrazeno nebo je povinné, bude toto nastavení ignorováno."
+"zobrazí, pokud je aktivnována volba Zobrazit navrhovaná pole.  Pokud je toto "
+"pole zobrazeno nebo je povinné, bude toto nastavení ignorováno."
 
 #: 950.data.seed-values.sql:1490
 msgid "Create/Update/Delete SVF Record Attribute Coded Value Map"
@@ -11907,6 +12159,14 @@ msgstr "Dokument"
 msgid "Booking"
 msgstr "Rezervace zdrojů"
 
+#: 950.data.seed-values.sql:17181
+msgid ""
+"Number of most recently accessed patrons that can be re-retrieved in the "
+"staff client.  A value of 0 or less disables the feature. Defaults to 1."
+msgstr ""
+"Počet posledních čtenářů, jejichž konto může být znovu načteno ve služebním "
+"klientovi. Hodnota 0 nebo menší tuto funkci deaktivuje. Výchozí hodnota je 1."
+
 #: 950.data.seed-values.sql:1138
 msgid "DELETE_IMPORT_TRASH_FIELD"
 msgstr "DELETE_IMPORT_TRASH_FIELD"
@@ -11986,7 +12246,7 @@ msgstr "Literatura ke kurzům"
 #: 950.data.seed-values.sql:4454
 msgid "Suggest claims_returned_count field on patron registration"
 msgstr ""
-"Navrhnout pole \"počet údajně vrácených\" claims_returned) na kartě "
+"Navrhnout pole Počet údajně vrácených - claims_returned - na kartě "
 "registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:1172
@@ -12149,7 +12409,7 @@ msgstr "Pašto (pachto, paštština)"
 
 #: 950.data.seed-values.sql:3620
 msgid "Selfcheck override events list"
-msgstr "Seznam událostí pro \"obejití\" při samoobslužném půjčování"
+msgstr "Seznam událostí pro povolení Obejít při samoobslužném půjčování"
 
 # id::cifm.value__b
 #: 950.data.seed-values.sql:7076 950.data.seed-values.sql:7884
@@ -12306,8 +12566,7 @@ msgstr ""
 #: 950.data.seed-values.sql:4835
 msgid "The State field will be required on the patron registration screen."
 msgstr ""
-"Pole \"Stát\" bude na kartě registračních údajů čtenáře požadováno jako "
-"povinné"
+"Pole Stát bude na kartě registračních údajů čtenáře požadováno jako povinné"
 
 #: 950.data.seed-values.sql:5211
 msgid "Payment amount threshold for Are You Sure? dialog."
@@ -12342,6 +12601,10 @@ msgstr "Lahndština"
 msgid "Phonograph spoken recording"
 msgstr "Mluvený gramofonový záznam"
 
+#: 950.data.seed-values.sql:13166
+msgid "Topic Subject axis"
+msgstr "Osa témat"
+
 #: 950.data.seed-values.sql:7848
 msgid "Chorus score"
 msgstr "Sborová partitura"
@@ -12354,6 +12617,10 @@ msgstr "Barbados "
 #: 950.data.seed-values.sql:6951
 msgid "Sukuma"
 msgstr "Sukuma"
+
+#: 950.data.seed-values.sql:16824
+msgid "Item Print Label - Width for Right Label"
+msgstr "Tisková šablona štítků jednotek - Šírka pro pravý štítek"
 
 #: 950.data.seed-values.sql:2576
 msgid "Patron via OPAC"
@@ -12418,6 +12685,10 @@ msgstr "Záznam odkazující na systemizované záhlaví -- unifikovaný název"
 #: 950.data.seed-values.sql:13728
 msgid "C Beyond"
 msgstr "C Beyond"
+
+#: 950.data.seed-values.sql:16776
+msgid "Item Print Label - Height for Left Label"
+msgstr "Tisková šablona štítků jednotek - Výška pro levý štítek"
 
 #: 950.data.seed-values.sql:1506
 msgid "Update Bibliographic Record Peer Type"
@@ -12562,7 +12833,7 @@ msgid ""
 "Showing a field makes it appear with required fields even when not required. "
 "If the field is required this setting is ignored."
 msgstr ""
-"Pole \"další telefon\" (other_phone) bude zobrazeno na kartě registračních "
+"Pole Další telefon  - other_phone - bude zobrazeno na kartě registračních "
 "údajů čtenáře  s požadovanými poli, i když není povinné. Pokud je pole "
 "povinné, toto nastavení je ignorováno."
 
@@ -12668,7 +12939,7 @@ msgid ""
 "Do not include outstanding Claims Returned circulations in lump sum tallies "
 "in Patron Display."
 msgstr ""
-"Nezahrnovat nevyřízené \"údajně vrácené výpůjčky\" mezi souhrn záznamů v "
+"Nezahrnovat nevyřízené Údajně vrácené výpůjčky mezi souhrn záznamů v "
 "zobrazení čtenářského konta"
 
 #: 950.data.seed-values.sql:6834
@@ -12691,12 +12962,8 @@ msgid ""
 msgstr ""
 "Varovat, pokud se blíží datum expirace registrace. Pokud je tato volba "
 "aktivní, ve služebním klientovi se během uvedeného počtu dní před vypršením "
-"čtenářské registrace zobrazí varování. Hodnotou je počet dnů, např. \"3\" "
-"pro tři dny."
-
-#: 950.data.seed-values.sql:1516
-msgid "Allows a user to abort a transit on a copy with status of LOST"
-msgstr "Povolit uživateli zrušit přepravu exempláře se statusem \"ztraceno\""
+"čtenářské registrace zobrazí varování. Hodnotou je počet dnů, např. 3 pro "
+"tři dny."
 
 #: 950.data.seed-values.sql:122
 msgid "Translated Title"
@@ -12716,7 +12983,7 @@ msgstr "Zrušená přeprava"
 
 #: 950.data.seed-values.sql:3076
 msgid "Claim Never Checked Out: Mark copy as missing"
-msgstr "Údajně nevypůjčené: označit exempláře jako \"postrádané\""
+msgstr "Údajně nevypůjčené: označit exempláře jako Postrádané"
 
 #: 950.data.seed-values.sql:988
 msgid "DELETE_NET_ACCESS_LEVEL"
@@ -12790,7 +13057,7 @@ msgstr "Minimální poměr kvality pro výchozí hodnotu při uploadu"
 #: 950.data.seed-values.sql:4556
 msgid "The Example for validation on the email field in patron registration."
 msgstr ""
-"Příklad pro validaci pole \"e-mail\" na kartě registračních údajů čtenáře"
+"Příklad pro validaci pole E-mail na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:7781 950.data.seed-values.sql:7810
 #: 950.data.seed-values.sql:8444 950.data.seed-values.sql:8474
@@ -12810,7 +13077,6 @@ msgstr "Fugy"
 msgid "See From Tracing -- Form Subdivision"
 msgstr "Směrování odkazu viz  -- formální zpřesnění"
 
-# id::cit.name__3
 #: 950.data.seed-values.sql:275 950.data.seed-values.sql:7112
 #: 950.data.seed-values.sql:7777 950.data.seed-values.sql:7856
 #: 950.data.seed-values.sql:7879 950.data.seed-values.sql:7948
@@ -12821,13 +13087,21 @@ msgstr "Směrování odkazu viz  -- formální zpřesnění"
 #: 950.data.seed-values.sql:8658 950.data.seed-values.sql:8669
 #: 950.data.seed-values.sql:8679 950.data.seed-values.sql:13287
 msgid "Other"
-msgstr "Ostatní"
+msgstr "Jiný"
 
 #: 950.data.seed-values.sql:8345
 msgid ""
 "Date of distribution/release/issue and production/recording session when "
 "different"
 msgstr "Datum distribuce/uvolnění/vydání a produkce/nahrávání, pokud se liší"
+
+#: 950.data.seed-values.sql:733
+msgid ""
+"Allow a user to cancel a copy transit if the user is not at the transit "
+"source or dest"
+msgstr ""
+"Povolit uživateli zrušit přepravu exempláře pokud uživatel není ve výchozí "
+"nebo cílové destinaci"
 
 #: 950.data.seed-values.sql:16133
 msgid "Allow Patron Self-Registration"
@@ -12844,6 +13118,10 @@ msgstr "Směrování odkazu viz též -- všeobecné zpřesnění"
 #: 950.data.seed-values.sql:1332
 msgid "ADMIN_INVOICE_METHOD"
 msgstr "ADMIN_INVOICE_METHOD"
+
+#: 950.data.seed-values.sql:17270
+msgid "Lineitem Reference Field (RFF) Uses Lineitem ID Only"
+msgstr "Refereční pole položky (RPP) používá pouze ID položky"
 
 #: 950.data.seed-values.sql:7896
 msgid "Instrumental parts"
@@ -12892,7 +13170,7 @@ msgstr ""
 #: 950.data.seed-values.sql:878
 msgid "Allow a user to mark an item status as 'inter-library loan'"
 msgstr ""
-"Povolit uživateli označit status exempláře jako \"meziknihovní výpůjčku\""
+"Povolit uživateli označit status exempláře jako 'Meziknihovní výpůjčka'"
 
 #: 950.data.seed-values.sql:1290
 msgid "ADMIN_ACQ_DISTRIB_FORMULA"
@@ -12991,12 +13269,20 @@ msgid ""
 msgstr ""
 "Časový úsek, po jehož uplynutí není povoleno naúčtování záporných poplatků "
 "(refundací) za materiály po výpůjční lhůtě. Společně s tímto nastavením musí "
-"být nastavena hodnota \"pravda\" u volby  \"zakázat naúčtování záporných "
+"být nastavena hodnota \"Pravda\" u volby  \"Zakázat naúčtování záporných "
 "poplatků za materiály po výpůjční lhůtě\"."
 
 #: 950.data.seed-values.sql:7378
 msgid "text"
 msgstr "text"
+
+#: 950.data.seed-values.sql:16830
+msgid ""
+"Set the default width for the rightmost item print label. Please include a "
+"unit of measurement that is valid CSS. For example, \"1in\" or \"2.5cm\""
+msgstr ""
+"Nastavení výchozí šířky pravého tiskového štítku. Použijte prosím měrné "
+"jednotky, kterou jsou platné v CSS. Například \"1in\" nebo \"2,5cm\""
 
 #: 950.data.seed-values.sql:1436
 msgid "UPDATE_USER_BTYPE"
@@ -13005,7 +13291,7 @@ msgstr "UPDATE_USER_BTYPE"
 #: 950.data.seed-values.sql:4796
 msgid "Suggest second_given_name field on patron registration"
 msgstr ""
-"Navrhnout pole \"druhé jméno\" (second_given_name) na kartě registračních "
+"Navrhnout pole Druhé jméno  - second_given_name - na kartě registračních "
 "údajů čtenáře"
 
 #: 950.data.seed-values.sql:8124
@@ -13067,6 +13353,10 @@ msgstr ""
 "Počet sekund, po které se má čekat, než bude znovu obnoveno rozhraní pro "
 "samoobslužnou registraci, abys se vyčistily citlivé údaje."
 
+#: 950.data.seed-values.sql:17122
+msgid "Format Date+Time with this pattern"
+msgstr "Formátovat datum+čast podle tohoto vzoru"
+
 #: 950.data.seed-values.sql:1182
 msgid "UPDATE_ORG_UNIT_SETTING.circ.selfcheck.alert_on_checkout_event"
 msgstr "UPDATE_ORG_UNIT_SETTING.circ.selfcheck.alert_on_checkout_event"
@@ -13101,8 +13391,8 @@ msgid ""
 "Allow a user to check in or check out an item that has a status of 'claims "
 "returned'"
 msgstr ""
-"Povolit uživateli vrátit nebo pujčit exemplář, který más status \"údajně "
-"vráceno\""
+"Povolit uživateli vrátit nebo pujčit exemplář, který más status Údajně "
+"vráceno"
 
 #: 950.data.seed-values.sql:2618 950.data.seed-values.sql:2619
 msgid "OPAC Search Location"
@@ -13165,8 +13455,8 @@ msgid ""
 "Potential copies from org units with the same weight are chosen at random."
 msgstr ""
 "Organizační jednotky mohou být sekupeny do skupin pro cílení rezervací "
-"založených na \"váze\". Potenciální exempláře z organizačních jednotek se "
-"stejnou \"váhou\" jsou vybírány náhodně."
+"založených na výpočtu vah. Potenciální exempláře z organizačních jednotek se "
+"stejnou váhou jsou vybírány náhodně."
 
 #: 950.data.seed-values.sql:1354
 msgid "ADMIN_USER_REQUEST_TYPE"
@@ -13183,8 +13473,7 @@ msgstr "Zrušeno: Přijato beze změny"
 
 #: 950.data.seed-values.sql:12296
 msgid "An overdue circulation should be aged to a Lost status."
-msgstr ""
-"Výpůjčky s uplynulou lhůtou  mají po čase změnit status na \"ztraceno\""
+msgstr "Výpůjčky s uplynulou lhůtou  mají po čase změnit status na Ztraceno"
 
 #: 950.data.seed-values.sql:7670
 msgid "audio cylinder"
@@ -13211,10 +13500,6 @@ msgid "Prohibit negative balance on bills for overdue materials"
 msgstr ""
 "Zakázat  naúčtování záporných poplatků (refundací) za materiály s uplynulou "
 "výpůjční lhůtou."
-
-#: 950.data.seed-values.sql:13278
-msgid "Library of Congress Subject Headings"
-msgstr "Věcné třídění kongresové knihovny"
 
 #: 950.data.seed-values.sql:616
 msgid "User may update a patron statistical category"
@@ -13247,10 +13532,10 @@ msgid ""
 "the URL associated with the \"Library information URL\" library setting "
 "rather than the library information page generated by Evergreen."
 msgstr ""
-"Pokud je hodnota nastavena jako \"pravda\", jméno knihovny v sekci detailů "
+"Pokud je hodnota nastavena jako Pravda, jméno knihovny v sekci detailů "
 "exempláře bude odkazovat na  URL přiřazené jako \"URL informací o knihovně\" "
-"v nastavení knihovny  spíše než na informační stránku knihovny generovanou "
-"Evergreenem."
+"v nastavení knihovny, nikoliv  na stránku s informacemi o knihovně "
+"generovanou Evergreenem."
 
 #: 950.data.seed-values.sql:7478
 msgid "computer"
@@ -13267,6 +13552,18 @@ msgstr "Západní Austrálie "
 #: 950.data.seed-values.sql:12
 msgid "Bilingual"
 msgstr "Dvojjazyčný"
+
+#: 950.data.seed-values.sql:17210
+msgid "Orders Include Copy Barcodes"
+msgstr "Objednávky obsahují čárové kódy exemplářů"
+
+#: 950.data.seed-values.sql:1694
+msgid "Administer copy tag types"
+msgstr "Typy administrace štítků exemplářů"
+
+#: 950.data.seed-values.sql:15026
+msgid "Children's Materials"
+msgstr "Materiály pro děti"
 
 #: 950.data.seed-values.sql:8347
 msgid "Reprint/reissue date and original date"
@@ -13294,6 +13591,10 @@ msgstr "Uživatel smí smazat údaj ze statistické kategorie exemplářů"
 msgid "Macedonian"
 msgstr "Makedonština"
 
+#: 950.data.seed-values.sql:17219
+msgid "Orders Include Copy Owning Library"
+msgstr "Objednávky obsahují vlastickou knihovnu exempláře"
+
 #: 950.data.seed-values.sql:16252
 msgid "Vandelay Default Circulation Modifier"
 msgstr "Výchozí modifikátor výpůjčky pro Vandelay"
@@ -13312,7 +13613,17 @@ msgstr "Kantáty"
 
 #: 950.data.seed-values.sql:4769
 msgid "Show prefix field on patron registration"
-msgstr "Zobrazit pole \"prefix\"na kartě registračních údajů čtenáře"
+msgstr "Zobrazit pole Prefix na kartě registračních údajů čtenáře"
+
+#: 950.data.seed-values.sql:16766
+msgid ""
+"Set the default left margin for the rightmost item print label (or in other "
+"words, the desired space between the two labels). Please include a unit of "
+"measurement that is valid CSS. For example, \"1in\" or \"2.5cm\""
+msgstr ""
+"Nastavení výchozího levého okraje pro pravý tiskový šítek exempláře (tj. "
+"požadovanou mezeru mezi dvěma štítky). Prosím, použijte měrné jednotky, "
+"které jsou platné v CSS, např. \"1in\" nebo \"2.5cm\""
 
 #: 950.data.seed-values.sql:7043
 msgid "Language material"
@@ -13328,7 +13639,8 @@ msgstr "Ugaritština"
 
 #: 950.data.seed-values.sql:4742
 msgid "Show other_phone field on patron registration"
-msgstr "Zobrazit pole \"další telefon\" na kartě registračních údajů čtenáře"
+msgstr ""
+"Zobrazit pole Další telefonní číslo na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:8283
 msgid "United States Misc. Pacific Islands "
@@ -13378,6 +13690,10 @@ msgstr "Vynuceno personálem"
 #: 950.data.seed-values.sql:1418
 msgid "UPDATE_BIB_SOURCE"
 msgstr "UPDATE_BIB_SOURCE"
+
+#: 950.data.seed-values.sql:15028
+msgid "Young Adult Materials"
+msgstr "Materiály pro mladé dospělé"
 
 #: 950.data.seed-values.sql:5009
 msgid "Tag Circulated Items in Results"
@@ -13515,7 +13831,7 @@ msgstr "Litevština"
 
 #: 950.data.seed-values.sql:876
 msgid "Allow a user to mark an item status as 'on order'"
-msgstr "Povolit uživateli označit status exmpláře jako \"objednáno\""
+msgstr "Povolit uživateli označit status exmpláře jako 'Objednáno'"
 
 #: 950.data.seed-values.sql:538
 msgid "Allow a user to create new MARC records"
@@ -13662,9 +13978,9 @@ msgid ""
 "Uncheck bills by default in the patron billing interface, and focus on the "
 "Uncheck All button instead of the Payment Received field."
 msgstr ""
-"V rozhraní pro platby čtenářů jako výchozí nastavení použit \"odznačit "
-"poplatky\" a nastavit kurzor na tlačítko \"Odznačit všechny\" namísto pole "
-"\"Přijato\""
+"V rozhraní pro platby čtenářů jako výchozí nastavení použit Zrušit označení "
+"poplatků  a nastavit kurzor na tlačítko Zrušit označení všech  namísto na "
+"pole Přijetí platby."
 
 #: 950.data.seed-values.sql:12367
 msgid "Import failed due to invalid copy location"
@@ -13751,7 +14067,7 @@ msgstr ""
 #: 950.data.seed-values.sql:4751
 msgid "Suggest other_phone field on patron registration"
 msgstr ""
-"Navrhnout pole \"Další telefon\"  (other_phone) na kartě registračních údajů "
+"Navrhnout pole Další telefon - other_phone - na kartě registračních údajů "
 "čtenáře"
 
 #: 950.data.seed-values.sql:3126
@@ -13762,8 +14078,8 @@ msgid ""
 "counting toward these tallies."
 msgstr ""
 "V zobrazení čtenářského konta se v postranní liště a pod navigačním "
-"tlačítkem  \"Výpůjčky\" zobrazí celkový počet aktivních výpůjček. Toto "
-"nastavení bude zahrnovat také ztracené výpůjčky."
+"tlačítkem  Výpůjčky zobrazí celkový počet aktivních výpůjček. Toto nastavení "
+"bude zahrnovat také ztracené výpůjčky."
 
 #: 950.data.seed-values.sql:6941
 msgid "Sogdian"
@@ -13779,7 +14095,7 @@ msgstr "Kuaňamština"
 
 #: 950.data.seed-values.sql:6439
 msgid "Audience"
-msgstr "Audience"
+msgstr "Čtenářské určení"
 
 #: 950.data.seed-values.sql:7052
 msgid "Notated music"
@@ -13817,6 +14133,15 @@ msgstr "Semitské jazyky (ostatní)"
 msgid "DELETE_IMPORT_ITEM_ATTR_DEF"
 msgstr "DELETE_IMPORT_ITEM_ATTR_DEF"
 
+#: 950.data.seed-values.sql:16750
+msgid ""
+"Set the default left margin for the leftmost item print Label. Please "
+"include a unit of measurement that is valid CSS. For example, \"1in\" or "
+"\"2.5cm\""
+msgstr ""
+"Nastavení výchozího levého kraje pro levý tiskový štítek. Prosím použijte "
+"měrné jednotky, které jsou validní v CSS. Např. \"1in\" nebo \"2.5cm\""
+
 #: 950.data.seed-values.sql:4140
 msgid ""
 "The OPAC should not display payments by patrons that are older than any "
@@ -13833,6 +14158,10 @@ msgstr "objekt"
 msgid "computer chip cartridge"
 msgstr "kartridž počítačového čipu"
 
+#: 950.data.seed-values.sql:16840
+msgid "Item Print Label - Inline CSS"
+msgstr "Tiskové štítky jednotek - inline CSS"
+
 #: 950.data.seed-values.sql:7486
 msgid "audio"
 msgstr "zvuk"
@@ -13848,7 +14177,7 @@ msgstr "hmatová trojrozměrná forma"
 
 #: 950.data.seed-values.sql:4580
 msgid "Show email field on patron registration"
-msgstr "Zobrazit pole \"e-mail\" na kartě registračních údajů čtenáře"
+msgstr "Zobrazit pole E-mail na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:3866
 msgid ""
@@ -13872,9 +14201,13 @@ msgstr "Povolit uživateli kontrolní sadu autorit"
 msgid "Chad "
 msgstr "Čad "
 
+#: 950.data.seed-values.sql:16911
+msgid "Ebook API Integration"
+msgstr "Integrace API pro e-knihy"
+
 #: 950.data.seed-values.sql:15170
 msgid "All Link Checker filter dialogs"
-msgstr "Dialogy  filtrů všech \"link checkerů\""
+msgstr "Všechny dialogy filtrů kontroly odkazů"
 
 #: 950.data.seed-values.sql:2654
 msgid "Default Hold Pickup Location"
@@ -13948,9 +14281,9 @@ msgid ""
 "Suggesting a field makes it appear when suggested fields are shown. If the "
 "field is shown or required this setting is ignored."
 msgstr ""
-"Pole \"e-mail\" bude na kartě registračních údajů čtenáře zobrazeno jako "
-"navrhované. Navrhovaná pole se zobrazí, pokud je aktivována volba \"zobrazit "
-"navrhovaná pole\".  Pokud je toto pole zobrazeno, nebo je povinné, bude toto "
+"Pole E-mail bude na kartě registračních údajů čtenáře zobrazeno jako "
+"navrhované. Navrhovaná pole se zobrazí, pokud je aktivována volba Zobrazit "
+"navrhovaná pole.  Pokud je toto pole zobrazeno, nebo je povinné, bude toto "
 "nastavení ignorováno."
 
 #: 950.data.seed-values.sql:5367
@@ -13960,6 +14293,11 @@ msgstr "Seznam literatury"
 #: 950.data.seed-values.sql:832
 msgid "Allow a user to update a provider"
 msgstr "Povolit uživateli upravit dodavatele"
+
+#: 950.data.seed-values.sql:15005
+msgid "Maximum visible age of User Trigger Events in Staff Interfaces"
+msgstr ""
+"Maximální vidtelné stáří spuštěných událostí uživatele ve služebním klientovi"
 
 #: 950.data.seed-values.sql:9481
 msgid "A patron has made an acquisitions request."
@@ -13982,7 +14320,7 @@ msgid ""
 "field makes it appear with required fields even when not required. If the "
 "field is required this setting is ignored."
 msgstr ""
-"Pole \"prefix\" se zobrazí na kartě registračních údajů čtenáře spolu s "
+"Pole Prefix se zobrazí na kartě registračních údajů čtenáře spolu s "
 "povinnými poli i když není povinné. Pokud je pole povinné, bude toto "
 "nastavení ignorováno."
 
@@ -14061,9 +14399,9 @@ msgstr ""
 msgid "Gibraltar "
 msgstr "Gibraltar "
 
-#: 950.data.seed-values.sql:12368 950.data.seed-values.sql:12369
-msgid "Import failed due to system id collision"
-msgstr "Import se nezdařil kvůli kolizi systémových ID"
+#: 950.data.seed-values.sql:1531
+msgid "Allows a user to cancel a transit on a copy with status of MISSING"
+msgstr "Povolit uživateli zrušit přepravu exempláře se statusem POSTRÁDÁ SE"
 
 #: 950.data.seed-values.sql:518
 msgid "Allow a user to place a hold on a specific copy"
@@ -14093,12 +14431,12 @@ msgid ""
 "is used."
 msgstr ""
 "Toto je status který se používá pro jednotky, které byly označeny nebo "
-"načteny jak \"mají chybějící kusy\".  Pokud toto nastavení chybí, bude "
-"použit status \"Poškozené\""
+"načteny jako jednotky, které Mají chybějící kusy.  Pokud toto nastavení "
+"chybí, bude použit status Poškozené"
 
 #: 950.data.seed-values.sql:860
 msgid "Allow a user to mark an item status as 'checked out'"
-msgstr "Povolit uživateli označit status exempláře jako \"vypůjčeno\""
+msgstr "Povolit uživateli označit status exempláře jako 'Vypůjčeno'"
 
 #: 950.data.seed-values.sql:8176
 msgid "Mexico "
@@ -14122,9 +14460,9 @@ msgid ""
 "The Example for validation on phone fields in patron registration. Applies "
 "to all phone fields without their own setting."
 msgstr ""
-"Příklad pro validaci polí \"telefon\" na kartě registračních údajů čtenáře. "
-"Aplikuje sna na všechna pole s telefonními čísly, která nemají vlastní "
-"natavení."
+"Příklad pro validaci polí  Telefonní číslo  na kartě registračních údajů "
+"čtenáře. Aplikuje sna na všechna pole s telefonními čísly, která nemají "
+"vlastní nastavení."
 
 #: 950.data.seed-values.sql:7510
 msgid "videotape reel"
@@ -14152,27 +14490,42 @@ msgstr ""
 msgid "Patron in person"
 msgstr "Čtenář osobně"
 
+#: 950.data.seed-values.sql:16814
+msgid ""
+"Set the default height for the rightmost item print label. Please include a "
+"unit of measurement that is valid CSS. For example, \"1in\" or \"2.5cm\""
+msgstr ""
+"Nastavení výchozí výšky pro tisk pravého štítku jednotky. Prosím, použijte "
+"měrné jednotky, které jsou validní v CSS. Napříkla \"1in\" nebo  \"2.5cm\""
+
 #: 950.data.seed-values.sql:3872
 msgid "Enable PayflowPro payments"
 msgstr "Povolit platby PayflowPro"
 
 #: 950.data.seed-values.sql:858
 msgid "Allow a user to mark an item status as 'available'"
-msgstr "Povolit uživateli označit status exempláře jako \"volné\""
+msgstr "Povolit uživateli označit status exempláře jako  'Dostupné'"
 
 #: 950.data.seed-values.sql:4823
 msgid "Require county field on patron registration"
 msgstr ""
-"Požadovat pole \"okres\" (county) na kartě registračních údajů čtenáře jako "
-"povinné"
+"Požadovat pole Okres  na kartě registračních údajů čtenáře jako povinné"
+
+#: 950.data.seed-values.sql:17198
+msgid "Orders Include Copy Data"
+msgstr "Objednávky obsahují data exemplářů"
 
 #: 950.data.seed-values.sql:6767
 msgid "Kikuyu"
 msgstr "Kukujština"
 
+#: 950.data.seed-values.sql:16187
+msgid "Vandelay Generate Default Barcodes"
+msgstr "Vandelay Generování standardních kódů"
+
 #: 950.data.seed-values.sql:4805
 msgid "Show suffix field on patron registration"
-msgstr "Zobrazit  pole \"suffix\" na kartě registračních údajů čtenáře"
+msgstr "Zobrazit  pole Suffix na kartě registračních údajů čtenáře"
 
 # id::clm.value__tib
 #: 950.data.seed-values.sql:6973
@@ -14239,8 +14592,7 @@ msgstr "Sumerština"
 
 #: 950.data.seed-values.sql:16173
 msgid "The county field will be shown on the patron registration screen"
-msgstr ""
-"Pole \"okres\" (county) se zobraní na kartě registračních údajů čtenáře"
+msgstr "Pole Okres se zobraní na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:3359
 msgid "Circulation duration that triggers a recall."
@@ -14259,8 +14611,8 @@ msgid ""
 "The Regular Expression for validation on the other_phone field in patron "
 "registration."
 msgstr ""
-"Regulární výraz pro validaci pole \"další telefon\"  (other_phone) na kartě "
-"registračních údajů čtenáře"
+"Regulární výraz pro validaci pole Další telefonní číslo - other_phone - na "
+"kartě registračních údajů čtenáře."
 
 #: 950.data.seed-values.sql:6736 950.data.seed-values.sql:6741
 msgid "Interlingua (International Auxiliary Language Association)"
@@ -14310,8 +14662,8 @@ msgid ""
 msgstr ""
 "Časový úsek, po jehož uplynutí není povoleno naúčtování záporných poplatků "
 "(refundací) k poplatkům za ztracené/dlouhodobě nevrácené materiály. Současně "
-"s tímto nastavením musí být nastavena hodnota \"pravda\" u volby \"Zakázat "
-"naúčtování záporných poplatků za ztracené materiály."
+"s tímto nastavením musí být nastavena hodnota \"Pravda\" u volby \"Zakázat "
+"naúčtování záporných poplatků za ztracené materiály\"."
 
 #: 950.data.seed-values.sql:1344
 msgid "ADMIN_ORG_UNIT_SETTING_TYPE"
@@ -14344,8 +14696,8 @@ msgstr "Kašmírí"
 #: 950.data.seed-values.sql:4508
 msgid "Suggest day_phone field on patron registration"
 msgstr ""
-"navrhnout pole \"Denní telefon\" (day_phone) na kartě registračních údajů "
-"čtenáře"
+"Navrhnout pole \"Telefonní číslo ve dne - day_phone - na kartě registračních "
+"údajů čtenáře"
 
 #: 950.data.seed-values.sql:6713
 msgid "Haida"
@@ -14370,8 +14722,8 @@ msgid ""
 "Allow a user to add/remove users to/from the \"Circulation Administrator\" "
 "group"
 msgstr ""
-"Povolit uživateli přidat/odebrat uživatele do/ze skupiny \"personál u "
-"výpůjčního pultu - administrátor\" (circulation administrator)"
+"Povolit uživateli přidat/odebrat uživatele do/ze skupiny \"Personál u "
+"výpůjčního pultu - administrátor\""
 
 #: 950.data.seed-values.sql:7522
 msgid "volume"
@@ -14387,7 +14739,7 @@ msgstr "Formát zvukového záznamu"
 
 #: 950.data.seed-values.sql:714
 msgid "Allow a user to remove the lost status from a copy"
-msgstr "Povolit uživateli zrušit u exempláře status \"ztraceno\""
+msgstr "Povolit uživateli zrušit u exempláře status Ztraceno"
 
 # id::vqbrad.description__3
 #: 950.data.seed-values.sql:5293
@@ -14396,7 +14748,7 @@ msgstr "Jazyk díla"
 
 #: 950.data.seed-values.sql:15182 950.data.seed-values.sql:15188
 msgid "Link Checker's URL Selection interface's saved columns"
-msgstr "Uložené sloupce rozhraní pro výběr URL \"Link checkeru\""
+msgstr "Uložené sloupce výběru URL v rozhraní pro kontrolu odkazů"
 
 #: 950.data.seed-values.sql:6544
 msgid "Afar"
@@ -14470,10 +14822,14 @@ msgid ""
 "Suggesting a field makes it appear when suggested fields are shown. If the "
 "field is shown or required this setting is ignored."
 msgstr ""
-"Pole \"blokován\" (barred) bude na kartě registračních údajů čtenáře "
-"zobrazeno jako navrhované. Navrhovaná pole se zobrazí, pokud je aktivována "
-"volba \"zobrazit navrhovaná pole\". Pokud je pole zobrazeno nebo je povinné, "
-"toto nastavení bude ignorováno."
+"Pole Blokován - barred - bude na kartě registračních údajů čtenáře zobrazeno "
+"jako navrhované. Navrhovaná pole se zobrazí, pokud je aktivována volba "
+"Zobrazit navrhovaná pole. Pokud je pole zobrazeno nebo je povinné, toto "
+"nastavení bude ignorováno."
+
+#: 950.data.seed-values.sql:16760
+msgid "Item Print Label - Left Margin for Right Label"
+msgstr "Tiskové štítky jednotek - Levý okraj pro pravý štítek"
 
 #: 950.data.seed-values.sql:602
 msgid "Allow a user to view other users' permission groups"
@@ -14498,7 +14854,7 @@ msgstr "M-II"
 #: 950.data.seed-values.sql:4574
 msgid "The email field will be required on the patron registration screen."
 msgstr ""
-"Pole \"e-mail\" bude na kartě registračních údajů čtenáře požadováno jako "
+"Pole E-mail bude na kartě registračních údajů čtenáře požadováno jako "
 "povinné."
 
 #: 950.data.seed-values.sql:1304
@@ -14553,7 +14909,7 @@ msgstr "Idaho "
 
 #: 950.data.seed-values.sql:868
 msgid "Allow a user to mark an item status as 'in process'"
-msgstr "Povolit uživateli označit status jednotky jako \"zpracovává se\""
+msgstr "Povolit uživateli označit status jednotky jako  'Zpracovává se'"
 
 # id::clm.value__sus
 #: 950.data.seed-values.sql:6953
@@ -14612,7 +14968,7 @@ msgid ""
 "Showing a field makes it appear with required fields even when not required. "
 "If the field is required this setting is ignored."
 msgstr ""
-"Pole \"Číslo druhého identifikačního dokladu\" bude zobrazeno na kartě "
+"Pole Číslo druhého identifikačního dokladu bude zobrazeno na kartě "
 "registračních údajů čtenáře s požadovanými poli i když není povinné. Pokud "
 "je pole povinné, bude toto nastavení ignorováno."
 
@@ -14652,11 +15008,15 @@ msgstr "UPDATE_CIRC_DURATION"
 
 #: 950.data.seed-values.sql:4391
 msgid "Show alias field on patron registration"
-msgstr "Zobrazit pole \"alias\" na kartě registračních údajů čtenáře"
+msgstr "Zobrazit pole Alias na kartě registračních údajů čtenáře"
 
 #: 950.data.seed-values.sql:1520
 msgid "Allows a user to override the TRANSIT_CHECKIN_INTERVAL_BLOCK event"
 msgstr "Povolit uživateli obejít událost  TRANSIT_CHECKIN_INTERVAL_BLOCK"
+
+#: 950.data.seed-values.sql:210
+msgid "All Creators"
+msgstr "Všichni tvůrci"
 
 #: 950.data.seed-values.sql:4634
 msgid "Suggest evening_phone field on patron registration"
@@ -14675,3 +15035,156 @@ msgstr "Kiribati "
 #: 950.data.seed-values.sql:7717
 msgid "Flamenco"
 msgstr "Flamenco"
+
+# id::clm.value''in__gwi
+#~ msgid "Gwich"
+#~ msgstr "Gwich'in"
+
+#~ msgid "Holds: Block Renewal of Items Needed for Holds"
+#~ msgstr ""
+#~ "Rezervace: Blokovat prodloužení exemplářů nutných pro splnění rezervací"
+
+#~ msgid "Example Branch 2"
+#~ msgstr "Vzorová pobočka 2"
+
+#~ msgid ""
+#~ "Circulation: Maximum concurrently active self-serve password reset requests"
+#~ msgstr ""
+#~ "Výpůjčky: Maximum současně aktivních požadavků na nové nastavení hesla"
+
+#~ msgid "Holds: Has Local Copy Block"
+#~ msgstr "Rezervace: Lokální exemplář je blokován"
+
+#~ msgid ""
+#~ "Circulation: Maximum concurrently active self-serve password reset requests "
+#~ "per user"
+#~ msgstr ""
+#~ "Výpůjčky: Maximum současně aktivních požadavků na nastavení nového hesla na "
+#~ "uživatele"
+
+#~ msgid "List Published Book Bags"
+#~ msgstr "Vypsat zveřejněné seznamy knih"
+
+#~ msgid "Holds: Clear shelf copy status"
+#~ msgstr "Rezervace: Zrušit status exempláře na regále"
+
+#~ msgid "Example System 1"
+#~ msgstr "Vzorový systém 1"
+
+#~ msgid "Example System 2"
+#~ msgstr "Vzorový systém 2"
+
+#~ msgid "Selfcheck: Workstation Required"
+#~ msgstr "Stanice pro samoobslužné půjčování: Je vyžadována pracovní stanice"
+
+#~ msgid "‡biblios.net"
+#~ msgstr "‡biblios.net"
+
+#~ msgid "Example Branch 4"
+#~ msgstr "Vzorová pobočka 4"
+
+#~ msgid "Example Branch 3"
+#~ msgstr "Vzorová pobočka 3"
+
+#~ msgid "Example Branch 1"
+#~ msgstr "Vzorová pobočka 1"
+
+#~ msgid "Circulation: Self-serve password reset request time-to-live"
+#~ msgstr "Výpůjčky: Životnost požadavku na nastavení nového hesla"
+
+#~ msgid "Example Sub-library 1"
+#~ msgstr "Vzorová dílčí knihovna 1"
+
+#~ msgid "System maintenance, configuration, etc."
+#~ msgstr "Údržba systému, konfigurace apod."
+
+#~ msgid "Local System Administrator"
+#~ msgstr "Správce lokálního systému"
+
+#~ msgid "Selfcheck: Require Patron Password"
+#~ msgstr "Samoobslužná výpůjční stanice: Vyžadovat po čtenáři heslo"
+
+#~ msgid "Example Bookmobile 1"
+#~ msgstr "Vzorová pojízdná knihovna 1"
+
+#~ msgid "Add to Published Book Bags"
+#~ msgstr "Přidat do zveřejněných seznamů knih"
+
+#~ msgid "GUI: Work Log: Maximum Patrons Logged"
+#~ msgstr "GUI: Pracovní deník: maximum přihlášených čtenářů"
+
+#~ msgid "Book Bag"
+#~ msgstr "Seznam knih"
+
+#~ msgid "Appends staff initials and edit date into note content."
+#~ msgstr "Přidává do obsahu poznámky iniciály zaměstnance a datum editace."
+
+#~ msgid "Circ: Cap Max Fine at Item Price"
+#~ msgstr "Výpůjčky: Maximální pokuta je cena exempláře"
+
+#~ msgid "SSN"
+#~ msgstr "Číslo pasu"
+
+#~ msgid ""
+#~ "GUI: Require staff initials for entry/edit of item/patron/penalty "
+#~ "notes/messages."
+#~ msgstr ""
+#~ "GUI: Vyžadovat iniciály personálu pro zadávání/editaci poznámek/zpráv "
+#~ "týkajících se exemplářů/čtenářů/pokut"
+
+#~ msgid "GUI: Work Log: Maximum Actions Logged"
+#~ msgstr "GUI: Pracovní log: maximum zaznamenaných akcí"
+
+#~ msgid "Selfcheck: Audio Alerts"
+#~ msgstr "Samoobslužná výpůjční stanice: Zvuková upozornění"
+
+#~ msgid "Holds: Has Local Copy Alert"
+#~ msgstr "Rezervace: Upozornit, je-li exemplář k dispozici lokálně"
+
+#~ msgid "National Agricultural Library subject authority file"
+#~ msgstr "Věcné autority National Agricultural Library"
+
+#~ msgid "LC subject headings for children's literature"
+#~ msgstr "Věcné třídění Kongresové knihovny pro dětskou literaturu"
+
+#~ msgid "Art and Architecture Thesaurus"
+#~ msgstr "Tezaurus Art and Architecture"
+
+#~ msgid "Library of Congress Subject Headings"
+#~ msgstr "Věcné třídění kongresové knihovny"
+
+#~ msgid "Sears List of Subject Headings"
+#~ msgstr "Mrtvá větev věcného třídění"
+
+#~ msgid "Medical Subject Headings"
+#~ msgstr "Medical Subject Headings"
+
+#~ msgid "Canadian Subject Headings"
+#~ msgstr "Kanadské věcné třídění"
+
+#~ msgid "Repertoire de vedettes-matiere"
+#~ msgstr "Adresář předmětových hesel"
+
+#~ msgid "Allow a user to mark an item as 'missing'"
+#~ msgstr "Povolit uživateli označit exemplář jako \"postrádaný\""
+
+#~ msgid ""
+#~ "Allow a user to abort a copy transit if the user is at the transit "
+#~ "destination or source"
+#~ msgstr ""
+#~ "Povolit uživateli zrušit přepravu exempláře pokud je uživatel v cílové nebo "
+#~ "zdrojové destinaci přepravy."
+
+#~ msgid ""
+#~ "Allow a user to abort a copy transit if the user is not at the transit "
+#~ "source or dest"
+#~ msgstr ""
+#~ "Povolit uživateli zrušit přepravu exemplářů pokud uživatel není v cílové "
+#~ "nebo zdrojové destinaci přepravy,"
+
+#~ msgid "Allows a user to abort a transit on a copy with status of MISSING"
+#~ msgstr ""
+#~ "Povolí uživateli zrušit přepravu exempláře se statusem \"postrádané\""
+
+#~ msgid "Allows a user to abort a transit on a copy with status of LOST"
+#~ msgstr "Povolit uživateli zrušit přepravu exempláře se statusem \"ztraceno\""

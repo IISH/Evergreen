@@ -7,15 +7,15 @@ msgid ""
 msgstr ""
 "Project-Id-Version: evergreen\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: 2017-06-22 05:33+0000\n"
-"PO-Revision-Date: 2017-05-22 09:59+0000\n"
-"Last-Translator: Tobias Bannert <tobannert@gmail.com>\n"
+"POT-Creation-Date: 2017-06-22 06:17+0000\n"
+"PO-Revision-Date: 2017-07-10 02:32+0000\n"
+"Last-Translator: vulpecula <Unknown>\n"
 "Language-Team: German <de@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2017-06-23 06:04+0000\n"
-"X-Generator: Launchpad (build 18416)\n"
+"X-Launchpad-Export-Date: 2017-07-11 05:46+0000\n"
+"X-Generator: Launchpad (build 18419)\n"
 
 #: ../../Open-ILS/src/templates/actor/user/register.tt2:63
 msgid "Active"
@@ -41,11 +41,11 @@ msgstr "Strichcode"
 
 #: ../../Open-ILS/src/templates/actor/user/event_log.tt2:242
 msgid "Cancel Selected Events"
-msgstr ""
+msgstr "Ausgewählte Ereignisse abbrechen"
 
 #: ../../Open-ILS/src/templates/actor/user/event_log.tt2:112
 msgid "Circulation"
-msgstr ""
+msgstr "Zirkulation"
 
 #: ../../Open-ILS/src/templates/actor/user/register.tt2:77
 msgid "Close"
@@ -145,11 +145,11 @@ msgstr ""
 
 #: ../../Open-ILS/src/templates/actor/user/event_log.tt2:291
 msgid "Target Circulation - Author"
-msgstr ""
+msgstr "Zielzirkulation - Autor"
 
 #: ../../Open-ILS/src/templates/actor/user/event_log.tt2:289
 msgid "Target Circulation - Copy Barcode"
-msgstr ""
+msgstr "Zielzirkulation - Barcode kopieren"
 
 #: ../../Open-ILS/src/templates/actor/user/event_log.tt2:292
 msgid "Target Circulation - Patron Barcode"
@@ -157,11 +157,11 @@ msgstr ""
 
 #: ../../Open-ILS/src/templates/actor/user/event_log.tt2:290
 msgid "Target Circulation - Title"
-msgstr ""
+msgstr "Zielzirkulation - Titel"
 
 #: ../../Open-ILS/src/templates/actor/user/event_log.tt2:294
 msgid "Target Hold - Author"
-msgstr ""
+msgstr "Ziel Halten - Autor"
 
 #: ../../Open-ILS/src/templates/actor/user/event_log.tt2:295
 msgid "Target Hold - Patron Barcode"
@@ -169,7 +169,7 @@ msgstr ""
 
 #: ../../Open-ILS/src/templates/actor/user/event_log.tt2:293
 msgid "Target Hold - Title"
-msgstr ""
+msgstr "Ziel Halten - Titel"
 
 #: ../../Open-ILS/src/templates/actor/user/event_log.tt2:2
 msgid "Triggered Event Log"

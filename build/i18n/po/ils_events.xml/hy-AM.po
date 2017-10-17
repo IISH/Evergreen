@@ -1,20 +1,15 @@
-# Armenian translation for evergreen
-# Copyright (c) 2017 Rosetta Contributors and Canonical Ltd 2017
-# This file is distributed under the same license as the evergreen package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
-#
 msgid ""
 msgstr ""
-"Project-Id-Version: evergreen\n"
-"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: 2017-08-25 14:21-0400\n"
-"PO-Revision-Date: 2017-04-09 07:00+0000\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: Armenian <hy@li.org>\n"
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: open-ils-dev@list.georgialibraries.org\n"
+"POT-Creation-Date: 2017-09-03 23:33-0400\n"
+"PO-Revision-Date: 2017-09-06 11:45+0000\n"
+"Last-Translator: TZ <tigran@flib.sci.am>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2017-08-28 05:37+0000\n"
+"X-Launchpad-Export-Date: 2017-09-07 04:37+0000\n"
 "X-Generator: Launchpad (build 18446)\n"
 
 #: 1208.TITLE_LAST_COPY:71
@@ -266,6 +261,10 @@ msgstr "Սպասարկումը էլ չունի մնացող պահումներ"
 msgid "This account is marked as inactive"
 msgstr "Հաշիվը նշված է որպես ոչ ակտիվ"
 
+#: 11008.SERIAL_DISTRIBUTION_NOT_EMPTY:1052
+msgid "The distribution still has dependent objects"
+msgstr "Բաշխումը դեռ ունի կախյալ օբյեկտներ։"
+
 #: 8003.OFFLINE_PARAM_ERROR:948
 msgid "Missing params in offline upload"
 msgstr "Բացակա պարամետրեր ցանցից անջատ բեռնավորման դեպքում"
@@ -273,6 +272,10 @@ msgstr "Բացակա պարամետրեր ցանցից անջատ բեռնավո
 #: 1637.REPORTER_REPORT_FOLDER_NOT_FOUND:562
 msgid "The requested reporter_report_folder was not found"
 msgstr "Հարցվող reporter_report_folder չի գտնված"
+
+#: 11010.SERIAL_CAPTION_AND_PATTERN_NOT_EMPTY:1058
+msgid "The prediction pattern still has dependent objects"
+msgstr "կանխատեսվող օրինակը դեռ ունի կախյալ օբյեկտներ։"
 
 #: 1545.PERM_EX_NOT_FOUND:293
 msgid "The requested perm_ex was not found"
@@ -453,6 +456,10 @@ msgstr "Հարցվող config_metabib_field չի գտնված"
 msgid "The requested actor_org_address was not found"
 msgstr "Հարցվող actor_org_address չի գտնված"
 
+#: 11009.SERIAL_STREAM_NOT_EMPTY:1055
+msgid "The stream still has dependent objects"
+msgstr "հոսքը դեռ ունի կախյալ օբյեկտներ։"
+
 #: 11103.TRANSIT_CHECKIN_INTERVAL_BLOCK:1028
 msgid "Checkin attempted on item during minimum transit checkin interval."
 msgstr ""
@@ -547,6 +554,12 @@ msgstr "Օֆլայն ֆայլը կամ գրադարանը հնարավոր չէ 
 #: 1704.TCN_EXISTS:728
 msgid "A record already exists with the requested TCN value"
 msgstr "Պահանջվող TCN արժեքով գրառում արդեն առկա է"
+
+#: 1225.TRANSIT_ABORT_NOT_ALLOWED:133
+msgid ""
+"The transit on this item may not be canceled due to the state the item is in"
+msgstr ""
+"Այս նյութի փոխանցումը հնարավոր է չեղյալ չարվի, կապված նյութի վիճակի իհետ"
 
 #: 1.UNKNOWN:17
 msgid "Placeholder event.  Used for development only"
@@ -679,10 +692,9 @@ msgstr "Հարցվող asset_stat_cat_entry չի գտնված"
 msgid "The requested config_non_cataloged_type was not found"
 msgstr "Հարցվող config_non_cataloged_type չի գտնված"
 
-#: 1225.TRANSIT_ABORT_NOT_ALLOWED:133
-msgid ""
-"The transit on this item may not be aborted due to the state the item is in"
-msgstr "Այս նյութի համար տրանզիտը չի կարող վիժեցվել, ելնելով նյութի վիճակից"
+#: 1716.COPY_LOCATION_NOT_EMPTY:716
+msgid "The copy location is not empty"
+msgstr "Պատճենի տեղաբաշխումը դատարկ չէ։"
 
 #: 1542.CONFIG_LANGUAGE_MAP_NOT_FOUND:284
 msgid "The requested config_language_map was not found"
@@ -763,10 +775,6 @@ msgstr "Պահանջվող աշխատանքային կայանի օբյեկտը 
 #: 1628.MONEY_BILLING_NOT_FOUND:534
 msgid "The requested money_billing was not found"
 msgstr "Հարցվող money_billing չի գտնված"
-
-#: 1716.COPY_LOCATION_NOT_EMPTY:716
-msgid "The copy location is not empty"
-msgstr "Պատճենի տեղաբաշխումը դատարկ չէ։"
 
 #: 1507.CONTAINER_ITEM_NOT_FOUND:215
 msgid ""
@@ -1344,3 +1352,30 @@ msgstr ""
 #: 1604.MONEY_USER_SUMMARY_NOT_FOUND:463
 msgid "The requested money_user_summary was not found"
 msgstr "Հարցվող money_user_summary չի գտնված"
+
+#~ msgid "This requested item is currently on the holds shelf"
+#~ msgstr "Պահանջվող նյութը գտնվում է պահումների ցուցակում"
+
+#~ msgid "Copy has is marked as lost"
+#~ msgstr "Օրինակը նշված է որպես կորած"
+
+#~ msgid "The selecte bill has already been voided"
+#~ msgstr "Ընտրված հաշիվը արդեն հեռացվել է"
+
+#~ msgid ""
+#~ "The transit on this item may not be aborted due to the state the item is in"
+#~ msgstr "Այս նյութի համար տրանզիտը չի կարող վիժեցվել, ելնելով նյութի վիճակից"
+
+#~ msgid "Copy has is marked as missing"
+#~ msgstr "Օրինակը նշված է որպես բացակա"
+
+#~ msgid "The requested acq.po_lineitem was not found"
+#~ msgstr "Պահանջվող acq.po_lineitem չի գտնված"
+
+#~ msgid ""
+#~ "A *TERRIBLE* problem has occurred: a credit card transaction was processed "
+#~ "successfuly, but the patron's payment could not be recorded within "
+#~ "Evergreen.  Please seek assistance."
+#~ msgstr ""
+#~ "*ԱՀԱՎՈՐ* պրոբլեմ է համդիպել, կրեդիտ քարտի տրանզակցիան հաջող է կատարվել, բայց "
+#~ "ընթերցողի վճարումը հնարավոր չէ գրանցել Էվեռգռինի ներսում: Դիմիր օգնության"

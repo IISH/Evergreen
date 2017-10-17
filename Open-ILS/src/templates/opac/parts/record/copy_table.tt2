@@ -25,7 +25,11 @@ FOREACH copy_info IN copies;
     END;
 END;
 -%]
-[%- IF has_copies or ctx.foreign_copies; %]
+[%-
+IF has_copies or ctx.foreign_copies;
+  depth = CGI.param('copy_depth').defined ? CGI.param('copy_depth') : CGI.param('depth').defined ? CGI.param('depth') : ctx.copy_summary.last.depth;
+  total_copies = ctx.copy_summary.$depth.count;
+%]
 <table class="table_no_border_space table_no_cell_pad table_no_border" width="100%" id="rdetails_status">
     <thead>
         <tr>
@@ -41,6 +45,7 @@ END;
             <th scope='col'>[% l("Barcode") %]</th>
             <th scope='col'>[% l("Shelving Location") %]</th>
             [%- IF ctx.is_staff %]
+            <th scope='col'>[% l("Circulation Modifier") %]</th>
             <th scope='col'>[% l("Age Hold Protection") %]</th>
             <th scope='col'>[% l("Active/Create Date") %]</th>
             [%- END %]
@@ -69,7 +74,7 @@ END;
     <td>[% bib.target_copy.barcode | html %]</td>
     <td>[% bib.target_copy.location.name | html %]</td>
     <td>[% bib.target_copy.status.name | html %]</td>
-    <td>[% copy_info.due_date | html %]</td>
+    <td>[% date.format(ctx.parse_datetime(copy_info.due_date, copy_info.circ_circ_lib),DATE_FORMAT) %]</td>
 </tr>
    [%- END; # FOREACH peer
 END; # FOREACH bib
@@ -132,8 +137,9 @@ END; # FOREACH bib
                     '<meta property="gtin13" content="' _ attrs.gtin13 _ '" />';
                 END; -%]
             </td>
-            <td property="availableAtOrFrom">[% copy_info.copy_location | html %]</td>
+            <td property="availableAtOrFrom">[%- INCLUDE "opac/parts/location_name_link.tt2"; -%]</td>
             [%- IF ctx.is_staff %]
+            <td>[% copy_info.circ_modifier | html %]</td>
             <td>
                 [% copy_info.age_protect ?
                     ctx.get_crahp(copy_info.age_protect).name : l('None') | html %]
@@ -211,7 +217,7 @@ END; # FOREACH bib
             <td>[%
                 IF copy_info.due_date;
                     date.format(
-                        ctx.parse_datetime(copy_info.due_date),
+                        ctx.parse_datetime(copy_info.due_date, copy_info.circ_circ_lib),
                         DATE_FORMAT
                     );
                 ELSE;
@@ -222,6 +228,17 @@ END; # FOREACH bib
         [% IF copy_info.notes; %]
             [% FOREACH note IN copy_info.notes; %]
                 <tr><td>&nbsp;</td><td class="copy_note" colspan="4" property="description"><strong>[% note.title | html %]:</strong> [% note.value | html %]</td></tr>
+            [% END %]
+        [% END %]
+
+        [% IF copy_info.tags; %]
+            [% FOREACH tag IN copy_info.tags; %]
+                <tr class="copy_tag_row">
+                    <td>&nbsp;</td>
+                    <td class="copy_tag" colspan="4"</td>
+                        <span class="copy_tag_value">[% tag.value | html %]</span>
+                    </td>
+                <tr>
             [% END %]
         [% END %]
 
@@ -256,7 +273,7 @@ END; # FOREACH bib
                     l('Previous [_1]', ctx.copy_offset - new_offset) %]</a>
             </td>
         [%- END %]
-        [%- IF copies.size >= ctx.copy_limit AND NOT serial_holdings %]
+        [%- IF copies.size >= ctx.copy_limit AND NOT serial_holdings AND (ctx.copy_offset + ctx.copy_limit < total_copies) %]
             <td>
                 <a href="[% mkurl('', {copy_offset => ctx.copy_offset + ctx.copy_limit, copy_limit => ctx.copy_limit}) %]">[%
                     l('Next [_1]', ctx.copy_limit) %] &raquo;</a>
@@ -267,14 +284,14 @@ END; # FOREACH bib
         <tr>
             <td>
                 [%- more_copies_limit = 50 %] [%# TODO: config %]
-                [%- IF  ctx.copy_limit != more_copies_limit AND copies.size >= ctx.copy_limit %]
+                [%- IF  ctx.copy_limit != more_copies_limit AND copies.size >= ctx.copy_limit AND ctx.copy_limit < total_copies %]
                     <div class="rdetail_show_copies">
-                        <img src="[% ctx.media_prefix %]/images/plus_sign.png" alt="[% l('Show more copies icon') %]"/>
+                        <img src="[% ctx.media_prefix %]/images/plus_sign.png[% ctx.cache_key %]" alt="[% l('Show more copies icon') %]"/>
                         <a href="[% mkurl('', {copy_limit => more_copies_limit, copy_offset => 0}) %]">[% l('Show more copies') %]</a>
                     </div>
                 [%- ELSIF ctx.copy_limit == more_copies_limit %]
                     <div  class="rdetail_show_copies">
-                        <img src="[% ctx.media_prefix %]/images/minus_sign.png" alt="[% l('Show fewer copies icon') %]"/>
+                        <img src="[% ctx.media_prefix %]/images/minus_sign.png[% ctx.cache_key %]" alt="[% l('Show fewer copies icon') %]"/>
                         <a href="[% mkurl('', {copy_limit => 0, copy_offset => 0}) %]">[% l('Show fewer copies') %]</a>
                     </div>
                 [%- END %]

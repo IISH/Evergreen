@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-09-20 16:54-0500\n"
+"POT-Creation-Date: 2017-08-15 16:41-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -298,7 +298,7 @@ msgid "Forgiving Checkin then Checkout"
 msgstr ""
 
 #: staff.circ.checkout.abort_transit_then_checkout
-msgid "Abort Transit then Checkout"
+msgid "Cancel Transit then Checkout"
 msgstr ""
 
 #: staff.circ.checkout.offer_renewal
@@ -929,11 +929,11 @@ msgid "Receipt Template Editor"
 msgstr ""
 
 #: staff.circ.utils.abort_transits.confirm
-msgid "Are you sure you would like to abort transits for copies: %1$s?"
+msgid "Are you sure you would like to cancel transits for copies: %1$s?"
 msgstr ""
 
 #: staff.circ.utils.abort_transits.title
-msgid "Aborting Transits"
+msgid "Canceling Transits"
 msgstr ""
 
 #: staff.circ.utils.yes
@@ -952,12 +952,12 @@ msgstr ""
 
 #: staff.circ.utils.abort_transits.not_found
 msgid ""
-"This item was no longer in transit at the time of the abort.  Perhaps this "
-"happened from a stale display?"
+"This item was no longer in transit at the time of the cancellation.  Perhaps "
+"this happened from a stale display?"
 msgstr ""
 
 #: staff.circ.utils.abort_transits.unexpected_error
-msgid "Transit not likely aborted."
+msgid "Transit not likely canceled."
 msgstr ""
 
 #: staff.circ.utils.retrieve_patron.failure

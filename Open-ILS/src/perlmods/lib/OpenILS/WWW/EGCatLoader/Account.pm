@@ -12,6 +12,7 @@ use Digest::MD5 qw(md5_hex);
 use Data::Dumper;
 $Data::Dumper::Indent = 0;
 use DateTime;
+use DateTime::Format::ISO8601;
 my $U = 'OpenILS::Application::AppUtils';
 
 sub prepare_extended_user_info {
@@ -1034,6 +1035,22 @@ sub load_place_hold {
     } else {
         $ctx->{default_sms_notify} = '';
     }
+    if ($cgi->param('hold_suspend')) {
+        $ctx->{frozen} = 1;
+        # TODO: Make this support other date formats, not just mm/dd/yyyy.
+        # We should use a date input type on the forms once it is supported by Firefox.
+        # I didn't do that now because it is not available in a general release.
+        if ($cgi->param('thaw_date') =~ m:^(\d{2})/(\d{2})/(\d{4})$:){
+            eval {
+                my $dt = DateTime::Format::ISO8601->parse_datetime("$3-$1-$2");
+                $ctx->{thaw_date} = $dt->ymd;
+            };
+            if ($@) {
+                $logger->warn("ignoring invalid thaw_date when placing hold request");
+            }
+        }
+    }
+
 
     # If we have a default pickup location, grab it
     if ($$user_setting_map{'opac.default_pickup_location'}) {
@@ -1050,6 +1067,8 @@ sub load_place_hold {
         if ($ctx->{phone_notify}) { $hdata->{phone_notify} = $ctx->{phone_notify}; }
         if ($ctx->{sms_notify}) { $hdata->{sms_notify} = $ctx->{sms_notify}; }
         if ($ctx->{sms_carrier}) { $hdata->{sms_carrier} = $ctx->{sms_carrier}; }
+        if ($ctx->{frozen}) { $hdata->{frozen} = 1; }
+        if ($ctx->{thaw_date}) { $hdata->{thaw_date} = $ctx->{thaw_date}; }
         return $hdata;
     };
 
@@ -1289,6 +1308,7 @@ sub attempt_hold_placement {
 
     my @create_targets = map {$_->{target_id}} (grep { !$_->{hold_failed} } @hold_data);
 
+
     if(@create_targets) {
 
         # holdable formats may be different for each MR hold.
@@ -1307,7 +1327,7 @@ sub attempt_hold_placement {
                 patronid => $usr,
                 pickup_lib => $pickup_lib,
                 hold_type => $hold_type,
-                holdable_formats_map => $holdable_formats
+                holdable_formats_map => $holdable_formats,
             }),
             \@create_targets
         );
@@ -1625,7 +1645,7 @@ sub fetch_user_circ_history {
     my %flesh_ops = (
         flesh => 3,
         flesh_fields => {
-            auch => ['target_copy'],
+            auch => ['target_copy','source_circ'],
             acp => ['call_number'],
             acn => ['record']
         },

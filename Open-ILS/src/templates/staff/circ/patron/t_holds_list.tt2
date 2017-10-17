@@ -1,8 +1,9 @@
 <eg-grid
   id-field="id"
-  features="-sort,-multisort"
+  features="clientsort"
   items-provider="gridDataProvider"
-  persist-key="circ.patron.holds">
+  persist-key="circ.patron.holds"
+  dateformat="{{$root.egDateAndTimeFormat}}">
 
   <eg-grid-menu-item handler="place_hold" 
     label="[% l('Place Hold') %]"></eg-grid-menu-item>
@@ -52,11 +53,13 @@
     </a>
   </eg-grid-field>
 
-  <eg-grid-field label="[% l('Patron Barcode') %]" hidden>{{item.patron_barcode}}</eg-grid-field>
-  <eg-grid-field label="[% l('Patron alias') %]" hidden>{{item.patron_alias}}</eg-grid-field>
-  <eg-grid-field label="[% l('Request Date') %]" path='hold.request_time'></eg-grid-field>
-  <eg-grid-field label="[% l('Capture Date') %]" path='hold.capture_time'></eg-grid-field>
-  <eg-grid-field label="[% l('Available Date') %]" path='hold.shelf_time'></eg-grid-field>
+  <eg-grid-field label="[% l('Circulation Modifier') %]" path="copy.circ_modifier" hidden></eg-grid-field>
+  <eg-grid-field label="[% l('Circulation Library') %]" path="copy.circ_lib.shortname" hidden></eg-grid-field>
+  <eg-grid-field label="[% l('Patron Barcode') %]" path="patron_barcode" hidden>{{item.patron_barcode}}</eg-grid-field>
+  <eg-grid-field label="[% l('Patron alias') %]" path="patron_alias" hidden>{{item.patron_alias}}</eg-grid-field>
+  <eg-grid-field label="[% l('Request Date') %]" path='hold.request_time' datatype="timestamp"></eg-grid-field>
+  <eg-grid-field label="[% l('Capture Date') %]" path='hold.capture_time' datatype="timestamp"></eg-grid-field>
+  <eg-grid-field label="[% l('Available Date') %]" path='hold.shelf_time' datatype="timestamp"></eg-grid-field>
   <eg-grid-field label="[% l('Hold Type') %]" path='hold.hold_type'></eg-grid-field>
   <eg-grid-field label="[% l('Pickup Library') %]" path='hold.pickup_lib.shortname'></eg-grid-field>
 
@@ -73,6 +76,8 @@
   <eg-grid-field label="[% l('Queue Position') %]" path='queue_position' hidden></eg-grid-field>
   <eg-grid-field label="[% l('Cancel Cause') %]" path='hold.cancel_cause.label' hidden></eg-grid-field>
   <eg-grid-field path='hold.*' parent-idl-class="ahr" ignore="current_copy" hidden></eg-grid-field>
+  <eg-grid-field label="[% l('Copy Status') %]" path="hold.current_copy.status.name" hidden>
+  </eg-grid-field>
   <eg-grid-field path='copy.*' parent-idl-class="acp" hidden></eg-grid-field>
   <eg-grid-field path='hold.usr.*' parent-idl-class="ahr" hidden></eg-grid-field>
   <eg-grid-field path='hold.usr.card.*' parent-idl-class="ahr" hidden></eg-grid-field>

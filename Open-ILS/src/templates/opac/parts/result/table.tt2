@@ -364,7 +364,7 @@ END;
                                                     [% PROCESS "opac/parts/result/copy_counts.tt2" %]
                                                     [% IF rec.user_circulated %]
                                                     <div class="result_item_circulated">
-                                                        <img src="[% ctx.media_prefix %]/images/green_check.png" alt="[% l('Checked Out Before') %]"/>
+                                                        <img src="[% ctx.media_prefix %]/images/green_check.png[% ctx.cache_key %]" alt="[% l('Checked Out Before') %]"/>
                                                         <span>[% l('I have checked this item out before') %]</span>
                                                     </div>
                                                     [% END %]
@@ -392,10 +392,31 @@ END;
                                                                       hold_source_page => mkurl()}, ['query','tag','subfield','term','_special','sort','page']) %]"
                                                                 [% html_text_attr('title', l('Place Hold on [_1]', attrs.title)) %]
                                                                     class="no-dec" rel="nofollow" vocab=""><img
-                                                                src="[% ctx.media_prefix %]/images/green_check.png"
+                                                                src="[% ctx.media_prefix %]/images/green_check.png[% ctx.cache_key %]"
                                                                 alt=""/><span class="result_place_hold">[% l('Place Hold') %]</span></a>
                                                         </div>
 [%- END -%]
+
+                                                        [%- IF ebook_api.enabled == 'true' && args.ebook %]
+                                                        <div id="[%- rec.id -%]_ebook_checkout" class="results_aux_utils result_util ebook_action hidden">
+                                                            <a href="[% mkurl(ctx.opac_root _ '/myopac/ebook_checkout',
+                                                                {title => args.ebook.ebook_id, vendor => args.ebook.vendor, action => 'checkout'},
+                                                                ['query','tag','subfield','term','_special','sort','page']) %]"
+                                                                [% html_text_attr('title', l('Check Out [_1]', attrs.title)) %]
+                                                                    class="no-dec" rel="nofollow" vocab=""><img
+                                                                src="[% ctx.media_prefix %]/images/green_check.png[% ctx.cache_key %]"
+                                                                alt=""/><span class="result_place_hold">[% l('Check Out E-Item') %]</span></a>
+                                                        </div>
+                                                        <div id="[%- rec.id -%]_ebook_place_hold" class="results_aux_utils result_util ebook_action hidden">
+                                                            <a href="[% mkurl(ctx.opac_root _ '/myopac/ebook_place_hold',
+                                                                {title => args.ebook.ebook_id, vendor => args.ebook.vendor, action => 'place_hold'},
+                                                                ['query','tag','subfield','term','_special','sort','page']) %]"
+                                                                [% html_text_attr('title', l('Place Hold on [_1]', attrs.title)) %]
+                                                                    class="no-dec" rel="nofollow" vocab=""><img
+                                                                src="[% ctx.media_prefix %]/images/green_check.png[% ctx.cache_key %]"
+                                                                alt=""/><span class="result_place_hold">[% l('Place Hold on E-Item') %]</span></a>
+                                                        </div>
+                                                        [%- END -%]
 
                                                     [% IF !ctx.is_meta %]
                                                         <div class="results_aux_utils result_util">
@@ -414,7 +435,7 @@ END;
                                                             %]      
                                                             <a href="[% href %]" class="no-dec" 
                                                                 [% html_text_attr('title', title_label) %] rel="nofollow" vocab="">
-                                                                <img src="[% ctx.media_prefix %]/images/clipboard.png" alt="" />
+                                                                <img src="[% ctx.media_prefix %]/images/clipboard.png[% ctx.cache_key %]" alt="" />
                                                                 [% label %]
                                                             </a>
                                                             [% END %]
@@ -429,7 +450,7 @@ END;
                                                                 href="[% ctx.ext_proto %]://contentcafe2.btol.com/ContentCafeClient/ContentCafe.aspx?UserID=[%- 
                                                                     ENV.OILS_CONTENT_CAFE_USER %]&amp;Password=[%-
                                                                     ENV.OILS_CONTENT_CAFE_PASS %]&amp;ItemKey=[% ident | uri %]&amp;Options=Y" rel="nofollow" vocab="">
-                                                                <img src='[% ctx.media_prefix %]/images/starz.png' alt="[% l('Ratings Icon') %]"/> 
+                                                                <img src='[% ctx.media_prefix %]/images/starz.png[% ctx.cache_key %]' alt="[% l('Ratings Icon') %]"/>
                                                                 <span class="results_reviews">[% l('Reviews &amp; More') %]</span>
                                                             </a>
                                                         </div>
