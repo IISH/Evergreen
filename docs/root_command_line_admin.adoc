@@ -65,6 +65,10 @@ Daemons and services
 
 include::reports/reporter_daemon.adoc[]
 
+include::admin/ebook_api_service.adoc[]
+
+include::admin/hold_targeter_service.adoc[]
+
 include::admin/qstore_service.adoc[]
 
 
@@ -123,6 +127,8 @@ include::admin/aged_circs.adoc[]
 include::admin/purge_holds.adoc[]
 
 include::admin/purge_user_activity.adoc[]
+
+include::admin/backups.adoc[]
 
 UX Administration
 =================

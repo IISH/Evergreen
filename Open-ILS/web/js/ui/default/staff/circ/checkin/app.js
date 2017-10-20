@@ -184,7 +184,7 @@ function($scope , $q , $window , $location , $timeout , egCore , checkinSvc , eg
 
         var row_item = {
             index : checkinSvc.checkins.length,
-            copy_barcode : params.copy_barcode
+            input_barcode : params.copy_barcode
         };
 
         // track the item in the grid before sending the request
@@ -193,11 +193,13 @@ function($scope , $q , $window , $location , $timeout , egCore , checkinSvc , eg
 
         egCirc.checkin(params, options).then(
         function(final_resp) {
-
+            
             row_item.evt = final_resp.evt;
             angular.forEach(final_resp.data, function(val, key) {
                 row_item[key] = val;
             });
+            
+            row_item['copy_barcode'] = row_item.acp.barcode();
 
             if (row_item.mbts) {
                 var amt = Number(row_item.mbts.balance_owed());
@@ -305,14 +307,15 @@ function($scope , $q , $window , $location , $timeout , egCore , checkinSvc , eg
     $scope.showMarkDamaged = function(items) {
         var copy_ids = [];
         angular.forEach(items, function(item) {
-            if (item.acp) copy_ids.push(item.acp.id());
+            if (item.acp) {
+                egCirc.mark_damaged({
+                    id: item.acp.id(),
+                    barcode: item.acp.barcode()
+                })
+
+            }
         });
 
-        if (copy_ids.length) {
-            egCirc.mark_damaged(copy_ids).then(function() {
-                // update grid items?
-            });
-        }
     }
 
     $scope.abortTransit = function(items) {
