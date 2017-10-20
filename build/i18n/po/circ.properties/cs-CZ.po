@@ -7,15 +7,15 @@ msgid ""
 msgstr ""
 "Project-Id-Version: evergreen\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: 2017-08-25 14:21-0500\n"
+"POT-Creation-Date: 2017-09-20 16:54-0500\n"
 "PO-Revision-Date: 2017-09-17 13:59+0000\n"
 "Last-Translator: Eva Cerninakova <Unknown>\n"
 "Language-Team: Czech <cs@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2017-09-18 06:05+0000\n"
-"X-Generator: Launchpad (build 18449)\n"
+"X-Launchpad-Export-Date: 2017-09-23 06:10+0000\n"
+"X-Generator: Launchpad (build 18463)\n"
 
 #: staff.circ.alert
 msgid "Alert"
@@ -74,7 +74,7 @@ msgstr "Špatný čárový kód"
 #: staff.circ.cancel
 msgctxt "staff.circ.cancel"
 msgid "Cancel"
-msgstr "Storno"
+msgstr "Zrušit"
 
 #: staff.circ.barcode.accept
 msgid "Accept Barcode"
@@ -621,7 +621,7 @@ msgstr "Smazat"
 #: staff.circ.copy_status.delete_volumes.cancel
 msgctxt "staff.circ.copy_status.delete_volumes.cancel"
 msgid "Cancel"
-msgstr "Storno"
+msgstr "Zrušit"
 
 #: staff.circ.copy_status.delete_volumes.override
 msgctxt "staff.circ.copy_status.delete_volumes.override"
@@ -692,7 +692,7 @@ msgstr "Přesun"
 #: staff.circ.copy_status.transfer_volume.cancel.label
 msgctxt "staff.circ.copy_status.transfer_volume.cancel.label"
 msgid "Cancel"
-msgstr "Storno"
+msgstr "Zrušit"
 
 #: staff.circ.copy_status.transfer_volume.cancel.accesskey
 msgid "C"

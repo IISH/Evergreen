@@ -228,7 +228,7 @@ Installation instructions
 +
 [source, bash]
 ------------------------------------------------------------------------------
-make STAFF_CLIENT_STAMP_ID=rel_2_12_6 install
+make STAFF_CLIENT_STAMP_ID=rel_2_12_7 install
 ------------------------------------------------------------------------------
 +
 2. The server portion of the staff client expects `http://hostname/xul/server`

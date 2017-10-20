@@ -7,15 +7,15 @@ msgid ""
 msgstr ""
 "Project-Id-Version: evergreen\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: 2017-08-25 14:21-0500\n"
+"POT-Creation-Date: 2017-09-20 16:54-0500\n"
 "PO-Revision-Date: 2017-09-16 12:13+0000\n"
 "Last-Translator: Eva Cerninakova <Unknown>\n"
 "Language-Team: Czech <cs@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2017-09-17 05:31+0000\n"
-"X-Generator: Launchpad (build 18449)\n"
+"X-Launchpad-Export-Date: 2017-09-23 06:18+0000\n"
+"X-Generator: Launchpad (build 18463)\n"
 
 #: common.exception
 msgid ""
@@ -157,7 +157,7 @@ msgstr "Obnovit"
 #: cat.opac.cancel
 msgctxt "cat.opac.cancel"
 msgid "Cancel"
-msgstr "Storno"
+msgstr "Zrušit"
 
 #: cat.opac.record_deleted
 msgid "Record deleted."

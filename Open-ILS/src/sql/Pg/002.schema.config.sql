@@ -91,8 +91,8 @@ CREATE TRIGGER no_overlapping_deps
     BEFORE INSERT OR UPDATE ON config.db_patch_dependencies
     FOR EACH ROW EXECUTE PROCEDURE evergreen.array_overlap_check ('deprecates');
 
-INSERT INTO config.upgrade_log (version, applied_to) VALUES ('1055', :eg_version); -- berick/phasefx
-INSERT INTO config.upgrade_log (version, applied_to) VALUES ('2.12.6', :eg_version);
+INSERT INTO config.upgrade_log (version, applied_to) VALUES ('1078', :eg_version); -- csharp/bshum/gmcharlt
+INSERT INTO config.upgrade_log (version, applied_to) VALUES ('2.12.7', :eg_version);
 
 CREATE TABLE config.bib_source (
 	id		SERIAL	PRIMARY KEY,

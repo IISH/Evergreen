@@ -833,7 +833,8 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
             location : true,
             holdable : true,
             age_protect : true,
-            floating : true
+            floating : true,
+            alert_message : true
         }
     };
 
@@ -1576,6 +1577,7 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
         createSimpleUpdateWatcher('mint_condition');
         createSimpleUpdateWatcher('opac_visible');
         createSimpleUpdateWatcher('ref');
+        createSimpleUpdateWatcher('alert_message');
 
         $scope.saveCompletedCopies = function (and_exit) {
             var cnHash = {};
@@ -1668,7 +1670,16 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
 
                 $scope.ok = function(note) {
 
-                    if (note.initials) note.value += ' [' + note.initials + ']';
+                    if ($scope.initials) {
+                        note.value = egCore.strings.$replace(
+                            egCore.strings.COPY_NOTE_INITIALS, {
+                            value : note.value, 
+                            initials : $scope.initials,
+                            ws_ou : egCore.org.get(
+                                egCore.auth.user().ws_ou()).shortname()
+                        });
+                    }
+
                     angular.forEach(copy_list, function (cp) {
                         if (!angular.isArray(cp.notes())) cp.notes([]);
                         var n = new egCore.idl.acpn();
@@ -2002,6 +2013,7 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
                 createSimpleUpdateWatcher('mint_condition');
                 createSimpleUpdateWatcher('opac_visible');
                 createSimpleUpdateWatcher('ref');
+                createSimpleUpdateWatcher('alert_message');
 
                 $scope.suffix_list = [];
                 itemSvc.get_suffixes(egCore.auth.user().ws_ou()).then(function(list){
