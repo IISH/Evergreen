@@ -1,14 +1,16 @@
-#oai-openils is an openSRF service
+# oai-openils is an openSRF service
 
 This module is an optional service that exposes your catalog through the [OAI2 protocol](http://www.openarchives.org/OAI/openarchivesprotocol.html).
-##1. Intended behaviour
-###1.1 Entry points
+
+## 1. Intended behaviour
+
+### 1.1 Entry points
 There are two: one for bibliographic records and one for authority records:
 
     http://your-domain/opac/extras/oai/authority
     http://your-domain/opac/extras/oai/biblio
  
-###1.2 Setspec are not implemented
+### 1.2 Setspec are not implemented
 
 This is a work in progress and not enabled. The aim is to have the owning library determine the set hierarchy. The Concerto
 test database for example has a record with tcn #1. This record is so popular it has copies attached to library units
@@ -29,10 +31,14 @@ test database for example has a record with tcn #1. This record is so popular it
 </header>
 ```
 Likewise the setSpecs of authority records are derived from their browse axis ( Title, Author, Subject and Topic ).
-###1.3 OAI2 datestamp
+
+### 1.3 OAI2 datestamp
+
 The edit date of the bibliographic and authority record is used as datestamp. If you want the date for editorial updates
 of bibliographic assets ( copies, call numbers ) reflected in the datestamp, then add the triggers shown below.
-###1.4 Bibliographic mapping of assets to 852 subfields
+
+### 1.4 Bibliographic mapping of assets to 852 subfields
+
 Certain attributes asset are placed into 852 subfields so:
 
 | subfield code | asset resource |
@@ -59,11 +65,16 @@ This mapping can be customized and extended with static subfields:
 ```xml
     <marc:subfield code="q">A constant value</marc:subfield>
 ```
-###1.5 Default configuration
+
+### 1.5 Default configuration
+
 All default configuration is commented in the open-ils.oai app_settings element. See below for details on how to
 override defaults by removing the comments and substitute the values.
-##2. Installation
-###2.1 Perl modules
+
+## 2. Installation
+
+### 2.1 Perl modules
+
 Lookup the Perl handler and the associated openils module:
 
  - [Open-ILS/src/perlmods/lib/OpenILS/WWW/OAI.pm](Open-ILS/src/perlmods/lib/OpenILS/WWW/OAI.pm)
@@ -78,7 +89,9 @@ or copy the files (owned by the opensrf user) on your servers that host the open
 
     /the perl library path/OpenILS/Application/OAI.pm
     /the perl library path/OpenILS/WWW/OAI.pm
-###2.2 Declare the perl handler
+
+### 2.2 Declare the perl handler
+
 Declare the Perl handler in the Apache eg_startup file:
 
 ```perl
@@ -101,8 +114,11 @@ In the eg.conf file under 'PerlRequire /etc/apache2/eg_startup' add:
 PerlChildInitHandler OpenILS::WWW::OAI::child_init
 
 ```
-###2.3 The database and fieldmapper
-####2.3.1 Database
+
+### 2.3 The database and fieldmapper
+
+#### 2.3.1 Database
+
 The service requires a view and stored procedures: [Open-ILS/src/sql/Pg/999.seed.iish.sql](Open-ILS/src/sql/Pg/999.seed.iish.sql#L156)
 
 Add the oai section to the database:
@@ -134,7 +150,8 @@ CREATE VIEW oai.authority AS
     are.id;
 ```
 
-####2.3.2 Optional, setting the datestamp
+#### 2.3.2 Optional, setting the datestamp
+
 If you want the OAI2 datestamp to reflect changes in assets as well, add the following triggers
  ```sql
  
@@ -182,7 +199,9 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER call_number_datestamp AFTER INSERT OR UPDATE OR DELETE ON asset.call_number FOR EACH ROW EXECUTE PROCEDURE oai.call_number_datestamp();
 CREATE TRIGGER copy_datestamp AFTER INSERT OR UPDATE OR DELETE ON asset.copy FOR EACH ROW EXECUTE PROCEDURE oai.copy_datestamp(); 
  ```
-####2.3.3 The fieldmapper
+
+#### 2.3.3 The fieldmapper
+
 Proceed by declaring the views in the fm_IDL.xml file so, as the example shows here [Open-ILS/examples/fm_ILD.xml](Open-ILS/examples/fm_IDL.xml):
 
 ```xml
@@ -207,7 +226,9 @@ Proceed by declaring the views in the fm_IDL.xml file so, as the example shows h
     </fields>
 </class>
 ```
-###2.4 The xslt stylesheets
+
+### 2.4 The xslt stylesheets
+
 Lookup the two documents here:
 
  - [Open-ILS/xsl/OAI2_OAIDC.xsl](Open-ILS/xsl/OAI2_OAIDC.xsl)
@@ -219,7 +240,7 @@ Or install them on your servers that host the openils services:
     /<openils sysdir>/var/xsl/OAI2_OAIDC.xsl
     /<openils sysdir>/var/xsl/OAI2_MARC21slim.xsl
     
-###2.5 Dependencies
+### 2.5 Dependencies
 The openils-oai service depends on a running openils-supercat service.
 And the OAI2_OAIDC.xsl document uses the file [MARC21slim2OAIDC.xsl](Open-ILS/xsl/MARC21slim2OAIDC.xsl).
 The service and stylesheet are part of the out-of-the-box Evergreen distributions.
@@ -228,8 +249,11 @@ But do install the ['HTTP::OAI' perl library from a CPAN repository](http://sear
 
     $ cpan HTTP::OAI    
     
-##3. Configuration
-###3.1 Declare the service
+
+## 3. Configuration
+
+### 3.1 Declare the service
+
 Add the openils-oai service to your /&lt;openils sysdir&gt;/conf/opensrf.xml file.
 ```xml
 ....
@@ -343,14 +367,18 @@ Add the openils-oai service to your /&lt;openils sysdir&gt;/conf/opensrf.xml fil
     </app_settings>
 </open-ils.oai>
 ```
-####3.2 Activate the service
+
+#### 3.2 Activate the service
+
 Refer to the service in the opensrf.xml's activeapps element:
 ```xml
 ....
 <activeapps>
     <appname>open-ils.oai</appname>
 ```
-####3.3 Register the service with the router
+
+#### 3.3 Register the service with the router
+
 Add the service to the public router with your /&lt;openils sysdir&gt;/conf/opensrf_core.xml
 ```xml
 <config>
