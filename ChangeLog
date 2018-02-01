@@ -1,21 +1,12 @@
-commit b45392466b205413f0492f0191f7c5ba69ccb04f
+commit 2d23e5beea498f685244b28414e499653cfe11de
 Author: blake <blake@mobiusconsortium.org>
-Date:   Thu Oct 19 14:12:48 2017 -0500
+Date:   Wed Jan 17 15:59:47 2018 -0600
 
-    bumping Perl version string for 2.12.7
+    bumping Perl version string for 2.12.9
     
     Signed-off-by: blake <blake@mobiusconsortium.org>
 
 1	1	Open-ILS/src/perlmods/lib/OpenILS.pm
-
-commit 7c7ba3c1988ef756c3db7629150206b6d1539dc2
-Author: blake <blake@mobiusconsortium.org>
-Date:   Thu Oct 19 13:58:46 2017 -0500
-
-    Translation updates - po files
-    
-    Signed-off-by: blake <blake@mobiusconsortium.org>
-
 3	3	build/i18n/po/AutoFieldWidget.js/ar-JO.po
 4	4	build/i18n/po/AutoFieldWidget.js/cs-CZ.po
 3	3	build/i18n/po/AutoFieldWidget.js/de-DE.po
@@ -36,6 +27,7 @@ Date:   Thu Oct 19 13:58:46 2017 -0500
 3	3	build/i18n/po/FlattenerGrid.js/cs-CZ.po
 3	3	build/i18n/po/FlattenerGrid.js/de-DE.po
 3	3	build/i18n/po/FlattenerGrid.js/en-CA.po
+34	0	build/i18n/po/FlattenerGrid.js/en-GB.po
 3	3	build/i18n/po/FlattenerGrid.js/es-ES.po
 3	3	build/i18n/po/FlattenerGrid.js/fi-FI.po
 3	3	build/i18n/po/FlattenerGrid.js/fr-CA.po
@@ -560,15 +552,18 @@ Date:   Thu Oct 19 13:58:46 2017 -0500
 3	3	build/i18n/po/vandelay.js/pt-BR.po
 144	109	build/i18n/po/webstaff/ar-JO.po
 190	143	build/i18n/po/webstaff/cs-CZ.po
+6519	0	build/i18n/po/webstaff/en-GB.po
 144	109	build/i18n/po/webstaff/es-ES.po
 6539	0	build/i18n/po/webstaff/hy-AM.po
 142	95	build/i18n/po/webstaff/ru-RU.po
+ create mode 100644 build/i18n/po/FlattenerGrid.js/en-GB.po
  create mode 100644 build/i18n/po/acq/ru-RU.po
+ create mode 100644 build/i18n/po/webstaff/en-GB.po
  create mode 100644 build/i18n/po/webstaff/hy-AM.po
 
-commit 61a4289fba09151561b9018ecfcd2f685a1ceaf7
+commit 245611f9d8678f2d2322455dd265ab39ba9ad12c
 Author: blake <blake@mobiusconsortium.org>
-Date:   Thu Oct 19 13:40:08 2017 -0500
+Date:   Wed Jan 17 15:49:08 2018 -0600
 
     cd build/i18n && make newpot
     
@@ -592,6 +587,7 @@ Date:   Thu Oct 19 13:40:08 2017 -0500
 1	1	build/i18n/po/common.properties/common.properties.pot
 1	1	build/i18n/po/conify.dtd/conify.dtd.pot
 1	1	build/i18n/po/conify.js/conify.js.pot
+4	4	build/i18n/po/conify/conify.pot
 1	1	build/i18n/po/db.seed/db.seed.pot
 1	1	build/i18n/po/fm_IDL.dtd/fm_IDL.dtd.pot
 1	1	build/i18n/po/ils_events.xml/ils_events.xml.pot
@@ -610,265 +606,124 @@ Date:   Thu Oct 19 13:40:08 2017 -0500
 1	1	build/i18n/po/selfcheck.js/selfcheck.js.pot
 1	1	build/i18n/po/serial.js/serial.js.pot
 1	1	build/i18n/po/serial.properties/serial.properties.pot
+20	20	build/i18n/po/tpac/tpac.pot
 1	1	build/i18n/po/vandelay.js/vandelay.js.pot
 2	2	build/i18n/po/vandelay/vandelay.pot
-70	65	build/i18n/po/webstaff/webstaff.pot
+123	106	build/i18n/po/webstaff/webstaff.pot
 
-commit f44120947a8dda5047781fbe226d09abab440904
-Author: Kathy Lussier <klussier@masslnc.org>
-Date:   Wed Oct 18 11:58:24 2017 -0400
-
-    Docs: 2.12.7 release notes
-    
-    Signed-off-by: Kathy Lussier <klussier@masslnc.org>
-
-38	0	docs/RELEASE_NOTES_2_12.adoc
-
-commit 176cb1a373d1f3cca1ebca615dc528c90576bbd5
-Author: Cesar Velez <cesar.velez@equinoxinitiative.org>
-Date:   Wed Oct 4 14:01:25 2017 -0400
-
-    LP#1712686 - display completed barcode on copy grids not partial input
-    
-    The check in, check out, and renew interfaces were not displaying
-    the actual complete(d) barcode when barcode completion is on.
-    This saves the inputted partial barcode in row_item.input_barcode
-    and let's the returned acp.barcode be in row_item.copy_barcode for
-    display.
-    
-    Signed-off by: Cesar Velez <cesar.velez@equinoxinitiative.org>
-    
-    Signed-off-by: Mike Rylander <mrylander@gmail.com>
-    Signed-off-by: Kathy Lussier <klussier@masslnc.org>
-
-4	2	Open-ILS/web/js/ui/default/staff/circ/checkin/app.js
-4	1	Open-ILS/web/js/ui/default/staff/circ/patron/checkout.js
-3	1	Open-ILS/web/js/ui/default/staff/circ/renew/app.js
-
-commit 009a5fadab63cffb9915d781b68f4514b2844c69
-Author: Cesar Velez <cesar.velez@equinoxinitiative.org>
-Date:   Thu Sep 28 13:08:48 2017 -0400
-
-    LP#1714060 -  fixes thinko when obeying patron.password.use_phone setting in patron regctl
-    
-    There was a bug, an undefined variable was being used to assign the last
-    four digits of the day_phone to usr.passwd when this library setting
-    was being used.
-    
-    Signed-off by: Cesar Velez <cesar.velez@equinoxinitiative.org>
-    
-    Signed-off-by: Mike Rylander <mrylander@gmail.com>
-    Signed-off-by: Kathy Lussier <klussier@masslnc.org>
-
-1	1	Open-ILS/web/js/ui/default/staff/circ/patron/regctl.js
-
-commit 08d02911341e9ca6a9aa7bd35da459afce169f84
-Author: Cesar Velez <cesar.velez@equinoxinitiative.org>
-Date:   Wed Oct 4 10:49:02 2017 -0400
-
-    LP#1714056 - fix for webstaff patron registration not requiring DOB
-    
-    For some reason the ng-required attribute was not on the dob input
-    control. Setting 'ui.patron.edit.au.dob.require' should now work
-    as intended.
-    
-    Signed-off by: Cesar Velez <cesar.velez@equinoxinitiative.org>
-    
-    Signed-off-by: Mike Rylander <mrylander@gmail.com>
-    Signed-off-by: Kathy Lussier <klussier@masslnc.org>
-
-2	1	Open-ILS/src/templates/staff/circ/patron/t_edit.tt2
-
-commit 8d8dd0dfdd838e01a1b0a00acb452178612d9547
-Author: Cesar Velez <cesar.velez@equinoxinitiative.org>
-Date:   Thu Oct 12 17:31:37 2017 -0400
-
-    LP#1719967 - Add alert message field to volcopy editor
-    
-    As 1676608 was deferred to 3.1, this adds a copy alert_message
-    field, to the volcopy editor. The defaults tab "Alerts" checkbox has
-    been replaced by "Alert Message" and this new field will be active until replaced by
-    the changes of 3.1.
-    
-    Signed-off by: Cesar Velez <cesar.velez@equinoxinitiative.org>
-    
-    Signed-off-by: Mike Rylander <mrylander@gmail.com>
-    Signed-off-by: Kathy Lussier <klussier@masslnc.org>
-
-28	6	Open-ILS/src/templates/staff/cat/volcopy/t_attr_edit.tt2
-3	2	Open-ILS/src/templates/staff/cat/volcopy/t_defaults.tt2
-4	1	Open-ILS/web/js/ui/default/staff/cat/volcopy/app.js
-
-commit 474b67b96258825b2cf1f9fac40e21f775953c87
-Author: Remington Steed <rjs7@calvin.edu>
-Date:   Thu Oct 5 09:26:39 2017 -0400
-
-    LP#1721557 Fix Vandelay export within web client
-    
-    Triggering a file download from dojo pages within the web client
-    requires a new technique. This commit borrows from the acq lineitem
-    table export (acq/common/li_table.js) and applies the technique to the
-    vandelay feature.
-    
-    Signed-off-by: Remington Steed <rjs7@calvin.edu>
-    Signed-off-by: Cesar Velez <cesar.velez@equinoxinitiative.org>
-    Signed-off-by: Galen Charlton <gmc@equinoxinitiative.org>
-    Signed-off-by: Kathy Lussier <klussier@masslnc.org>
-
-1	0	Open-ILS/src/templates/vandelay/vandelay.tt2
-18	7	Open-ILS/web/js/ui/default/vandelay/vandelay.js
-
-commit 3b5528c5ad4d6ad49e8d705485058591198c73ee
-Author: Jeanette Lundgren <jlundgren@cwmars.org>
-Date:   Wed Oct 18 09:58:55 2017 -0400
-
-    DOCS: added tip for patron insensitive search (ignores punctuation)
-    
-    Signed-off-by: Jeanette Lundgren <jlundgren@cwmars.org>
-
-1	0	docs/circulation/circulation_patron_records_web_client.adoc
-
-commit 7c0c5fa8c1d319107ea261d32cee807e9e5f091b
+commit 4efc4724762e1776e56c80888db4349c05368266
 Author: Jane Sandberg <sandbej@linnbenton.edu>
-Date:   Sun Oct 15 10:47:18 2017 -0700
+Date:   Wed Jan 17 11:40:04 2018 -0800
 
-    Docs: 2 new services
+    Release notes for 2.12.9
     
     Signed-off-by: Jane Sandberg <sandbej@linnbenton.edu>
 
-12	0	docs/admin/ebook_api_service.adoc
-5	0	docs/admin/hold_targeter_service.adoc
-4	0	docs/root.adoc
- create mode 100644 docs/admin/ebook_api_service.adoc
- create mode 100644 docs/admin/hold_targeter_service.adoc
+17	0	docs/RELEASE_NOTES_2_12.adoc
 
-commit 668f20aaad579908f5ed662f2feded04f41597f6
-Author: Galen Charlton <gmc@equinoxinitiative.org>
-Date:   Wed Oct 4 12:10:31 2017 -0400
-
-    LP#1666512: stamp DB update
-    
-    Signed-off-by: Galen Charlton <gmc@equinoxinitiative.org>
-    
-    Conflicts:
-    	Open-ILS/src/sql/Pg/002.schema.config.sql
-
-1	1	Open-ILS/src/sql/Pg/002.schema.config.sql
-22	0	Open-ILS/src/sql/Pg/upgrade/1078.data.add_possibly_missing_billing_types.sql
-0	22	Open-ILS/src/sql/Pg/upgrade/XXXX.data.add_possibly_missing_billing_types.sql
- create mode 100644 Open-ILS/src/sql/Pg/upgrade/1078.data.add_possibly_missing_billing_types.sql
- delete mode 100644 Open-ILS/src/sql/Pg/upgrade/XXXX.data.add_possibly_missing_billing_types.sql
-
-commit 58926d081ce8333c64cd1036452b7e80071d421a
+commit f055ff46b9eb702767f7fa8ed074a38d4e7ca727
 Author: Ben Shum <ben@evergreener.net>
-Date:   Thu Sep 14 23:16:32 2017 -0400
+Date:   Wed Sep 20 15:50:44 2017 -0400
 
-    LP#1666512 - Only insert if not already existing
+    LP#1718549: Bump NodeJS version to v6.11.3
     
-    This repatch was requested by Galen Charlton to make it easier for
-    upgrades to avoid adding the entries or failing if the entries already
-    existed.
-    
-    Also drops the unnecessary i18n tagging for the billing type names
-    since it does not work with applying upgrade scripts (only for sourcing
-    db.seed data for translation to PO file)
+    Latest LTS release for NodeJS is v6.11.3. Should update this periodically
+    depending on releases by that community.
     
     Signed-off-by: Ben Shum <ben@evergreener.net>
-    Signed-off-by: Chris Sharp <csharp@georgialibraries.org>
     Signed-off-by: Galen Charlton <gmc@equinoxinitiative.org>
-
-11	6	Open-ILS/src/sql/Pg/upgrade/XXXX.data.add_possibly_missing_billing_types.sql
-
-commit 514f7f430b4280fe1dbdea115e6f029869b73584
-Author: Chris Sharp <csharp@georgialibraries.org>
-Date:   Tue Feb 21 08:03:55 2017 -0500
-
-    LP#1666512 - Add billing types from 2009-era features.
-    
-    For systems that were running Evergreen 1.2 or so and upgraded to 1.4
-    or so, there were billing types added that did not make it into an
-    upgrade script.  We add them here just in case you don't have them.
-    Systems installed since Evergreen 1.4 are probably not affected.
-    
-    Signed-off-by: Chris Sharp <csharp@georgialibraries.org>
-    Signed-off-by: Ben Shum <ben@evergreener.net>
-    Signed-off-by: Galen Charlton <gmc@equinoxinitiative.org>
-
-17	0	Open-ILS/src/sql/Pg/upgrade/XXXX.data.add_possibly_missing_billing_types.sql
- create mode 100644 Open-ILS/src/sql/Pg/upgrade/XXXX.data.add_possibly_missing_billing_types.sql
-
-commit 7eff6f7b459faa2a3b238ff2cf67480c58017622
-Author: Kathy Lussier <klussier@masslnc.org>
-Date:   Wed Sep 27 16:39:04 2017 -0400
-
-    Docs: Adding information on using native browser functionality
-    
-    The section on setting a home page seemed out of place in the Log in section.
-    I moved it to a new section that covers best practices for using the browser,
-    which also includes earlier documentation on using tabs and new documentation
-    on disabling popup blockers.
-    
     Signed-off-by: Kathy Lussier <klussier@masslnc.org>
 
-63	0	docs/admin/web-client-browser-best-practices.adoc
-0	23	docs/admin/web_client-browser-tab-shortcuts.adoc
-0	20	docs/admin/web_client-login.adoc
-1	1	docs/root.adoc
- create mode 100644 docs/admin/web-client-browser-best-practices.adoc
- delete mode 100644 docs/admin/web_client-browser-tab-shortcuts.adoc
+1	1	Open-ILS/src/extras/Makefile.install
 
-commit 0dfae04b5c191bec46e8ebc5332b552ab9c060b4
-Author: Kathy Lussier <klussier@masslnc.org>
-Date:   Wed Sep 27 16:03:44 2017 -0400
+commit 42d453450f813364cda92863468f3c3cd06ffd82
+Author: Ben Shum <ben@evergreener.net>
+Date:   Wed Sep 20 15:49:37 2017 -0400
 
-    Docs: Update login chapter
-    Some things have changed in the web client since this documentation was
-    first created. Removing the note that workstation registration is not required
-    and updating the caution on what happens when exiting the browser.
+    LP#1718549: Use Nodejs source install for all distributions
     
-    Previously, workstation registration was part of installing the staff client,
-    but since we have nothing to install, I added it to the logging in section. I
-    also removed a xul client feature from the main root.adoc.
+    Due to dependency issues and the need for newer NodeJS version, install
+    from source for all distributions, not just the ones without pre-packaged
+    apt sources.
     
+    Signed-off-by: Ben Shum <ben@evergreener.net>
+    Signed-off-by: Galen Charlton <gmc@equinoxinitiative.org>
     Signed-off-by: Kathy Lussier <klussier@masslnc.org>
     
     Conflicts:
-    	docs/admin/web_client-login.adoc
-
-30	7	docs/admin/web_client-login.adoc
--	-	docs/media/web_client_workstation_registration.png
-0	2	docs/root.adoc
- create mode 100644 docs/media/web_client_workstation_registration.png
-
-commit f821fbb435b87f2c0e85d1e4f4d0db8f6f16f507
-Author: Bill Erickson <berickxx@gmail.com>
-Date:   Thu Sep 21 16:04:03 2017 -0400
-
-    LP#1643927 Copy note captures initials; shows date
+    	Open-ILS/src/extras/install/Makefile.debian-jessie
+    	Open-ILS/src/extras/install/Makefile.debian-stretch
+    	Open-ILS/src/extras/install/Makefile.ubuntu-xenial
     
-    Fixes thinko in copy note staff initials tracking.  Offloads the
-    formatting of the copy note to egStrings.  Adds the workstation org unit
-    to the initials block a la the XUL client.
+    Signed-off-by: Kathy Lussier <klussier@masslnc.org>
+
+2	7	Open-ILS/src/extras/install/Makefile.debian-jessie
+0	2	Open-ILS/src/extras/install/Makefile.ubuntu-trusty
+2	7	Open-ILS/src/extras/install/Makefile.ubuntu-xenial
+
+commit 317b3c85f08ee658bc7423088079e647f28d616b
+Author: Ben Shum <ben@evergreener.net>
+Date:   Fri Apr 14 18:33:31 2017 -0400
+
+    LP#1683388:Install newer NodeJS binary for Ubuntu Trusty and Debian Wheezy
     
-    This does not add the create date to the initials block as with the XUL
-    client, because the create date is part of the note.  Instead, we now
-    display the note create date in the copy note display form.
+    We need newer stuff!
     
-    Signed-off-by: Bill Erickson <berickxx@gmail.com>
-    Signed-off-by: Cesar Velez <cesar.velez@equinoxinitiative.org>
-    Signed-off-by: Galen Charlton <gmc@equinoxinitiative.org>
-
-3	0	Open-ILS/src/templates/staff/cat/volcopy/index.tt2
-4	1	Open-ILS/src/templates/staff/cat/volcopy/t_copy_notes.tt2
-10	1	Open-ILS/web/js/ui/default/staff/cat/volcopy/app.js
-
-commit 537ee1d720e12aa803f6e35d02e613c295edc418
-Author: Galen Charlton <gmc@equinoxinitiative.org>
-Date:   Wed Sep 20 22:27:22 2017 -0400
-
-    forward-port 2.12.5-2.12.6 schema update
+    Signed-off-by: Ben Shum <ben@evergreener.net>
+    Signed-off-by: Kathy Lussier <klussier@masslnc.org>
     
-    Signed-off-by: Galen Charlton <gmc@equinoxinitiative.org>
+    Conflicts:
+    	Open-ILS/src/extras/install/Makefile.ubuntu-trusty
+    
+    Signed-off-by: Kathy Lussier <klussier@masslnc.org>
 
-327	0	Open-ILS/src/sql/Pg/version-upgrade/2.12.5-2.12.6-upgrade-db.sql
- create mode 100644 Open-ILS/src/sql/Pg/version-upgrade/2.12.5-2.12.6-upgrade-db.sql
+6	3	Open-ILS/src/extras/Makefile.install
+3	5	Open-ILS/src/extras/install/Makefile.common
+2	5	Open-ILS/src/extras/install/Makefile.ubuntu-trusty
+
+commit 2e9d3f7886c064d6534df7ffa8a4bf045ccd9ba2
+Author: Jeanette Lundgren <jlundgren@cwmars.org>
+Date:   Fri Sep 15 15:06:07 2017 -0400
+
+    Docs: updated note: to NOTE: to fix asciidoc syntax issue
+    
+    Signed-off-by: Jeanette Lundgren <jlundgren@cwmars.org>
+    Signed-off-by: Ben Shum <ben@evergreener.net>
+
+1	1	docs/admin/auto_suggest_search.adoc
+
+commit 7e853d258f17b9672b2de7df10d65bf99edcc2b3
+Author: Jeanette Lundgren <jlundgren@cwmars.org>
+Date:   Tue Dec 26 12:58:19 2017 -0500
+
+    Docs: LP1736571 fix typo done to down
+    
+    Signed-off-by: Jeanette Lundgren <jlundgren@cwmars.org>
+    Signed-off-by: Ben Shum <ben@evergreener.net>
+
+1	1	docs/opac/using_the_public_access_catalog.adoc
+
+commit 3d9a366d51948363cbcaf2b41172e92e1569f457
+Author: Remington Steed <rjs7@calvin.edu>
+Date:   Thu Dec 7 10:55:41 2017 -0500
+
+    Docs: Use new images for in-house use
+    
+    The In-House Use docs previously had new web client screenshots, but a
+    recent commit accidentally reverted them to the old XUL client images.
+    This commit changes the references back to the new images.
+    
+    Signed-off-by: Remington Steed <rjs7@calvin.edu>
+
+2	2	docs/circulation/circulating_items_web_client.adoc
+
+commit 46d23f0f99412a38747d1c418cc589341b92d681
+Author: Dan Wells <dbw2@calvin.edu>
+Date:   Fri Dec 1 16:05:02 2017 -0500
+
+    Forward-port 2.12.8 upgrade script
+    
+    Signed-off-by: Dan Wells <dbw2@calvin.edu>
+
+295	0	Open-ILS/src/sql/Pg/version-upgrade/2.12.7-2.12.8-upgrade-db.sql
+ create mode 100644 Open-ILS/src/sql/Pg/version-upgrade/2.12.7-2.12.8-upgrade-db.sql
