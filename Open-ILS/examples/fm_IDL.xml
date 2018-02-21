@@ -73,7 +73,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 
 <IDL xmlns="http://opensrf.org/spec/IDL/base/v1" xmlns:idl="http://opensrf.org/spec/IDL/base/v1" xmlns:oils_persist="http://open-ils.org/spec/opensrf/IDL/persistence/v1" xmlns:oils_obj="http://open-ils.org/spec/opensrf/IDL/objects/v1" xmlns:reporter="http://open-ils.org/spec/opensrf/IDL/reporter/v1" xmlns:permacrud="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
 
-	<!-- Virtual classes -->
 	<!-- IISH Additions -->
     <class id="xslt_biblio" controller="open-ils.cstore" oils_obj:fieldmapper="extend_reporter::xslt"
            oils_persist:readonly="true" reporter:core="true" reporter:label="XSLT biblio renderings">
@@ -183,23 +182,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
             <link field="runner" reltype="has_a" key="id" map="" class="au"/>
         </links>
     </class>
-
-    <class id="mups" controller="open-ils.cstore" oils_obj:fieldmapper="money::user_payment_summary"
-           oils_persist:virtual="true" reporter:label="User Payment Summary">
-        <fields>
-            <field name="usr" oils_persist:virtual="true"/>
-            <field name="forgive_payment" oils_persist:virtual="true"/>
-            <field name="work_payment" oils_persist:virtual="true"/>
-            <field name="credit_payment" oils_persist:virtual="true"/>
-            <field name="goods_payment" oils_persist:virtual="true"/>
-        </fields>
-        <links>
-            <link field="usr" reltype="has_a" key="id" map="" class="au"/>
-        </links>
-    </class>
 	<!-- IISH Additions end here -->
 
-    <class id="mups" controller="open-ils.cstore" oils_obj:fieldmapper="money::user_payment_summary" oils_persist:virtual="true" reporter:label="User Payment Summary">
+	<!-- Virtual classes -->
+	<class id="mups" controller="open-ils.cstore" oils_obj:fieldmapper="money::user_payment_summary" oils_persist:virtual="true" reporter:label="User Payment Summary">
 		<fields>
 			<field name="usr" oils_persist:virtual="true" />
 			<field name="forgive_payment" oils_persist:virtual="true" />
