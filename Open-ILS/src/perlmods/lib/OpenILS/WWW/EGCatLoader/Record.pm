@@ -89,7 +89,7 @@ sub load_record {
     $ctx->{foreign_copies} = $peer_rec;
 
     my (undef, @rec_data) = $self->get_records_and_facets([$rec_id], undef, {
-        flesh => '{holdings_xml,bmp,mra,acp,acnp,acns}',
+        flesh => '{holdings_xml,bmp,acp,acnp,acns}',
         site => $org_name,
         depth => $depth,
         pref_lib => $pref_ou
@@ -225,7 +225,7 @@ sub load_record {
     # If this record is apart of a meta group, I want to know more
     if ( $mmr_id ) {
         my (undef, @metarecord_data) = $self->get_records_and_facets([$mmr_id], undef, {
-            flesh => '{holdings_xml,mra}',
+            flesh => '{holdings_xml}',
             metarecord => 1,
             site => $org_name,
             depth => $depth,
