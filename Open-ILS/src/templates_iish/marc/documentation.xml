@@ -3,11 +3,13 @@
     <controlfield tag="008">110701k                                d</controlfield>                  
    <datafield tag="040" ind1=" " ind2=" ">
     <subfield code="a">NL-AmISG</subfield>
+    <subfield code="b">eng</subfield>
+    <subfield code="e">rda</subfield>
      </datafield>
 <datafield tag="245" ind1="1" ind2="0">
     <subfield code="a"></subfield>
     <subfield code="k">Collection.</subfield>
-  <subfield code="f"></subfield>
+    <subfield code="f"></subfield>
 	</datafield>
 <datafield tag="300" ind1=" " ind2=" ">
     <subfield code="a"></subfield>

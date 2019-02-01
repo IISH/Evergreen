@@ -2,10 +2,13 @@
     <leader>00620nkm a22     7i 4500</leader>
     <controlfield tag="008">110701s                            zxx d</controlfield>
     <datafield tag="040" ind1=" " ind2=" ">
-        <subfield code="a">NL-AmISG</subfield>
+       <subfield code="a">NL-AmISG</subfield>
+       <subfield code="b">eng</subfield>
+       <subfield code="e">rda</subfield>
     </datafield>
     <datafield tag="100" ind1="1" ind2=" ">
         <subfield code="a"></subfield>
+        <subfield code="d"></subfield>
         <subfield code="e"></subfield>
     </datafield>
     <datafield tag="110" ind1="2" ind2=" ">
@@ -22,16 +25,30 @@
         <subfield code="a"></subfield>
         <subfield code="k">Visual document.</subfield>
     </datafield>
-    <datafield tag="260" ind1=" " ind2=" ">
+    <datafield tag="264" ind1=" " ind2="1">
+        <subfield code="a">[Place of publication not identified :</subfield>
+        <subfield code="b">publisher not identified],</subfield>
         <subfield code="c"></subfield>
-        <subfield code="e"></subfield>
-        <subfield code="f"></subfield>
-        <subfield code="g"></subfield>
-    </datafield>
+       </datafield>
     <datafield tag="300" ind1=" " ind2=" ">
         <subfield code="a"></subfield>
-        <subfield code="g"></subfield>
+        <subfield code="c"></subfield>
     </datafield>
+   <datafield tag="336" ind1=" " ind2=" ">
+    <subfield code="a">still image</subfield>
+    <subfield code="b">sti</subfield>
+    <subfield code="2">rdacontent</subfield>
+      </datafield> 
+   <datafield tag="337" ind1=" " ind2=" ">
+    <subfield code="a">unmediated</subfield>
+    <subfield code="b">n</subfield>
+    <subfield code="2">rdamedia</subfield>
+      </datafield> 
+   <datafield tag="338" ind1=" " ind2=" ">
+    <subfield code="a">sheet</subfield>
+    <subfield code="b">nb</subfield>
+    <subfield code="2">rdacarrier</subfield>
+      </datafield>
     <datafield tag="500" ind1=" " ind2=" ">
         <subfield code="a"></subfield>
     </datafield>
