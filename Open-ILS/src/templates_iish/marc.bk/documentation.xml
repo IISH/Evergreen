@@ -1,0 +1,24 @@
+<record xmlns="http://www.loc.gov/MARC21/slim">
+  <leader>00620npc a22     7i 4500</leader>
+    <controlfield tag="008">110701k                                d</controlfield>                  
+   <datafield tag="040" ind1=" " ind2=" ">
+    <subfield code="a">NL-AmISG</subfield>
+     </datafield>
+<datafield tag="245" ind1="1" ind2="0">
+    <subfield code="a"></subfield>
+    <subfield code="k">Collection.</subfield>
+  <subfield code="f"></subfield>
+	</datafield>
+<datafield tag="300" ind1=" " ind2=" ">
+    <subfield code="a"></subfield>
+         </datafield>
+<datafield tag="500" ind1=" " ind2=" ">
+    <subfield code="a">Printed/mimeographed miscell.documents.</subfield>
+         </datafield>
+<datafield tag="650" ind1=" " ind2="4">
+    <subfield code="a"></subfield>
+     </datafield>
+<datafield tag="651" ind1=" " ind2="4">
+    <subfield code="a"></subfield>
+         </datafield>
+</record>

@@ -1,0 +1,47 @@
+<record xmlns="http://www.loc.gov/MARC21/slim">
+    <leader>00620nkc a22     7i 4500</leader>
+    <controlfield tag="008">110701k                            zxx d</controlfield>
+    <datafield tag="040" ind1=" " ind2=" ">
+        <subfield code="a">NL-AmISG</subfield>
+    </datafield>
+    <datafield tag="100" ind1="1" ind2=" ">
+        <subfield code="a"></subfield>
+        <subfield code="e"></subfield>
+    </datafield>
+  <datafield tag="110" ind1="2" ind2=" ">
+        <subfield code="a"></subfield>
+    </datafield>
+    <datafield tag="245" ind1="1" ind2="0">
+        <subfield code="a"></subfield>
+        <subfield code="k">Photo collection.</subfield>
+    </datafield>
+  <datafield tag="520" ind1=" " ind2=" ">
+        <subfield code="a"></subfield>
+    </datafield>
+    <datafield tag="540" ind1=" " ind2=" ">
+        <subfield code="a">Copyright unknown.</subfield>
+        <subfield code="b"></subfield>
+    </datafield>
+    <datafield tag="541" ind1=" " ind2=" ">
+        <subfield code="a"></subfield>
+        <subfield code="d"></subfield>
+    </datafield>
+    <datafield tag="542" ind1=" " ind2=" ">
+        <subfield code="m">pictoright</subfield>
+    </datafield>
+    <datafield tag="655" ind1=" " ind2="4">
+        <subfield code="a">Archives format.</subfield>
+    </datafield>
+    <datafield tag="700" ind1="1" ind2=" ">
+        <subfield code="a"></subfield>
+        <subfield code="e"></subfield>
+    </datafield>
+    <datafield tag="931" ind1=" " ind2=" ">
+        <subfield code="a"></subfield>
+        <subfield code="b"></subfield>
+        <subfield code="c"></subfield>
+        <subfield code="d"></subfield>
+        <subfield code="e"></subfield>
+        <subfield code="f"></subfield>
+    </datafield>
+</record>
