@@ -2,7 +2,7 @@
 <marc:record xmlns:marc="http://www.loc.gov/MARC21/slim" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/MARC21/slim http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">
 
     <marc:leader>00679nkm a22002417a 4500</marc:leader>
-    <marc:controlfield tag="001">98</marc:controlfield>
+    <marc:controlfield tag="001">1509949</marc:controlfield>
     <marc:controlfield tag="003">NL-AMISG</marc:controlfield>
     <marc:controlfield tag="005">20031016140615.0</marc:controlfield>
     <marc:controlfield tag="008">200310suuuuuuuune                  dut d</marc:controlfield>
@@ -92,9 +92,9 @@
         <marc:subfield code="p">10622/30051001410544</marc:subfield>
     </marc:datafield>
     <marc:datafield ind1=" " ind2=" " tag="901">
-        <marc:subfield code="a">98</marc:subfield>
+        <marc:subfield code="a">1509949</marc:subfield>
         <marc:subfield code="b">Unknown</marc:subfield>
-        <marc:subfield code="c">98</marc:subfield>
+        <marc:subfield code="c">1509949</marc:subfield>
         <marc:subfield code="t">biblio</marc:subfield>
     </marc:datafield>
 </marc:record>

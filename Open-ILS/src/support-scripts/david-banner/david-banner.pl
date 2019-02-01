@@ -417,7 +417,7 @@ SQL
     # Read in and parse each marc file
     my ($records_changed, $records_unchanged, $records_failed, $records_total) = (0, 0, 0, 0);
     foreach my $tcn (@tcns) {
-        my $url = $baseurl . '?verb=GetRecord&metadataPrefix=marcxml&identifier=oai:evergreen.iisg.nl:' . $tcn;
+        my $url = $baseurl . '?verb=GetRecord&metadataPrefix=marcxml&identifier=oai:evergreen.iish.nl:' . $tcn;
         my $bre = $ua->get( $url ) ;
         if (!$bre->is_success) {
             my $e = 'tcn(' . $tcn . '): There was an error calling ' . $url ;
