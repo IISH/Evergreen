@@ -1,3 +1,7 @@
+staff_client/
+scala/
+ignore_iish_utils/
+
 # IDEA
 .idea
 *.ipr

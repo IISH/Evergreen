@@ -4,7 +4,7 @@
     <datafield tag="040" ind1=" " ind2=" ">
        <subfield code="a">NL-AmISG</subfield>
        <subfield code="b">eng</subfield>
-       <subfield code="e">rda</subfield>
+       <subfield code="e">rda</subfield
     </datafield>
     <datafield tag="100" ind1="1" ind2=" ">
        <subfield code="a"></subfield>

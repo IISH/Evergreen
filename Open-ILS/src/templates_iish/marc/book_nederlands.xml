@@ -6,7 +6,7 @@
   </datafield>
   <datafield tag="040" ind1=" " ind2=" ">
     <subfield code="a">NL-AmISG</subfield>
-    <subfield code="b">eng</subfield>
+    <subfield code="b">dut</subfield>
     <subfield code="e">rda</subfield>
      </datafield>
   <datafield tag="100" ind1="1" ind2=" ">
@@ -40,19 +40,19 @@
     <subfield code="a"></subfield>
     </datafield>
    <datafield tag="336" ind1=" " ind2=" ">
-    <subfield code="a">text</subfield>
+    <subfield code="a">tekst</subfield>
     <subfield code="b">txt</subfield>
-    <subfield code="2">rdacontent</subfield>
+    <subfield code="2">rdacontent/dut</subfield>
       </datafield> 
   <datafield tag="337" ind1=" " ind2=" ">
-    <subfield code="a">unmediated</subfield>
+    <subfield code="a">zonder medium</subfield>
     <subfield code="b">n</subfield>
-    <subfield code="2">rdamedia</subfield>
+    <subfield code="2">rdamedia/dut</subfield>
       </datafield> 
   <datafield tag="338" ind1=" " ind2=" ">
-    <subfield code="a">volume</subfield>
+    <subfield code="a">band</subfield>
     <subfield code="b">nc</subfield>
-    <subfield code="2">rdacarrier</subfield>
+    <subfield code="2">rdacarrier/dut</subfield>
       </datafield> 
    <datafield tag="490" ind1="1" ind2=" ">
     <subfield code="a"></subfield>
