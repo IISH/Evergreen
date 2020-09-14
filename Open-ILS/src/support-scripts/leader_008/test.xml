@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<record xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.loc.gov/MARC21/slim"
+        xsi:schemaLocation="http://www.loc.gov/MARC21/slim http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">
+    <leader>00493nkm a2200181 a 45 0</leader>
+    <controlfield tag="001">994653</controlfield>
+    <controlfield tag="003">NL-AMISG</controlfield>
+    <controlfield tag="005">19971007124548.0</controlfield>
+    <controlfield tag="008">199710suuuuuuuu||||||||||||||||||||||| d</controlfield>
+    <datafield tag="035" ind1=" " ind2=" ">
+        <subfield code="a">(IISG)IISGb10786478</subfield>
+    </datafield>
+    <datafield tag="040" ind1=" " ind2=" ">
+        <subfield code="a">NL-AmISG</subfield>
+    </datafield>
+    <datafield tag="245" ind1="1" ind2="0">
+        <subfield code="k">Visual document.</subfield>
+    </datafield>
+    <datafield tag="542" ind1=" " ind2=" ">
+        <subfield code="m">closed</subfield>
+    </datafield>
+    <datafield tag="600" ind1="1" ind2="4">
+        <marc:subfield xmlns:marc="http://www.loc.gov/MARC21/slim" code="0">(NL-AMISG)210099</marc:subfield>
+        <subfield code="a">Marcos, Ferdinand Edralin</subfield>
+        <subfield code="b">c</subfield>
+        <subfield code="(1917-1989)">d</subfield>
+        <subfield code="e">f</subfield>
+        <subfield code="k">l</subfield>
+        <subfield code="m">n</subfield>
+        <subfield code="o">p</subfield>
+        <subfield code="q">r</subfield>
+        <subfield code="s">t</subfield>
+        <subfield code="v">x</subfield>
+        <subfield code="y">z</subfield>
+    </datafield>
+    <datafield tag="600" ind1="1" ind2="4">
+        <subfield code="a">Lakhima, Ram Labhaya.</subfield>
+        <marc:subfield xmlns:marc="http://www.loc.gov/MARC21/slim" code="0">(NL-AMISG)163267</marc:subfield>
+    </datafield>
+    <datafield tag="611" ind1="2" ind2="4">
+        <subfield code="a">International Student Conference.</subfield>
+        <subfield code="e">Seminar.</subfield>
+        <marc:subfield xmlns:marc="http://www.loc.gov/MARC21/slim" code="0">(NL-AMISG)147316</marc:subfield>
+    </datafield>
+    <datafield tag="648" ind1=" " ind2="4">
+        <subfield code="a">1950-1974.</subfield>
+        <marc:subfield xmlns:marc="http://www.loc.gov/MARC21/slim" code="0">(NL-AMISG)364548</marc:subfield>
+    </datafield>
+    <datafield tag="650" ind1=" " ind2="4">
+        <subfield code="a">Group portrait.</subfield>
+        <marc:subfield xmlns:marc="http://www.loc.gov/MARC21/slim" code="0">(NL-AMISG)112454</marc:subfield>
+    </datafield>
+    <datafield tag="651" ind1=" " ind2="4">
+        <subfield code="a">Philippines.</subfield>
+        <marc:subfield xmlns:marc="http://www.loc.gov/MARC21/slim" code="0">(NL-AMISG)297125</marc:subfield>
+    </datafield>
+    <datafield tag="655" ind1=" " ind2="4">
+        <subfield code="a">Photo.</subfield>
+        <marc:subfield xmlns:marc="http://www.loc.gov/MARC21/slim" code="0">(NL-AMISG)121213</marc:subfield>
+    </datafield>
+    <datafield tag="694" ind1=" " ind2=" ">
+        <subfield code="a">ISC</subfield>
+        <subfield code="b">BG A54/881</subfield>
+    </datafield>
+    <datafield tag="695" ind1=" " ind2=" ">
+        <subfield code="a">SEA</subfield>
+        <subfield code="e">Philippines.</subfield>
+    </datafield>
+    <datafield tag="710" ind1="2" ind2=" ">
+        <subfield code="a">International Student Conference,</subfield>
+        <subfield code="e">collector.</subfield>
+        <marc:subfield xmlns:marc="http://www.loc.gov/MARC21/slim" code="0">(NL-AMISG)573893</marc:subfield>
+    </datafield>
+    <datafield tag="901" ind1=" " ind2=" ">
+        <subfield code="a">994653</subfield>
+        <subfield code="b">Unknown</subfield>
+        <subfield code="c">994653</subfield>
+        <subfield code="t">biblio</subfield>
+    </datafield>
+    <datafield tag="902" ind1=" " ind2=" ">
+        <subfield code="a">10622/E6DB3630-CA9A-4E7B-A9A6-D392B2DA9606</subfield>
+    </datafield>
+</record>
