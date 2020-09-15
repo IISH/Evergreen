@@ -8,6 +8,9 @@ Added to Open-ILS/src/templates/marc/*.xml
 ##Authority.pm
 Open-ILS/src/perlmods/lib/OpenILS/Application/Cat/Authority.pm
 
+## BibCommon.pm
+Open-ILS/src/perlmods/lib/OpenILS/Application/Cat/BibCommon.pm
+
 ###create_authority_record_from_bib_field
 
 Adds a default to the leader
@@ -18,6 +21,9 @@ Open-ILS/src/perlmods/lib/OpenILS/Application/OAI.pm with WWW/OAI.pm
 Open-ILS/src/perlmods/lib/OpenILS/Application/Handle.pm
 
 Open-ILS/src/perlmods/lib/OpenILS/Application/Batch.pm with WWW/Batch.pm
+
+## Archive web page
+Open-ILS/src/perlmods/lib/OpenILS/WWW/Archive.pm
 
 ##fm_IDL.xml
 Open-ILS/examples/fm_IDL.xml
