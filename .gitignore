@@ -1,3 +1,8 @@
+staff_client/
+scala/
+.idea/
+ignore_iish_utils/
+
 # Hide built objects
 *.[oa]
 *.la
