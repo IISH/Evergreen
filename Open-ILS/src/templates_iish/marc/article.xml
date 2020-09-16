@@ -1,0 +1,63 @@
+<record xmlns="http://www.loc.gov/MARC21/slim">
+    <leader>00620nab a22     7i 4500</leader>
+<controlfield tag="008">110701s                                d</controlfield>               
+   <datafield tag="040" ind1=" " ind2=" ">
+    <subfield code="a">NL-AmISG</subfield>
+    <subfield code="b">eng</subfield>
+    <subfield code="e">rda</subfield>
+     </datafield>
+    <datafield tag="100" ind1="1" ind2=" ">
+    <subfield code="a"></subfield>
+    <subfield code="e"></subfield>
+     </datafield>
+    <datafield tag="245" ind1="1" ind2="0">
+    <subfield code="a"></subfield>
+    <subfield code="k">research-article</subfield>
+    </datafield>
+    <datafield tag="300" ind1=" " ind2=" ">
+    <subfield code="a">1 online resource</subfield>
+     </datafield>
+  <datafield tag="336" ind1=" " ind2=" ">
+    <subfield code="a">text</subfield>
+    <subfield code="b">txt</subfield>
+    <subfield code="2">rdacontent</subfield>
+      </datafield> 
+  <datafield tag="337" ind1=" " ind2=" ">
+    <subfield code="a">computer</subfield>
+    <subfield code="b">c</subfield>
+    <subfield code="2">rdamedia</subfield>
+      </datafield> 
+  <datafield tag="338" ind1=" " ind2=" ">
+    <subfield code="a">online resource</subfield>
+    <subfield code="b">cr</subfield>
+    <subfield code="2">rdacarrier</subfield>
+      </datafield> 
+ <datafield tag="520" ind1=" " ind2=" ">
+    <subfield code="a"></subfield>
+      </datafield>
+  <datafield tag="540" ind1=" " ind2=" ">
+    <subfield code="b"></subfield>
+      </datafield>
+ <datafield tag="700" ind1="1" ind2=" ">
+    <subfield code="a"></subfield>
+    <subfield code="e"></subfield>
+      </datafield>
+ <datafield tag="700" ind1="1" ind2=" ">
+    <subfield code="a"></subfield>
+    <subfield code="e"></subfield>
+      </datafield>
+ <datafield tag="730" ind1="0" ind2=" ">
+    <subfield code="a"></subfield>
+      </datafield>
+     <datafield tag="773" ind1="0" ind2=" ">
+    <subfield code="t"></subfield>
+    <subfield code="g"></subfield>
+      </datafield>
+ <datafield tag="845" ind1=" " ind2=" ">
+    <subfield code="a"></subfield>
+      </datafield>
+ <datafield tag="856" ind1=" " ind2=" ">
+    <subfield code="u"></subfield>
+    <subfield code="q"></subfield>
+      </datafield>
+</record>
