@@ -1,15 +1,16 @@
-#What is different from the Evergreen main branch 2.7.1 ?
+# Additions to the Evergreen main branch
 
-These are additions and changes on top of branch 2.7.1
+##Templates for new records marc and opac templates
 
-##Templates for new records
-Added to Open-ILS/src/templates_iish
+    Added to Open-ILS/src/templates_iish
 
 ##Authority.pm leader
-Open-ILS/src/perlmods/lib/OpenILS/Application/Cat/Authority.pm
+
+    Open-ILS/src/perlmods/lib/OpenILS/Application/Cat/Authority.pm
 
 ## BibCommon.pm 902 field
-Open-ILS/src/perlmods/lib/OpenILS/Application/Cat/BibCommon.pm
+
+    Open-ILS/src/perlmods/lib/OpenILS/Application/Cat/BibCommon.pm
 
 Adds a default to the leader
 
@@ -27,10 +28,12 @@ Adds a default to the leader
     Open-ILS/src/perlmods/lib/OpenILS/WWW/BatchUpdate.pm
 
 ## Archive web page
-Open-ILS/src/perlmods/lib/OpenILS/WWW/Archive.pm
+
+    Open-ILS/src/perlmods/lib/OpenILS/WWW/Archive.pm
 
 ##fm_IDL.xml
-Open-ILS/examples/fm_IDL.xml
+
+    Open-ILS/examples/fm_IDL.xml
 
 Added a new source "xslt" to allow for a marcxml-to-column mapping for reporting.
 
@@ -41,4 +44,5 @@ Added a new source "batch.schedule" for the bulk update service.
 ##Seeds, views and tables
 
 # xslt documents
-Open-ILS/src/sql/Pg/999.seed.iish.sql
+
+    Open-ILS/src/sql/Pg/999.seed.iish.sql
