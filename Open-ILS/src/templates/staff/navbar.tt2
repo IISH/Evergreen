@@ -281,32 +281,6 @@
           </li>
           <li class="divider"></li>
           <li>
-            <a href="./schedule/legacy/main" target="_self">
-              <span class="glyphicon glyphicon-object-align-bottom"></span>
-              [% l('Batch schedule') %]
-            </a>
-          </li>
-          <li>
-            <a href="./enrich/legacy/main" target="_self">
-              <span class="glyphicon glyphicon-object-align-bottom"></span>
-              [% l('Enrich reports') %]
-            </a>
-          </li>
-          <li class="divider"></li>
-          <li>
-            <a href="./enrich/legacy/main" target="_self">
-              <span class="glyphicon glyphicon-object-align-bottom"></span>
-              [% l('Enrich') %]
-            </a>
-          </li>
-           <li>
-            <a href="./schedule/legacy/main" target="_self">
-              <span class="glyphicon glyphicon-object-align-bottom"></span>
-              [% l('Schedule') %]
-            </a>
-          </li>
-          <li class="divider"></li>
-          <li>
             <a href="./cat/catalog/retrieve_by_id" target="_self">
               <span class="glyphicon glyphicon-file"></span>
               [% l('Retrieve Bib Record by ID') %]
