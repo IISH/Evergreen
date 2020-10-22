@@ -169,17 +169,17 @@ angular.module('egMarcMod', ['egCoreMod', 'ui.bootstrap'])
                 });
             }
 
-            element.children("div[contenteditable]").each(function() {
-                $(this).focus(function(e) {
-                    var tNode = e.target.firstChild;
-                    var range = document.createRange();
-                    range.setStart(tNode, 0);
-                    range.setEnd(tNode, tNode.length);
-                    var sel = window.getSelection();
-                    sel.removeAllRanges();
-                    sel.addRange(range);
-                });
-            });
+            // element.children("div[contenteditable]").each(function() {
+            //     $(this).focus(function(e) {
+            //         var tNode = e.target.firstChild;
+            //         var range = document.createRange();
+            //         range.setStart(tNode, 0);
+            //         range.setEnd(tNode, tNode.length);
+            //         var sel = window.getSelection();
+            //         sel.removeAllRanges();
+            //         sel.addRange(range);
+            //     });
+            // });
 
             function findCaretTarget(id, itype) {
                 var tgt = null;
