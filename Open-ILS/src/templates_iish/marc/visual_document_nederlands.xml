@@ -2,9 +2,9 @@
     <leader>00620nkm a22     7i 4500</leader>
     <controlfield tag="008">110701s                                d</controlfield>
     <datafield tag="040" ind1=" " ind2=" ">
-       <subfield code="a">NL-AmISG</subfield>
-       <subfield code="b">dut</subfield>
-       <subfield code="e">rda</subfield>
+        <subfield code="a">NL-AmISG</subfield>
+        <subfield code="b">dut</subfield>
+        <subfield code="e">rda</subfield>
     </datafield>
     <datafield tag="100" ind1="1" ind2=" ">
         <subfield code="a"></subfield>
@@ -29,37 +29,37 @@
         <subfield code="a">[Plaats van uitgave onbekend] :</subfield>
         <subfield code="b">[uitgever onbekend],</subfield>
         <subfield code="c"></subfield>
-        </datafield>
+    </datafield>
     <datafield tag="300" ind1=" " ind2=" ">
         <subfield code="a"></subfield>
         <subfield code="c"></subfield>
     </datafield>
-  <datafield tag="336" ind1=" " ind2=" ">
-    <subfield code="a">niet-bewegend beeld</subfield>
-    <subfield code="b">sti</subfield>
-    <subfield code="2">rdacontent/dut</subfield>
-      </datafield> 
-  <datafield tag="337" ind1=" " ind2=" ">
-    <subfield code="a">zonder medium</subfield>
-    <subfield code="b">n</subfield>
-    <subfield code="2">rdamedia/dut</subfield>
-      </datafield> 
-  <datafield tag="338" ind1=" " ind2=" ">
-    <subfield code="a">vel</subfield>
-    <subfield code="b">nb</subfield>
-    <subfield code="2">rdacarrier/dut</subfield>
-      </datafield>
+    <datafield tag="336" ind1=" " ind2=" ">
+        <subfield code="a">niet-bewegend beeld</subfield>
+        <subfield code="b">sti</subfield>
+        <subfield code="2">rdacontent/dut</subfield>
+    </datafield>
+    <datafield tag="337" ind1=" " ind2=" ">
+        <subfield code="a">zonder medium</subfield>
+        <subfield code="b">n</subfield>
+        <subfield code="2">rdamedia/dut</subfield>
+    </datafield>
+    <datafield tag="338" ind1=" " ind2=" ">
+        <subfield code="a">vel</subfield>
+        <subfield code="b">nb</subfield>
+        <subfield code="2">rdacarrier/dut</subfield>
+    </datafield>
     <datafield tag="500" ind1=" " ind2=" ">
         <subfield code="a"></subfield>
     </datafield>
-   <datafield tag="506" ind1="1" ind2=" ">
+    <datafield tag="506" ind1="1" ind2=" ">
         <subfield code="a">Digitaal materiaal alleen beschikbaar in studiezaal.</subfield>
-    </datafield> 
+    </datafield>
     <datafield tag="506" ind1="1" ind2=" ">
         <subfield code="f">Preview only.</subfield>
-	<subfield code="2">star</subfield>
+        <subfield code="2">star</subfield>
     </datafield>
-   <datafield tag="520" ind1=" " ind2=" ">
+    <datafield tag="520" ind1=" " ind2=" ">
         <subfield code="a"></subfield>
     </datafield>
     <datafield tag="540" ind1=" " ind2=" ">
@@ -70,12 +70,16 @@
         <subfield code="f">Copyright Not Evaluated.</subfield>
         <subfield code="2">rs</subfield>
     </datafield>
-	<datafield tag="542" ind1=" " ind2=" ">
-         <subfield code="a">[creator - optional]</subfield>
-	 <subfield code="b">[death date creator - optional]</subfield>
-	 <subfield code="i">[year of publication - optional]</subfield>
-	 <subfield code="j">[year of creation - optional]</subfield>
-         <subfield code="m">pictoright</subfield>
+    <datafield tag="541" ind1=" " ind2=" ">
+        <subfield code="a"></subfield>
+        <subfield code="d"></subfield>
+    </datafield>
+    <datafield tag="542" ind1=" " ind2=" ">
+        <subfield code="a">[creator - optional]</subfield>
+        <subfield code="b">[death date creator - optional]</subfield>
+        <subfield code="i">[year of publication - optional]</subfield>
+        <subfield code="j">[year of creation - optional]</subfield>
+        <subfield code="m">pictoright</subfield>
     </datafield>
     <datafield tag="600" ind1="1" ind2="4">
         <subfield code="a"></subfield>
