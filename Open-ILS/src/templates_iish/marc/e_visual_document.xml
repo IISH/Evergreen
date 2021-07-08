@@ -5,9 +5,9 @@
     <controlfield tag="008">110701s                o               d</controlfield>
 
     <datafield tag="040" ind1=" " ind2=" ">
-        <subfield code="a">NL-AmISG</subfield>
-        <subfield code="b">eng</subfield>
-        <subfield code="e">rda</subfield>
+       <subfield code="a">NL-AmISG</subfield>
+       <subfield code="b">eng</subfield>
+       <subfield code="e">rda</subfield>
     </datafield>
     <datafield tag="100" ind1="1" ind2=" ">
         <subfield code="a"></subfield>
@@ -32,37 +32,37 @@
         <subfield code="a">[Place of publication not identified] :</subfield>
         <subfield code="b">[publisher not identified],</subfield>
         <subfield code="c"></subfield>
-    </datafield>
+        </datafield>
     <datafield tag="300" ind1=" " ind2=" ">
         <subfield code="a"></subfield>
         <subfield code="c"></subfield>
     </datafield>
-    <datafield tag="336" ind1=" " ind2=" ">
-        <subfield code="a">still image</subfield>
-        <subfield code="b">sti</subfield>
-        <subfield code="2">rdacontent</subfield>
-    </datafield>
-    <datafield tag="337" ind1=" " ind2=" ">
-        <subfield code="a">computer</subfield>
-        <subfield code="b">c</subfield>
-        <subfield code="2">rdamedia</subfield>
-    </datafield>
-    <datafield tag="338" ind1=" " ind2=" ">
-        <subfield code="a">online resource</subfield>
-        <subfield code="b">cr</subfield>
-        <subfield code="2">rdacarrier</subfield>
-    </datafield>
+  <datafield tag="336" ind1=" " ind2=" ">
+    <subfield code="a">still image</subfield>
+    <subfield code="b">sti</subfield>
+    <subfield code="2">rdacontent</subfield>
+      </datafield> 
+  <datafield tag="337" ind1=" " ind2=" ">
+    <subfield code="a">computer</subfield>
+    <subfield code="b">c</subfield>
+    <subfield code="2">rdamedia</subfield>
+      </datafield> 
+  <datafield tag="338" ind1=" " ind2=" ">
+    <subfield code="a">online resource</subfield>
+    <subfield code="b">cr</subfield>
+    <subfield code="2">rdacarrier</subfield>
+      </datafield>
     <datafield tag="500" ind1=" " ind2=" ">
         <subfield code="a"></subfield>
-    </datafield>
+    </datafield> 
     <datafield tag="506" ind1="1" ind2=" ">
-        <subfield code="a">Digital material only available in Reading Room.</subfield>
-    </datafield>
+        <subfield code="a">Online preview only -- full access available on site.</subfield>
+    </datafield> 
     <datafield tag="506" ind1="1" ind2=" ">
         <subfield code="f">Preview only.</subfield>
-        <subfield code="2">star</subfield>
+	<subfield code="2">star</subfield>
     </datafield>
-    <datafield tag="520" ind1=" " ind2=" ">
+   <datafield tag="520" ind1=" " ind2=" ">
         <subfield code="a"></subfield>
     </datafield>
     <datafield tag="540" ind1=" " ind2=" ">
@@ -77,14 +77,14 @@
         <subfield code="a"></subfield>
         <subfield code="d"></subfield>
     </datafield>
-    <datafield tag="542" ind1=" " ind2=" ">
-        <subfield code="a">[creator - optional]</subfield>
-        <subfield code="b">[death date creator - optional]</subfield>
-        <subfield code="i">[year of publication - optional]</subfield>
-        <subfield code="j">[year of creation - optional]</subfield>
-        <subfield code="m">pictoright</subfield>
+	<datafield tag="542" ind1=" " ind2=" ">
+         <subfield code="a">[creator - optional]</subfield>
+	 <subfield code="b">[death date creator - optional]</subfield>
+	 <subfield code="i">[year of publication - optional]</subfield>
+	 <subfield code="j">[year of creation - optional]</subfield>
+         <subfield code="m">pictoright</subfield>
     </datafield>
-    <datafield tag="600" ind1="1" ind2="4">
+       <datafield tag="600" ind1="1" ind2="4">
         <subfield code="a"></subfield>
     </datafield>
     <datafield tag="610" ind1="2" ind2="4">
