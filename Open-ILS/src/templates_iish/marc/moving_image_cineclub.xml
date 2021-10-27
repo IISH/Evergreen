@@ -75,9 +75,9 @@
         <subfield code="a"></subfield>
     </datafield>
     <datafield tag="506" ind1="1" ind2=" ">
-        <subfield code="a"></subfield>
-        <subfield code="f"></subfield>
-        <subfield code="2"></subfield>
+        <subfield code="a">No preview or online access -- full access available on site.</subfield>
+        <subfield code="f">No online access.</subfield>
+        <subfield code="2">star</subfield>
     </datafield>
     <datafield tag="508" ind1=" " ind2=" ">
         <subfield code="a"></subfield>
@@ -89,10 +89,10 @@
         <subfield code="a"></subfield>
     </datafield>
     <datafield tag="540" ind1=" " ind2=" ">
-        <subfield code="a">Copyright unknown.</subfield>
-        <subfield code="f"></subfield>
-        <subfield code="u"></subfield>
-        <subfield code="2"></subfield>
+        <subfield code="a">In Copyright.</subfield>
+        <subfield code="u">http://rightsstatements.org/vocab/InC/1.0/</subfield>
+        <subfield code="f">In Copyright.</subfield>
+        <subfield code="2">rs</subfield>
     </datafield>
     <datafield tag="541" ind1=" " ind2=" ">
         <subfield code="a"></subfield>
@@ -104,7 +104,7 @@
         <subfield code="d"></subfield>
         <subfield code="i"></subfield>
         <subfield code="j"></subfield>
-        <subfield code="m">open</subfield>
+        <subfield code="m">closed</subfield>
     </datafield>
     <datafield tag="546" ind1=" " ind2=" ">
         <subfield code="a"></subfield>
