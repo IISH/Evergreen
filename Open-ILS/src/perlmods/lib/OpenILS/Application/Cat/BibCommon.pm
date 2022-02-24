@@ -72,11 +72,21 @@ sub biblio_record_replace_marc  {
 
     my $marc = $U->strip_marc_fields($e, $marcdoc, $strip_grps);
 
+    $handlesystem_naming_authority = OpenSRF::Utils::SettingsClient->new->config_value('handlesystem_naming_authority') if ( ! $handlesystem_naming_authority ) ;
+    my $pid;
+    if ( $handlesystem_naming_authority ) {
+        $pid = __get_902a($marc) ||  $handlesystem_naming_authority . '/' . uc($ug->to_string( $ug->create() ) ) ;
+        my $add_902a = __add_902a($marc, $pid);
+        $marc = $add_902a if ( $add_902a ne $marc );
+    }
+
     $rec->source(bib_source_from_name($source)) if $source;
     $rec->editor($e->requestor->id);
     $rec->edit_date('now');
     $rec->marc($marc);
     $e->update_biblio_record_entry($rec) or return $e->die_event;
+
+    __upsert_pid($rec->id, $pid, 0) if $pid;
 
     return $rec;
 }
@@ -108,11 +118,11 @@ sub biblio_record_xml_import {
 
     my $marc = $U->strip_marc_fields($e, $marcdoc, $strip_grps);
 
-    my ($add_902a, $pid ) ;
     $handlesystem_naming_authority = OpenSRF::Utils::SettingsClient->new->config_value('handlesystem_naming_authority') if ( ! $handlesystem_naming_authority ) ;
+    my $pid;
     if ( $handlesystem_naming_authority ) {
         $pid = __get_902a($marc) ||  $handlesystem_naming_authority . '/' . uc($ug->to_string( $ug->create() ) ) ;
-        $add_902a = __add_902a($marc, $pid);
+        my $add_902a = __add_902a($marc, $pid);
         $marc = $add_902a if ( $add_902a ne $marc );
     }
 
@@ -150,7 +160,7 @@ sub biblio_record_xml_import {
 
     $logger->info("marc create/import created new record ".$record->id);
 
-    __upsert_pid($record->id, $pid, 0);
+    __upsert_pid($record->id, $pid, 0) if $pid;
 
     return $record;
 }
