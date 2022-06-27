@@ -48,6 +48,13 @@ export class CnBrowseResultsComponent implements OnInit, OnDestroy {
     ngOnInit() {
         this.searchContext = this.staffCat.searchContext;
 
+        if (this.bibSummary) {
+            // Avoid clobbering the active search when browsing in
+            // the context of a specific record.
+            this.searchContext =
+                this.staffCat.cloneContext(this.searchContext);
+        }
+
         for (let idx = 0; idx < this.rowCount; idx++) {
             this.rowIndexList.push(idx);
         }
@@ -119,9 +126,9 @@ export class CnBrowseResultsComponent implements OnInit, OnDestroy {
         };
 
         const bres: IdlObject[] = [];
-        this.bib.getBibSummary(
+        this.bib.getBibSummaries(
             bibIds.filter(distinct),
-            this.searchContext.searchOrg.id(), depth
+            this.searchContext.searchOrg.id(), this.searchContext.isStaff
         ).subscribe(
             summary => {
                 // Response order not guaranteed.  Match the summary
@@ -134,10 +141,6 @@ export class CnBrowseResultsComponent implements OnInit, OnDestroy {
 
                 // Use _ since result is an 'acn' object.
                 bibResults.forEach(r => r._bibSummary = summary);
-            },
-            err => {},
-            ()  => {
-                this.bib.fleshBibUsers(bres);
             }
         );
     }

@@ -1,5 +1,6 @@
 import {Component, OnInit, Input} from '@angular/core';
 import {OrgService} from '@eg/core/org.service';
+import {CourseService} from '@eg/staff/share/course.service';
 import {BibRecordService, BibRecordSummary
     } from '@eg/share/catalog/bib-record.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
@@ -13,6 +14,8 @@ import {CatalogService} from '@eg/share/catalog/catalog.service';
 export class BibSummaryComponent implements OnInit {
 
     initDone = false;
+    hasCourse = false;
+    courses: any;
 
     // True / false if the display is vertically expanded
     private _exp: boolean;
@@ -33,6 +36,7 @@ export class BibSummaryComponent implements OnInit {
         this.summary = s;
         if (this.initDone && this.summary) {
             this.summary.getBibCallNumber();
+            this.loadCourseInformation(this.summary.record.id());
         }
     }
 
@@ -40,34 +44,53 @@ export class BibSummaryComponent implements OnInit {
         private bib: BibRecordService,
         private org: OrgService,
         private store: ServerStoreService,
-        private cat: CatalogService
+        private cat: CatalogService,
+        private course: CourseService
     ) {}
 
     ngOnInit() {
 
-        if (this.summary) {
-            this.summary.getBibCallNumber();
-        } else {
-            if (this.recordId) {
-                this.loadSummary();
-            }
-        }
-
         this.store.getItem('eg.cat.record.summary.collapse')
         .then(value => this.expand = !value)
-        .then(() => this.initDone = true);
+        .then(_ => this.cat.fetchCcvms())
+        .then(_ => {
+            if (this.summary) {
+                return this.loadCourseInformation(this.summary.record.id())
+                .then(__ => this.summary.getBibCallNumber());
+            } else {
+                if (this.recordId) {
+                    return this.loadSummary();
+                }
+            }
+        }).then(_ => this.initDone = true);
     }
 
     saveExpandState() {
         this.store.setItem('eg.cat.record.summary.collapse', !this.expand);
     }
 
-    loadSummary(): void {
-        this.bib.getBibSummary(this.recordId).toPromise()
-        .then(summary => {
-            summary.getBibCallNumber();
-            this.bib.fleshBibUsers([summary.record]);
-            this.summary = summary;
+    loadSummary(): Promise<any> {
+        return this.loadCourseInformation(this.recordId)
+        .then(_ => {
+            return this.bib.getBibSummary(this.recordId).toPromise()
+            .then(summary => {
+                this.summary = summary;
+                return summary.getBibCallNumber();
+            });
+        });
+    }
+
+    loadCourseInformation(recordId): Promise<any> {
+        return this.org.settings('circ.course_materials_opt_in')
+        .then(setting => {
+            if (setting['circ.course_materials_opt_in']) {
+                this.course.fetchCoursesForRecord(recordId).then(courseList => {
+                    if (courseList) {
+                        this.courses = courseList;
+                        this.hasCourse = true;
+                    }
+                });
+            }
         });
     }
 

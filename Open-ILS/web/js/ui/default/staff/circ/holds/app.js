@@ -62,7 +62,7 @@ function($scope , $q , $routeParams , $window , $location , egCore , egHolds , e
 
         // if in clear mode...
         if (clear_mode && holds.length) {
-            if (!all_holds.legnth) all_holds = holds;
+            if (!all_holds.length) all_holds = holds;
             holds = holds.filter(function(h) { return h.hold.clear_me });
             hold_count = holds.length;
             return provider.arrayNotifier(holds, offset, count);
@@ -198,7 +198,7 @@ function($scope , $q , $routeParams , $window , $location , egCore , egHolds , e
     // when the detail hold is fetched (and updated), update the bib
     // record summary display record id.
     $scope.set_hold = function(hold_data) {
-        $scope.detail_hold_record_id = hold_data.hold.record_id;
+        $scope.detail_hold_record_id = hold_data.bre_id;
     }
 
     // manage active vs. clearable holds display
@@ -334,10 +334,14 @@ function($scope , $q , $routeParams , $window , $location , egCore ,
 
     egCore.strings.setPageTitle(egCore.strings['PULL_LIST_TITLE']);
 
+    function current_query() {
+        var org_id = $scope.org_unit ? $scope.org_unit.id() :
+            egCore.auth.user().ws_ou();
+        return {'copy_circ_lib_id' : org_id};
+    }
+
     $scope.gridControls = {
-        setQuery : function() {
-            return {'copy_circ_lib_id' : egCore.auth.user().ws_ou()}
-        },
+        setQuery : current_query,
         setSort : function() {
             return ['copy_location_order_position','call_number_sort_key']
         },
@@ -470,6 +474,15 @@ function($scope , $q , $routeParams , $window , $location , egCore ,
             }
         ).finally(egProgressDialog.close);
     }
+
+    $scope.update_org_unit = function (org) {
+        $scope.org_unit = org;
+        $scope.gridControls.setQuery(current_query());
+        $scope.gridControls.refresh();
+    };
+
+    $scope.cant_have_volumes =
+        function (id) { return !egCore.org.CanHaveVolumes(id); };
 
 }])
 

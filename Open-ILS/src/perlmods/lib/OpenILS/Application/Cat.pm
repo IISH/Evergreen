@@ -172,6 +172,7 @@ sub biblio_record_replace_marc  {
         $e, $recid, $newxml, $source, $fix_tcn, $oargs, $strip_grps);
 
     $e->commit unless $U->event_code($res);
+    $U->create_events_for_hook('bre.edit', $res, $e->requestor->ws_ou) unless $U->event_code($res);;
 
     return $res;
 }
@@ -208,6 +209,7 @@ sub template_overlay_biblio_record_entry {
         my $success = $e->json_query(
             { from => [ 'vandelay.template_overlay_bib_record', $template, $rid ] }
         )->[0]->{'vandelay.template_overlay_bib_record'};
+        $U->create_events_for_hook('bre.edit', $rec, $e->requestor->ws_ou);
 
         $conn->respond({ record => $rid, success => $success });
     }
@@ -238,12 +240,17 @@ __PACKAGE__->register_method(
         @param auth The authtoken
         @param container The container, um, containing the records to be updated by the template
         @param template The overlay template, or nothing and the method will look for a negative bib id in the container
+        @param options Hash of options; currently supports:
+            xact_per_record: Apply updates to each bib record within its own transaction.
         @return Cache key to check for status of the container overlay
     #
 );
 
 sub template_overlay_container {
-    my($self, $conn, $auth, $container, $template) = @_;
+    my($self, $conn, $auth, $container, $template, $options) = @_;
+    $options ||= {};
+    my $xact_per_rec = $options->{xact_per_record};
+
     my $e = new_editor(authtoken=>$auth, xact=>1);
     return $e->die_event unless $e->checkauth;
 
@@ -263,14 +270,20 @@ sub template_overlay_container {
         $template = $e->retrieve_biblio_record_entry( $titem->target_biblio_record_entry )->marc;
     }
 
+    my $num_total = scalar(@$items);
     my $num_failed = 0;
     my $num_succeeded = 0;
 
     $conn->respond_complete(
-        $actor->request('open-ils.actor.anon_cache.set_value', $auth, batch_edit_progress => {})->gather(1)
+        $actor->request('open-ils.actor.anon_cache.set_value', $auth, 
+            batch_edit_progress => {total => $num_total})->gather(1)
     ) if ($actor);
 
+    # read-only up to here.
+    $e->rollback if $xact_per_rec;
+
     for my $item ( @$items ) {
+        $e->xact_begin if $xact_per_rec;
         my $rec = $e->retrieve_biblio_record_entry($item->target_biblio_record_entry);
         next unless $rec;
 
@@ -284,6 +297,7 @@ sub template_overlay_container {
         if ($success eq 'f') {
             $num_failed++;
         } else {
+            $U->create_events_for_hook('bre.edit', $rec, $e->requestor->ws_ou);
             $num_succeeded++;
         }
 
@@ -291,6 +305,7 @@ sub template_overlay_container {
             $actor->request(
                 'open-ils.actor.anon_cache.set_value', $auth,
                 batch_edit_progress => {
+                    total     => $num_total,
                     succeeded => $num_succeeded,
                     failed    => $num_failed
                 },
@@ -308,6 +323,7 @@ sub template_overlay_container {
                         batch_edit_progress => {
                             complete => 1,
                             success  => 'f',
+                            total     => $num_total,
                             succeeded => $num_succeeded,
                             failed    => $num_failed,
                         }
@@ -318,19 +334,23 @@ sub template_overlay_container {
                 }
             }
         }
+        $e->xact_commit if $xact_per_rec;
     }
 
     if ($titem && !$num_failed) {
+        $e->xact_begin if $xact_per_rec;
         return $e->die_event unless ($e->delete_container_biblio_record_entry_bucket_item($titem));
+        $e->xact_commit if $xact_per_rec;
     }
 
-    if ($e->commit) {
+    if ($xact_per_rec || $e->commit) {
         if ($actor) {
             $actor->request(
                 'open-ils.actor.anon_cache.set_value', $auth,
                 batch_edit_progress => {
                     complete => 1,
                     success  => 't',
+                    total     => $num_total,
                     succeeded => $num_succeeded,
                     failed    => $num_failed,
                 }
@@ -345,6 +365,7 @@ sub template_overlay_container {
                 batch_edit_progress => {
                     complete => 1,
                     success  => 'f',
+                    total     => $num_total,
                     succeeded => $num_succeeded,
                     failed    => $num_failed,
                 }
@@ -374,6 +395,7 @@ sub update_biblio_record_entry {
     return $e->die_event unless $e->allowed('UPDATE_RECORD');
     $e->update_biblio_record_entry($record) or return $e->die_event;
     $e->commit;
+    $U->create_events_for_hook('bre.edit', $record, $e->requestor->ws_ou);
     return 1;
 }
 
@@ -413,6 +435,7 @@ sub undelete_biblio_record_entry {
 
     $e->update_biblio_record_entry($record) or return $e->die_event;
     $e->commit;
+    $U->create_events_for_hook('bre.edit', $record, $e->requestor->ws_ou);
     return 1;
 }
 
@@ -594,28 +617,57 @@ sub autogen_barcodes {
     if ($barcode =~ /(\d+)$/) { $barcode_number = $1; }
 
     my @res;
+    my $iter = 0;
     for (my $i = 1; $i <= $num_of_barcodes; $i++) {
-        my $calculated_barcode;
 
-        # default is to use checkdigits, so looking for an explicit false here
-        if (defined $$options{'checkdigit'} && ! $$options{'checkdigit'}) { 
-            $calculated_barcode = $barcode_number + $i;
-        } else {
-            if ($barcode_number =~ /^\d{8}$/) {
-                $calculated_barcode = add_codabar_checkdigit($barcode_number + $i, 0);
-            } elsif ($barcode_number =~ /^\d{9}$/) {
-                $calculated_barcode = add_codabar_checkdigit($barcode_number + $i*10, 1); # strip last digit
-            } elsif ($barcode_number =~ /^\d{13}$/) {
-                $calculated_barcode = add_codabar_checkdigit($barcode_number + $i, 0);
-            } elsif ($barcode_number =~ /^\d{14}$/) {
-                $calculated_barcode = add_codabar_checkdigit($barcode_number + $i*10, 1); # strip last digit
-            } else {
-                $calculated_barcode = $barcode_number + $i;
-            }
+        my $full_barcode;
+        while (1) {
+            $iter++;
+
+            my $calculated_barcode = next_auto_barcode($barcode_number, $iter, $options);
+            $full_barcode = $barcode_text . $calculated_barcode;
+
+            # If we're not checking dupes, assume the barcode we have is fine.
+            last unless $options->{skip_dupes};
+
+            my $dupe = $e->search_asset_copy(
+                {barcode => $full_barcode, deleted => 'f'},
+                {idlist => 1}
+            )->[0];
+
+            # If we find a duplicate, circle around again for another try.
+            last unless $dupe;
         }
-        push @res, $barcode_text . $calculated_barcode;
+
+        push @res, $full_barcode;
     }
+
     return \@res
+}
+
+sub next_auto_barcode {
+    my ($barcode_number, $iter, $options) = @_;
+
+    my $calculated_barcode;
+
+    # default is to use checkdigits, so looking for an explicit false here
+    if (defined $$options{'checkdigit'} && ! $$options{'checkdigit'}) { 
+        $calculated_barcode = $barcode_number + $iter;
+    } else {
+        if ($barcode_number =~ /^\d{8}$/) {
+            $calculated_barcode = add_codabar_checkdigit($barcode_number + $iter, 0);
+        } elsif ($barcode_number =~ /^\d{9}$/) {
+            $calculated_barcode = add_codabar_checkdigit($barcode_number + $iter*10, 1); # strip last digit
+        } elsif ($barcode_number =~ /^\d{13}$/) {
+            $calculated_barcode = add_codabar_checkdigit($barcode_number + $iter, 0);
+        } elsif ($barcode_number =~ /^\d{14}$/) {
+            $calculated_barcode = add_codabar_checkdigit($barcode_number + $iter*10, 1); # strip last digit
+        } else {
+            $calculated_barcode = $barcode_number + $iter;
+        }
+    }
+
+    return $calculated_barcode;
 }
 
 # Codabar doesn't define a checkdigit algorithm, but this one is typically used by libraries.  gmcharlt++
@@ -1509,11 +1561,17 @@ sub batch_volume_transfer {
         # Now see if any empty records need to be deleted after all of this
         my $keep_on_empty = $U->ou_ancestor_setting_value($e->requestor->ws_ou, 'cat.bib.keep_on_empty', $e);
         unless ($U->is_true($keep_on_empty)) {
+
             for (@rec_ids) {
                 $logger->debug("merge: seeing if we should delete record $_...");
-                $evt = OpenILS::Application::Cat::BibCommon->delete_rec($e, $_)
-                    if OpenILS::Application::Cat::BibCommon->title_is_empty($e, $_);
-                return $evt if $evt;
+                if (OpenILS::Application::Cat::BibCommon->title_is_empty($e, $_)) {
+                    # check for any title holds on the bib, bail if so
+                    my $has_holds = OpenILS::Application::Cat::BibCommon->title_has_holds($e, $_);
+                    return OpenILS::Event->new('TITLE_HAS_HOLDS', payload => $_) if $has_holds;
+                    # we're good, delete the record
+                    $evt = OpenILS::Application::Cat::BibCommon->delete_rec($e, $_);
+                    return $evt if $evt;
+                }
             }
         }
     }
@@ -1899,6 +1957,135 @@ sub retrieve_tag_table {
         $conn->respond($field);
     }
 }
+
+__PACKAGE__->register_method(
+    method    => "volcopy_data",
+    api_name  => "open-ils.cat.volcopy.data",
+    stream    => 1,
+    argc      => 3,
+    signature => {
+        desc   => q|Returns a batch of org-scoped data types needed by the 
+            volume/copy editor|,
+        params => [
+            {desc => 'Authtoken', type => 'string'}
+        ]
+    },
+    return => {desc => 'Stream of various object type lists', type => 'array'}
+);
+
+sub volcopy_data {
+    my ($self, $client, $auth) = @_;
+    my $e = new_editor(authtoken => $auth);
+
+    $e->checkauth or return $e->event;
+    my $org_ids = $U->get_org_ancestors($e->requestor->ws_ou);
+
+    $client->respond({
+        acp_location => $e->search_asset_copy_location([
+            {deleted => 'f', owning_lib => $org_ids},
+            {order_by => {acpl => 'name'}}
+        ])
+    });
+
+    # Provide a reasonable default copy location.  Typically "Stacks"
+    $client->respond({
+        acp_default_location => $e->search_asset_copy_location([
+            {deleted => 'f', owning_lib => $org_ids},
+            {order_by => {acpl => 'id'}, limit => 1}
+        ])->[0]
+    });
+
+    $client->respond({
+        acp_status => $e->search_config_copy_status([
+            {id => {'!=' => undef}},
+            {order_by => {ccs => 'name'}}
+        ])
+    });
+
+    $client->respond({
+        acp_age_protect => $e->search_config_rules_age_hold_protect([
+            {id => {'!=' => undef}},
+            {order_by => {crahp => 'name'}}
+        ])
+    });
+
+    $client->respond({
+        acp_floating_group => $e->search_config_floating_group([
+            {id => {'!=' => undef}},
+            {order_by => {cfg => 'name'}}
+        ])
+    });
+
+    $client->respond({
+        acp_circ_modifier => $e->search_config_circ_modifier([
+            {code => {'!=' => undef}},
+            {order_by => {ccm => 'name'}}
+        ])
+    });
+
+    $client->respond({
+        acp_item_type_map => $e->search_config_item_type_map([
+            {code => {'!=' => undef}},
+            {order_by => {ccm => 'value'}}
+        ])
+    });
+
+    $client->respond({
+        acn_class => $e->search_asset_call_number_class([
+            {id => {'!=' => undef}},
+            {order_by => {acnc => 'name'}}
+        ])
+    });
+    
+    $client->respond({
+        acn_prefix => $e->search_asset_call_number_prefix([
+            {owning_lib => $org_ids},
+            {order_by => {acnp => 'label_sortkey'}}
+        ])
+    });
+
+    $client->respond({
+        acn_suffix => $e->search_asset_call_number_suffix([
+            {owning_lib => $org_ids},
+            {order_by => {acns => 'label_sortkey'}}
+        ])
+    });
+
+    # Some object types require more complex sorting, etc.
+
+    my $cats = $e->search_asset_stat_cat([
+        {owner => $org_ids},
+        {   flesh => 2, 
+            flesh_fields => {asc => ['owner', 'entries'], aou => ['ou_type']}
+        }
+    ]);
+
+    # Sort stat cats by depth then by name within each depth group.
+    $cats = [
+        sort {
+            my $d1 = $a->owner->ou_type->depth;
+            my $d2 = $b->owner->ou_type->depth;
+            return $a->name cmp $b->name if $d1 == $d2;
+
+            # Sort cats closer to the workstation org unit to the front.
+            return $d1 > $d2 ? -1 : 1;
+        }
+        @$cats
+    ];
+
+    for my $cat (@$cats) {
+        # de-flesh org data
+        $cat->owner($cat->owner->id);
+
+        # sort entries
+        $cat->entries([sort {$a->value cmp $b->value} @{$cat->entries}]);
+    }
+
+    $client->respond({acp_stat_cat => $cats});
+
+    return undef;
+}
+
 
 1;
 

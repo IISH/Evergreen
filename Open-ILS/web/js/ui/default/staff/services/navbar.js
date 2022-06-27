@@ -18,6 +18,14 @@ angular.module('egCoreMod')
                 }
 
                 function navTo(path) {
+
+                    if (path.match(/^\/eg2\//)) {
+                        // Hotkey for /eg2/ page.  Go directly to the
+                        // provided URL.
+                        $window.location.href = path;
+                        return;
+                    }
+
                     path = path.replace(/^\.\//,'');
                     $window.location.href = egCore.env.basePath + path;
                 }       
@@ -56,7 +64,7 @@ angular.module('egCoreMod')
                     var last_record = egCore.hatch.getLocalItem("eg.cat.last_record_retrieved");
                     if (last_record) {
                         $window.location.href =
-                            egCore.env.basePath + 'cat/catalog/record/' + last_record;
+                            '/eg2/staff/catalog/record/' + last_record;
                     }
                 }
 
@@ -108,11 +116,14 @@ angular.module('egCoreMod')
                         if (egCore.auth.user()) {
                             $scope.op_changed = egCore.auth.OCtoken() ? true : false;
                             $scope.username = egCore.auth.user().usrname();
+                            $scope.user_id = egCore.auth.user().id();
+                            $scope.ws_ou = egCore.auth.user().ws_ou();
                             $scope.workstation = egCore.auth.workstation();
 
                             egCore.org.settings([
                                 'ui.staff.max_recent_patrons',
-                                'ui.staff.angular_catalog.enabled'
+                                'ui.staff.angular_catalog.enabled',
+                                'circ.curbside'
                             ]).then(function(s) {
                                 var val = s['ui.staff.max_recent_patrons'];
                                 $scope.showRecentPatron = val > 0;
@@ -120,6 +131,8 @@ angular.module('egCoreMod')
 
                                 $scope.showAngularCatalog = 
                                     s['ui.staff.angular_catalog.enabled'];
+                                $scope.enableCurbside =
+                                    s['circ.curbside'];
                             }).then(function() {
                                 // need to defer initialization of hotkeys to this point
                                 // as it depends on various settings.

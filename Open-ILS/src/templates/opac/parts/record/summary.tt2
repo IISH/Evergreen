@@ -3,6 +3,7 @@
     ctx.page_title = attrs.title | html
     ctx.metalinks.push('<meta property="og:image" content="' _ ctx.media_prefix _ '/opac/extras/ac/jacket/large/r/' _ ctx.bre_id _ '" />');
 %]
+
 <!-- ****************** rdetail_summary.xml ***************************** -->
 <abbr class="unapi-id" title='tag:[% ctx.hostname %],[% date.format(date.now, '%Y') %]:biblio-record_entry/[% ctx.bre_id %]'></abbr>
 
@@ -11,7 +12,7 @@
 [%-# This holds the record summary information %]
 <div id="rdetail_summary_header">
     <div id='rdetail_title_div'>
-        <h1 id='rdetail_title' property="name">[% IF attrs.hl.title; attrs.hl.title; ELSE; attrs.title_extended | html; END %]</h1>
+        <h1 id='rdetail_title' property="name">[% IF attrs.hl.title; accordion(attrs.hl.title); ELSE; accordion(attrs.title_extended); END %]</h1>
         [%-
             FOR link880 IN attrs.graphic_titles;
                 FOR alt IN link880.graphic;
@@ -19,7 +20,7 @@
                     IF alt.dir;
                         ' dir="' _ alt.dir _ '"';
                     END;
-                    '>'; alt.value | html; '</h2>';
+                    '>'; accordion(alt.value); '</h2>';
                 END;
             END;
         -%]
@@ -39,7 +40,7 @@
                 isbnissn=attrs.issns.0;
             END;
         %]
-        <a href='http://obalkyknih.cz/view?isbn=[% isbnissn %]'>
+        <a href='http://obalkyknih.cz/view?isbn=[% isbnissn | html %]'>
             <img
               alt="[% l('Image of item') %]" id='rdetail_image'
               src='[% ctx.media_prefix %]/opac/extras/ac/jacket/[% record.summary.jacket_size %]/r/[% ctx.bre_id | uri %]' />
@@ -75,7 +76,7 @@
                 <a href="[% mkurl(ctx.opac_root _ '/place_hold', 
                     {hold_target => ctx.bre_id, hold_type => 'T', hold_source_page => mkurl()}, stop_parms) %]" 
                 class="no-dec" rel="nofollow" vocab=""><img src="[% ctx.media_prefix %]/images/green_check.png[% ctx.cache_key %]"
-                    [% img_alt(l('Place Hold on [_1]', attrs.title)) %]/>
+                    [% img_alt(l('Place Hold on [_1]', attrs.title)) | html %]/>
                 <span class="place_hold">[% l('Place Hold') %]</span></a>
             </div>
             [%- END -%]
@@ -85,14 +86,14 @@
                 <a href="[% mkurl(ctx.opac_root _ '/myopac/ebook_checkout',
                     {title => args.ebook.ebook_id, vendor => args.ebook.vendor, action => 'checkout'}, stop_parms) %]"
                 class="no-dec" rel="nofollow" vocab=""><img src="[% ctx.media_prefix %]/images/green_check.png[% ctx.cache_key %]"
-                    [% img_alt(l('Check Out [_1]', attrs.title)) %]/>
+                    [% img_alt(l('Check Out [_1]', attrs.title)) | html %]/>
                 <span class="place_hold">[% l('Check Out E-Item') %]</span></a>
             </div>
             <div id="[%- ctx.bre_id -%]_ebook_place_hold" class="rdetail_aux_utils ebook_action hidden">
                 <a href="[% mkurl(ctx.opac_root _ '/myopac/ebook_place_hold',
                     {title => args.ebook.ebook_id, vendor => args.ebook.vendor, action => 'place_hold'}, stop_parms) %]"
                 class="no-dec" rel="nofollow" vocab=""><img src="[% ctx.media_prefix %]/images/green_check.png[% ctx.cache_key %]"
-                    [% img_alt(l('Place Hold on [_1]', attrs.title)) %]/>
+                    [% img_alt(l('Place Hold on [_1]', attrs.title)) | html %]/>
                 <span class="place_hold">[% l('Place Hold on E-Item') %]</span></a>
             </div>
             [%- END -%]
@@ -107,7 +108,7 @@
                     rel="nofollow" vocab=""
                     data-recid="[% ctx.bre_id %]" data-action="add"
                     class="no-dec mylist_action [% IF ctx.mylist.grep('^' _ ctx.bre_id _ '$').size %]hidden[% END %]"
-                    title="[% l("Add [_1] to basket", attrs.title) %]" rel="nofollow" vocab="">
+                    title="[% l("Add [_1] to basket", attrs.title) | html %]" rel="nofollow" vocab="">
                     <img src="[% ctx.media_prefix %]/images/add-to-cart.png[% ctx.cache_key %]" alt="" />
                     [% l("Add to basket") %]
                 </a>
@@ -115,7 +116,7 @@
                      rel="nofollow" vocab=""
                     data-recid="[% ctx.bre_id %]" data-action="delete"
                     class="mylist_action [% IF !ctx.mylist.grep('^' _ ctx.bre_id _ '$').size %]hidden[% END %]"
-                    title="[% l("Remove [_1] from basket", attrs.title) %]" rel="nofollow" vocab="">
+                    title="[% l("Remove [_1] from basket", attrs.title) | html %]" rel="nofollow" vocab="">
                     <img src="[% ctx.media_prefix %]/images/add-to-cart.png[% ctx.cache_key %]" alt="" />
                     [% l("Remove from basket") %]
                 </a>
@@ -139,8 +140,8 @@
             </div>
                 <div class="rdetail_aux_utils">
                     <img src="[% ctx.media_prefix %]/images/clipboard.png[% ctx.cache_key %]" alt="[% l('Print / Email Actions Image') %]" />
-                    <a href="[% mkurl(ctx.opac_root _ '/record/print/' _ ctx.bre_id) %]" class="no-dec" rel="nofollow" vocab="">[% l('Print') %]</a> /
-                    <a href="[% mkurl(ctx.opac_root _ '/record/email/' _ ctx.bre_id) %]" class="no-dec" rel="nofollow" vocab="">[% l('Email') %]</a>
+                    <a href="[% mkurl(ctx.opac_root _ '/record/print_preview/' _ ctx.bre_id) %]" class="no-dec" rel="nofollow" vocab="">[% l('Print') %]</a> /
+                    <a href="[% mkurl(ctx.opac_root _ '/record/email_preview/' _ ctx.bre_id) %]" class="no-dec" rel="nofollow" vocab="">[% l('Email') %]</a>
                 </div>
                 [%- IF ctx.refworks.enabled == 'true' %]
                     [%- INCLUDE 'opac/parts/record/refworks.tt2' %]
@@ -213,20 +214,25 @@ IF num_uris > 0;
 <div class="rdetail_uris">
     [%- IF num_uris > 1 %]<ul>[% END %]
     [%- FOR uri IN merged_uris %]
+        [%-
+            filtered_href = uri.href | html;
+            filtered_link = uri.link ? uri.link : '' | html;
+            filtered_note = uri.note ? uri.note : '' | html;
+        -%]
         [%- IF num_uris == 1 -%]
             <p class="rdetail_uri" property="offers" vocab="http://schema.org/" typeof="Offer">
         [%- ELSE -%]
             <li class="rdetail_uri" property="offers" vocab="http://schema.org/" typeof="Offer">
         [%- END -%]
-        <a href="[% uri.href %]" class="uri_link" property="url" target="_blank" rel="noopener">
-        [%- IF uri.href != uri.link;
-                '<span property="description">' _ uri.link _ '</span>';
+        <a href="[% filtered_href %]" class="uri_link" property="url" target="_blank" rel="noopener">
+        [%- IF filtered_href != filtered_link;
+                '<span property="description">' _ filtered_link _ '</span>';
             ELSE;
-                uri.link;
+                filtered_link;
             END;
         -%]
         </a>
-        [%- ' - <span property="description">' _ uri.note _ '</span>' IF uri.note %]
+        [%- ' - <span property="description">' _ filtered_note _ '</span>' IF filtered_note %]
         <link property="availability" href="http://schema.org/OnlineOnly" />
         [%- IF attrs.gtin13; '<meta property="gtin13" content="' _ attrs.gtin13 _ '" />'; END; %]
         [%- IF num_uris == 1 %]</p>[% ELSE %]</li>[% END %]
@@ -359,22 +365,25 @@ END;
     [%- IF attrs.hl.physical_description.size %]
     <li id='rdetail_phys_desc'>
         <strong class='rdetail_label'>[% l("Physical Description:") %]</strong>
-        <span class='rdetail_value' highlighted='true'>[% attrs.hl.physical_description.join('<br/>') %]</span>
+        <span class='rdetail_value' highlighted='true'>
+        [% FOREACH desc IN attrs.hl.physical_description %]
+            <span>[% accordion(desc) %]</span><br/>
+        [% END %]</span>
     </li>
     [%- ELSIF attrs.phys_desc %]
     <li id='rdetail_phys_desc'>
         <strong class='rdetail_label'>[% l("Physical Description:") %]</strong>
-        <span class='rdetail_value'>[% attrs.phys_desc | html %]</span>
+        <span class='rdetail_value'>[% accordion(attrs.phys_desc) %]</span>
     </li>
     [%- END %]
     [%- IF attrs.hl.edition %]
     <li id='rdetail_edition'>
         <strong class='rdetail_label'>[% l("Edition:") %]</strong>
-        <span class='rdetail_value' highlighted='true'>[% attrs.hl.edition %]</span>
+        <span class='rdetail_value' highlighted='true'>[% accordion(attrs.hl.edition) %]</span>
     [%- ELSIF attrs.edition %]
     <li id='rdetail_edition'>
         <strong class='rdetail_label'>[% l("Edition:") %]</strong>
-        <span class='rdetail_value'>[% attrs.edition | html %]</span>
+        <span class='rdetail_value'>[% accordion(attrs.edition) %]</span>
         [%-
         FOR entry IN attrs.graphic_editions;
             FOR alt IN entry.graphic;
@@ -384,7 +393,7 @@ END;
                 END;
         -%]
         <div class="graphic880 rdetail_value"[% diratt %]>
-            [% alt.value | html %]
+            [% accordion(alt.value); %]
         </div>
         [%-
             END;
@@ -395,19 +404,20 @@ END;
     [%- IF attrs.hl.publisher %]
     <li id='rdetail_publisher'>
         <strong class='rdetail_label'>[% l("Publisher:") %]</strong>
-        <span class='rdetail_value' highlighted='true'>[% attrs.hl.publisher %]</span>
+        <span class='rdetail_value' highlighted='true'>[% accordion(attrs.hl.publisher) %]</span>
     </li>
     [%- ELSIF attrs.publisher %]
     <li id='rdetail_publisher'>
         <strong class='rdetail_label'>[% l("Publisher:") %]</strong>
         <span class='rdetail_value' property="publisher" typeof="Organization">
+        [% pubstr = '' %]
         [%- IF attrs.pubplace; %]
-            <span property="location">[% attrs.pubplace | html; %]</span>
+            <span property="location">[% attrs.pubplace | html %]</span>
         [%- END; %]
-            <span property="name">[% attrs.publisher | html; %]</span>
+            <span property="name">[% attrs.publisher | html %]</span>
         </span>
         [%- IF attrs.pubdate; %]
-            <span property="datePublished">[% attrs.pubdate | html; %]</span>
+            <span property="datePublished">[% attrs.pubdate | html %]</span>
         [%- END; %]
         [%-
         IF attrs.graphic_pubinfos.size > 0;
@@ -419,7 +429,7 @@ END;
                     END;
         -%]
         <div class="graphic880"[% diratt %]>
-            [% alt.value | html %]
+            [% accordion(alt.value) %]
         </div>
         [%-
                 END;
@@ -433,11 +443,11 @@ END;
             <strong class='rdetail_label'>[% l("Producer:") %]</strong>
             <span class='rdetail_value'>
             [%- IF attrs.prodplace; %]
-                <span>[% attrs.prodplace | html; %]</span>
+                <span>[% accordion(attrs.prodplace) %]</span>
             [%- END; %]
-                <span>[% attrs.producer | html; %]</span>
+                <span>[% accordion(attrs.producer) %]</span>
             [%- IF attrs.proddate; %]
-                <span>[% attrs.proddate | html; %]</span>
+                <span>[% accordion(attrs.proddate) %]</span>
             [%- END; %]
             </span>
         </li>
@@ -447,11 +457,11 @@ END;
             <strong class='rdetail_label'>[% l("Distributor:") %]</strong>
             <span class='rdetail_value'>
             [%- IF attrs.distplace; %]
-                <span>[% attrs.distplace | html; %]</span>
+                <span>[% accordion(attrs.distplace) %]</span>
             [%- END; %]
-                <span>[% attrs.distributor | html; %]</span>
+                <span>[% accordion(attrs.distributor) %]</span>
             [%- IF attrs.distdate; %]
-                <span>[% attrs.distdate | html; %]</span>
+                <span>[% accordion(attrs.distdate) %]</span>
             [%- END; %]
             </span>
         </li>
@@ -461,11 +471,11 @@ END;
             <strong class='rdetail_label'>[% l("Manufacturer:") %]</strong>
             <span class='rdetail_value' property="manufacturer" typeof="Organization">
             [%- IF attrs.manplace; %]
-                <span property="location">[% attrs.manplace | html; %]</span>
+                <span property="location">[% accordion(attrs.manplace) %]</span>
             [%- END; %]
-                <span property="name">[% attrs.manufacturer | html; %]</span>
+                <span property="name">[% accordion(attrs.manufacturer) %]</span>
             [%- IF attrs.mandate; %]
-                <span>[% attrs.mandate | html; %]</span>
+                <span>[% accordion(attrs.mandate) %]</span>
             [%- END; %]
             </span>
         </li>
@@ -473,7 +483,7 @@ END;
     [%- IF attrs.copyright %]
     <li id='rdetail_copyright'>
         <strong class='rdetail_label'>[% l("Copyright:") %]</strong>
-        <span class='rdetail_value'>[% attrs.copyright | html_entity; %]
+        <span class='rdetail_value'>[% accordion(attrs.copyright) %]
         [%-# Provide the 4-digit year, cleansed of '@' and other junk %]
         [%- IF attrs.copyrightYear -%]
             <meta property='copyrightYear' content='[% attrs.copyrightYear | html; %]'>

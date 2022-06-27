@@ -279,11 +279,11 @@ CREATE TRIGGER authority_full_rec_fti_trigger
     BEFORE UPDATE OR INSERT ON authority.full_rec
     FOR EACH ROW EXECUTE PROCEDURE oils_tsearch2('keyword');
 
-CREATE INDEX authority_full_rec_index_vector_idx ON authority.full_rec USING GIST (index_vector);
+CREATE INDEX authority_full_rec_index_vector_idx ON authority.full_rec USING GIN (index_vector);
 /* Enable LIKE to use an index for database clusters with locales other than C or POSIX */
-CREATE INDEX authority_full_rec_value_tpo_index ON authority.full_rec (value text_pattern_ops);
+CREATE INDEX authority_full_rec_value_tpo_index ON authority.full_rec (SUBSTRING(value FOR 1024) text_pattern_ops);
 /* But we still need this (boooo) for paging using >, <, etc */
-CREATE INDEX authority_full_rec_value_index ON authority.full_rec (value);
+CREATE INDEX authority_full_rec_value_index ON authority.full_rec (SUBSTRING(value FOR 1024));
 
 CREATE RULE protect_authority_rec_delete AS ON DELETE TO authority.record_entry DO INSTEAD (UPDATE authority.record_entry SET deleted = TRUE WHERE OLD.id = authority.record_entry.id; DELETE FROM authority.full_rec WHERE record = OLD.id);
 
@@ -323,14 +323,14 @@ DECLARE
     heading_text    TEXT;
     tmp_text        TEXT;
     first_sf        BOOL;
-    auth_id         INT DEFAULT COALESCE(NULLIF(oils_xpath_string('//*[@tag="901"]/*[local-name()="subfield" and @code="c"]', marcxml), ''), '0')::INT; 
+    auth_id         INT DEFAULT COALESCE(NULLIF(oils_xpath_string('//*[@tag="901"]/*[local-name()="subfield" and @code="c"]', marcxml), ''), '0')::INT;
 BEGIN
     SELECT control_set INTO cset FROM authority.record_entry WHERE id = auth_id;
 
     IF cset IS NULL THEN
         SELECT  control_set INTO cset
           FROM  authority.control_set_authority_field
-          WHERE tag IN ( SELECT  UNNEST(XPATH('//*[starts-with(@tag,"1")]/@tag',marcxml::XML)::TEXT[]))
+          WHERE tag IN (SELECT UNNEST(XPATH('//*[starts-with(@tag,"1")]/@tag',marcxml::XML)::TEXT[]))
           LIMIT 1;
     END IF;
 
@@ -340,11 +340,13 @@ BEGIN
         nfi_used := acsaf.nfi;
         first_sf := TRUE;
 
-        FOR tag_node IN SELECT unnest(oils_xpath('//*[@tag="'||tag_used||'"]',marcxml)) LOOP
-            FOR sf_node IN SELECT unnest(oils_xpath('./*[contains("'||acsaf.sf_list||'",@code)]',tag_node)) LOOP
+        FOR tag_node IN SELECT unnest(oils_xpath('//*[@tag="'||tag_used||'"]',marcxml))
+        LOOP
+            FOR sf_node IN SELECT unnest(oils_xpath('//*[local-name() = "subfield" and contains("'||acsaf.sf_list||'",@code)]',tag_node))
+            LOOP
 
                 tmp_text := oils_xpath_string('.', sf_node);
-                sf := oils_xpath_string('./@code', sf_node);
+                sf := oils_xpath_string('//*/@code', sf_node);
 
                 IF first_sf AND tmp_text IS NOT NULL AND nfi_used IS NOT NULL THEN
 
@@ -353,7 +355,7 @@ BEGIN
                         COALESCE(
                             NULLIF(
                                 REGEXP_REPLACE(
-                                    oils_xpath_string('./@ind'||nfi_used, tag_node),
+                                    oils_xpath_string('//*[local-name() = "datafield"]/@ind'||nfi_used, tag_node),
                                     $$\D+$$,
                                     '',
                                     'g'
@@ -407,7 +409,7 @@ CREATE TRIGGER authority_simple_heading_fti_trigger
     BEFORE UPDATE OR INSERT ON authority.simple_heading
     FOR EACH ROW EXECUTE PROCEDURE oils_tsearch2('keyword');
 
-CREATE INDEX authority_simple_heading_index_vector_idx ON authority.simple_heading USING GIST (index_vector);
+CREATE INDEX authority_simple_heading_index_vector_idx ON authority.simple_heading USING GIN (index_vector);
 CREATE INDEX authority_simple_heading_value_idx ON authority.simple_heading (value);
 CREATE INDEX authority_simple_heading_sort_value_idx ON authority.simple_heading (sort_value);
 CREATE INDEX authority_simple_heading_record_idx ON authority.simple_heading (record);
@@ -428,7 +430,7 @@ DECLARE
     tmp_text        TEXT;
     tmp_xml         TEXT;
     first_sf        BOOL;
-    auth_id         INT DEFAULT COALESCE(NULLIF(oils_xpath_string('//*[@tag="901"]/*[local-name()="subfield" and @code="c"]', marcxml), ''), '0')::INT; 
+    auth_id         INT DEFAULT COALESCE(NULLIF(oils_xpath_string('//*[@tag="901"]/*[local-name()="subfield" and @code="c"]', marcxml), ''), '0')::INT;
 BEGIN
 
     SELECT control_set INTO cset FROM authority.record_entry WHERE id = auth_id;
@@ -450,22 +452,22 @@ BEGIN
             tag_used := acsaf.tag;
             nfi_used := acsaf.nfi;
             joiner_text := COALESCE(acsaf.joiner, ' ');
-    
+
             FOR tmp_xml IN SELECT UNNEST(XPATH('//*[@tag="'||tag_used||'"]', marcxml::XML)::TEXT[]) LOOP
-    
+
                 heading_text := COALESCE(
-                    oils_xpath_string('./*[contains("'||acsaf.display_sf_list||'",@code)]', tmp_xml, joiner_text),
+                    oils_xpath_string('//*[local-name()="subfield" and contains("'||acsaf.display_sf_list||'",@code)]', tmp_xml, joiner_text),
                     ''
                 );
-    
+
                 IF nfi_used IS NOT NULL THEN
-    
+
                     sort_text := SUBSTRING(
                         heading_text FROM
                         COALESCE(
                             NULLIF(
                                 REGEXP_REPLACE(
-                                    oils_xpath_string('./@ind'||nfi_used, tmp_xml::TEXT),
+                                    oils_xpath_string('//*[local-name()="datafield"]/@ind'||nfi_used, tmp_xml::TEXT),
                                     $$\D+$$,
                                     '',
                                     'g'
@@ -475,18 +477,18 @@ BEGIN
                             0
                         ) + 1
                     );
-    
+
                 ELSE
                     sort_text := heading_text;
                 END IF;
-    
+
                 IF heading_text IS NOT NULL AND heading_text <> '' THEN
                     res.value := heading_text;
                     res.sort_value := public.naco_normalize(sort_text);
                     res.index_vector = to_tsvector('keyword'::regconfig, res.sort_value);
                     RETURN NEXT res;
                 END IF;
-    
+
             END LOOP;
         ELSE
             FOR heading_row IN SELECT * FROM authority.extract_headings(marcxml, ARRAY[acsaf.heading_field]) LOOP
@@ -583,7 +585,7 @@ BEGIN
         SELECT  control_set INTO cset
           FROM  authority.control_set_authority_field
           WHERE tag IN (
-                    SELECT  UNNEST(XPATH('//*[starts-with(@tag,"1")]/@tag',marc::XML)::TEXT[])
+                    SELECT  UNNEST(XPATH('//*[local-name()="datafield" and starts-with(@tag,"1")]/@tag',marc::XML)::TEXT[])
                       FROM  authority.record_entry
                       WHERE id = auth_id
                 )
@@ -609,9 +611,9 @@ BEGIN
     END IF;
 
     FOR main_entry IN SELECT * FROM authority.control_set_authority_field acsaf WHERE acsaf.control_set = cset AND acsaf.main_entry IS NULL LOOP
-        auth_field := XPATH('//*[@tag="'||main_entry.tag||'"][1]',source_xml::XML);
-        auth_i1 = (XPATH('@ind1',auth_field[1]))[1];
-        auth_i2 = (XPATH('@ind2',auth_field[1]))[1];
+        auth_field := XPATH('//*[local-name()="datafield" and @tag="'||main_entry.tag||'"][1]',source_xml::XML);
+        auth_i1 := (XPATH('//*[local-name()="datafield"]/@ind1',auth_field[1]))[1];
+        auth_i2 := (XPATH('//*[local-name()="datafield"]/@ind2',auth_field[1]))[1];
         IF ARRAY_LENGTH(auth_field,1) > 0 THEN
             FOR bib_field IN SELECT * FROM authority.control_set_bib_field WHERE authority_field = main_entry.id LOOP
                 SELECT XMLELEMENT( -- XMLAGG avoids magical <element> creation, but requires unnest subquery
@@ -1142,7 +1144,7 @@ BEGIN
             component_node_list := oils_xpath( idx.component_xpath, heading_node, ARRAY[ARRAY[xfrm.prefix, xfrm.namespace_uri]] );
             FOR component_node IN SELECT x FROM unnest(component_node_list) AS x LOOP
             -- XXX much of this should be moved into oils_xpath_string...
-                curr_text := ARRAY_TO_STRING(evergreen.array_remove_item_by_value(evergreen.array_remove_item_by_value(
+                curr_text := ARRAY_TO_STRING(array_remove(array_remove(
                     oils_xpath( '//text()', -- get the content of all the nodes within the main selected node
                         REGEXP_REPLACE( component_node, E'\\s+', ' ', 'g' ) -- Translate adjacent whitespace to a single space
                     ), ' '), ''),  -- throw away morally empty (bankrupt?) strings

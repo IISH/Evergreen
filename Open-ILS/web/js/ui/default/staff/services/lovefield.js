@@ -20,8 +20,10 @@ angular.module('egCoreMod')
         workerUrl: '/js/ui/default/staff/offline-db-worker.js'
     };
 
+    // Returns true if the connection was possible
     service.connectToWorker = function() {
-        if (service.worker) return;
+        if (service.worker) return true;
+        if (service.cannotConnect) return false;
 
         try {
             // relative path would be better...
@@ -29,7 +31,7 @@ angular.module('egCoreMod')
         } catch (E) {
             console.warn('SharedWorker() not supported', E);
             service.cannotConnect = true;
-            return;
+            return false;
         }
 
         service.worker.onerror = function(err) {
@@ -61,6 +63,7 @@ angular.module('egCoreMod')
         });
 
         service.worker.port.start();
+        return true;
     }
 
     service.connectToSchemas = function() {
@@ -143,6 +146,8 @@ angular.module('egCoreMod')
     }
 
     service.isCacheGood = function (type) {
+        if (lf.isOffline || !service.connectToWorker()) return $q.when(true);
+
         return service.request({
             schema: 'cache',
             table: 'CacheDate',
@@ -225,6 +230,27 @@ angular.module('egCoreMod')
         });
     }
 
+    service.setOfflineBlockDate = function () {
+        return service.request({
+            schema: 'cache',
+            table: 'CacheDate',
+            action: 'insertOrReplace',
+            rows: [{type: '_blocklistDownload', cachedate : new Date()}]
+        });
+    }
+
+    service.getOfflineBlockDate = function () {
+        return service.request({
+            schema: 'cache',
+            table: 'CacheDate',
+            action: 'selectWhereEqual',
+            field: 'type',
+            value: '_blocklistDownload'
+        }).then(function(results) {
+            return results[0] ? results[0].cachedate : null;
+        });
+    }
+
     // Returns a promise with true for blocked, false for not blocked
     service.testOfflineBlock = function (barcode) {
         return service.request({
@@ -241,7 +267,7 @@ angular.module('egCoreMod')
 
     service.setStatCatsCache = function (statcats) {
         if (lf.isOffline || !statcats || 
-            statcats.length === 0 || service.cannotConnect) {
+            statcats.length === 0 || !service.connectToWorker()) {
             return $q.when();
         }
 
@@ -258,7 +284,6 @@ angular.module('egCoreMod')
     }
 
     service.getStatCatsCache = function () {
-
         return service.request({
             schema: 'cache',
             table: 'StatCat',
@@ -292,7 +317,7 @@ angular.module('egCoreMod')
     }
 
     service.setSettingsCache = function (settings) {
-        if (lf.isOffline || service.cannotConnect) return $q.when();
+        if (lf.isOffline || !service.connectToWorker()) return $q.when();
 
         var rows = [];
         angular.forEach(settings, function (val, key) {
@@ -308,6 +333,7 @@ angular.module('egCoreMod')
     }
 
     service.getSettingsCache = function (settings) {
+        if (lf.isOffline || !service.connectToWorker()) return $q.when([]);
 
         var promise;
 
@@ -336,7 +362,7 @@ angular.module('egCoreMod')
     }
 
     service.destroySettingsCache = function () {
-        if (lf.isOffline || service.cannotConnect) return $q.when();
+        if (lf.isOffline || !service.connectToWorker()) return $q.when();
         return service.request({
             schema: 'cache',
             table: 'Setting',
@@ -345,7 +371,7 @@ angular.module('egCoreMod')
     }
 
     service.setListInOfflineCache = function (type, list) {
-        if (lf.isOffline || service.cannotConnect) return $q.when();
+        if (lf.isOffline || !service.connectToWorker()) return $q.when();
 
         return service.isCacheGood(type).then(function(good) {
             if (good) { return };  // already cached
@@ -447,6 +473,11 @@ angular.module('egCoreMod')
                         item[parent_field]( hash[''+item[parent_field]()] );
                     }
                 });
+
+                if (type == 'aou') {
+                    // Sort the org tree before absorbing
+                    egCore.env.sort_aou(top);
+                }
 
                 egCore.env.absorbTree(top, type, true)
                 return $q.when(true)

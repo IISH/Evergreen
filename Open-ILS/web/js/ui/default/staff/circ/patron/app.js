@@ -15,6 +15,10 @@ angular.module('egPatronApp', ['ngRoute', 'ui.bootstrap', 'egUserBucketMod',
     });
 }])
 
+.factory("hasPermAt",function(){
+    return {};
+})
+
 .config(function($routeProvider, $locationProvider, $compileProvider) {
     $locationProvider.html5Mode(true);
     $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|mailto|blob):/); // grid export
@@ -22,7 +26,7 @@ angular.module('egPatronApp', ['ngRoute', 'ui.bootstrap', 'egUserBucketMod',
     // data loaded at startup which only requires an authtoken goes
     // here. this allows the requests to be run in parallel instead of
     // waiting until startup has completed.
-    var resolver = {delay : ['egCore','egUser', function(egCore , egUser) {
+    var resolver = {delay : ['egCore','egUser','hasPermAt', function(egCore , egUser , hasPermAt) {
 
         // fetch the org settings we care about during egStartup
         // and toss them into egCore.env as egCore.env.aous[name] = value.
@@ -56,12 +60,22 @@ angular.module('egPatronApp', ['ngRoute', 'ui.bootstrap', 'egUserBucketMod',
                 'net_access_level',
                 'ident_type',
                 'ident_type2',
+                'locale',
                 'cards',
                 'groups'
             ]);
         }
 
-        return egCore.startup.go();
+        return egCore.startup.go().then(function(go_promise) {
+            // FIXME: the following is really just for PatronMessagesCtrl
+            // and PatronCtrl, so we could refactor to avoid calling it
+            // for every controller
+            return egCore.perm.hasPermFullPathAt('VIEW_USER')
+            .then(function(orgList) {
+                hasPermAt['VIEW_USER'] = orgList;
+                return go_promise;
+            });
+        });
     }]};
 
     $routeProvider.when('/circ/patron/search', {
@@ -168,12 +182,6 @@ angular.module('egPatronApp', ['ngRoute', 'ui.bootstrap', 'egUserBucketMod',
         resolve : resolver
     });
 
-    $routeProvider.when('/circ/patron/:id/notes', {
-        templateUrl: './circ/patron/t_notes',
-        controller: 'PatronNotesCtrl',
-        resolve : resolver
-    });
-
     $routeProvider.when('/circ/patron/:id/triggered_events', {
         templateUrl: './circ/patron/t_triggered_events',
         controller: 'PatronTriggeredEventsCtrl',
@@ -210,6 +218,12 @@ angular.module('egPatronApp', ['ngRoute', 'ui.bootstrap', 'egUserBucketMod',
         resolve : resolver
     });
 
+    $routeProvider.when('/circ/patron/:id/hold_subscriptions', {
+        templateUrl: './circ/patron/t_hold_subscriptions',
+        controller: 'HoldSubscriptionsCtrl',
+        resolve : resolver
+    });
+
     $routeProvider.otherwise({redirectTo : '/circ/patron/search'});
 })
 
@@ -219,8 +233,8 @@ angular.module('egPatronApp', ['ngRoute', 'ui.bootstrap', 'egUserBucketMod',
  *
  * */
 .controller('PatronCtrl',
-       ['$scope','$q','$location','$filter','egCore','egNet','egUser','egAlertDialog','egConfirmDialog','egPromptDialog','patronSvc',
-function($scope,  $q , $location , $filter , egCore , egNet , egUser , egAlertDialog , egConfirmDialog , egPromptDialog , patronSvc) {
+       ['$scope','$q','$location','$filter','egCore','egNet','egUser','egAlertDialog','egConfirmDialog','egPromptDialog','patronSvc','egCirc','hasPermAt',
+function($scope,  $q , $location , $filter , egCore , egNet , egUser , egAlertDialog , egConfirmDialog , egPromptDialog , patronSvc , egCirc , hasPermAt) {
 
     $scope.is_patron_edit = function() {
         return Boolean($location.path().match(/patron\/\d+\/edit$/));
@@ -277,6 +291,10 @@ function($scope,  $q , $location , $filter , egCore , egNet , egUser , egAlertDi
         $scope.aous = egCore.env.aous;
         $scope.auth_user_id = egCore.auth.user().id();
 
+        if (tab == 'search') {
+            egCirc.reset(); // clear out auto-override and auto-skip selections when switching patrons
+        }
+
         if (patron_id) {
             $scope.patron_id = patron_id;
             return patronSvc.setPrimary($scope.patron_id)
@@ -294,9 +312,15 @@ function($scope,  $q , $location , $filter , egCore , egNet , egUser , egAlertDi
             .then(function() {return patronSvc.checkAlerts()})
             .then(redirectToAlertPanel)
             .then(function(){
-                $scope.ident_type_name = $scope.patron().ident_type().name()
+                if ($scope.patron().locale() !== null) { 
+                    $scope.locale_name = $scope.patron().locale().name();
+                    $scope.hasLocaleName = $scope.locale_name.length > 0;
+                }
+            })
+            .then(function(){
+                $scope.ident_type_name = $scope.patron().ident_type().name();
                 $scope.hasIdentTypeName = $scope.ident_type_name.length > 0;
-            });
+    });
         } else {
             // No patron, use the tab name as the page title.
             egCore.strings.setPageTitle(
@@ -323,10 +347,20 @@ function($scope,  $q , $location , $filter , egCore , egNet , egUser , egAlertDi
     }
 
     $scope.patron = function() { return patronSvc.current }
+    $scope.visible_notes = function() {
+        var p = patronSvc.current;
+        if (p) {
+            var org_ids = hasPermAt['VIEW_USER'];
+            var filtered_notes = p.notes().filter(function(n) { return org_ids.indexOf(n.org_unit()) > -1; });
+            return filtered_notes;
+        }
+        return [];
+    }
     $scope.patron_stats = function() { return patronSvc.patron_stats }
     $scope.summary_stat_cats = function() { return patronSvc.summary_stat_cats }
     $scope.hasAlerts = function() { return patronSvc.hasAlerts }
     $scope.isPatronExpired = function() { return patronSvc.patronExpired }
+    $scope.doesPatronExpireSoon = function() { return patronSvc.patronExpiresSoon }
 
     $scope.print_address = function(addr) {
         egCore.print.print({
@@ -473,7 +507,8 @@ function($scope , $location , egCore , egConfirmDialog , egUser , patronSvc , $u
         $scope.bcNotFound = null;
         $scope.optInRestricted = false;
         if (!args.barcode) return;
-        args.barcode = args.barcode.replace(/\s/g,'');
+        args.barcode = args.barcode.replace(/^\s/g,'');
+        args.barcode = args.barcode.replace(/\s$/g,'');
         // blur so next time it's set to true it will re-apply select()
         $scope.selectMe = false;
 
@@ -627,28 +662,31 @@ function($scope,  $q,  $routeParams,  $timeout,  $window,  $location,  egCore , 
 
     $scope.bucketSvc = bucketSvc;
     $scope.bucketSvc.fetchUserBuckets();
+    $scope.bucketSvc.fetchUserSubscriptions();
     $scope.addToBucket = function(item, data, recs) {
         if (recs.length == 0) return;
         var added_count = 0;
         var failed_count = 0;
-        var p = [];
+        var promise = $q.when();
         angular.forEach(recs,
             function(rec) {
                 var item = new egCore.idl.cubi();
                 item.bucket(data.id());
                 item.target_user(rec.id());
-                p.push(egCore.net.request(
-                    'open-ils.actor',
-                    'open-ils.actor.container.item.create',
-                    egCore.auth.token(), 'user', item
-                ).then(
+                promise = promise.then(function() {
+                    return egCore.net.request(
+                        'open-ils.actor',
+                        'open-ils.actor.container.item.create',
+                        egCore.auth.token(), 'user', item, 1
+                    );
+                }).then(
                     function(){ added_count++ },
                     function(){ failed_count++ }
-                ));
+                );
             }
         );
 
-        $q.all(p).then( function () {
+        promise.then( function () {
             if (added_count) ngToast.create($interpolate(egCore.strings.BUCKET_ADD_SUCCESS)({ count: ''+added_count, name: data.name()} ));
             if (failed_count) ngToast.warning($interpolate(egCore.strings.BUCKET_ADD_FAIL)({ count: ''+failed_count, name: data.name() } ));
         });
@@ -731,11 +769,11 @@ function($scope,  $q,  $routeParams,  $timeout,  $window,  $location,  egCore , 
  * Manages messages
  */
 .controller('PatronMessagesCtrl',
-       ['$scope','$q','$routeParams','egCore','$uibModal','patronSvc','egCirc',
-function($scope , $q , $routeParams,  egCore , $uibModal , patronSvc , egCirc) {
+       ['$scope','$q','$routeParams','egCore','$uibModal','patronSvc','egCirc','hasPermAt',
+function($scope , $q , $routeParams,  egCore , $uibModal , patronSvc , egCirc , hasPermAt ) {
     $scope.initTab('messages', $routeParams.id);
     var usr_id = $routeParams.id;
-    var org_ids = egCore.org.fullPath(egCore.auth.user().ws_ou(), true);
+    var org_ids = hasPermAt.VIEW_USER;
 
     // setup date filters
     var start = new Date(); // now - 1 year
@@ -757,7 +795,7 @@ function($scope , $q , $routeParams,  egCore , $uibModal , patronSvc , egCirc) {
    
     var activeGrid = $scope.activeGridControls = {
         setSort : function() {
-            return ['set_date'];
+            return [{'create_date' : 'DESC'}];
         },
         setQuery : function() {
             return {
@@ -773,53 +811,120 @@ function($scope , $q , $routeParams,  egCore , $uibModal , patronSvc , egCirc) {
 
     var archiveGrid = $scope.archiveGridControls = {
         setSort : function() {
-            return ['set_date'];
+            return [{'create_date' : 'DESC'}];
         },
         watchQuery : function() {
             return {
                 usr : usr_id, 
                 org_unit : org_ids,
                 stop_date : {'<=' : 'now'},
-                set_date : {between : date_range()}
+                create_date : {between : date_range()}
             };
         }
     };
 
+    $scope.test_for_disable_remove_penalty = function() {
+        var selected = $scope.activeGridControls.selectedItems();
+        var found_pub_and_read_and_not_deleted = false;
+        angular.forEach(selected, function(s) {
+            if (Boolean(s.pub == 't') && Boolean(s.read_date) && !Boolean(s.deleted == 't')) {
+                found_pub_and_read_and_not_deleted = true;
+            }
+        });
+        return found_pub_and_read_and_not_deleted;
+    }
+
     $scope.removePenalty = function(selected) {
-        // the grid stores flattened penalties.  Fetch penalty objects first
+        if (selected.length == 0) return;
 
-        var ids = selected.map(function(s){ return s.id });
-        egCore.pcrud.search('ausp', 
-            {id : ids}, {}, 
-            {atomic : true, authoritative : true}
+        // TODO: need confirmation dialog
 
-        // then delete them
-        ).then(function(penalties) {
-            return egCore.pcrud.remove(penalties);
+        var promises = [];
+        // figure out the view components
+        var aum_ids = [];
+        var ausp_ids = [];
+        angular.forEach(selected, function(s) {
+            if (s.aum_id) { aum_ids.push(s.aum_id); }
+            if (s.ausp_id) { ausp_ids.push(s.ausp_id); }
+        });
 
-        // then refresh the grid
-        }).then(function() {
+        // fetch all of them since trying to pull them
+        // off of patronSvc.current isn't reliable
+        if (ausp_ids.length > 0) {
+            promises.push(
+                egCore.pcrud.search('ausp',
+                    {id : ausp_ids}, {},
+                    {atomic : true, authoritative : true}
+                ).then(function(penalties) {
+                    return egCore.pcrud.remove(penalties);
+                })
+            );
+        }
+        if (aum_ids.length > 0) {
+            promises.push(
+                egCore.pcrud.search('aum',
+                    {id : aum_ids}, {},
+                    {atomic : true, authoritative : true}
+                ).then(function(messages) {
+                    return egCore.pcrud.remove(messages);
+                })
+            );
+        }
+        $q.all(promises).then(function() {
             activeGrid.refresh();
+            archiveGrid.refresh();
+            // force a refresh of the user
+            patronSvc.setPrimary(patronSvc.current.id(), null, true);
         });
     }
 
     $scope.archivePenalty = function(selected) {
-        // the grid stores flattened penalties.  Fetch penalty objects first
+        if (selected.length == 0) return;
 
-        var ids = selected.map(function(s){ return s.id });
-        egCore.pcrud.search('ausp', 
-            {id : ids}, {}, 
-            {atomic : true, authoritative : true}
+        // TODO: need confirmation dialog
 
-        // then delete them
-        ).then(function(penalties) {
-            angular.forEach(penalties, function(p){ p.stop_date('now') });
-            return egCore.pcrud.update(penalties);
+        var promises = [];
+        // figure out the view components
+        var aum_ids = [];
+        var ausp_ids = [];
+        angular.forEach(selected, function(s) {
+            if (s.aum_id) { aum_ids.push(s.aum_id); }
+            if (s.ausp_id) { ausp_ids.push(s.ausp_id); }
+        });
 
-        // then refresh the grid
-        }).then(function() {
+        // fetch all of them since trying to pull them
+        // off of patronSvc.current isn't reliable
+        if (ausp_ids.length > 0) {
+            promises.push(
+                egCore.pcrud.search('ausp',
+                    {id : ausp_ids}, {},
+                    {atomic : true, authoritative : true}
+                ).then(function(penalties) {
+                    angular.forEach(penalties, function(p) {
+                        p.stop_date('now');
+                    });
+                    return egCore.pcrud.update(penalties);
+                })
+            );
+        }
+        if (aum_ids.length > 0) {
+            promises.push(
+                egCore.pcrud.search('aum',
+                    {id : aum_ids}, {},
+                    {atomic : true, authoritative : true}
+                ).then(function(messages) {
+                    angular.forEach(messages, function(m) {
+                        m.stop_date('now');
+                    });
+                    return egCore.pcrud.update(messages);
+                })
+            );
+        }
+        $q.all(promises).then(function() {
             activeGrid.refresh();
             archiveGrid.refresh();
+            // force a refresh of the user
+            patronSvc.setPrimary(patronSvc.current.id(), null, true);
         });
     }
 
@@ -848,15 +953,60 @@ function($scope , $q , $routeParams,  egCore , $uibModal , patronSvc , egCirc) {
     $scope.editPenalty = function(selected) {
         if (selected.length == 0) return;
 
-        // grab the penalty from the user object
-        var penalty = patronSvc.current.standing_penalties().filter(
-            function(p) {return p.id() == selected[0].id})[0];
+        var promises = [];
+        // figure out the view components
+        var aum_ids = []; var aum_objs = {};
+        var ausp_ids = []; var ausp_objs = {};
+        var pairs = [];
+        angular.forEach(selected, function(s) {
+            if (s.aum_id) { aum_ids.push(s.aum_id); }
+            if (s.ausp_id) { ausp_ids.push(s.ausp_id); }
+            pairs.push( { aum_id : s.aum_id, ausp_id : s.ausp_id } );
+        });
 
-        egCirc.edit_penalty(penalty).then(function() {
-            activeGrid.refresh();
-            // force a refresh of the user, since they may now
-            // have blocking penalties, etc.
-            patronSvc.setPrimary(patronSvc.current.id(), null, true);
+        // fetch all of them since trying to pull them
+        // off of patronSvc.current isn't reliable
+        // (we want deleted user messages too)
+        if (ausp_ids.length > 0) {
+            promises.push(
+                egCore.pcrud.search('ausp',
+                    {id : ausp_ids}, {},
+                    {atomic : true, authoritative : true}
+                ).then(function(penalties) {
+                    angular.forEach(penalties, function(p) {
+                        ausp_objs[p.id()] = p;
+                    });
+                    return $q.when();
+                })
+            );
+        }
+        if (aum_ids.length > 0) {
+            promises.push(
+                egCore.pcrud.search('aum',
+                    {id : aum_ids}, {
+                        flesh : 1,
+                        flesh_fields : {
+                            aum : ['editor']
+                        }
+                    },
+                    {atomic : true, authoritative : true}
+                ).then(function(messages) {
+                    angular.forEach(messages, function(m) {
+                        aum_objs[m.id()] = m;
+                    });
+                    return $q.when();
+                })
+            );
+        }
+        $q.all(promises).then(function() {
+            angular.forEach(pairs, function(pair) {
+                egCirc.edit_penalty(ausp_objs[pair.ausp_id],aum_objs[pair.aum_id]).then(function() {
+                    activeGrid.refresh();
+                    // force a refresh of the user, since they may now
+                    // have blocking penalties, etc.
+                    patronSvc.setPrimary(patronSvc.current.id(), null, true);
+                });
+            });
         });
     }
 }])
@@ -959,81 +1109,80 @@ function($scope,  $routeParams , $location , egCore , patronSvc) {
 
 }])
 
-.controller('PatronNotesCtrl',
-       ['$scope','$filter','$routeParams','$location','egCore','patronSvc','$uibModal',
-        'egConfirmDialog',
-function($scope,  $filter , $routeParams , $location , egCore , patronSvc , $uibModal,
-         egConfirmDialog) {
+.controller('HoldSubscriptionsCtrl',
+       ['$scope','$q','$routeParams','$location','egCore','patronSvc','bucketSvc','egGridDataProvider','egConfirmDialog','$timeout','$window',
+function($scope,  $q , $routeParams , $location , egCore , patronSvc,  bucketSvc,  egGridDataProvider,  egConfirmDialog,  $timeout,  $window) {
+
     $scope.initTab('other', $routeParams.id);
-    var usr_id = $routeParams.id;
 
-    // fetch the notes
-    function refreshPage() {
-        $scope.notes = [];
-        egCore.pcrud.search('aun', 
-            {usr : usr_id}, 
-            {flesh : 1, flesh_fields : {aun : ['creator']}}, 
-            {authoritative : true})
-        .then(null, null, function(note) {
-            $scope.notes.push(note);
-        });
-    }
+    $scope.bucket_ids = [];
+    $scope.bucket_items = [];
+    $scope.buckets = [];
 
-    // open the new-note dialog and create the note
-    $scope.newNote = function() {
-        $uibModal.open({
-            templateUrl: './circ/patron/t_new_note_dialog',
-            backdrop: 'static',
-            controller: 
-                ['$scope', '$uibModalInstance',
-            function($scope, $uibModalInstance) {
-                $scope.focusNote = true;
-                $scope.args = {};
-                $scope.require_initials = egCore.env.aous['ui.staff.require_initials.patron_info_notes'];
-                $scope.ok = function(count) { $uibModalInstance.close($scope.args) }
-                $scope.cancel = function () { $uibModalInstance.dismiss() }
-            }],
-        }).result.then(
-            function(args) {
-                if (!args.value) return;
-                var note = new egCore.idl.aun();
-                note.usr(usr_id);
-                note.title(args.title);
-                note.value(args.value);
-                note.pub(args.pub ? 't' : 'f');
-                note.creator(egCore.auth.user().id());
-                if (args.initials) 
-                    note.value(note.value() + ' [' + args.initials + ']');
-                egCore.pcrud.create(note).then(function() {refreshPage()});
-            }
-        );
-    }
+    $scope.gridControls = {
+        activateItem : function (item) {
+            var url = $location.absUrl().replace(
+                /\/circ\/patron\/.*/, 
+                '/cat/bucket/batch_hold/view/' + item.id());
+            $window.open(url, '_blank').focus();
+        }
+    };
 
-    // delete the selected note
-    $scope.deleteNote = function(note) {
-        egConfirmDialog.open(
-            egCore.strings.PATRON_NOTE_DELETE_CONFIRM_TITLE, egCore.strings.PATRON_NOTE_DELETE_CONFIRM,
-            {ok : function() {
-                egCore.pcrud.remove(note).then(function() {refreshPage()});
+    $scope.gridDataProvider = egGridDataProvider.instance({
+        get : function(offset, count) {
+            return this.arrayNotifier($scope.buckets, offset, count);
+        }
+    });
+
+    function fetchSubscriptions() {
+        $scope.bucket_ids = [];
+        $scope.bucket_items = [];
+        $scope.buckets = [];
+        egCore.pcrud.search('cubi',
+            { target_user : $routeParams.id }
+        ).then(
+            function() {
+                if ($scope.bucket_ids.length > 0) {
+                    egCore.pcrud.search('cub',
+                        { id : $scope.bucket_ids, btype : 'hold_subscription' }
+                    ).then(
+                        function() { $scope.gridControls.refresh() },
+                        null,
+                        function(b) {
+                            $scope.buckets.push(b);
+                            b.items( $scope.bucket_items.filter(i => i.bucket() == b.id()) );
+                        }
+                    );
+                } else {
+                    $scope.gridControls.refresh();
+                }
             },
-            note_title : note.title(),
-            create_date : note.create_date()
+            null,
+            function(i) {
+                $scope.bucket_ids.push(i.bucket());
+                $scope.bucket_items.push(i);
+            }
+        )
+    }
+
+    $scope.removeSubscriptions = function (buckets) {
+        return egConfirmDialog.open(
+            egCore.strings.REMOVE_HOLD_SUBSCRIPTIONS,'',{}
+        ).result.then(function() {
+            var promises = [];
+
+            angular.forEach(buckets, function(b) {
+                angular.forEach(b.items(), function (i) {
+                    promises.push(bucketSvc.detachUser(i.id()));
+                })
+            });
+
+            $q.all(promises).then(fetchSubscriptions);
         });
     }
 
-    // print the selected note
-    $scope.printNote = function(note) {
-        var hash = egCore.idl.toHash(note);
-        hash.usr = egCore.idl.toHash($scope.patron());
-        egCore.print.print({
-            context : 'default', 
-            template : 'patron_note', 
-            scope : {note : hash}
-        });
-    }
+    $timeout(fetchSubscriptions);
 
-    // perform the initial note fetch
-    refreshPage();
 }])
 
 .controller('PatronGroupCtrl',

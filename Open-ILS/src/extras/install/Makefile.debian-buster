@@ -41,6 +41,9 @@ export DEBS = \
 	libemail-mime-perl\
 	libexcel-writer-xlsx-perl\
 	libgd-graph3d-perl\
+	libhttp-oai-perl\
+	libgeo-coder-osm-perl\
+	libhttp-oai-perl\
 	liblocale-maketext-lexicon-perl\
 	liblog-log4perl-perl\
 	libmarc-charset-perl \
@@ -69,15 +72,17 @@ export DEBS = \
 	libuniversal-require-perl\
 	libunix-syslog-perl\
 	libyaz-dev\
-	postgresql-client-9.6\
+	postgresql-client-14\
 	libsoap-lite-perl\
 	libbz2-dev\
 	libparse-recdescent-perl\
 	libhtml-defang-perl\
+	libconfig-general-perl\
 	yaz
 
 export DEB_APACHE_MODS = \
     expires\
+    headers\
     include\
     proxy\
     proxy_http\
@@ -93,26 +98,49 @@ export DEB_APACHE_DISCONF = \
     serve-cgi-bin
 
 export CPAN_MODULES = \
+	Geo::Coder::Google \
 	Business::OnlinePayment::PayPal \
+	String::KeyboardDistance \
+	Text::Levenshtein::Damerau::XS \
 	Email::Send
 
 export CPAN_MODULES_FORCE = \
 	Business::Stripe \
 	Class::DBI::Frozen::301
 
-PGSQL_SERVER_DEBS_96 = \
-	$(DEB_PGSQL_COMMON_MODS) \
-	postgresql-9.6 \
-	postgresql-contrib-9.6 \
-	postgresql-plperl-9.6 \
-	postgresql-server-dev-9.6
+export CPAN_MODULES_PGSQL = \
+	String::KeyboardDistance \
+	Text::Levenshtein::Damerau::XS
 
 PGSQL_SERVER_DEBS_10 = \
 	$(DEB_PGSQL_COMMON_MODS) \
 	postgresql-10 \
-	postgresql-contrib-10 \
 	postgresql-plperl-10 \
 	postgresql-server-dev-10
+
+PGSQL_SERVER_DEBS_11 = \
+	$(DEB_PGSQL_COMMON_MODS) \
+	postgresql-11 \
+	postgresql-plperl-11 \
+	postgresql-server-dev-11
+
+PGSQL_SERVER_DEBS_12 = \
+	$(DEB_PGSQL_COMMON_MODS) \
+	postgresql-12 \
+	postgresql-plperl-12 \
+	postgresql-server-dev-12
+
+PGSQL_SERVER_DEBS_13 = \
+	$(DEB_PGSQL_COMMON_MODS) \
+	postgresql-13 \
+	postgresql-plperl-13 \
+	postgresql-server-dev-13
+
+PGSQL_SERVER_DEBS_14 = \
+	$(DEB_PGSQL_COMMON_MODS) \
+	postgresql-14 \
+	postgresql-plperl-14 \
+	postgresql-server-dev-14
 
 # note: some prereqs are repeated in the developer/packager 
 # sections to support building Evergreen packages on servers
@@ -121,9 +149,7 @@ PGSQL_SERVER_DEBS_10 = \
 DEVELOPER_DEBS = \
 	automake \
 	autoconf \
-	libtool \
-	chromium \
-	firefox-esr
+	libtool
 
 PACKAGER_DEBS = \
 	asciidoc \
@@ -136,12 +162,12 @@ TRANSLATOR_DEBS = \
 	libtemplate-perl \
 	liblocale-maketext-lexicon-perl \
 	translate-toolkit \
-	python-dev \
-	python-levenshtein \
-	python-polib \
-	python-setuptools \
-	python-simplejson \
-	python-lxml \
+	python3-dev \
+	python3-levenshtein \
+	python3-polib \
+	python3-setuptools \
+	python3-simplejson \
+	python3-lxml \
 	bzr
 
 all:
@@ -152,15 +178,35 @@ all:
 	make -f $(DIR)/Makefile.common install_cpan_force
 	make -f $(DIR)/Makefile.debian debian_sys_config
 
-install_postgres_server:
-	make -f $(DIR)/Makefile.debian DEBS="$(PGSQL_APT_REPO_DEBS)"
-	make -f $(DIR)/Makefile.debian debian_postgresql_repo
-	make -f $(DIR)/Makefile.debian DEBS="$(PGSQL_SERVER_DEBS_96)"
-
 install_postgres_server_10:
 	make -f $(DIR)/Makefile.debian DEBS="$(PGSQL_APT_REPO_DEBS)"
 	make -f $(DIR)/Makefile.debian debian_postgresql_repo
 	make -f $(DIR)/Makefile.debian DEBS="$(PGSQL_SERVER_DEBS_10)"
+	make -f $(DIR)/Makefile.common install_cpan_pgsql
+
+install_postgres_server_11:
+	make -f $(DIR)/Makefile.debian DEBS="$(PGSQL_APT_REPO_DEBS)"
+	make -f $(DIR)/Makefile.debian debian_postgresql_repo
+	make -f $(DIR)/Makefile.debian DEBS="$(PGSQL_SERVER_DEBS_11)"
+	make -f $(DIR)/Makefile.common install_cpan_pgsql
+
+install_postgres_server_12:
+	make -f $(DIR)/Makefile.debian DEBS="$(PGSQL_APT_REPO_DEBS)"
+	make -f $(DIR)/Makefile.debian debian_postgresql_repo
+	make -f $(DIR)/Makefile.debian DEBS="$(PGSQL_SERVER_DEBS_12)"
+	make -f $(DIR)/Makefile.common install_cpan_pgsql
+
+install_postgres_server_13:
+	make -f $(DIR)/Makefile.debian DEBS="$(PGSQL_APT_REPO_DEBS)"
+	make -f $(DIR)/Makefile.debian debian_postgresql_repo
+	make -f $(DIR)/Makefile.debian DEBS="$(PGSQL_SERVER_DEBS_13)"
+	make -f $(DIR)/Makefile.common install_cpan_pgsql
+
+install_postgres_server_14:
+	make -f $(DIR)/Makefile.debian DEBS="$(PGSQL_APT_REPO_DEBS)"
+	make -f $(DIR)/Makefile.debian debian_postgresql_repo
+	make -f $(DIR)/Makefile.debian DEBS="$(PGSQL_SERVER_DEBS_14)"
+	make -f $(DIR)/Makefile.common install_cpan_pgsql
 
 # note: if/when grunt-cli is available as a
 # package, use the packaged version instead.

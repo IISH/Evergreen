@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # dojo_resource.py
 """
 This class enables translation of Dojo resource bundles using gettext format.
@@ -36,6 +36,7 @@ import sys
 import simplejson
 import os.path
 import os
+from builtins import str
 
 class DojoResource (basel10n.BaseL10N):
     """
@@ -59,20 +60,20 @@ class DojoResource (basel10n.BaseL10N):
         # Avoid generating duplicate entries by keeping track of msgids
         msgids = dict()
 
-	try:
+        try:
             bundle = simplejson.load(codecs.open(source, encoding='utf-8', mode='r'))
-	except ValueError:
-	    print("Reading Dojo resource file %s" % (source))
+        except ValueError:
+            print("Reading Dojo resource file %s" % (source))
             raise
 
-        for key, value in bundle.iteritems():
+        for key, value in bundle.items():
             if value in msgids:
-                msgids[unicode(value)].occurrences.append((os.path.basename(source), str(key)))
+                msgids[str(value)].occurrences.append((os.path.basename(source), str(key)))
             else:
                 poe = polib.POEntry()
                 poe.occurrences = [(os.path.basename(source), str(key))]
-                poe.msgid = unicode(value)
-                msgids[unicode(value)] = poe
+                poe.msgid = str(value)
+                msgids[str(value)] = poe
 
         # Now add the POEntries to our POFile
         for poe in msgids.values():

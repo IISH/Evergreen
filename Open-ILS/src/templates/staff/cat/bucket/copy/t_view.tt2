@@ -18,6 +18,8 @@
     handler="requestItems"></eg-grid-action>
   <eg-grid-action label="[% l('Edit Selected Items') %]" group="[% l('Items') %]"
     handler="spawnHoldingsEdit"></eg-grid-action>
+  <eg-grid-action label="[% l('Edit Call Numbers') %]" group="[% l('Items') %]"
+    handler="spawnCallNumberEdit"></eg-grid-action>
   <eg-grid-action handler="showItems" group="[% l('Show') %]"
     label="[% l('Open in Item Status') %]"></eg-grid-action>  
   <eg-grid-action handler="print_labels" group="[% l('Show') %]"
@@ -42,9 +44,11 @@
   <eg-grid-field label="[% l('CN Suffix') %]" path="call_number.suffix.label"></eg-grid-field>
   <eg-grid-field label="[% l('Location') %]"    path="location.name" visible></eg-grid-field>
 
+  <eg-grid-field label="[% l('Author') %]"
+    path="call_number.record.simple_record.author" visible></eg-grid-field>
   <eg-grid-field label="[% l('Title') %]"
     path="call_number.record.simple_record.title" visible>
-    <a target="_self" href="[% ctx.base_path %]/staff/cat/catalog/record/{{item['call_number.record.id']}}">
+    <a href="/eg2/staff/catalog/record/{{item['call_number.record.id']}}">
       {{item['call_number.record.simple_record.title']}}
     </a>
   </eg-grid-field>

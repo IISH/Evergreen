@@ -3,6 +3,9 @@
   <div class="card-header d-flex">
     <div class="font-weight-bold">
       Record Summary
+      <ng-container *ngIf="summary.record.deleted() == 't'">
+        <span class="text-danger" i18n>(Deleted)</span>
+      </ng-container>
       <ng-container *ngIf="summary.attributes.icon_format && summary.attributes.icon_format[0]">
         <ng-container *ngFor="let icon of summary.attributes.icon_format">
           <span class="pr-1 pl-2">
@@ -15,12 +18,12 @@
     </div>
     <div class="flex-1"></div>
     <div>
-      <a class="with-material-icon no-href text-primary" 
+      <a class="with-material-icon no-href text-primary"
         title="Show More" i18n-title
         *ngIf="!expand" (click)="expand=true">
         <span class="material-icons">expand_more</span>
       </a>
-      <a class="with-material-icon no-href text-primary" 
+      <a class="with-material-icon no-href text-primary"
         title="Show Less" i18n-title
         *ngIf="expand" (click)="expand=false">
         <span class="material-icons">expand_less</span>
@@ -39,7 +42,7 @@
         </a>
       </div>
     </ng-container>
-    
+
     <!-- make room for the jacket image when expanded -->
     <div [ngClass]="{'col-lg-11 pl-0': expand, 'col-lg-12': !expand}">
       <div class="card-body">
@@ -48,7 +51,8 @@
             <div class="d-flex">
               <div class="flex-1 font-weight-bold" i18n>Title:</div>
               <div class="flex-3">
-                <eg-bib-display-field [summary]="summary" field="title">
+                <eg-bib-display-field [summary]="summary" field="title"
+                  routerLink="/staff/catalog/record/{{summary.id}}">
                 </eg-bib-display-field>
               </div>
               <div class="flex-1 font-weight-bold pl-1" i18n>Edition:</div>
@@ -91,6 +95,47 @@
               <div class="flex-1">{{summary.record.edit_date() | date:'short'}}</div>
             </div>
           </li>
+          <ng-container *ngIf="expand && hasCourse">
+            <li class="list-group-item">
+              <div class="d-flex">
+                <div class="flex-1 font-weight-bold" i18n>Associated Courses</div>
+              </div>
+            </li>
+            <li class="list-group-item" *ngFor="let course of courses">
+              <div class="d-flex">
+                <div class="flex-1 font-weight-bold" i18n>Course Name:</div>
+                <div class="flex-3">
+                  <a routerLink="/staff/admin/local/asset/course_list/{{course.id()}}">
+                    {{course.name()}}
+                  </a>
+                </div>
+                <div class="flex-1 font-weight-bold" i18n>Course Number:</div>
+                <div class="flex-1">{{course.course_number()}}</div>
+                <div class="flex-1 font-weight-bold" i18n>Section Number:</div>
+                <div class="flex-1">{{course.section_number()}}</div>
+                <div class="flex-1 font-weight-bold" i18n>Owning Library:</div>
+                <div class="flex-1">{{this.org.get(course.owning_lib()).shortname()}}</div>
+              </div>
+            </li>
+          </ng-container>
+          <ng-container *ngIf="expand && summary.eResourceUrls.length">
+            <li class="list-group-item" *ngFor="let url of summary.eResourceUrls">
+              <div class="d-flex">
+                <div class="flex-1 font-weight-bold">
+                  <ng-container [ngSwitch]="url.ind2">
+                    <ng-container *ngSwitchCase="'0'" i18n>Resource:</ng-container>
+                    <ng-container *ngSwitchCase="'1'" i18n>Version of Resource:</ng-container>
+                    <ng-container *ngSwitchCase="'2'" i18n>Related Resource:</ng-container>
+                    <ng-container *ngSwitchDefault i18n></ng-container>
+                  </ng-container>
+                </div>
+                <div class="flex-5">
+                  <div><a href="{{url.href}}">{{url.label}}</a></div>
+                  <div class="pt-1">{{url.note}}</div>
+                </div>
+              </div>
+            </li>
+          </ng-container>
         </ul>
       </div>
     </div><!-- col -->

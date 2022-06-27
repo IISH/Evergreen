@@ -1,7 +1,8 @@
 [%  PROCESS "opac/parts/header.tt2";
     WRAPPER "opac/parts/myopac/prefs_base.tt2";
     myopac_page = "prefs";
-    prefs_page = 'prefs' %]
+    prefs_page = 'prefs';
+    can_call_action_trigger = 'true' %]
 
 <h3 class="sr-only">[% l('Account Preferences') %]</h3>
 <div id="acct_info_main">
@@ -9,21 +10,6 @@
     <table width='70%' title="[% l('Account preference') %]"
         class='light_border data_grid'>
         <tbody id='myopac_summary_tbody'>
-            <tr>
-                <td width='30%'
-                    class='color_4 light_border'>[% l("Name") %]</td>
-
-                <td class='light_border'>[% l(
-                    HUMAN_NAME_FORMAT,
-                    ctx.user.prefix, 
-                    ctx.user.first_given_name,
-                    ctx.user.second_given_name, 
-                    ctx.user.family_name,
-                    ctx.user.suffix
-                ) | html %]</td>
-
-                <td></td>
-            </tr>
             [% IF ctx.user.pref_first_given_name || ctx.user.pref_second_given_name || ctx.user.pref_family_name %]
             <tr>
                 <td width='30%'
@@ -31,20 +17,39 @@
 
                 <td class='light_border'>[% l(
                     HUMAN_NAME_FORMAT,
-                    ctx.user.pref_prefix, 
+                    ctx.user.pref_prefix,
                     (ctx.user.pref_first_given_name || ctx.user.first_given_name),
-                    ctx.user.pref_second_given_name, 
+                    ctx.user.pref_second_given_name,
                     (ctx.user.pref_family_name || ctx.user.family_name),
                     ctx.user.pref_suffix
                 ) | html %]</td>
 
                 <td></td>
+                <td></td>
             </tr>
             [%  END %]
 
             <tr>
+                <td width='30%'
+                    class='color_4 light_border'>[% l("Legal Name") %]</td>
+
+                <td class='light_border'>[% l(
+                    HUMAN_NAME_FORMAT,
+                    ctx.user.prefix,
+                    ctx.user.first_given_name,
+                    ctx.user.second_given_name,
+                    ctx.user.family_name,
+                    ctx.user.suffix
+                ) | html %]</td>
+
+                <td></td>
+                <td></td>
+            </tr>
+
+            <tr>
                 <td class='color_4 light_border'>[% l("Day Phone") %]</td>
                 <td class='light_border'>[% ctx.user.day_phone | html %]</td>
+                <td></td>
                 <td></td>
             </tr>
 
@@ -52,11 +57,13 @@
                 <td class='color_4 light_border'>[% l("Evening Phone") %]</td>
                 <td class='light_border'>[% ctx.user.evening_phone | html %]</td>
                 <td></td>
+                <td></td>
             </tr>
 
             <tr>
                 <td class='color_4 light_border'>[% l("Other Phone") %]</td>
                 <td class='light_border'>[% ctx.user.other_phone | html %]</td>
+                <td></td>
                 <td></td>
             </tr>
 
@@ -66,6 +73,7 @@
                    </div>[% l("Username") %]
                 </td>
                 <td class='light_border'>[% ctx.user.usrname | html %]</td>
+                <td></td>
                 [%- IF ctx.username_change_disallowed %]
                 <td></td>
                 [%- ELSE %]
@@ -76,6 +84,7 @@
             <tr>
                 <td class='color_4 light_border'>[% l("Password") %]</td>
                 <td class='light_border'>[% l("(not shown)") %]</td>
+                <td></td>
                 [%- IF disable_password_change == 'true' %]
                 <td></td>
                 [%- ELSE %]
@@ -83,9 +92,21 @@
                     title="[% l('Change Password') %]">[% l("Change") %]</a></td>
                 [%- END %]
             </tr>
+            <tr id="test_notification_banner" style="display:none">
+                <td colspan="4">
+                    [% INCLUDE "opac/myopac/test_notification.tt2" message_type = "email" %]
+                </td>
+            </tr>
             <tr>
                 <td class='color_4 light_border'>[% l("Email Address") %]</td>
                 <td class='light_border'>[% ctx.user.email | html %]</td>
+                <td class='light_border'>
+                [%- IF ctx.user.email %]
+                <a href="#" onclick="sendTestEmail(
+                        [% ctx.user.id %], '[% ctx.authtoken %]'
+                    )"
+                    title="[% l('Send Test Email') %]">[% l('Send Test Email') %]</a></td>
+                [%- END %]
                 [%- IF disable_email_change == 'true' %]
                 <td></td>
                 [%- ELSE %]
@@ -93,7 +114,7 @@
                     title="[% l('Update Email Address') %]">[% l('Change') %]</a></td>
                 [%- END %]
             </tr>
-
+            <tr>
             [% IF ctx.user.ident_value %]<tr class="hide_me">
                 <td class='color_4 light_border'>
                 [% l("Primary Identification") %]</td>
@@ -107,22 +128,43 @@
                     %]
                 </td>
                 <td></td>
+                <td></td>
             </tr>[% END %]
 
             <tr>
                 <td class='color_4 light_border'>[% l("Active Barcode") %]</td>
                 <td class='light_border'>[% ctx.user.card.barcode %]</td>
                 <td></td>
+                <td></td>
             </tr>
 
             <tr>
                 <td class='color_4 light_border'>[% l("Home Library") %]</td>
-                <td class='light_border'>[% ctx.user.home_ou.name | html %]</td>
+                <td class='light_border'>
+                    [% ctx.get_aou(ctx.user.home_ou.parent_ou).name | html %]<br/>
+                    [% ctx.user.home_ou.name | html %]<br/>
+                    [% ctx.user.home_ou.billing_address.street1 | html %]<br/>
+                    [% IF ctx.user.home_ou.billing_address.street2; ctx.user.home_ou.billing_address.street2 | html; "<br/>"; END %]
+                    [% ctx.user.home_ou.billing_address.city | html %], [% ctx.user.home_ou.billing_address.state | html %]
+                    [% ctx.user.home_ou.billing_address.post_code | html %]<br/>
+                    <br/>
+
+                    [% IF ctx.user.home_ou.phone; ctx.user.home_ou.phone | html; "<br/>"; END %]
+
+                    [% IF ctx.user.home_ou.email; '<a href="mailto:'; ctx.user.home_ou.email | html; '">'; ctx.user.home_ou.email | html; "</a><br/>"; END %]
+                    [% lib_url = ctx.get_org_setting(ctx.user.home_ou.id, 'lib.info_url');
+                        IF lib_url;
+                            '<a href="'; lib_url | html; '" property="url">'; lib_url | html;  '</a>';
+                        END;
+                    %]
+                </td>
+                <td></td>
                 <td></td>
             </tr>
             <tr>
                 <td class='color_4 light_border'>[% l("Account Creation Date") %]</td>
                 <td class='light_border'>[% date.format(ctx.parse_datetime(ctx.user.create_date), DATE_FORMAT) %]</td>
+                <td></td>
                 <td></td>
             </tr>
             <tr>
@@ -135,6 +177,7 @@
                         [% date.format(ctx.parse_datetime(ctx.user.expire_date), DATE_FORMAT) %]
                     [% END %]
                 </td>
+                <td></td>
                 <td></td>
             </tr>
         </tbody>

@@ -28,7 +28,7 @@ import {HtmlToTxtService} from '@eg/share/util/htmltotxt.service';
   templateUrl: 'sandbox.component.html',
   styles: ['.date-time-input.ng-invalid {border: 5px purple solid;}',
     '.date-time-input.ng-valid {border: 5px green solid; animation: slide 5s linear 1s infinite alternate;}',
-    '@keyframes slide {0% {margin-left:0px;} 50% {margin-left:200px;}']
+    '@keyframes slide {0% {margin-left:0px;} 50% {margin-left:200px;}}']
 })
 export class SandboxComponent implements OnInit {
 
@@ -51,6 +51,8 @@ export class SandboxComponent implements OnInit {
 
     @ViewChild('bresvEditor', { static: true })
     private bresvEditor: FmRecordEditorComponent;
+
+    @ViewChild('penaltyDialog', {static: false}) penaltyDialog;
 
 
     // @ViewChild('helloStr') private helloStr: StringComponent;
@@ -103,11 +105,17 @@ export class SandboxComponent implements OnInit {
     // selector field value on metarecord object
     aMetarecord: string;
 
+    // file-reader example
+    fileContents:  Array<string>;
+
     // cross-tab communications example
     private sbChannel: any;
     sbChannelText: string;
-
     myTimeForm: FormGroup;
+
+    locId = 1; // Stacks
+    aLocation: IdlObject; // acpl
+    orgClassCallback: (orgId: number) => string;
 
     constructor(
         private idl: IdlService,
@@ -124,6 +132,11 @@ export class SandboxComponent implements OnInit {
         this.sbChannel = (typeof BroadcastChannel === 'undefined') ?
             {} : new BroadcastChannel('eg.sbChannel');
         this.sbChannel.onmessage = (e) => this.sbChannelHandler(e);
+
+        this.orgClassCallback = (orgId: number): string => {
+            if (orgId === 1) { return 'font-weight-bold'; }
+            return orgId <= 3 ? 'text-info' : 'text-danger';
+        };
     }
 
     ngOnInit() {
@@ -249,6 +262,8 @@ export class SandboxComponent implements OnInit {
             base[this.idl.classes['atevdef'].pkey] = {'!=' : null};
             const query: any = new Array();
             query.push(base);
+
+            console.log(JSON.stringify(this.eventsDataSource.filters));
 
             Object.keys(this.eventsDataSource.filters).forEach(key => {
                 Object.keys(this.eventsDataSource.filters[key]).forEach(key2 => {
@@ -471,6 +486,11 @@ export class SandboxComponent implements OnInit {
             contextData: templateData,
             printContext: 'default'
         });
+    }
+
+    openPenalty() {
+        this.penaltyDialog.open()
+        .subscribe(val => console.log('penalty value', val));
     }
 }
 

@@ -299,8 +299,8 @@ function(egCore , $q) {
     service.save_acp_templates = function(t) {
         egCore.hatch.setItem('cat.copy.templates', t);
         egCore.net.request('open-ils.actor', 'open-ils.actor.patron.settings.update',
-            egCore.auth.token(), egCore.auth.user().id(), { "webstaff.cat.copy.templates": t });
-        // console.warn('Saved ' + JSON.stringify({"webstaff.cat.copy.templates": t}));
+            egCore.auth.token(), egCore.auth.user().id(), { "cat.copy.templates": t });
+        // console.warn('Saved ' + JSON.stringify({"cat.copy.templates": t}));
     };
 
     service.load_remote_acp_templates = function() {
@@ -309,17 +309,17 @@ function(egCore , $q) {
         // can be thrown away.
         return egCore.net.request('open-ils.actor', 'open-ils.actor.patron.settings.retrieve.authoritative',
             egCore.auth.token(), egCore.auth.user().id(),
-            ['webstaff.cat.copy.templates','staff_client.copy_editor.templates']).then(function(settings) {
-                if (settings['webstaff.cat.copy.templates']) {
-                    egCore.hatch.setItem('cat.copy.templates', settings['webstaff.cat.copy.templates']);
-                    return settings['webstaff.cat.copy.templates'];
+            ['cat.copy.templates','staff_client.copy_editor.templates']).then(function(settings) {
+                if (settings['cat.copy.templates']) {
+                    egCore.hatch.setItem('cat.copy.templates', settings['cat.copy.templates']);
+                    return settings['cat.copy.templates'];
                 } else {
                     if (settings['staff_client.copy_editor.templates']) {
                         var new_templ = service.convert_xul_templates(settings['staff_client.copy_editor.templates']);
                         egCore.hatch.setItem('cat.copy.templates', new_templ);
-                        // console.warn('Saving: ' + JSON.stringify({'webstaff.cat.copy.templates' : new_templ}));
+                        // console.warn('Saving: ' + JSON.stringify({'cat.copy.templates' : new_templ}));
                         egCore.net.request('open-ils.actor', 'open-ils.actor.patron.settings.update',
-                            egCore.auth.token(), egCore.auth.user().id(), {'webstaff.cat.copy.templates' : new_templ});
+                            egCore.auth.token(), egCore.auth.user().id(), {'cat.copy.templates' : new_templ});
                         return new_templ;
                     }
                 }
@@ -441,7 +441,9 @@ function(egCore , $q) {
 
     // create a new acp object with default values
     // (both hard-coded and coming from OU settings)
-    service.generateNewCopy = function(callNumber, owningLib, isFastAdd, isNew) {
+    service.generateNewCopy =
+        function(callNumber, owningLib, isFastAdd, isNew, delayCopyStatus) {
+
         var cp = new egCore.idl.acp();
         cp.id( --service.new_cp_id );
         if (isNew) {
@@ -462,20 +464,51 @@ function(egCore , $q) {
         cp.mint_condition('t');
         cp.empty_barcode = true;
 
-        var status_setting = isFastAdd ?
-            'cat.default_copy_status_fast' :
-            'cat.default_copy_status_normal';
-        egCore.org.settings(
-            [status_setting],
-            owningLib
-        ).then(function(set) {
-            var default_ccs = parseInt(set[status_setting]);
-            if (isNaN(default_ccs))
-                default_ccs = (isFastAdd ? 0 : 5); // 0 is Available, 5 is In Process
-            cp.status(default_ccs);
-        });
+        if (delayCopyStatus) { return cp; }
+
+        service.applyDefaultStatus([cp], isFastAdd);
 
         return cp;
+    }
+
+    // Apply the default copy status to a batch of copies
+    service.applyDefaultStatus = function(copies, isFastAdd) {
+
+        var setting = isFastAdd ?
+            'cat.default_copy_status_fast' :
+            'cat.default_copy_status_normal';
+
+        var orgs = {};
+        copies.forEach(function(copy) { orgs[copy.circ_lib()] = 1; });
+
+        var promise = $q.when();
+
+        // Fetch needed org settings; serialized
+        // Note in practice this is always one org unit since
+        // batches of copies are added to a single volume at a time.
+        Object.keys(orgs).forEach(function(org) {
+            promise = promise.then(function() {
+                return egCore.org.settings(setting, org)
+                .then(function(sets) {
+                    var stat = sets[setting] || (isFastAdd ? 0 : 5);
+                    orgs[org] = stat;
+                });
+            })
+        });
+
+        // All needed org settings retrieved.
+        // Appply values to matching copies
+        promise.then(function() {
+            Object.keys(orgs).forEach(function(org) {
+
+                var someCopies = copies.filter(function(copy) {
+                    return copy.circ_lib() == org});
+
+                someCopies.forEach(function(copy) { copy.status(orgs[org]); });
+            });
+        });
+
+        return promise;
     }
 
     return service;
@@ -491,7 +524,7 @@ function(egCore , $q) {
                 '<div class="col-xs-5" ng-class="{'+"'has-error'"+':barcode_has_error}">'+
                     '<input id="{{callNumber.id()}}_{{copy.id()}}"'+
                     ' eg-enter="nextBarcode(copy.id())" class="form-control"'+
-                    ' type="text" ng-model="barcode" ng-change="updateBarcode()"'+
+                    ' type="text" ng-model="barcode" ng-model-options="{ debounce: 500 }" ng-change="updateBarcode()"'+
                     ' ng-focus="selectOnFocus($event)" autofocus/>'+
                     '<div class="label label-danger" ng-if="duplicate_barcode">{{duplicate_barcode_string}}</div>'+
                     '<div class="label label-danger" ng-if="empty_barcode">{{empty_barcode_string}}</div>'+
@@ -808,17 +841,20 @@ function(egCore , $q) {
                 }
 
                 $scope.changeCPCount = function () {
+                    var newCopies = [];
                     while ($scope.copy_count > $scope.copies.length) {
                         var cp = itemSvc.generateNewCopy(
                             $scope.callNumber,
                             $scope.callNumber.owning_lib(),
                             $scope.fast_add,
-                            true
+                            true, true
                         );
                         $scope.copies.push( cp );
                         $scope.allcopies.push( cp );
-
+                        newCopies.push(cp);
                     }
+
+                    itemSvc.applyDefaultStatus(newCopies, $scope.fast_add);
 
                     if ($scope.copy_count >= $scope.orig_copy_count) {
                         var how_many = $scope.copies.length - $scope.copy_count;
@@ -922,6 +958,7 @@ function(egCore , $q) {
                 $scope.$watch('cn_count', function (n) {
                     var o = Object.keys($scope.struct).length;
                     if (n > o) { // adding
+                        var newCopies = [];
                         for (var i = o; o < n; o++) {
                             var cn = new egCore.idl.acn();
                             cn.id( --itemSvc.new_cn_id );
@@ -936,9 +973,10 @@ function(egCore , $q) {
                                 cn,
                                 $scope.owning_lib.id(),
                                 $scope.fast_add,
-                                true
+                                true, true
                             );
 
+                            newCopies.push(cp);
                             $scope.struct[cn.id()] = [cp];
                             $scope.allcopies.push(cp);
                             if (!$scope.defaults.classification) {
@@ -950,6 +988,9 @@ function(egCore , $q) {
                                 });
                             }
                         }
+
+                        itemSvc.applyDefaultStatus(newCopies, $scope.fast_add);
+
                     } else if (n < o && n >= $scope.orig_cn_count) { // removing
                         var how_many = o - n;
                         var list = Object
@@ -1501,7 +1542,7 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
                 return y.id() == x;
             });
 
-            return s[0].name();
+            return s[0] ? s[0].name() : '';
         }
 
         $scope.locationName = function (x) {

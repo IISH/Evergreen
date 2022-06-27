@@ -14,10 +14,11 @@ function($q , $window , $timeout , $http , egHatch , egAuth , egIDL , egOrg , eg
             'circ.staff_client.receipt.event_text',
             'circ.staff_client.receipt.footer_text',
             'circ.staff_client.receipt.header_text',
-            'circ.staff_client.receipt.notice_text'
+            'circ.staff_client.receipt.notice_text',
+            'lib.info_url',
+            'lib.my_account_url'
         ]
     };
-
 
     service.template_base_path = 'share/print_templates/t_';
 
@@ -91,6 +92,12 @@ function($q , $window , $timeout , $http , egHatch , egAuth , egIDL , egOrg , eg
     // Template has been fetched (or no template needed) 
     // Process the template and send the result off to the printer.
     service.print_content = function(args) {
+
+        if (args.context === 'no-print') {
+            console.debug('Skipping print request with No-Print context');
+            return $q.when();
+        }
+
         return service.fleshPrintScope(args.scope)
         .then(function() { return egHatch.usePrinting(); })
         .then(function(useHatch) {

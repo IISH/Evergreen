@@ -94,7 +94,7 @@ export class GridBodyComponent implements OnInit {
             this.context.toggleSelectOneRow(index);
 
         } else if ($event.shiftKey) {
-            // TODO shift range click
+            this.context.selectRowRange(index);
 
         } else {
             this.context.selectOneRow(index);
@@ -114,11 +114,6 @@ export class GridBodyComponent implements OnInit {
     // manually close any existing open menus, open selected menu.
     onRowContextClick($event, row: any, contextMenu: NgbPopover) {
         $event.preventDefault(); // prevent browser context menu
-
-        if (this.context.toolbarActions.length === 0) {
-            // No actions to render.
-            return;
-        }
 
         if (!this.context.rowIsSelected(row)) {
             // If the focused row is not selected, select it.

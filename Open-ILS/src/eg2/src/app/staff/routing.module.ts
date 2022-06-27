@@ -19,8 +19,13 @@ const routes: Routes = [{
     redirectTo: 'splash',
     pathMatch: 'full',
   }, {
+    path: 'acq',
+    loadChildren: () =>
+      import('@eg/staff/acq/routing.module').then(m => m.AcqRoutingModule)
+  }, {
     path: 'booking',
-    loadChildren : '@eg/staff/booking/booking.module#BookingModule'
+    loadChildren: () =>
+      import('./booking/booking.module').then(m => m.BookingModule)
   }, {
     path: 'about',
     component: AboutComponent
@@ -28,23 +33,39 @@ const routes: Routes = [{
     path: 'login',
     component: StaffLoginComponent
   }, {
+    path: 'no_permission',
+    component: StaffSplashComponent
+  }, {
     path: 'splash',
     component: StaffSplashComponent
   }, {
     path: 'circ',
-    loadChildren : '@eg/staff/circ/routing.module#CircRoutingModule'
+    loadChildren: () =>
+      import('./circ/routing.module').then(m => m.CircRoutingModule)
   }, {
     path: 'cat',
-    loadChildren : '@eg/staff/cat/routing.module#CatRoutingModule'
+    loadChildren: () =>
+      import('./cat/cat.module').then(m => m.CatModule)
   }, {
     path: 'catalog',
-    loadChildren : '@eg/staff/catalog/catalog.module#CatalogModule'
+    loadChildren: () =>
+      import('./catalog/catalog.module').then(m => m.CatalogModule)
+  }, {
+    path: 'reporter',
+    loadChildren: () =>
+      import('@eg/staff/reporter/routing.module').then(m => m.ReporterRoutingModule)
   }, {
     path: 'sandbox',
-    loadChildren : '@eg/staff/sandbox/sandbox.module#SandboxModule'
+    loadChildren: () =>
+      import('./sandbox/sandbox.module').then(m => m.SandboxModule)
+  }, {
+    path: 'hopeless',
+    loadChildren: () =>
+      import('@eg/staff/hopeless/hopeless.module').then(m => m.HopelessModule)
   }, {
     path: 'admin',
-    loadChildren : '@eg/staff/admin/routing.module#AdminRoutingModule'
+    loadChildren: () =>
+      import('./admin/routing.module').then(m => m.AdminRoutingModule)
   }]
 }];
 

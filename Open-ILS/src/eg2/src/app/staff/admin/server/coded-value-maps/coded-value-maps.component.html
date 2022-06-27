@@ -1,0 +1,14 @@
+<eg-staff-banner bannerText="SVF Record Attribute Coded Value Map Configuration" i18n-bannerText>
+</eg-staff-banner>
+
+<eg-admin-page idlClass="ccvm" [templateFields]="[{name: 'Composite Definition', template: compDefTmpl}]">
+</eg-admin-page>
+
+
+<ng-template #compDefTmpl let-row="row">
+  <div *ngIf="row.ctype().composite() == 't'">
+    <a routerLink="/staff/admin/server/config/coded_value_map/composite_def/{{row.id()}}">
+      Manage
+    </a>
+  </div>
+</ng-template>

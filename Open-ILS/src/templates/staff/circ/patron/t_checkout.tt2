@@ -136,7 +136,7 @@
     path='circ.renewal_remaining'></eg-grid-field>
 
   <eg-grid-field label="[% l('Title') %]" path="title">
-    <a target="_self" href="[% ctx.base_path %]/staff/cat/catalog/record/{{item.acn.record()}}">
+    <a href="/eg2/staff/catalog/record/{{item.acn.record()}}">
       {{item.title}}
     </a>
   </eg-grid-field>
@@ -167,7 +167,8 @@
   <div class="flex-cell"></div>
   <div class="checkbox">
     <label>
-      <input ng-model="strict_barcode" type="checkbox"/>
+      <input ng-model="strict_barcode" type="checkbox"
+        ng-change="onStrictBarcodeChange()"/>
       [% l('Strict Barcode') %]
     </label>
   </div>

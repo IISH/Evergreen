@@ -1,15 +1,15 @@
 import {Component, OnInit, OnDestroy, Input} from '@angular/core';
 import {Subscription} from 'rxjs';
-import {Router, ParamMap} from '@angular/router';
+import {Router} from '@angular/router';
 import {OrgService} from '@eg/core/org.service';
-import {NetService} from '@eg/core/net.service';
 import {IdlObject} from '@eg/core/idl.service';
 import {CatalogService} from '@eg/share/catalog/catalog.service';
-import {BibRecordService, BibRecordSummary} from '@eg/share/catalog/bib-record.service';
+import {BibRecordSummary, HoldingsSummary} from '@eg/share/catalog/bib-record.service';
 import {CatalogSearchContext} from '@eg/share/catalog/search-context';
 import {CatalogUrlService} from '@eg/share/catalog/catalog-url.service';
 import {StaffCatalogService} from '../catalog.service';
 import {BasketService} from '@eg/share/catalog/basket.service';
+import {CourseService} from '@eg/staff/share/course.service';
 
 @Component({
   selector: 'eg-catalog-result-record',
@@ -29,21 +29,22 @@ export class ResultRecordComponent implements OnInit, OnDestroy {
     searchContext: CatalogSearchContext;
     isRecordSelected: boolean;
     basketSub: Subscription;
+    hasCourse = false;
+    courses: any[] = [];
 
     constructor(
         private router: Router,
         private org: OrgService,
-        private net: NetService,
-        private bib: BibRecordService,
         private cat: CatalogService,
         private catUrl: CatalogUrlService,
         private staffCat: StaffCatalogService,
-        private basket: BasketService
+        private basket: BasketService,
+        private course: CourseService
     ) {}
 
     ngOnInit() {
         this.searchContext = this.staffCat.searchContext;
-        this.summary.getHoldCount();
+        this.loadCourseInformation(this.summary.id);
         this.isRecordSelected = this.basket.hasRecordId(this.summary.id);
 
         // Watch for basket changes caused by other components
@@ -54,6 +55,21 @@ export class ResultRecordComponent implements OnInit, OnDestroy {
 
     ngOnDestroy() {
         this.basketSub.unsubscribe();
+    }
+
+    loadCourseInformation(recordId) {
+        this.course.isOptedIn().then(res => {
+            if (res) {
+                this.course.fetchCoursesForRecord(recordId).then(course_list => {
+                    if (course_list) {
+                        Object.keys(course_list).forEach(key => {
+                            this.courses.push(course_list[key]);
+                        });
+                        this.hasCourse = true;
+                    }
+                });
+            }
+        });
     }
 
     orgName(orgId: number): string {
@@ -115,6 +131,28 @@ export class ResultRecordComponent implements OnInit, OnDestroy {
         } else {
             return this.basket.removeRecordIds([this.summary.id]);
         }
+    }
+
+    getHoldingsSummaries(): HoldingsSummary[] {
+        if (!this.summary.prefOuHoldingsSummary) {
+            return this.summary.holdingsSummary;
+        }
+
+        let match = false;
+        this.summary.holdingsSummary.some(sum => {
+            if (Number(sum.org_unit) === Number(this.staffCat.prefOrg.id())) {
+                return match = true;
+            }
+        });
+
+        if (match) {
+            // Holdings summary for the pref ou is included in the
+            // record-level holdings summaries.
+            return this.summary.holdingsSummary;
+        }
+
+        return this.summary.holdingsSummary
+            .concat(this.summary.prefOuHoldingsSummary);
     }
 }
 

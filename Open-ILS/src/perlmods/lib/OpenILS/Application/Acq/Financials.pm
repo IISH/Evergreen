@@ -1015,6 +1015,15 @@ sub retrieve_purchase_order_impl {
     if ($options->{"flesh_provider"}) {
         push @{$flesh->{"flesh_fields"}->{"acqpo"}}, "provider";
     }
+    if ($options->{"flesh_owner"}) {
+        push @{$flesh->{"flesh_fields"}->{"acqpo"}}, "owner";
+    }
+    if ($options->{"flesh_creator"}) {
+        push @{$flesh->{"flesh_fields"}->{"acqpo"}}, "creator";
+    }
+    if ($options->{"flesh_editor"}) {
+        push @{$flesh->{"flesh_fields"}->{"acqpo"}}, "editor";
+    }
 
     push (@{$flesh->{flesh_fields}->{acqpo}}, 'po_items') if $options->{flesh_po_items};
 
@@ -1023,6 +1032,8 @@ sub retrieve_purchase_order_impl {
 
     my $po = $e->retrieve_acq_purchase_order($args)
         or return $e->event;
+
+    return $e->event unless $e->allowed(['VIEW_INVOICE', 'CREATE_INVOICE'], $po->ordering_agency);
 
     if($$options{flesh_lineitems}) {
 
@@ -1415,7 +1426,8 @@ sub process_fiscal_rollover {
         my $fund = $e->retrieve_acq_fund($_) or return $e->die_event;
         $fund->summary(retrieve_fund_summary_impl($e, $fund));
 
-        my $amount = 0;
+        my $rollover_amount = 0;
+        my $encumb_amount = 0;
         if($combined and $U->is_true($fund->rollover)) {
             # see how much money was rolled over
 
@@ -1425,10 +1437,18 @@ sub process_fiscal_rollover {
                 where => {dest_fund => $fund->id, note => { like => 'Rollover%' } }
             })->[0];
 
-            $amount = $sum->{dest_amount} if $sum;
+            $rollover_amount = $sum->{dest_amount} if $sum;
+
+            $sum = $e->json_query({
+                select => {acqfdeb => [{column => 'amount', transform => 'sum'}]}, 
+                from => 'acqfdeb', 
+                where => {fund => $fund->id, encumbrance => 't' }
+            })->[0];
+
+            $encumb_amount = $sum->{amount} if $sum;
         }
 
-        $conn->respond({fund => $fund, rollover_amount => $amount});
+        $conn->respond({fund => $fund, rollover_amount => $rollover_amount, encumb_amount => $encumb_amount});
     }
 
     $self->api_name =~ /dry_run/ and $e->rollback or $e->commit;

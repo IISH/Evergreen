@@ -84,6 +84,7 @@ CREATE TABLE acq.provider (
     default_copy_count  INT     NOT NULL DEFAULT 0,
 	default_claim_policy INT    REFERENCES acq.claim_policy
 	                            DEFERRABLE INITIALLY DEFERRED,
+    primary_contact     INT,    -- REFERENCE acq.provider_contact(id) ON DELETE SET NULL ON UPDATE CASCADE DEFERRABLE INITIALLY DEFERRED
     CONSTRAINT provider_name_once_per_owner UNIQUE (name,owner),
 	CONSTRAINT code_once_per_owner UNIQUE (code, owner)
 );
@@ -155,6 +156,7 @@ CREATE TABLE acq.funding_source (
 	owner		INT	NOT NULL REFERENCES actor.org_unit (id) DEFERRABLE INITIALLY DEFERRED,
 	currency_type	TEXT	NOT NULL REFERENCES acq.currency_type (code) DEFERRABLE INITIALLY DEFERRED,
 	code		TEXT	NOT NULL,
+	active		BOOL	NOT NULL DEFAULT TRUE,
 	CONSTRAINT funding_source_code_once_per_owner UNIQUE (code,owner),
 	CONSTRAINT funding_source_name_once_per_owner UNIQUE (name,owner)
 );
@@ -213,7 +215,7 @@ CREATE TABLE acq.fund (
     name            TEXT    NOT NULL,
     year            INT     NOT NULL DEFAULT EXTRACT( YEAR FROM NOW() ),
     currency_type   TEXT    NOT NULL REFERENCES acq.currency_type (code) DEFERRABLE INITIALLY DEFERRED,
-    code            TEXT,
+    code            TEXT    NOT NULL,
 	rollover        BOOL    NOT NULL DEFAULT FALSE,
 	propagate       BOOL    NOT NULL DEFAULT TRUE,
 	active          BOOL    NOT NULL DEFAULT TRUE,
@@ -915,6 +917,7 @@ CREATE TABLE acq.po_item (
 );
 
 CREATE INDEX poi_po_idx ON acq.po_item (purchase_order);
+CREATE INDEX poi_fund_debit_idx ON acq.po_item (fund_debit);
 
 CREATE TABLE acq.invoice_item ( -- for invoice-only debits: taxes/fees/non-bib items/etc
     id              SERIAL      PRIMARY KEY,
@@ -938,6 +941,7 @@ CREATE TABLE acq.invoice_item ( -- for invoice-only debits: taxes/fees/non-bib i
 CREATE INDEX ii_inv_idx on acq.invoice_item (invoice);
 CREATE INDEX ii_po_idx on acq.invoice_item (purchase_order);
 CREATE INDEX ii_poi_idx on acq.invoice_item (po_item);
+CREATE INDEX ii_fund_debit_idx ON acq.invoice_item (fund_debit);
 
 -- Patron requests
 CREATE TABLE acq.user_request_type (
@@ -1352,6 +1356,10 @@ DECLARE
 	orig_allocated_amt NUMERIC;  -- in currency of funding source
 	allocated_amt      NUMERIC;  -- in currency of fund
 	source             RECORD;
+    old_fund_row       acq.fund%ROWTYPE;
+    new_fund_row       acq.fund%ROWTYPE;
+    old_org_row        actor.org_unit%ROWTYPE;
+    new_org_row        actor.org_unit%ROWTYPE;
 BEGIN
 	--
 	-- Sanity checks
@@ -1437,6 +1445,14 @@ BEGIN
 			currency_ratio := new_amount / old_amount;
 		END IF;
 	END IF;
+
+    -- Fetch old and new fund's information
+    -- in order to construct the allocation notes
+    SELECT INTO old_fund_row * FROM acq.fund WHERE id = old_fund;
+    SELECT INTO old_org_row * FROM actor.org_unit WHERE id = old_fund_row.org;
+    SELECT INTO new_fund_row * FROM acq.fund WHERE id = new_fund;
+    SELECT INTO new_org_row * FROM actor.org_unit WHERE id = new_fund_row.org;
+
 	--
 	-- Identify the funding source(s) from which we want to transfer the money.
 	-- The principle is that we want to transfer the newest money first, because
@@ -1544,7 +1560,9 @@ BEGIN
 				old_fund,
 				source_deduction,
 				user_id,
-				'Transfer to fund ' || new_fund
+				'Transfer to fund ' || new_fund_row.code || ' ('
+                                    || new_fund_row.year || ') ('
+                                    || new_org_row.shortname || ')'
 			);
 		END IF;
 		--
@@ -1607,7 +1625,9 @@ BEGIN
 					new_fund,
 					source_addition,
 					user_id,
-					'Transfer from fund ' || old_fund
+				    'Transfer from fund ' || old_fund_row.code || ' ('
+                                          || old_fund_row.year || ') ('
+                                          || old_org_row.shortname || ')'
 				);
 			END IF;
 		END IF;
@@ -2584,5 +2604,29 @@ CREATE OR REPLACE VIEW acq.lineitem_summary AS
         ) AS paid_amount
 
         FROM acq.lineitem AS li;
+
+
+CREATE VIEW acq.li_state_label AS
+  SELECT *
+  FROM (VALUES
+          ('new', oils_i18n_gettext('new', 'New', 'jubstlbl', 'label')),
+          ('selector-ready', oils_i18n_gettext('selector-ready', 'Selector-Ready', 'jubstlbl', 'label')),
+          ('order-ready', oils_i18n_gettext('order-ready', 'Order-Ready', 'jubstlbl', 'label')),
+          ('approved', oils_i18n_gettext('approved', 'Approved', 'jubstlbl', 'label')),
+          ('pending-order', oils_i18n_gettext('pending-order', 'Pending-Order', 'jubstlbl', 'label')),
+          ('on-order', oils_i18n_gettext('on-order', 'On-Order', 'jubstlbl', 'label')),
+          ('received', oils_i18n_gettext('received', 'Received', 'jubstlbl', 'label')),
+          ('cancelled', oils_i18n_gettext('cancelled', 'Cancelled', 'jubstlbl', 'label'))
+       ) AS t (id,label);
+
+CREATE VIEW acq.po_state_label AS
+  SELECT *
+  FROM (VALUES
+          ('new', oils_i18n_gettext('new', 'New', 'acqpostlbl', 'label')),
+          ('pending', oils_i18n_gettext('pending', 'Pending', 'acqpostlbl', 'label')),
+          ('on-order', oils_i18n_gettext('on-order', 'On-Order', 'acqpostlbl', 'label')),
+          ('received', oils_i18n_gettext('received', 'Received', 'acqpostlbl', 'label')),
+          ('cancelled', oils_i18n_gettext('cancelled', 'Cancelled', 'acqpostlbl', 'label'))
+       ) AS t (id,label);
 
 COMMIT;

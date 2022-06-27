@@ -79,7 +79,7 @@ BEGIN
         UPDATE actor.usr_address SET usr = dest_usr WHERE usr = src_usr;
     END IF;
 
-    UPDATE actor.usr_note SET usr = dest_usr WHERE usr = src_usr;
+    UPDATE actor.usr_message SET usr = dest_usr WHERE usr = src_usr;
     -- dupes are technically OK in actor.usr_standing_penalty, should manually delete them...
     UPDATE actor.usr_standing_penalty SET usr = dest_usr WHERE usr = src_usr;
     PERFORM actor.usr_merge_rows('actor.usr_org_unit_opt_in', 'usr', src_usr, dest_usr);
@@ -422,6 +422,9 @@ BEGIN
 		dest_usr := specified_dest_usr;
 	END IF;
 
+    -- action_trigger.event (even doing this, event_output may--and probably does--contain PII and should have a retention/removal policy)
+    UPDATE action_trigger.event SET context_user = dest_usr WHERE context_user = src_usr;
+
 	-- acq.*
 	UPDATE acq.fund_allocation SET allocator = dest_usr WHERE allocator = src_usr;
 	UPDATE acq.lineitem SET creator = dest_usr WHERE creator = src_usr;
@@ -488,13 +491,14 @@ BEGIN
 	UPDATE actor.usr_address SET replaces = NULL
 		WHERE usr = src_usr AND replaces IS NOT NULL;
 	DELETE FROM actor.usr_address WHERE usr = src_usr;
-	DELETE FROM actor.usr_note WHERE usr = src_usr;
-	UPDATE actor.usr_note SET creator = dest_usr WHERE creator = src_usr;
 	DELETE FROM actor.usr_org_unit_opt_in WHERE usr = src_usr;
 	UPDATE actor.usr_org_unit_opt_in SET staff = dest_usr WHERE staff = src_usr;
 	DELETE FROM actor.usr_setting WHERE usr = src_usr;
 	DELETE FROM actor.usr_standing_penalty WHERE usr = src_usr;
+	UPDATE actor.usr_message SET title = 'purged', message = 'purged', read_date = NOW() WHERE usr = src_usr;
+	DELETE FROM actor.usr_message WHERE usr = src_usr;
 	UPDATE actor.usr_standing_penalty SET staff = dest_usr WHERE staff = src_usr;
+	UPDATE actor.usr_message SET editor = dest_usr WHERE editor = src_usr;
 
 	-- asset.*
 	UPDATE asset.call_number SET creator = dest_usr WHERE creator = src_usr;
@@ -850,7 +854,6 @@ BEGIN
 			claims_returned_count = DEFAULT,
 			credit_forward_balance = DEFAULT,
 			last_xact_id = DEFAULT,
-			alert_message = NULL,
 			pref_prefix = NULL,
 			pref_first_given_name = NULL,
 			pref_second_given_name = NULL,
@@ -891,6 +894,30 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION actor.approve_pending_address(INT) IS $$
 Replaces an address with a pending address.  This is done by giving the pending 
 address the ID of the old address.  The replaced address is retained with -id.
+$$;
+
+CREATE OR REPLACE FUNCTION actor.change_password (user_id INT, new_pw TEXT, pw_type TEXT DEFAULT 'main')
+RETURNS VOID AS $$
+DECLARE
+    new_salt TEXT;
+BEGIN
+    SELECT actor.create_salt(pw_type) INTO new_salt;
+
+    IF pw_type = 'main' THEN
+        -- Only 'main' passwords are required to have
+        -- the extra layer of MD5 hashing.
+        PERFORM actor.set_passwd(
+            user_id, pw_type, md5(new_salt || md5(new_pw)), new_salt
+        );
+
+    ELSE
+        PERFORM actor.set_passwd(user_id, pw_type, new_pw, new_salt);
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';
+
+COMMENT ON FUNCTION actor.change_password(INT,TEXT,TEXT) IS $$
+Allows setting a salted password for a user by passing actor.usr id and the text of the password.
 $$;
 
 CREATE OR REPLACE FUNCTION container.clear_expired_circ_history_items( 
@@ -1035,6 +1062,11 @@ DECLARE
     uri_datafield TEXT;
     uri_text      TEXT := '';
 BEGIN
+
+    -- we don't merge bib -1
+    IF target_record = -1 OR source_record = -1 THEN
+       RETURN 0;
+    END IF;
 
     -- move any 856 entries on records that have at least one MARC-mapped URI entry
     SELECT  INTO uri_count COUNT(*)
@@ -1280,6 +1312,7 @@ BEGIN
         AND target_biblio_record_entry = source_record;
 
     -- Finally, "delete" the source record
+    UPDATE biblio.record_entry SET active = FALSE WHERE id = source_record;
     DELETE FROM biblio.record_entry WHERE id = source_record;
 
 	-- That's all, folks!
@@ -1586,154 +1619,154 @@ BEGIN
         owning_lib :=
             CASE
                 WHEN attr_def.owning_lib IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.owning_lib ) = 1 THEN '*[@code="' || attr_def.owning_lib || '"]'
-                ELSE '*' || attr_def.owning_lib
+                WHEN LENGTH( attr_def.owning_lib ) = 1 THEN '//*[@code="' || attr_def.owning_lib || '"]'
+                ELSE '//*' || attr_def.owning_lib
             END;
 
         circ_lib :=
             CASE
                 WHEN attr_def.circ_lib IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.circ_lib ) = 1 THEN '*[@code="' || attr_def.circ_lib || '"]'
-                ELSE '*' || attr_def.circ_lib
+                WHEN LENGTH( attr_def.circ_lib ) = 1 THEN '//*[@code="' || attr_def.circ_lib || '"]'
+                ELSE '//*' || attr_def.circ_lib
             END;
 
         call_number :=
             CASE
                 WHEN attr_def.call_number IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.call_number ) = 1 THEN '*[@code="' || attr_def.call_number || '"]'
-                ELSE '*' || attr_def.call_number
+                WHEN LENGTH( attr_def.call_number ) = 1 THEN '//*[@code="' || attr_def.call_number || '"]'
+                ELSE '//*' || attr_def.call_number
             END;
 
         copy_number :=
             CASE
                 WHEN attr_def.copy_number IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.copy_number ) = 1 THEN '*[@code="' || attr_def.copy_number || '"]'
-                ELSE '*' || attr_def.copy_number
+                WHEN LENGTH( attr_def.copy_number ) = 1 THEN '//*[@code="' || attr_def.copy_number || '"]'
+                ELSE '//*' || attr_def.copy_number
             END;
 
         status :=
             CASE
                 WHEN attr_def.status IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.status ) = 1 THEN '*[@code="' || attr_def.status || '"]'
-                ELSE '*' || attr_def.status
+                WHEN LENGTH( attr_def.status ) = 1 THEN '//*[@code="' || attr_def.status || '"]'
+                ELSE '//*' || attr_def.status
             END;
 
         location :=
             CASE
                 WHEN attr_def.location IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.location ) = 1 THEN '*[@code="' || attr_def.location || '"]'
-                ELSE '*' || attr_def.location
+                WHEN LENGTH( attr_def.location ) = 1 THEN '//*[@code="' || attr_def.location || '"]'
+                ELSE '//*' || attr_def.location
             END;
 
         circulate :=
             CASE
                 WHEN attr_def.circulate IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.circulate ) = 1 THEN '*[@code="' || attr_def.circulate || '"]'
-                ELSE '*' || attr_def.circulate
+                WHEN LENGTH( attr_def.circulate ) = 1 THEN '//*[@code="' || attr_def.circulate || '"]'
+                ELSE '//*' || attr_def.circulate
             END;
 
         deposit :=
             CASE
                 WHEN attr_def.deposit IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.deposit ) = 1 THEN '*[@code="' || attr_def.deposit || '"]'
-                ELSE '*' || attr_def.deposit
+                WHEN LENGTH( attr_def.deposit ) = 1 THEN '//*[@code="' || attr_def.deposit || '"]'
+                ELSE '//*' || attr_def.deposit
             END;
 
         deposit_amount :=
             CASE
                 WHEN attr_def.deposit_amount IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.deposit_amount ) = 1 THEN '*[@code="' || attr_def.deposit_amount || '"]'
-                ELSE '*' || attr_def.deposit_amount
+                WHEN LENGTH( attr_def.deposit_amount ) = 1 THEN '//*[@code="' || attr_def.deposit_amount || '"]'
+                ELSE '//*' || attr_def.deposit_amount
             END;
 
         ref :=
             CASE
                 WHEN attr_def.ref IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.ref ) = 1 THEN '*[@code="' || attr_def.ref || '"]'
-                ELSE '*' || attr_def.ref
+                WHEN LENGTH( attr_def.ref ) = 1 THEN '//*[@code="' || attr_def.ref || '"]'
+                ELSE '//*' || attr_def.ref
             END;
 
         holdable :=
             CASE
                 WHEN attr_def.holdable IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.holdable ) = 1 THEN '*[@code="' || attr_def.holdable || '"]'
-                ELSE '*' || attr_def.holdable
+                WHEN LENGTH( attr_def.holdable ) = 1 THEN '//*[@code="' || attr_def.holdable || '"]'
+                ELSE '//*' || attr_def.holdable
             END;
 
         price :=
             CASE
                 WHEN attr_def.price IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.price ) = 1 THEN '*[@code="' || attr_def.price || '"]'
-                ELSE '*' || attr_def.price
+                WHEN LENGTH( attr_def.price ) = 1 THEN '//*[@code="' || attr_def.price || '"]'
+                ELSE '//*' || attr_def.price
             END;
 
         barcode :=
             CASE
                 WHEN attr_def.barcode IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.barcode ) = 1 THEN '*[@code="' || attr_def.barcode || '"]'
-                ELSE '*' || attr_def.barcode
+                WHEN LENGTH( attr_def.barcode ) = 1 THEN '//*[@code="' || attr_def.barcode || '"]'
+                ELSE '//*' || attr_def.barcode
             END;
 
         circ_modifier :=
             CASE
                 WHEN attr_def.circ_modifier IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.circ_modifier ) = 1 THEN '*[@code="' || attr_def.circ_modifier || '"]'
-                ELSE '*' || attr_def.circ_modifier
+                WHEN LENGTH( attr_def.circ_modifier ) = 1 THEN '//*[@code="' || attr_def.circ_modifier || '"]'
+                ELSE '//*' || attr_def.circ_modifier
             END;
 
         circ_as_type :=
             CASE
                 WHEN attr_def.circ_as_type IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.circ_as_type ) = 1 THEN '*[@code="' || attr_def.circ_as_type || '"]'
-                ELSE '*' || attr_def.circ_as_type
+                WHEN LENGTH( attr_def.circ_as_type ) = 1 THEN '//*[@code="' || attr_def.circ_as_type || '"]'
+                ELSE '//*' || attr_def.circ_as_type
             END;
 
         alert_message :=
             CASE
                 WHEN attr_def.alert_message IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.alert_message ) = 1 THEN '*[@code="' || attr_def.alert_message || '"]'
-                ELSE '*' || attr_def.alert_message
+                WHEN LENGTH( attr_def.alert_message ) = 1 THEN '//*[@code="' || attr_def.alert_message || '"]'
+                ELSE '//*' || attr_def.alert_message
             END;
 
         opac_visible :=
             CASE
                 WHEN attr_def.opac_visible IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.opac_visible ) = 1 THEN '*[@code="' || attr_def.opac_visible || '"]'
-                ELSE '*' || attr_def.opac_visible
+                WHEN LENGTH( attr_def.opac_visible ) = 1 THEN '//*[@code="' || attr_def.opac_visible || '"]'
+                ELSE '//*' || attr_def.opac_visible
             END;
 
         pub_note :=
             CASE
                 WHEN attr_def.pub_note IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.pub_note ) = 1 THEN '*[@code="' || attr_def.pub_note || '"]'
-                ELSE '*' || attr_def.pub_note
+                WHEN LENGTH( attr_def.pub_note ) = 1 THEN '//*[@code="' || attr_def.pub_note || '"]'
+                ELSE '//*' || attr_def.pub_note
             END;
         priv_note :=
             CASE
                 WHEN attr_def.priv_note IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.priv_note ) = 1 THEN '*[@code="' || attr_def.priv_note || '"]'
-                ELSE '*' || attr_def.priv_note
+                WHEN LENGTH( attr_def.priv_note ) = 1 THEN '//*[@code="' || attr_def.priv_note || '"]'
+                ELSE '//*' || attr_def.priv_note
             END;
 
         internal_id :=
             CASE
                 WHEN attr_def.internal_id IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.internal_id ) = 1 THEN '*[@code="' || attr_def.internal_id || '"]'
-                ELSE '*' || attr_def.internal_id
+                WHEN LENGTH( attr_def.internal_id ) = 1 THEN '//*[@code="' || attr_def.internal_id || '"]'
+                ELSE '//*' || attr_def.internal_id
             END;
 
         stat_cat_data :=
             CASE
                 WHEN attr_def.stat_cat_data IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.stat_cat_data ) = 1 THEN '*[@code="' || attr_def.stat_cat_data || '"]'
-                ELSE '*' || attr_def.stat_cat_data
+                WHEN LENGTH( attr_def.stat_cat_data ) = 1 THEN '//*[@code="' || attr_def.stat_cat_data || '"]'
+                ELSE '//*' || attr_def.stat_cat_data
             END;
 
         parts_data :=
             CASE
                 WHEN attr_def.parts_data IS NULL THEN 'null()'
-                WHEN LENGTH( attr_def.parts_data ) = 1 THEN '*[@code="' || attr_def.parts_data || '"]'
-                ELSE '*' || attr_def.parts_data
+                WHEN LENGTH( attr_def.parts_data ) = 1 THEN '//*[@code="' || attr_def.parts_data || '"]'
+                ELSE '//*' || attr_def.parts_data
             END;
 
 
@@ -1943,7 +1976,6 @@ BEGIN
 
 END;
 $$ LANGUAGE PLPGSQL;
-
 
 
 

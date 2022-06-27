@@ -1,0 +1,35 @@
+= Overlay Existing Catalog Record via Z39.50 Import =
+:toc:
+
+This feature enables you to replace a catalog record with a record obtained through a Z39.50 search.  No new permissions or administrative settings are needed to use this feature.
+
+*To Overlay an Existing Record via Z39.50 Import:*
+
+. Click *Cataloging -> Import Record from Z39.50*
+. Select at least one of the *Service and Credentials* to have the search fields appear.  You can also click on *Save as Default* if you want the same *Service and Credentials* saved for the future.
+. Enter search terms in the *Query* window in the top left panel.
+. Click *Search*. 
++
+image::overlay/search.png[]
++
+. The results will appear in the lower window.
+. Select the record in the local catalog that you wish to overlay.
+. Click *Mark Local Result as Overlay Target*.  A confirmation will show as a message above the results table in the top right hand corner.
++
+image::overlay/mark_local_overlay.jpg[]
++
+. Select the record that you want to replace the existing catalog record.
+. Click on *View Marc* to check on that record.
++
+image::overlay/view_marc.jpg[]
++
+. If the record is correct, click *Overlay*.  This option will only be executable if you are highlighting the potential incoming record.
++
+image::overlay/overlay.jpg[]
++
+.The records that you selected will open in a prompt.  Make any desired changes to the record in a separate window with Marc Editor and come back to this screen when ready to overlay.  Select a profile and click *Overlay*.
++
+image::overlay/overlay_confirmation.jpg[]
++
+. The record will appear in a new tab in OPAC view.
+. When overlayed, a message over the result table will display "No record marked for overlay."

@@ -50,6 +50,11 @@ export class CatalogService {
         } else if (ctx.identSearch.isSearchable() &&
             ctx.identSearch.queryType === 'item_barcode') {
             return this.barcodeSearch(ctx);
+        } else if (
+            ctx.isStaff &&
+            ctx.identSearch.isSearchable() &&
+            ctx.identSearch.queryType === 'identifier|tcn') {
+            return this.tcnStaffSearch(ctx);
         } else {
             return this.termSearch(ctx);
         }
@@ -61,6 +66,8 @@ export class CatalogService {
             'open-ils.search.multi_home.bib_ids.by_barcode',
             ctx.identSearch.value
         ).toPromise().then(ids => {
+            // API returns an event for not-found barcodes
+            if (!Array.isArray(ids)) { ids = []; }
             const result = {
                 count: ids.length,
                 ids: ids.map(id => [id])
@@ -72,17 +79,34 @@ export class CatalogService {
         });
     }
 
+    tcnStaffSearch(ctx: CatalogSearchContext): Promise<void> {
+        return this.net.request(
+            'open-ils.search',
+            'open-ils.search.biblio.tcn',
+            ctx.identSearch.value, 1
+        ).toPromise().then(result => {
+            result.ids =  result.ids.map(id => [id]);
+            this.applyResultData(ctx, result);
+            ctx.searchState = CatalogSearchState.COMPLETE;
+            this.onSearchComplete.emit(ctx);
+        });
+    }
+
+
     // "Search" the basket by loading the IDs and treating
     // them like a standard query search results set.
     basketSearch(ctx: CatalogSearchContext): Promise<void> {
 
         return this.basket.getRecordIds().then(ids => {
 
+            const pageIds =
+                ids.slice(ctx.pager.offset, ctx.pager.limit + ctx.pager.offset);
+
             // Map our list of IDs into a search results object
             // the search context can understand.
             const result = {
                 count: ids.length,
-                ids: ids.map(id => [id])
+                ids: pageIds.map(id => [id])
             };
 
             this.applyResultData(ctx, result);
@@ -181,20 +205,28 @@ export class CatalogService {
     // Returns a void promise once all records have been retrieved
     fetchBibSummaries(ctx: CatalogSearchContext): Promise<void> {
 
-        const depth = ctx.global ?
-            ctx.org.root().ou_type().depth() :
-            ctx.searchOrg.ou_type().depth();
+        const org = ctx.global ? ctx.org.root() : ctx.searchOrg;
+        const depth = org.ou_type().depth();
 
         const isMeta = ctx.termSearch.isMetarecordSearch();
 
         let observable: Observable<BibRecordSummary>;
 
+        const options: any = {pref_ou: ctx.prefOu};
+
+        if (ctx.showResultExtras) {
+            options.flesh_copies = true;
+            options.copy_depth = depth;
+            options.copy_limit = 5;
+            options.pref_ou = ctx.prefOu;
+        }
+
         if (isMeta) {
-            observable = this.bibService.getMetabibSummary(
-                ctx.currentResultIds(), ctx.searchOrg.id(), depth);
+            observable = this.bibService.getMetabibSummaries(
+                ctx.currentResultIds(), ctx.searchOrg.id(), ctx.isStaff, options);
         } else {
-            observable = this.bibService.getBibSummary(
-                ctx.currentResultIds(), ctx.searchOrg.id(), depth);
+            observable = this.bibService.getBibSummaries(
+                ctx.currentResultIds(), ctx.searchOrg.id(), ctx.isStaff, options);
         }
 
         return observable.pipe(map(summary => {
@@ -239,9 +271,9 @@ export class CatalogService {
             // them to bib IDs for highlighting.
             ids = ctx.currentResultIds();
             if (ctx.termSearch.groupByMetarecord) {
-                ids = ids.map(mrId =>
-                    ctx.result.records.filter(r => mrId === r.metabibId)[0].id
-                );
+                // The 4th slot in the result ID reports the master record
+                // for the metarecord in question.  Sometimes it's null?
+                ids = ctx.result.ids.map(id => id[4]).filter(id => id !== null);
             }
         }
 
@@ -361,7 +393,7 @@ export class CatalogService {
     }
 
     iconFormatLabel(code: string): string {
-        if (this.ccvmMap) {
+        if (this.ccvmMap && this.ccvmMap.icon_format) {
             const ccvm = this.ccvmMap.icon_format.filter(
                 format => format.code() === code)[0];
             if (ccvm) {
@@ -390,7 +422,16 @@ export class CatalogService {
     }
 
     fetchCopyLocations(contextOrg: number | IdlObject): Promise<any> {
-        const orgIds = this.org.fullPath(contextOrg, true);
+        const contextOrgId: any = this.org.get(contextOrg).id();
+
+        // we ordinarily want the shelving locations associated with
+        // all ancestors and descendants of the context OU, but
+        // if the context OU is the root, we intentionally want
+        // only the ones owned by the root OU
+        const orgIds: any[] = contextOrgId === this.org.root().id()
+            ? [contextOrgId]
+            : this.org.fullPath(contextOrg, true);
+
         this.copyLocations = [];
 
         return this.pcrud.search('acpl',

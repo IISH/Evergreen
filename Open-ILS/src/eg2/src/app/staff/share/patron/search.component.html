@@ -44,7 +44,7 @@
         <input class="form-control" type="text" (keyup.enter)="go()"
           i18n-aria-label aria-label="Barcode"
           i18n-placeholder placeholder="Barcode"
-          [(ngModel)]="search.barcode"/>
+          [(ngModel)]="search.card"/>
       </div>
       <div class="col-lg-2">
         <input class="form-control" type="text" (keyup.enter)="go()"
@@ -123,7 +123,8 @@
       </div>
       <div class="col-lg-2">
         <eg-org-select (onChange)="searchOrg = $event"
-          [applyOrgId]="searchOrg ? searchOrg.id() : null"
+          persistKey="patron.search"
+          [fallbackOrg]="org.root()"
           i18n-placeholder placeholder="Home Library">
         </eg-org-select>
         <!-- home org -->

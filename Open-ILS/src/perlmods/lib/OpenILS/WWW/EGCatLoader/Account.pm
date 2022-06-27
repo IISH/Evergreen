@@ -5,10 +5,13 @@ use OpenSRF::Utils::Logger qw/$logger/;
 use OpenILS::Utils::CStoreEditor qw/:funcs/;
 use OpenILS::Utils::Fieldmapper;
 use OpenILS::Application::AppUtils;
+use OpenSRF::EX qw/:try/;
 use OpenILS::Event;
 use OpenSRF::Utils::JSON;
 use OpenSRF::Utils::Cache;
+use OpenILS::Utils::DateTime qw/:datetime/;
 use Digest::MD5 qw(md5_hex);
+use Business::Stripe;
 use Data::Dumper;
 $Data::Dumper::Indent = 0;
 use DateTime;
@@ -32,10 +35,10 @@ sub prepare_extended_user_info {
     $self->ctx->{user} = $self->editor->retrieve_actor_user([
         $self->ctx->{user}->id,
         {
-            flesh => 1,
+            flesh => 2,
             flesh_fields => {
-                au => [qw/card home_ou addresses ident_type billing_address waiver_entries/, @extra_flesh]
-                # ...
+                au => [qw/card home_ou addresses ident_type locale billing_address waiver_entries/, @extra_flesh],
+                "aou" => ["billing_address"]
             }
         }
     ]);
@@ -581,6 +584,7 @@ sub load_myopac_messages {
             title       => $aum->title,
             message     => $aum->message,
             create_date => $aum->create_date,
+            edit_date   => $aum->edit_date,
             is_read     => defined($aum->read_date) ? 1 : 0,
             library     => $aum->sending_lib->name,
         };
@@ -1173,7 +1177,43 @@ sub fetch_user_holds {
         push @sorted, grep { $_->{hold}->{hold}->id == $id } @holds;
     }
 
-    return { holds => \@sorted, ids => $hold_ids, all_ids => $all_ids };
+    my $curbsides = [];
+    try { # if the service is not running, just let this fail silently
+        $curbsides = $U->simplereq(
+            'open-ils.curbside',
+            'open-ils.curbside.fetch_mine.atomic',
+            $e->authtoken
+        );
+    } catch Error with {};
+
+    return { holds => \@sorted, ids => $hold_ids, all_ids => $all_ids, curbsides => $curbsides };
+}
+
+sub load_current_curbside_libs {
+    my $self = shift;
+    my $ctx = $self->ctx;
+    my $e = $self->editor;
+    my $holds = $e->search_action_hold_request({
+        usr              => $e->requestor->id,
+        shelf_time       => { '!=' => undef },
+        cancel_time      => undef,
+        fulfillment_time => undef
+    });
+
+    my %pickup_libs;
+    for my $h (@$holds) {
+        next if ($h->pickup_lib != $h->current_shelf_lib);
+        $pickup_libs{$h->pickup_lib} = 1;
+    }
+
+    my @curbside_pickup_libs;
+    for my $pul (keys %pickup_libs) {
+        push(@curbside_pickup_libs, $pul) if $ctx->{get_org_setting}->($pul, 'circ.curbside');
+    }
+
+    $ctx->{curbside_pickup_libs} = [
+        sort { $U->find_org($U->get_org_tree,$a)->name cmp $U->find_org($U->get_org_tree,$b)->name } @curbside_pickup_libs
+    ];
 }
 
 sub handle_hold_update {
@@ -1181,6 +1221,7 @@ sub handle_hold_update {
     my $action = shift;
     my $hold_ids = shift;
     my $e = $self->editor;
+    my $ctx = $self->ctx;
     my $url;
 
     my @hold_ids = ($hold_ids) ? @$hold_ids : $self->cgi->param('hold_id'); # for non-_all actions
@@ -1252,6 +1293,93 @@ sub handle_hold_update {
                 $url .= ";$param=" . uri_escape_utf8($_) foreach @vals;
             }
         }
+    } elsif ($action eq 'curbside') { # we'll only work on one curbside slot per refresh
+        $circ->kill_me;
+
+        $circ = OpenSRF::AppSession->create('open-ils.curbside');
+
+        # see what we're doing with curbside here...
+        my $cs_action = $self->cgi->param("cs_action");
+        my $slot_id = $self->cgi->param("cs_slot_id");
+
+        # we have an id, let's grab it if we can
+        my $slot = $e->retrieve_action_curbside($slot_id);
+        $slot = undef if ($slot && $slot->patron != $e->requestor->id); # nice try!
+
+        my $org = $self->cgi->param("cs_org");
+        my $date = $self->cgi->param("cs_date");
+        my $time = $self->cgi->param("cs_time");
+        my $notes = $self->cgi->param("cs_notes");
+
+        if ($slot) {
+            $org ||= $slot->org;
+            $notes ||= $slot->notes;
+            if ($slot->slot) {
+                my $dt = DateTime::Format::ISO8601->new->parse_datetime(clean_ISO8601($slot->slot));
+                $date ||= $dt->strftime('%F');
+                $time ||= $dt->strftime('%T');
+            }
+        }
+
+        $ctx->{cs_org} = $org;
+        $ctx->{cs_date} = $date;
+        $ctx->{cs_time} = $time;
+        $ctx->{cs_notes} = $notes;
+        $ctx->{cs_slot_id} = $slot->id if ($slot);
+        $ctx->{cs_slot} = $slot;
+
+        if ($cs_action eq 'reset') {
+            $ctx->{cs_org} = $org = undef;
+            $ctx->{cs_date} = $date = undef;
+            $ctx->{cs_time} = $time = undef;
+            $ctx->{cs_notes} = $notes = undef;
+            $ctx->{cs_slot_id} = $slot_id = undef;
+            $ctx->{cs_slot} = $slot = undef;
+        } elsif ($cs_action eq 'save' && $org && $date && $time) {
+            my $mode = $slot ? 'update' : 'create';
+            $slot = $circ->request(
+                "open-ils.curbside.${mode}_appointment",
+                $e->authtoken, $e->requestor->id, $date, $time, $org, $notes
+            )->gather(1);
+
+            if (defined $U->event_code($slot)) {
+                $self->apache->log->warn(
+                    "error attempting to $mode a curbside appointment for patron ".
+                    $e->requestor->id . ", got event " .  $slot->{textcode}
+                );
+                $ctx->{curbside_action_event} = $slot;
+                $ctx->{cs_slot} = undef;
+            } else {
+                $ctx->{cs_slot} = $slot;
+            }
+            $url = $self->ctx->{proto} . '://' . $self->ctx->{hostname} . $self->ctx->{opac_root} . '/myopac/holds_curbside';
+        } elsif ($cs_action eq 'cancel' && $slot) {
+            my $curbsides = $U->simplereq(
+                'open-ils.curbside',
+                'open-ils.curbside.delete_appointment',
+                $e->authtoken, $slot->id
+            );
+            $url = $self->ctx->{proto} . '://' . $self->ctx->{hostname} . $self->ctx->{opac_root} . '/myopac/holds_curbside';
+        } elsif ($cs_action eq 'arrive' && $slot) {
+            my $curbsides = $U->simplereq(
+                'open-ils.curbside',
+                'open-ils.curbside.mark_arrived',
+                $e->authtoken, $slot->id
+            );
+        } elsif ($cs_action eq 'deliver' && $slot) {
+            my $curbsides = $U->simplereq(
+                'open-ils.curbside',
+                'open-ils.curbside.mark_delivered',
+                $e->authtoken, $slot->id
+            );
+        }
+
+        if ($date and $org and !$ctx->{cs_times}{$org}{$date}) {
+            $ctx->{cs_times}{$org}{$date} = $circ->request(
+                'open-ils.curbside.times_for_date.atomic',
+                $e->authtoken, $date, $org
+            )->gather(1);
+        }
     }
 
     $circ->kill_me;
@@ -1282,12 +1410,50 @@ sub load_myopac_holds {
 
     if($holds_object->{holds}) {
         $ctx->{holds} = $holds_object->{holds};
+        $ctx->{curbside_appointments} = {};
+
+        $logger->info('curbside: found '.scalar(@{$holds_object->{curbsides}}).' appointments');
+
+        for my $cs (@{$holds_object->{curbsides}}) {
+            if ($cs->slot) {
+                my $dt = DateTime::Format::ISO8601->new->parse_datetime(clean_ISO8601($cs->slot))->strftime('%F');
+                $ctx->{cs_times}{$cs->org}{$dt} = $U->simplereq(
+                    'open-ils.curbside', 'open-ils.curbside.times_for_date.atomic',
+                    $e->authtoken, $dt, $cs->org
+                );
+            }
+            $ctx->{curbside_appointments}{$cs->org} = $cs;
+        }
     }
     $ctx->{holds_ids} = $holds_object->{all_ids};
     $ctx->{holds_limit} = $limit;
     $ctx->{holds_offset} = $offset;
 
     return defined($hold_handle_result) ? $hold_handle_result : Apache2::Const::OK;
+}
+
+sub load_myopac_hold_subscriptions {
+    my $self = shift;
+    my $e = $self->editor;
+    my $ctx = $self->ctx;
+
+    my $sub_remove = $self->cgi->param('remove');
+
+    if ($sub_remove and $ctx->{user}->id) {
+        my $sub_entries = $self->editor->search_container_user_bucket_item(
+            { bucket => $sub_remove, target_user => $ctx->{user}->id }
+        );
+
+        $self->editor->xact_begin;
+        $self->editor->delete_container_user_bucket_item($_) for @$sub_entries;
+        $self->editor->xact_commit;
+
+        return $self->generic_redirect(
+            $self->ctx->{proto} . '://' . $self->ctx->{hostname} . $self->ctx->{opac_root} . '/myopac/hold_subscriptions'
+        );
+    }
+
+    return Apache2::Const::OK;
 }
 
 my $data_filler;
@@ -1303,6 +1469,7 @@ sub load_place_hold {
     my @targets = uniq $cgi->param('hold_target');
     my @parts = $cgi->param('part');
 
+    $ctx->{hold_subscription} = $cgi->param('hold_subscription');
     $ctx->{hold_type} = $cgi->param('hold_type');
     $ctx->{default_pickup_lib} = $e->requestor->home_ou; # unless changed below
     $ctx->{email_notify} = $cgi->param('email_notify');
@@ -1531,8 +1698,8 @@ sub load_place_hold {
     $_->{marc_xml} = XML::LibXML->new->parse_string($_->{record}->marc) for @hold_data;
 
     my $pickup_lib = $cgi->param('pickup_lib');
-    # no pickup lib means no holds placement
-    return Apache2::Const::OK unless $pickup_lib;
+    # no pickup lib means no holds placement, except for subscriptions
+    return Apache2::Const::OK unless $pickup_lib || $ctx->{hold_subscription};
 
     $ctx->{hold_attempt_made} = 1;
 
@@ -1545,17 +1712,26 @@ sub load_place_hold {
 
     my $usr = $e->requestor->id;
 
-    if ($ctx->{is_staff} and !$cgi->param("hold_usr_is_requestor")) {
-        # find the real hold target
+    if ($ctx->{is_staff}) {
+        $logger->info("Staff initiated hold");
+        if (!$cgi->param("hold_usr_is_requestor")) {
+            # find the real hold target
 
-        $usr = $U->simplereq(
-            'open-ils.actor',
-            "open-ils.actor.user.retrieve_id_by_barcode_or_username",
-            $e->authtoken, $cgi->param("hold_usr"));
+            $usr = $U->simplereq(
+                'open-ils.actor',
+                "open-ils.actor.user.retrieve_id_by_barcode_or_username",
+                $e->authtoken, $cgi->param("hold_usr"));
 
-        if (defined $U->event_code($usr)) {
-            $ctx->{hold_failed} = 1;
-            $ctx->{hold_failed_event} = $usr;
+            if (defined $U->event_code($usr)) {
+                $ctx->{hold_failed} = 1;
+                $ctx->{hold_failed_event} = $usr;
+            }
+        }
+
+        if ($ctx->{hold_subscription}) {
+            # this is a batch event, hold "user" is a bucket id
+            $logger->info("Hold Group Event requested for user bucket: " . $ctx->{hold_subscription});
+            $usr = $e->retrieve_container_user_bucket($ctx->{hold_subscription});
         }
     }
 
@@ -1621,22 +1797,32 @@ sub attempt_hold_placement {
     my $ctx = $self->ctx;
     my $e = $self->editor;
 
-    # First see if we should warn/block for any holds that
-    # might have locally available items.
-    for my $hdata (@hold_data) {
-        my ($local_block, $local_alert) = $self->local_avail_concern(
-            $hdata->{target_id}, $hold_type, $pickup_lib);
+    my $user_container = undef;
+    if (ref($usr)) { # $usr is actually a container for a subscription...
+        $user_container = $usr->id;
+        return unless ($hold_type eq 'T'); # Only T-hold subscriptions for now.
+    }
 
-        if ($local_block) {
-            $hdata->{hold_failed} = 1;
-            $hdata->{hold_local_block} = 1;
-        } elsif ($local_alert) {
-            $hdata->{hold_failed} = 1;
-            $hdata->{hold_local_alert} = 1;
+    # First see if we should warn/block for any holds that
+    # might have locally available items for non-subscriptions.
+    if (!$user_container) {
+        for my $hdata (@hold_data) {
+            my ($local_block, $local_alert) = $self->local_avail_concern(
+                $hdata->{target_id}, $hold_type, $pickup_lib);
+
+            if ($local_block) {
+                $hdata->{hold_failed} = 1;
+                $hdata->{hold_local_block} = 1;
+            } elsif ($local_alert) {
+                $hdata->{hold_failed} = 1;
+                $hdata->{hold_local_alert} = 1;
+            }
         }
     }
 
-    my $method = 'open-ils.circ.holds.test_and_create.batch';
+    my $method = $user_container
+        ? 'open-ils.circ.holds.test_and_create.subscription_batch'
+        : 'open-ils.circ.holds.test_and_create.batch';
 
     if ($cgi->param('override')) {
         $method .= '.override';
@@ -1661,17 +1847,31 @@ sub attempt_hold_placement {
         }
 
         my $bses = OpenSRF::AppSession->create('open-ils.circ');
-        my $breq = $bses->request(
-            $method,
-            $e->authtoken,
-            $data_filler->({
-                patronid => $usr,
-                pickup_lib => $pickup_lib,
-                hold_type => $hold_type,
-                holdable_formats_map => $holdable_formats,
-            }),
-            \@create_targets
-        );
+
+        my @create_params = ();
+
+        if ($user_container) {
+            @create_params = (
+                $data_filler->({
+                    hold_type => $hold_type,
+                    holdable_formats_map => $holdable_formats, # currently always unset, only T holds
+                }),
+                $user_container,
+                $create_targets[0],
+            );
+        } else {
+            @create_params = (
+                $data_filler->({
+                    patronid => $usr,
+                    pickup_lib => $pickup_lib,
+                    hold_type => $hold_type,
+                    holdable_formats_map => $holdable_formats,
+                }),
+                \@create_targets
+            );
+        }
+
+        my $breq = $bses->request($method, $e->authtoken, @create_params);
 
         while (my $resp = $breq->recv) {
 
@@ -1682,6 +1882,13 @@ sub attempt_hold_placement {
                 $ctx->{general_hold_error} = $resp;
                 last;
             }
+
+            # subscription batch create sends an initial response to assist with client-side counting
+            next if (
+                $user_container and
+                defined($$resp{count}) and $$resp{count} == 0
+                and defined($$resp{total}) and $$resp{total} > 0
+            );
 
             # Skip those that had the hold_success or hold_failed fields set for duplicate holds placement.
             my ($hdata) = grep {$_->{target_id} eq $resp->{target} && !($_->{hold_failed} || $_->{hold_success})} @hold_data;
@@ -1696,7 +1903,6 @@ sub attempt_hold_placement {
 
                 if(not ref $result and $result > 0) {
                     # successul hold returns the hold ID
-
                     $hdata->{hold_success} = $result;
 
                 } else {
@@ -1844,8 +2050,8 @@ sub fetch_user_circs {
         flesh => 3,
         flesh_fields => {
             circ => ['target_copy'],
-            acp => ['call_number'],
-            acn => ['record','owning_lib']
+            acp => ['call_number','parts'],
+            acn => ['record','owning_lib','prefix','suffix']
         }
     };
 
@@ -1992,8 +2198,8 @@ sub fetch_user_circ_history {
         flesh => 3,
         flesh_fields => {
             auch => ['target_copy','source_circ'],
-            acp => ['call_number'],
-            acn => ['record']
+            acp => ['call_number','parts'],
+            acn => ['record','prefix','suffix']
         },
     );
 
@@ -2112,8 +2318,29 @@ sub load_myopac_hold_history {
 sub load_myopac_payment_form {
     my $self = shift;
     my $r;
+    my $e = $self->editor;
 
-    $r = $self->prepare_fines(undef, undef, [$self->cgi->param('xact'), $self->cgi->param('xact_misc')]) and return $r;
+    $r = $self->prepare_fines(undef, undef, [$self->cgi->param('xact'), $self->cgi->param('xact_misc')]);
+
+    if ( ! $self->cgi->param('last_chance') # only do this once
+        && $self->ctx->{get_org_setting}->($e->requestor->home_ou, 'credit.processor.stripe.enabled')
+        && $self->ctx->{get_org_setting}->($e->requestor->home_ou, 'credit.processor.default') eq 'Stripe') {
+        my $skey = $self->ctx->{get_org_setting}->($e->requestor->home_ou, 'credit.processor.stripe.secretkey');
+        my $currency = $self->ctx->{get_org_setting}->($e->requestor->home_ou, 'credit.processor.stripe.currency');
+        my $stripe = Business::Stripe->new(-api_key => $skey);
+        my $intent = $stripe->api('post', 'payment_intents',
+            amount                => $self->ctx->{fines}->{balance_owed} * 100,
+            currency              => $currency || 'usd'
+        );
+        if ($stripe->success) {
+            $self->ctx->{stripe_client_secret} = $stripe->success()->{client_secret};
+        } else {
+            $logger->error('Error initializing Stripe: ' . Dumper($stripe->error));
+            $self->ctx->{cc_configuration_error} = 1;
+        }
+    }
+
+    if ($r) { return $r; }
     $r = $self->prepare_extended_user_info and return $r;
 
     return Apache2::Const::OK;
@@ -2180,7 +2407,7 @@ sub load_myopac_pay_init {
     $cc_args->{$_} = $self->cgi->param($_) for (qw/
         number cvv2 expire_year expire_month billing_first
         billing_last billing_address billing_city billing_state
-        billing_zip stripe_token
+        billing_zip stripe_payment_intent stripe_client_secret
     /);
 
     my $cache_args = {
@@ -2411,7 +2638,7 @@ sub load_myopac_main {
     my $offset = $self->cgi->param('offset') || 0;
     $self->ctx->{search_ou} = $self->_get_search_lib();
     $self->ctx->{user}->notes(
-        $self->editor->search_actor_usr_note({
+        $self->editor->search_actor_usr_message({
             usr => $self->ctx->{user}->id,
             pub => 't'
         })
@@ -2535,6 +2762,46 @@ sub load_myopac_update_username {
 
     my $url = $self->apache->unparsed_uri;
     $url =~ s/update_username/prefs/;
+
+    return $self->generic_redirect($url);
+}
+
+sub load_myopac_update_locale {
+    my $self = shift;
+    my $e = $self->editor;
+    my $ctx = $self->ctx;
+    my $lang = $self->cgi->param('pref_lang') || '';
+    my $current_pw = $self->cgi->param('current_pw') || '';
+
+    $self->prepare_extended_user_info;
+
+    my $locs = $U->simplereq(
+        'open-ils.cstore',
+        "open-ils.cstore.direct.config.i18n_locale.search.atomic", 
+	{ "code" => { "!=" => undef } }
+    );
+
+    my %user_locales;
+    foreach my $l (@$locs) { $user_locales{$l->code} = $l->name; }
+    $self->ctx->{i18n_locales} = \%user_locales; 
+
+    return Apache2::Const::OK
+        unless $self->cgi->request_method eq 'POST';
+
+    if($lang ne $e->requestor->locale) {
+        my $evt = $U->simplereq(
+            'open-ils.actor',
+            'open-ils.actor.user.locale.update',
+            $e->authtoken, $lang, $current_pw);
+
+        if($U->event_equals($evt, 'INCORRECT_PASSWORD')) {
+            $ctx->{password_incorrect} = 1;
+            return Apache2::Const::OK;
+        }
+    }
+
+    my $url = $self->apache->unparsed_uri;
+    $url =~ s/update_locale/prefs/;
 
     return $self->generic_redirect($url);
 }
@@ -2907,10 +3174,42 @@ sub load_myopac_bookbag_update {
         return $self->generic_redirect($url);
 
     } elsif ($action eq 'print') {
-        my $temp_cache_key = $self->_stash_record_list_in_anon_cache(@selected_item);
+        my ($incoming_sort,$sort_dir) = $self->_get_bookbag_sort_params('sort');
+        $sort_dir = $self->cgi->param('sort_dir') if $self->cgi->param('sort_dir');
+        if (!$incoming_sort) {
+            ($incoming_sort,$sort_dir) = $self->_get_bookbag_sort_params('anonsort');
+        }
+        if (!$incoming_sort) {
+            $incoming_sort = 'author';
+        }
+
+        $incoming_sort =~ s/sort.*$//;
+
+        $self->ctx->{sort} = $incoming_sort;
+        $self->ctx->{sort_dir} = $sort_dir;
+
+        my $items = $self->editor->search_container_biblio_record_entry_bucket_item({id=>\@selected_item});
+        my @bib_ids = map { $_->target_biblio_record_entry } @$items;
+        my $temp_cache_key = $self->_stash_record_list_in_anon_cache(@bib_ids);
         return $self->load_mylist_print($temp_cache_key);
     } elsif ($action eq 'email') {
-        my $temp_cache_key = $self->_stash_record_list_in_anon_cache(@selected_item);
+        my ($incoming_sort,$sort_dir) = $self->_get_bookbag_sort_params('sort');
+        $sort_dir = $self->cgi->param('sort_dir') if $self->cgi->param('sort_dir');
+        if (!$incoming_sort) {
+            ($incoming_sort,$sort_dir) = $self->_get_bookbag_sort_params('anonsort');
+        }
+        if (!$incoming_sort) {
+            $incoming_sort = 'author';
+        }
+
+        $incoming_sort =~ s/sort.*$//;
+
+        $self->ctx->{sort} = $incoming_sort;
+        $self->ctx->{sort_dir} = $sort_dir;
+
+        my $items = $self->editor->search_container_biblio_record_entry_bucket_item({id=>\@selected_item});
+        my @bib_ids = map { $_->target_biblio_record_entry } @$items;
+        my $temp_cache_key = $self->_stash_record_list_in_anon_cache(@bib_ids);
         return $self->load_mylist_email($temp_cache_key);
     } else {
 

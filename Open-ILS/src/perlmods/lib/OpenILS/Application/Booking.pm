@@ -351,7 +351,7 @@ sub resource_list_by_attrs {
             if (!ref($filters->{attribute_values}));
 
         $query->{having}->{'+bram'}->{value}->{'@>'} = {
-            transform => 'array_accum',
+            transform => 'array_agg',
             value => '$_' . $$ . '${' .
                 join(',', @{$filters->{attribute_values}}) .
                 '}$_' . $$ . '$'
@@ -554,7 +554,7 @@ sub reservation_list_by_filters {
             if (!ref($filters->{attribute_values}));
 
         $query->{having}->{'+bravm'}->{attr_value}->{'@>'} = {
-            transform => 'array_accum',
+            transform => 'array_agg',
             value => '$_' . $$ . '${' .
                 join(',', @{$filters->{attribute_values}}) .
                 '}$_' . $$ . '$'
@@ -1218,7 +1218,7 @@ sub cancel_reservation {
         $e->xact_begin;
 
         if (
-            $bresv->target_resource_type->catalog_item == "t" &&
+            $bresv->target_resource_type->catalog_item eq "t" &&
             $bresv->current_resource
         ) {
             $logger->info("result of no-op checkin (upon cxl bresv) is " .
@@ -1274,7 +1274,7 @@ sub get_captured_reservations {
             return $patron;
         },
         "ready" => sub {
-            return $e->search_booking_reservation([
+            return ($e->search_booking_reservation([
                 {
                     "usr" => $patron->id,
                     "capture_time" => {"!=" => undef},
@@ -1283,10 +1283,10 @@ sub get_captured_reservations {
                     "cancel_time" => undef
                 },
                 $bresv_flesh
-            ]) or $e->die_event;
+            ]) || $e->die_event);
         },
         "out" => sub {
-            return $e->search_booking_reservation([
+            return ($e->search_booking_reservation([
                 {
                     "usr" => $patron->id,
                     "pickup_time" => {"!=" => undef},
@@ -1294,17 +1294,17 @@ sub get_captured_reservations {
                     "cancel_time" => undef
                 },
                 $bresv_flesh
-            ]) or $e->die_event;
+            ]) || $e->die_event);
         },
         "in" => sub {
-            return $e->search_booking_reservation([
+            return ($e->search_booking_reservation([
                 {
                     "usr" => $patron->id,
                     "return_time" => {">=" => "today"},
                     "cancel_time" => undef
                 },
                 $bresv_flesh
-            ]) or $e->die_event;
+            ]) || $e->die_event);
         }
     };
 

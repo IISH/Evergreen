@@ -6,6 +6,8 @@ use Unicode::Normalize;
 # ... and this has some handy common methods
 use OpenILS::Application::AppUtils;
 
+use OpenILS::Application::SuperCat::OAI;
+
 my $parser = new XML::LibXML;
 my $U = 'OpenILS::Application::AppUtils';
 
@@ -181,6 +183,8 @@ sub child_init {
     register_record_transforms();
 
     register_new_authorities_methods();
+
+    OpenILS::Application::SuperCat::OAI->child_init();
 
     return 1;
 }
@@ -2399,6 +2403,7 @@ sub new_record_holdings {
                     sstr    => [qw/items/],
                     sitem   => [qw/notes unit/],
                     sunit   => [qw/notes location status circ_lib stat_cat_entries call_number/],
+                    asce    => [qw/stat_cat/],
                     acn => [qw/owning_lib prefix suffix/],
                 },
           ( $limit > -1 ? ( limit  => $limit  ) : () ),
@@ -3796,9 +3801,6 @@ sub as_xml {
 
 package OpenILS::Application::SuperCat::unAPI::acp;
 use base qw/OpenILS::Application::SuperCat::unAPI/;
-
-use OpenILS::Application::AppUtils;
-my $U = "OpenILS::Application::AppUtils";
 
 sub as_xml {
     my $self = shift;

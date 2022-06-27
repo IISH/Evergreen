@@ -7,10 +7,10 @@ angular.module('egPatronApp')
 .controller('PatronItemsOutCtrl',
        ['$scope','$q','$routeParams','$timeout','egCore','egUser','patronSvc',
         '$location','egGridDataProvider','$uibModal','egCirc','egConfirmDialog',
-        'egBilling','$window','egBibDisplay',
+        'egProgressDialog','egBilling','$window','egBibDisplay',
 function($scope , $q , $routeParams , $timeout , egCore , egUser , patronSvc , 
          $location , egGridDataProvider , $uibModal , egCirc , egConfirmDialog , 
-         egBilling , $window , egBibDisplay) {
+         egProgressDialog , egBilling , $window , egBibDisplay) {
 
     // list of noncatatloged circulations. Define before initTab to 
     // avoid any possibility of race condition, since they are loaded
@@ -118,6 +118,8 @@ function($scope , $q , $routeParams , $timeout , egCore , egUser , patronSvc ,
         var deferred = $q.defer();
         var rendered = 0;
 
+        egProgressDialog.open();
+
         // fetch the lot of circs and stream the results back via notify
         egCore.pcrud.search('circ', {id : id_list},
             {   flesh : 4,
@@ -140,7 +142,7 @@ function($scope , $q , $routeParams , $timeout , egCore , egUser , patronSvc ,
                 // we need an order-by to support paging
                 order_by : {circ : ['xact_start']} 
 
-        }).then(deferred.resolve, null, function(circ) {
+        }).then(null, null, function(circ) {
             circ.circ_lib(egCore.org.get(circ.circ_lib())); // local fleshing
 
             // Translate bib display field JSON blobs to JS.
@@ -160,21 +162,32 @@ function($scope , $q , $routeParams , $timeout , egCore , egUser , patronSvc ,
                 return part.label()
             }).join(',');
 
-	    // call open-ils to get overdue notice count and  Last notice date
-	    
-           egCore.net.request(
-               'open-ils.actor',
-               'open-ils.actor.user.itemsout.notices',
-               egCore.auth.token(), circ.id(), $scope.patron_id)
-           .then(function(notice){
-               if (notice.numNotices){
-                   circ.action_trigger_event_count = notice.numNotices;
-                   circ.action_trigger_latest_event_date = notice.lastDt;
-	       }
-               patronSvc.items_out.push(circ);
-           });
+           patronSvc.items_out.push(circ);
 
-	       if (rendered++ >= offset && rendered <= count){ deferred.notify(circ) };
+        }).then(function() {
+
+            var circIds = patronSvc.items_out.map(function(circ) { return circ.id() });
+
+            egCore.net.request(
+                'open-ils.actor',
+                'open-ils.actor.user.itemsout.notices',
+                egCore.auth.token(), circIds
+
+            ).then(deferred.resolve, null, function(notice) {
+
+                var circ = patronSvc.items_out.filter(
+                    function(circ) {return circ.id() == notice.circ_id})[0];
+
+                if (notice.numNotices) {
+                    circ.action_trigger_event_count = notice.numNotices;
+                    circ.action_trigger_latest_event_date = notice.lastDt;
+                }
+
+                if (rendered++ >= offset && rendered <= count) {
+                    egProgressDialog.close();
+                    deferred.notify(circ);
+                };
+            });
         });
 
         return deferred.promise;
@@ -403,7 +416,8 @@ function($scope , $q , $routeParams , $timeout , egCore , egUser , patronSvc ,
             expire_date : cusr.expire_date(),
             alias : cusr.alias(),
             has_email : Boolean(patronSvc.current.email() && patronSvc.current.email().match(/.*@.*/)),
-            has_phone : Boolean(cusr.day_phone() || cusr.evening_phone() || cusr.other_phone())
+            has_phone : Boolean(cusr.day_phone() || cusr.evening_phone() || cusr.other_phone()),
+            juvenile : cusr.juvenile()
         };
 
         return egCore.print.print({
@@ -463,11 +477,10 @@ function($scope , $q , $routeParams , $timeout , egCore , egUser , patronSvc ,
     $scope.show_triggered_events = function(items) {
         var focus = items.length == 1;
         angular.forEach(items, function(item) {
-            var url = egCore.env.basePath +
-                      '/cat/item/' +
-                      item.target_copy().id() +
-                      '/triggered_events';
+            var url = '/eg2/staff/circ/item/event-log/' +
+                      item.target_copy().id();
             $timeout(function() { var x = $window.open(url, '_blank'); if (focus) x.focus() });
+
         });
     }
 
@@ -480,11 +493,35 @@ function($scope , $q , $routeParams , $timeout , egCore , egUser , patronSvc ,
 
         return egConfirmDialog.open(msg, barcodes.join(' '), {}).result
         .then(function() {
+            window.oils_cancel_batch = false;
+            window.oils_inside_batch = true;
+            function batch_cleanup() {
+                if (window.oils_inside_batch && window.oils_op_change_within_batch) {
+                    window.oils_op_change_undo_func();
+                }
+                window.oils_inside_batch = false;
+                window.oils_op_change_within_batch = false;
+                reset_page();
+            }
             function do_one() {
                 var bc = barcodes.pop();
-                if (!bc) { reset_page(); return }
+                if (!bc) {
+                    batch_cleanup();
+                    return;
+                }
+                if (window.oils_op_change_within_batch) {
+                    window.oils_op_change_toast_func();
+                }
                 // finally -> continue even when one fails
-                egCirc.renew({copy_barcode : bc}).finally(do_one);
+                egCirc.renew({copy_barcode : bc}).finally(function() {
+                    if (!window.oils_cancel_batch) {
+                        do_one();
+                    } else {
+                        console.log('batch cancelled');
+                        batch_cleanup();
+                        return;
+                    }
+                });
             }
             do_one();
         });

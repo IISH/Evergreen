@@ -2,6 +2,7 @@ import {Component, OnInit, AfterViewInit, Renderer2} from '@angular/core';
 import {Router, ActivatedRoute, NavigationEnd} from '@angular/router';
 import {IdlObject} from '@eg/core/idl.service';
 import {OrgService} from '@eg/core/org.service';
+import {ServerStoreService} from '@eg/core/server-store.service';
 import {CatalogService} from '@eg/share/catalog/catalog.service';
 import {CatalogSearchContext, CatalogSearchState} from '@eg/share/catalog/search-context';
 import {StaffCatalogService} from './catalog.service';
@@ -13,6 +14,12 @@ const LEGACY_TAB_NAME_MAP = {
     numeric: 'ident',
     advanced: 'term'
 };
+
+// Automatically collapse the search form on these pages
+const COLLAPSE_ON_PAGES = [
+    new RegExp(/staff\/catalog\/record\//),
+    new RegExp(/staff\/catalog\/hold\//)
+];
 
 @Component({
   selector: 'eg-catalog-search-form',
@@ -28,8 +35,10 @@ export class SearchFormComponent implements OnInit, AfterViewInit {
     copyLocations: IdlObject[];
     searchTab: string;
 
-    // Display the full form if true, otherwise display the expandy.
-    showThyself = true;
+    // What does the user want us to do?
+    // On pages where we can be hidded, start out hidden, unless the
+    // user has opted to show us.
+    showSearchFormSetting = false;
 
     constructor(
         private renderer: Renderer2,
@@ -37,9 +46,21 @@ export class SearchFormComponent implements OnInit, AfterViewInit {
         private route: ActivatedRoute,
         private org: OrgService,
         private cat: CatalogService,
+        private store: ServerStoreService,
         private staffCat: StaffCatalogService
     ) {
         this.copyLocations = [];
+
+    }
+
+    ngOnInit() {
+        this.ccvmMap = this.cat.ccvmMap;
+        this.cmfMap = this.cat.cmfMap;
+        this.context = this.staffCat.searchContext;
+
+        // Start with advanced search options open
+        // if any filters are active.
+        this.showSearchFilters = this.filtersActive();
 
         // Some search scenarios, like rendering a search template,
         // will not be searchable and thus not resovle to a specific
@@ -51,25 +72,28 @@ export class SearchFormComponent implements OnInit, AfterViewInit {
             }
         });
 
-        this.router.events.subscribe(routeEvent => {
-            if (routeEvent instanceof NavigationEnd) {
-                if (routeEvent.url.match(/catalog\/record/)) {
-                    this.showThyself = false;
-                } else {
-                    this.showThyself = true;
-                }
-            }
-        });
+        this.store.getItem('eg.catalog.search.form.open')
+        .then(value => this.showSearchFormSetting = value);
     }
 
-    ngOnInit() {
-        this.ccvmMap = this.cat.ccvmMap;
-        this.cmfMap = this.cat.cmfMap;
-        this.context = this.staffCat.searchContext;
+    // Are we on a page where the form is allowed to be collapsed.
+    canBeHidden(): boolean {
+        for (let idx = 0; idx < COLLAPSE_ON_PAGES.length; idx++) {
+            const pageRegex = COLLAPSE_ON_PAGES[idx];
+            if (this.router.url.match(pageRegex)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-        // Start with advanced search options open
-        // if any filters are active.
-        this.showSearchFilters = this.filtersActive();
+    hideForm(): boolean {
+        return this.canBeHidden() && !this.showSearchFormSetting;
+    }
+
+    toggleFormDisplay() {
+        this.showSearchFormSetting = !this.showSearchFormSetting;
+        this.store.setItem('eg.catalog.search.form.open', this.showSearchFormSetting);
     }
 
     ngAfterViewInit() {
@@ -92,7 +116,13 @@ export class SearchFormComponent implements OnInit, AfterViewInit {
                     this.searchTab = 'marc';
                 } else if (this.context.identSearch.isSearchable()) {
                     this.searchTab = 'ident';
-                } else if (this.context.browseSearch.isSearchable()) {
+
+                // Browse search may remain 'searchable' even though we
+                // are displaying bibs linked to a browse entry.
+                // This is so browse search paging can be added to
+                // the record list page.
+                } else if (this.context.browseSearch.isSearchable()
+                    && !this.context.termSearch.hasBrowseEntry) {
                     this.searchTab = 'browse';
                 } else if (this.context.termSearch.isSearchable()) {
                     this.searchTab = 'term';
@@ -193,14 +223,7 @@ export class SearchFormComponent implements OnInit, AfterViewInit {
     refreshCopyLocations() {
         if (!this.showFilters()) { return; }
 
-        // TODO: is this how we avoid displaying too many locations?
-        const org = this.context.searchOrg;
-        if (org.id() === this.org.root().id()) {
-            this.copyLocations = [];
-            return;
-        }
-
-        this.cat.fetchCopyLocations(org).then(() =>
+        this.cat.fetchCopyLocations(this.context.searchOrg).then(() =>
             this.copyLocations = this.cat.copyLocations
         );
     }
@@ -278,6 +301,16 @@ export class SearchFormComponent implements OnInit, AfterViewInit {
                 this.context.termSearch.matchOp[idx] = 'contains';
             }
         }
+    }
+
+    showBookplate(): boolean {
+        return this.staffCat.enableBookplates;
+    }
+    showExcludeElectronic(): boolean {
+        return this.staffCat.showExcludeElectronic;
+    }
+    searchFilters(): string[] {
+        return this.staffCat.searchFilters;
     }
 }
 

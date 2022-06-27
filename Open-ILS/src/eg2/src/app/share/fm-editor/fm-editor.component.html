@@ -30,6 +30,7 @@
       <div class="form-group row" *ngFor="let field of fields">
         <div class="col-lg-3">
           <label for="{{idPrefix}}-{{field.name}}">{{field.label}}</label>
+          <eg-help-popover [placement]="'right'" *ngIf="field.helpText" helpText="{{field.helpTextValue}}"></eg-help-popover>
         </div>
         <div class="col-lg-9">
 
@@ -50,7 +51,7 @@
             </ng-container>
 
             <ng-container *ngSwitchCase="'readonly-list'">
-              <ng-container *ngIf="field.linkedValues">
+              <ng-container *ngIf="field.linkedValues && field.linkedValues[0]?.label">
                 <span>{{field.linkedValues[0].label}}</span>
               </ng-container>
             </ng-container>
@@ -112,6 +113,8 @@
                 placeholder="{{field.label}}..."
                 i18n-placeholder
                 [required]="field.isRequired()"
+                egMin="{{field.min}}"
+                egMax="{{field.max}}"
                 [ngModel]="record[field.name]()"
                 (ngModelChange)="record[field.name]($event)"/>
             </ng-container>
@@ -133,7 +136,7 @@
               <input
                 class="form-control"
                 id="{{idPrefix}}-{{field.name}}" name="{{field.name}}"
-                type="text"
+                type="text" pattern="[\s\S]*\S[\s\S]*"
                 placeholder="{{field.label}}..." i18n-placeholder
                 [required]="field.isRequired()"
                 [ngModel]="record[field.name]()"

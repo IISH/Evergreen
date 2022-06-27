@@ -4,7 +4,7 @@
 @import '~bootstrap-css-only/css/bootstrap.min.css';
 
 /* Locally served material icon fonts  */
-@import '~material-design-icons/iconfont/material-icons.css'; 
+@import '~material-design-icons-iconfont/dist/material-design-icons.css';
 
 /** BS default fonts are huge */
 body, .form-control, .btn, .input-group-text {
@@ -56,6 +56,14 @@ h5 {font-size: .95rem}
 }
 .well-table .well-label {
   flex: 1;
+  display: flex;
+  align-items: center;
+  margin: 4px;
+  padding: 4px;
+  min-height: 40px;
+}
+
+.well-table .well-label-no-flex {
   display: flex;
   align-items: center;
   margin: 4px;
@@ -154,6 +162,10 @@ h5 {font-size: .95rem}
   border-left: 5px solid #FA787E;
 }
 
+.invalid {
+  border-left: 5px solid #FA787E;
+}
+
 /* Typical form CSS.
  * Brings font size down 5% to squeeze a bit more in.
  * Bold labels
@@ -225,8 +237,43 @@ body>.dropdown-menu {z-index: 2100;}
   color: black;
 }
 
+/* Washed out version of the Bootstrap 'info' background.
+ * Useful for blocking out sections of a page/form without it 
+ * being so intensely colorful */
+.bg-faint {
+  /*background-color: rgb(204, 229, 255, 0.3);*/
+
+  /* d9edf7 */
+  /*background-color: rgb(217, 237, 247, 0.5);*/
+
+  background-color: rgba(0,0,0,.03);
+}
+
 /* Allow for larger XL dialogs */
 @media (min-width: 1300px) { .modal-xl { max-width: 1200px; } }
 @media (min-width: 1600px) { .modal-xl { max-width: 1500px; } }
 @media (min-width: 1700px) { .modal-xl { max-width: 1600px; } }
 
+/**
+ * Make the acquisitions search form's navigation tabs match
+ * those of the staff interface. This is a global rule because
+ * various approaches to doing it local to the acq search component
+ * don't work:
+ *
+ * 1. A rule bound to the container of the acq search tabset
+ *    would make the entire background be grey.
+ * 2. ":host ::ng-deep" for a local rule works, but depends on a
+ *    mechanism that is deprecated.
+ * 4. ng-tabset provides no hooks for custom styles for the nav-tab
+ *    background.
+ * 5. Turning off view encapsulation for the acq search component
+ *    breaks a lot of styles.
+ */
+#acq-search-page ngb-tabset .nav.nav-tabs {
+  background-color: rgb(247, 247, 247);
+}
+
+/* style for negative monetary values */
+.negative-money-amount {
+    color: red;
+}

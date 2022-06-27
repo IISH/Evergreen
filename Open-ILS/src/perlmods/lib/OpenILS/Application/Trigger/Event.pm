@@ -209,6 +209,7 @@ sub react {
                         $usr_message->message( $message_template_output );
                         $usr_message->usr( $env->{usr_message}{usr}->id );
                         $usr_message->sending_lib( $env->{usr_message}{sending_lib}->id );
+                        $usr_message->pub('t');
 
                         if ($self->editor->xact_begin) {
                             if ($self->editor->create_actor_usr_message( $usr_message )) {
@@ -491,6 +492,57 @@ sub build_environment {
         $self->environment->{usr_message}{title} = $self->event->event_def->message_title;
         $self->environment->{user_data} = $self->user_data;
 
+        my ($usr_locale, $alt_templates, $query, $query_result, $new_template_id);
+        my $reactor = $self->environment->{event}->event_def->reactor;
+        $query = {
+            select   => { atevalt => ['id', 'locale'] },
+            from     => 'atevalt',
+            where    => {
+                event_def => $self->environment->{event}->event_def->id,
+                active => 't'
+            }
+        };
+        my $e = new_editor(xact=>1);
+        if ($reactor) {
+            if (     $reactor eq 'SendEmail' 
+                  or $reactor eq 'ProcessTemplate' 
+                  or $reactor eq 'SendSMS') {
+                $query_result = $e->json_query($query);
+                $alt_templates = $query_result;
+                $query = {
+                    select => { au => ['locale'] },
+                    from   => 'au',
+                    where  => { id => $self->environment->{event}->target }
+                };
+                $query_result = $e->json_query($query);
+                $usr_locale = @$query_result[0]->{locale};
+                if ($alt_templates and @$alt_templates and $usr_locale) {
+                    foreach (@$alt_templates) {
+                        if ($_->{locale} eq $usr_locale) { 
+                            $new_template_id = $_->{id};
+                            $self->environment->{tt_locale} = $_->{locale};
+                            last;
+                        } else { #attempt a lanuage if not locale match
+                            if ((split /\p{Dash}/,$_->{locale})[0] eq (split /\p{Dash}/,$usr_locale)[0]) {
+                                $new_template_id = $_->{id};
+                                $self->environment->{tt_locale} = $_->{locale};
+                            }
+                        }
+                    }
+                }
+                if ($new_template_id) {
+                    $query = {
+                        select => { atevalt => ['template','message_template','message_title'] }, 
+                        from   => 'atevalt',
+                        where  => { id => $new_template_id }
+                    };
+                    $query_result = $e->json_query($query);
+                    $self->environment->{template} = @$query_result[0]->{template};
+                    $self->environment->{usr_message}{template} = @$query_result[0]->{message_template};
+                    $self->environment->{usr_message}{title} = @$query_result[0]->{message_title};
+                }
+            }
+        }
         $current_environment = $self->environment;
 
         $self->environment->{params}{ $_->param } = $compartment->reval($_->value) for ( @{$self->event->event_def->params} );
@@ -520,6 +572,51 @@ sub build_environment {
                 $self->_object_by_path( $self->event->event_def, undef, [qw/usr_message sending_lib/], ['owner'] );
             }
         }
+
+        if ($self->event->event_def->context_usr_path) {
+            my @usr_path = split(/\./, $self->event->event_def->context_usr_path);
+            $self->_object_by_path( $self->target, undef, [qw/context usr/], \@usr_path );
+        }
+
+        if ($self->event->event_def->context_bib_path) {
+            my @bib_path = split(/\./, $self->event->event_def->context_bib_path);
+            $self->_object_by_path( $self->target, undef, [qw/context bib/], \@bib_path );
+            if (ref $self->environment->{context}->{bib} eq 'ARRAY') {
+                $self->environment->{context}->{bib} = $self->environment->{context}->{bib}->[0];
+            }
+            if ($self->environment->{context}->{bib}->isa('Fieldmapper::biblio::record_entry')) {
+                $self->environment->{context}->{bib} = $self->environment->{context}->{bib}->id;
+            } elsif ($self->environment->{context}->{bib}->isa('Fieldmapper::reporter::hold_request_record')) {
+                $self->environment->{context}->{bib} = $self->environment->{context}->{bib}->bib_record;
+            }
+        }
+
+        if ($self->event->event_def->context_library_path) {
+            my @library_path = split(/\./, $self->event->event_def->context_library_path);
+            $self->_object_by_path( $self->target, undef, [qw/context org/], \@library_path );
+        } else {
+            $self->_object_by_path( $self->event->event_def, undef, [qw/context org/], ['owner'] );
+        }
+
+        if ($self->event->event_def->context_item_path) {
+            my @item_path = split(/\./, $self->event->event_def->context_item_path);
+            $self->_object_by_path( $self->target, undef, [qw/context item/], \@item_path );
+        }
+
+        $self->update_state(
+            $self->event->state, {
+                'context_item' => $self->environment->{context}->{item}
+                    ? $self->environment->{context}->{item}->id
+                    : undef,
+                'context_user' => $self->environment->{context}->{usr}
+                    ? $self->environment->{context}->{usr}->id
+                    : undef,
+                'context_library' => $self->environment->{context}->{org}
+                    ? $self->environment->{context}->{org}->id
+                    : undef,
+                'context_bib' => $self->environment->{context}->{bib}
+            }
+        );
     
         $self->environment->{complete} = 1;
     } otherwise {

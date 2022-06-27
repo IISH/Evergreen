@@ -1,0 +1,224 @@
+[%
+# Org Unit Selector Widget :
+#   INCLUDE build_org_selector id='selector-id' name='selector-name'
+#       value=org_id show_loc_groups=1/0 can_have_vols_only=1/0
+#       can_have_users_only=1/0 valid_org_list=[1,2,3] show_lassos=1/0
+#
+# NOTE: DO NOT USE PROCESS
+# Use of PROCESS results in internal variables, such as value or org_unit, to "leak" out
+
+PROCESS "opac/parts/misc_util.tt2";
+PROCESS get_library;
+
+BLOCK build_org_selector;
+    node_stack = [{org => org_unit || ctx.aouct_tree || ctx.aou_tree}];
+    inherited_vis = ctx.get_cgf('opac.org_unit.non_inherited_visibility').enabled == 'f';
+
+    IF !name;
+        name = loc_name;
+    END;
+    IF !value;
+        value = loc_value;
+    END;
+
+    # if the selected org unit is out of hiding scope,
+    # disable the ou-hide scoping altogether.
+    hiding_disabled = ctx.org_hiding_disabled(value);
+
+    # Some setup for Library Groups
+    lasso_selected = 0;
+    base_value = value.split(':').0;
+
+    -%]
+
+    <select [% IF id %] id='[% id %]' [% END -%]
+            title='[% arialabel || l("Select Library") %]'
+            name='[% name %]' class="form-control w-100">
+
+        [% IF show_lassos AND ctx.lassos.size > 0;
+            %] <optgroup label="[% l('Library Groups') %]"> [%
+            FOR lasso IN ctx.lassos;
+                opt_value = base_value _ ':lasso(' _ lasso.id _ ')';
+                selected = '';
+                IF !lasso_selected AND ctx.search_lasso == lasso.id;
+                    lasso_selected = 1;
+                    selected = 'selected="selected"';
+                END %]
+                <option value='[% opt_value %]' [% selected %]>
+                    [% lasso.name | html %]
+                </option>
+            [% END %]
+            </optgroup>
+            <optgroup label="[% l('Libraries') %]">
+        [% END;
+
+        WHILE node_stack.size > 0;
+            node = node_stack.pop();
+            org_unit = node.org;
+            loc_grp = node.loc_grp;
+            ou_id = org_unit.id;
+            css_class = '';
+            disabled = '';
+            selected = '';
+            visible = org_unit.opac_visible == 't';
+
+            # org and all children are invisible.
+            NEXT IF !visible AND inherited_vis AND !ctx.is_staff;
+
+            IF !loc_grp; # processing an org unit
+
+                top_loc_groups = [];
+                IF show_loc_groups;
+                    # add the location groups that sort below the child org units
+                    FOR grp IN ctx.copy_location_groups.$ou_id.reverse;
+                        IF grp.top == 't';
+                            top_loc_groups.push(grp);
+                        ELSE;
+                            node_stack.push({org => org_unit, loc_grp => grp});
+                        END;
+                    END;
+                END;
+
+                # add the child org units
+                FOR child IN org_unit.children.reverse;
+                    node_stack.push({org => child});
+                END;
+
+                # add the location groups that sort to the top
+                # above the child org units
+                FOR grp IN top_loc_groups;
+                    node_stack.push({org => org_unit, loc_grp => grp});
+                END;
+
+            END;
+
+            # org is not publicly visible (though its children may be).
+            NEXT UNLESS ctx.is_staff OR visible;
+
+            # org is not within hiding scope (though its children may be).
+            NEXT UNLESS hiding_disabled OR ctx.org_within_hiding_scope(ou_id);
+
+            node_value = ou_id;
+            IF loc_grp;
+                node_value = node_value _ ':' _ loc_grp.id;
+                css_class = 'class="loc_grp"';
+            ELSE;
+                css_class = 'class="org_unit"';
+            END;
+
+            IF can_have_vols_only AND org_unit.ou_type.can_have_vols != 't';
+                disabled = 'disabled="disabled"';
+            ELSIF !lasso_selected AND node_value == value;
+                selected = 'selected="selected"';
+            END;
+
+            IF can_have_users_only AND org_unit.ou_type.can_have_users != 't';
+                disabled = 'disabled="disabled"';
+            ELSIF !lasso_selected AND node_value == value;
+                selected = 'selected="selected"';
+            END;
+
+            IF hold_pickup_lib AND ctx.get_org_setting(
+                    org_unit.id, 'opac.holds.org_unit_not_pickup_lib');
+                disabled = 'disabled="disabled"';
+            END;
+
+            # caller provided a list of valid org units.
+            # all orgs not in the list are marked invalid.
+            IF valid_org_list AND
+                    !valid_org_list.grep('^' _ org_unit.id _ '$').size;
+                disabled = 'disabled="disabled"';
+                selected = '';
+            END;
+
+            pad_depth = 0;
+
+            # copy loc groups appear as children of the owning org unit
+            SET pad_depth = pad_depth + 1 IF loc_grp;
+
+            # determine the depth by calculating the distance from the root
+            porg = ctx.get_aou(org_unit.parent_ou);
+            WHILE porg;
+                SET pad_depth = pad_depth + 1 IF porg.opac_visible == 't' OR ctx.is_staff;
+                porg = ctx.get_aou(porg.parent_ou);
+            END;
+
+            pad_depth = pad_depth * 2;
+            display_name = loc_grp ? loc_grp.name : org_unit.name %]
+
+            <option value='[% node_value %]' [% selected %] [% disabled %] [% css_class %]>
+                [% '&nbsp;' FOR [0..pad_depth]; display_name | html %]
+            </option>
+
+        [%- END -%]
+
+        [%- IF show_lassos AND ctx.lassos.size > 0 -%]
+            </optgroup>
+        [%- END %]
+    </select>
+[%- END;
+
+BLOCK build_scope_selector;
+    IF !name;
+        name = id;
+    END;
+    IF !value;
+        value = loc_value;
+    END;
+
+    ou_id = ctx.search_ou;
+    context_org = ctx.get_aou(ou_id);
+
+    # if the selected org unit is out of hiding scope,
+    # disable the ou-hide scoping altogether.
+    hiding_disabled = ctx.org_hiding_disabled(value);
+    hiding_depth = ctx.get_org_setting(ou_id, 'opac.org_unit_hiding.depth') -%]
+
+    <select [% IF id %] id='[% id %]' [% END -%]
+            title='[% arialabel || l("Select scoping restrictions") %]'
+            name='[% name %]' class="form-control w-100">
+            <option value=''>[% l('No Restrictions') | html %]</option>
+
+        <optgroup label="[% l('Search Scope') %]"> [%
+        FOR d IN ctx.sorted_aout_list(); # sorts by depth and opac_label
+            NEXT IF !hiding_disabled AND hiding_depth > 0 AND d.depth < hiding_depth;
+            NEXT IF d.depth > context_org.ou_type.depth; # only show ancestors-and-self
+            opt_value = 'depth(' _ d.depth _ ')';
+            selected = '';
+            IF value == opt_value; selected = 'selected="selected"'; END %]
+            <option value='[% opt_value %]' [% selected %]>
+                [% d.opac_label | html %]
+            </option>
+        [% END %]
+        </optgroup>
+
+        [% IF show_lassos AND ctx.lassos.size > 0;
+            %] <optgroup label="[% l('Library Groups') %]"> [%
+            FOR lasso IN ctx.lassos;
+                opt_value = 'lasso(' _ lasso.id _ ')';
+                selected = '';
+                IF value == opt_value; selected = 'selected="selected"'; END %]
+                <option value='[% opt_value %]' [% selected %]>
+                    [% lasso.name | html %]
+                </option>
+            [% END %]
+            </optgroup>
+        [% END;
+
+        IF show_loc_groups AND ctx.copy_location_groups.size > 0;
+            %] <optgroup label="[% l('Location Groups') %]"> [%
+            FOR lc_ou_id IN ctx.copy_location_groups.keys;
+                FOR grp IN ctx.copy_location_groups.$lc_ou_id;
+                    opt_value = 'location_groups(' _ grp.id _ ')';
+                    selected = '';
+                    IF value == opt_value; selected = 'selected="selected"'; END %]
+                    <option value='[% opt_value %]' [% selected %]>
+                        [% grp.name | html %]
+                    </option>
+                [% END %]
+            [% END %]
+            </optgroup>
+        [% END %]
+
+    </select>
+[%- END %]

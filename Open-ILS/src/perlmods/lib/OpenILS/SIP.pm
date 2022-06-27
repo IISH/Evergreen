@@ -241,15 +241,47 @@ sub state {
     return { authtoken => $self->{authtoken} };
 }
 
+sub get_ou_setting {
+    my $self = shift;
+    my $setting = shift;
+    my $sess = $self->fetch_session;
+    my $ou = (ref($sess->home_ou)) ? $sess->home_ou->id : $sess->home_ou;
+    if ($sess->ws_ou) {
+        $ou = (ref($sess->ws_ou)) ? $sess->ws_ou->id : $sess->ws_ou;
+    }
+    return $U->ou_ancestor_setting_value($ou, $setting);
+}
+
+sub get_barcode_regex {
+    my $self = shift;
+    if (!defined($self->{bc_regex})) {
+        $self->{bc_regex} = $self->get_ou_setting('opac.barcode_regex');
+        $self->{bc_regex} = '^\d' unless ($self->{bc_regex});
+    }
+    return $self->{bc_regex};
+}
+
 #
 # find_patron($barcode);
 # find_patron(barcode => $barcode);   # same as above
 # find_patron(usr => $id);
+# find_patron(usrname => $usrname);
 
 sub find_patron {
     my $self = shift;
     my $key  =  (@_ > 1) ? shift : 'barcode';  # if we have multiple args, the first is the key index (default barcode)
     my $patron_id = shift;
+
+    my $use_username = 
+        $self->get_option_value('support_patron_username_login') || '';
+
+    if (to_bool($use_username)) {
+        # Check for usrname or barcode in the same, simple way that the OPAC does.
+        my $bc_regex = $self->get_barcode_regex();
+        if ($key eq 'barcode' && $patron_id !~ /$bc_regex/) {
+            $key = 'usrname';
+        }
+    }
 
     $self->verify_session;
     return OpenILS::SIP::Patron->new($key => $patron_id, authtoken => $self->{authtoken}, @_);

@@ -1,4 +1,4 @@
-import {Injectable} from '@angular/core';
+import {Injectable, EventEmitter} from '@angular/core';
 import {Router, ActivatedRoute} from '@angular/router';
 import {IdlObject} from '@eg/core/idl.service';
 import {OrgService} from '@eg/core/org.service';
@@ -6,6 +6,7 @@ import {CatalogService} from '@eg/share/catalog/catalog.service';
 import {CatalogUrlService} from '@eg/share/catalog/catalog-url.service';
 import {CatalogSearchContext} from '@eg/share/catalog/search-context';
 import {BibRecordSummary} from '@eg/share/catalog/bib-record.service';
+import {PatronService} from '@eg/staff/share/patron/patron.service';
 
 /**
  * Shared bits needed by the staff version of the catalog.
@@ -21,22 +22,50 @@ export class StaffCatalogService {
     // Track the current template through route changes.
     selectedTemplate: string;
 
+    // Display the Exclude Electronic checkbox
+    showExcludeElectronic = false;
+
+    // Advanced search filters to display
+    searchFilters: string[];
+
     // TODO: does unapi support pref-lib for result-page copy counts?
     prefOrg: IdlObject;
 
     // Default search tab
     defaultTab: string;
 
+    // Patron barcode we hope to place a hold for.
+    holdForBarcode: string;
+    // User object for above barcode.
+    holdForUser: IdlObject;
+
+    // Emit that the value has changed so components can detect
+    // the change even when the component is not itself digesting
+    // new values.
+    holdForChange: EventEmitter<void> = new EventEmitter<void>();
+
     // Cache the currently selected detail record (i.g. catalog/record/123)
     // summary so the record detail component can avoid duplicate fetches
     // during record tab navigation.
     currentDetailRecordSummary: any;
+
+    // Add digital bookplate to search options.
+    enableBookplates = false;
+
+    // Cache of browse results so the browse pager is not forced to
+    // re-run the browse search on each navigation.
+    browsePagerData: any[];
+
+    // whether to redirect to record page upon a single search
+    // result
+    jumpOnSingleHit = false;
 
     constructor(
         private router: Router,
         private route: ActivatedRoute,
         private org: OrgService,
         private cat: CatalogService,
+        private patron: PatronService,
         private catUrl: CatalogUrlService
     ) { }
 
@@ -48,14 +77,32 @@ export class StaffCatalogService {
         this.searchContext =
             this.catUrl.fromUrlParams(this.route.snapshot.queryParamMap);
 
+        this.holdForBarcode = this.route.snapshot.queryParams['holdForBarcode'];
+
+        if (this.holdForBarcode) {
+            this.patron.getByBarcode(this.holdForBarcode)
+            .then(user => {
+                this.holdForUser = user;
+                this.holdForChange.emit();
+            });
+        }
+
         this.searchContext.org = this.org; // service, not searchOrg
         this.searchContext.isStaff = true;
         this.applySearchDefaults();
     }
 
+    clearHoldPatron() {
+        this.holdForUser = null;
+        this.holdForBarcode = null;
+        this.holdForChange.emit();
+    }
+
     cloneContext(context: CatalogSearchContext): CatalogSearchContext {
         const params: any = this.catUrl.toUrlParams(context);
-        return this.catUrl.fromUrlHash(params);
+        const ctx = this.catUrl.fromUrlHash(params);
+        ctx.isStaff = true; // not carried in the URL
+        return ctx;
     }
 
     applySearchDefaults(): void {
@@ -76,6 +123,9 @@ export class StaffCatalogService {
      */
     search(): void {
         if (!this.searchContext.isSearchable()) { return; }
+
+        // Clear cached detail summary for new searches.
+        this.currentDetailRecordSummary = null;
 
         const params = this.catUrl.toUrlParams(this.searchContext);
 

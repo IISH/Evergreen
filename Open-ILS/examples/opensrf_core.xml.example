@@ -27,6 +27,8 @@ Example OpenSRF bootstrap configuration file for Evergreen
           <service>open-ils.cat</service>
           <service>open-ils.circ</service>
           <service>open-ils.collections</service>
+          <service>open-ils.courses</service>
+          <service>open-ils.curbside</service>
           <service>open-ils.fielder</service>
           <service>open-ils.pcrud</service>
           <service>open-ils.permacrud</service>
@@ -191,6 +193,8 @@ Example OpenSRF bootstrap configuration file for Evergreen
       <match_string>open-ils.cstore.direct.actor.user.update</match_string>
       <match_string>open-ils.cstore.direct.actor.user.delete</match_string>
       <match_string>open-ils.search.z3950.apply_credentials</match_string>
+      <match_string>open-ils.geo</match_string>
+      <match_string>open-ils.actor.geo</match_string>
     </log_protect>
   </shared>
 </config>

@@ -181,6 +181,7 @@ UPDATE config.xml_transform SET xslt=$XSLT$<?xml version="1.0" encoding="UTF-8"?
 
 
 <!--
+2.15	reversed genre and setAuthority template order under relatedTypeAttribute			tmee 11/13/2018
 2.14    Fixed bug in mads:geographic attributes syntax                                      ws   05/04/2016		
 2.13	fixed repeating <geographic>														tmee 01/31/2014
 2.12	added $2 authority for <classification>												tmee 09/18/2012
@@ -1254,8 +1255,8 @@ UPDATE config.xml_transform SET xslt=$XSLT$<?xml version="1.0" encoding="UTF-8"?
 	<xsl:template match="marc:datafield[@tag=755]">
 		<mads:related>
 			<xsl:call-template name="relatedTypeAttribute"/>
-			<xsl:call-template name="genre"/>
 			<xsl:call-template name="setAuthority"/>
+			<xsl:call-template name="genre"/>
 			<xsl:apply-templates select="marc:subfield[@code!='i']"/>
 		</mads:related>
 	</xsl:template>

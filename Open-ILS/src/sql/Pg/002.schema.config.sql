@@ -92,8 +92,8 @@ CREATE TRIGGER no_overlapping_deps
     BEFORE INSERT OR UPDATE ON config.db_patch_dependencies
     FOR EACH ROW EXECUTE PROCEDURE evergreen.array_overlap_check ('deprecates');
 
-INSERT INTO config.upgrade_log (version, applied_to) VALUES ('1211', :eg_version); -- Dyrcona/rhamby/gmcharlt
-INSERT INTO config.upgrade_log (version, applied_to) VALUES ('3.5.1', :eg_version);
+INSERT INTO config.upgrade_log (version, applied_to) VALUES ('1325', :eg_version); -- stompro/sandbergja/JBoyer
+INSERT INTO config.upgrade_log (version, applied_to) VALUES ('3.9.0', :eg_version);
 
 CREATE TABLE config.bib_source (
 	id		SERIAL	PRIMARY KEY,
@@ -209,6 +209,7 @@ CREATE TABLE config.metabib_field (
 	search_field	BOOL	NOT NULL DEFAULT TRUE,
 	facet_field	BOOL	NOT NULL DEFAULT FALSE,
 	browse_field	BOOL	NOT NULL DEFAULT TRUE,
+    browse_nocase BOOL NOT NULL DEFAULT FALSE,
 	browse_xpath   TEXT,
 	browse_sort_xpath TEXT,
 	facet_xpath	TEXT,
@@ -443,7 +444,8 @@ CREATE TABLE config.copy_status (
 	opac_visible	BOOL	NOT NULL DEFAULT FALSE,
     copy_active  BOOL    NOT NULL DEFAULT FALSE,
 	restrict_copy_delete BOOL	  NOT NULL DEFAULT FALSE,
-    is_available  BOOL    NOT NULL DEFAULT FALSE
+    is_available  BOOL    NOT NULL DEFAULT FALSE,
+    hopeless_prone  BOOL    NOT NULL DEFAULT FALSE
 );
 COMMENT ON TABLE config.copy_status IS $$
 Copy Statuses
@@ -1372,5 +1374,31 @@ VALUES
 ;
 
 SELECT SETVAL('config.carousel_type_id_seq'::TEXT, 100);
+
+CREATE TABLE config.geolocation_service (
+    id           SERIAL PRIMARY KEY,
+    active       BOOLEAN,
+    owner        INT NOT NULL, -- REFERENCES actor.org_unit (id)
+    name         TEXT,
+    service_code TEXT,
+    api_key      TEXT
+);
+
+CREATE TABLE config.ui_staff_portal_page_entry_type (
+    code        TEXT PRIMARY KEY,
+    label       TEXT NOT NULL
+);
+
+CREATE TABLE config.ui_staff_portal_page_entry (
+    id          SERIAL PRIMARY KEY,
+    page_col    INTEGER NOT NULL,
+    col_pos     INTEGER NOT NULL,
+    entry_type  TEXT NOT NULL, -- REFERENCES config.ui_staff_portal_page_entry_type(code)
+    label       TEXT,
+    image_url   TEXT,
+    target_url  TEXT,
+    entry_text  TEXT,
+    owner       INT NOT NULL -- REFERENCES actor.org_unit (id)
+);
 
 COMMIT;

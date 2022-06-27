@@ -1100,7 +1100,6 @@ sub create_picklist {
     $picklist->create_time('now');
     $picklist->edit_time('now');
     $picklist->org_unit($mgr->editor->requestor->ws_ou);
-    $picklist->owner($mgr->editor->requestor->id);
     $picklist->$_($args{$_}) for keys %args;
     $picklist->clear_id;
     $mgr->picklist($picklist);
@@ -2562,7 +2561,9 @@ __PACKAGE__->register_method(
     method    => 'clone_picklist_api',
     api_name  => 'open-ils.acq.picklist.clone',
     signature => {
-        desc   => 'Clones a picklist, including lineitem and lineitem details',
+        desc   => 'Clones a picklist, including lineitem and lineitem details.
+                   Owner, creator, editor, and org unit are set to match
+                   the logged in user.',
         params => [
             {desc => 'Authentication token', type => 'string'},
             {desc => 'Picklist ID', type => 'number'},
@@ -2579,8 +2580,14 @@ sub clone_picklist_api {
     return $e->die_event unless $e->checkauth;
     my $mgr = OpenILS::Application::Acq::BatchManager->new(editor => $e, conn => $conn);
 
-    my $old_pl = $e->retrieve_acq_picklist($pl_id);
-    my $new_pl = create_picklist($mgr, %{$old_pl->to_bare_hash}, name => $name) or return $e->die_event;
+    my $old_pl;
+    $old_pl = $e->retrieve_acq_picklist($pl_id) or return $e->die_event;
+    # we're not retaining _any_ part of the acq.picklist row itself for the moment,
+    # as the new name comes from user input and everything else either comes from the
+    # logged-in user's session (owner, creator, editor, org_unit) or the current
+    # time (create_time, edit_time)
+
+    my $new_pl = create_picklist($mgr, name => $name) or return $e->die_event;
 
     my $li_ids = $e->search_acq_lineitem({picklist => $pl_id}, {idlist => 1});
 
@@ -3169,7 +3176,7 @@ sub cancel_lineitem {
         # gathering any real copies for deletion
         # if there is a copy ID and the cancel reason keeps debits,
         # do not delete. 
-        if ($lid->eg_copy_id && ! $U->is_true($cancel_reason->keep_debits)) {
+        if ($lid->eg_copy_id && ! $U->is_true($cancel_reason->keep_debits) && $lid->eg_copy_id->status == OILS_COPY_STATUS_ON_ORDER) {
             $lid->eg_copy_id->isdeleted('t');
             push @$copies, $lid->eg_copy_id;
         }
@@ -4280,6 +4287,8 @@ sub apply_new_li_ident_attr {
     $bre->edit_date('now');
 
     $e->update_biblio_record_entry($bre) or return (undef, $e->die_event);
+
+    $U->create_events_for_hook('bre.edit', $bre, $e->requestor->ws_ou);
 
     return ($source_attr);
 }

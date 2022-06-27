@@ -1,6 +1,6 @@
 <!-- uses dropdown menu CSS for easy stying, but it's not a dropdown -->
 <ng-template #contextMenu let-gridContext="gridContext">
-  <eg-grid-toolbar-actions-menu [gridContext]="gridContext">
+  <eg-grid-toolbar-actions-menu [gridContext]="gridContext" [viaContextMenu]="true">
   </eg-grid-toolbar-actions-menu>
 </ng-template>
 
@@ -24,7 +24,7 @@
           triggers="manual">
       </div>
     </ng-container>
-    <div class="eg-grid-cell eg-grid-number-cell eg-grid-cell-skinny">
+    <div class="eg-grid-cell eg-grid-number-cell eg-grid-cell-skinny-2">
       {{context.pager.rowNumber(idx)}}
     </div>
     <div *ngIf="context.rowFlairIsEnabled" class="eg-grid-cell eg-grid-flair-cell">

@@ -12,6 +12,8 @@ use OpenSRF::Utils::Logger qw/$logger/;
 use OpenILS::Application::AppUtils;
 use OpenILS::Utils::CStoreEditor qw/:funcs/;
 use OpenILS::Utils::Fieldmapper;
+use OpenSRF::Utils::Cache;
+use OpenILS::Event;
 use DateTime::Format::ISO8601;
 use CGI qw(:all -utf8);
 use Time::HiRes;
@@ -23,6 +25,7 @@ use OpenILS::WWW::EGCatLoader::Browse;
 use OpenILS::WWW::EGCatLoader::Library;
 use OpenILS::WWW::EGCatLoader::Search;
 use OpenILS::WWW::EGCatLoader::Record;
+use OpenILS::WWW::EGCatLoader::Course;
 use OpenILS::WWW::EGCatLoader::Container;
 use OpenILS::WWW::EGCatLoader::SMS;
 use OpenILS::WWW::EGCatLoader::Register;
@@ -31,6 +34,8 @@ my $U = 'OpenILS::Application::AppUtils';
 
 use constant COOKIE_SES => 'ses';
 use constant COOKIE_LOGGEDIN => 'eg_loggedin';
+use constant COOKIE_SHIB_LOGGEDOUT => 'eg_shib_logged_out';
+use constant COOKIE_SHIB_LOGGEDIN => 'eg_shib_logged_in';
 use constant COOKIE_TZ => 'client_tz';
 use constant COOKIE_PHYSICAL_LOC => 'eg_physical_loc';
 use constant COOKIE_SSS_EXPAND => 'eg_sss_expand';
@@ -133,6 +138,9 @@ sub load {
         $path =~ /opac\/my(opac\/lists|list)/ ||
         $path =~ m!opac/api/mylist!;
 
+    my $org_unit = $self->ctx->{physical_loc} || $self->cgi->param('context_org') || $self->_get_search_lib;
+    $self->ctx->{selected_print_email_loc} = $org_unit;
+
     return $self->load_api_mylist_retrieve if $path =~ m|opac/api/mylist/retrieve|;
     return $self->load_api_mylist_add if $path =~ m|opac/api/mylist/add|;
     return $self->load_api_mylist_delete if $path =~ m|opac/api/mylist/delete|;
@@ -140,15 +148,20 @@ sub load {
 
     return $self->load_simple("home") if $path =~ m|opac/home|;
     return $self->load_simple("css") if $path =~ m|opac/css|;
+    return $self->load_cresults if $path =~ m|opac/course/results|;
+    return $self->load_simple("course_search") if $path =~ m|opac/course_search|;
     return $self->load_simple("advanced") if
         $path =~ m:opac/(advanced|numeric|expert):;
 
     return $self->load_library if $path =~ m|opac/library|;
     return $self->load_rresults if $path =~ m|opac/results|;
+    return $self->load_print_or_email_preview('print') if $path =~ m|opac/record/print_preview|;
     return $self->load_print_record if $path =~ m|opac/record/print|;
     return $self->load_record if $path =~ m|opac/record/\d|;
     return $self->load_cnbrowse if $path =~ m|opac/cnbrowse|;
     return $self->load_browse if $path =~ m|opac/browse|;
+    return $self->load_course_browse if $path =~ m|opac/course_browse|;
+    return $self->load_course if $path =~ m|opac/course|;
 
     return $self->load_mylist_add if $path =~ m|opac/mylist/add|;
     return $self->load_mylist_delete if $path =~ m|opac/mylist/delete|;
@@ -158,6 +171,7 @@ sub load {
     return $self->load_cache_clear if $path =~ m|opac/cache/clear|;
     return $self->load_temp_warn_post if $path =~ m|opac/temp_warn/post|;
     return $self->load_temp_warn if $path =~ m|opac/temp_warn|;
+    return $self->load_simple("carousel") if $path =~ m|opac/carousel|;
 
     # ----------------------------------------------------------------
     #  Everything below here requires SSL
@@ -184,11 +198,37 @@ sub load {
     }
 
     if ($path =~ m|opac/sms_cn| and !$self->editor->requestor) {
-        my $org_unit = $self->ctx->{physical_loc} || $self->cgi->param('loc') || $self->ctx->{aou_tree}->()->id;
         my $skip_sms_auth = $self->ctx->{get_org_setting}->($org_unit, 'sms.disable_authentication_requirement.callnumbers');
         return $self->load_sms_cn if $skip_sms_auth;
     }
 
+    if (!$self->editor->requestor && $path =~ m|opac/record/email|) {
+        if ($self->ctx->{get_org_setting}->($org_unit, 'opac.email_record.allow_without_login')) {
+            my $cache = OpenSRF::Utils::Cache->new('global');
+
+            if ($path !~ m|preview|) { # the real thing!
+                $logger->info("not preview");
+                my $cap_key = $self->ctx->{cap}->{key} = $self->cgi->param('capkey');
+                $logger->info("got cap_key $cap_key");
+                if ($cap_key) {
+                    my $cap_answer = $self->ctx->{cap_answer} = $self->cgi->param('capanswer');
+                    my $real_answer = $self->ctx->{real_answer} = $cache->get_cache(md5_hex($cap_key));
+                    $logger->info("got answers $cap_answer $real_answer");
+                    return $self->load_email_record(1) if ( $cap_answer eq $real_answer );
+                }
+            }
+
+            my $captcha = {};
+            $$captcha{key} = time() . $$ . rand();
+            $$captcha{left} = int(rand(10));
+            $$captcha{right} = int(rand(10));
+            $cache->put_cache(md5_hex($$captcha{key}), $$captcha{left} + $$captcha{right});
+            $self->ctx->{captcha} = $captcha;
+            return $self->load_print_or_email_preview('email', 1) if $path =~ m|opac/record/email_preview|;
+        }
+    }
+
+    return $self->load_manual_shib_login if $path =~ m|opac/manual_shib_login|;
     # ----------------------------------------------------------------
     #  Everything below here requires authentication
     # ----------------------------------------------------------------
@@ -202,23 +242,33 @@ sub load {
         (undef, $self->ctx->{mylist}) = $self->fetch_mylist;
     }
     $self->load_simple("mylist/email") if $path =~ m|opac/mylist/email|;
+    return $self->load_print_or_email_preview('email') if $path =~ m|opac/mylist/doemail_preview|;
     return $self->load_mylist_email if $path =~ m|opac/mylist/doemail|;
+    return $self->load_print_or_email_preview('email') if $path =~ m|opac/record/email_preview|;
     return $self->load_email_record if $path =~ m|opac/record/email|;
+    return $self->load_sms_cn if $path =~ m|opac/sms_cn|;
 
     return $self->load_place_hold if $path =~ m|opac/place_hold|;
+ 
+    # centralize check for curbside tab display
+    $self->load_current_curbside_libs;
+
     return $self->load_myopac_holds if $path =~ m|opac/myopac/holds|;
+    return $self->load_myopac_hold_subscriptions if $path =~ m|opac/myopac/hold_subscriptions|;
     return $self->load_myopac_circs if $path =~ m|opac/myopac/circs|;
     return $self->load_myopac_messages if $path =~ m|opac/myopac/messages|;
     return $self->load_myopac_payment_form if $path =~ m|opac/myopac/main_payment_form|;
     return $self->load_myopac_payments if $path =~ m|opac/myopac/main_payments|;
     return $self->load_myopac_pay_init if $path =~ m|opac/myopac/main_pay_init|;
     return $self->load_myopac_pay if $path =~ m|opac/myopac/main_pay|;
+    return $self->load_myopac_main if $path =~ m|opac/myopac/charges|;
     return $self->load_myopac_main if $path =~ m|opac/myopac/main|;
     return $self->load_myopac_receipt_email if $path =~ m|opac/myopac/receipt_email|;
     return $self->load_myopac_receipt_print if $path =~ m|opac/myopac/receipt_print|;
     return $self->load_myopac_update_email if $path =~ m|opac/myopac/update_email|;
     return $self->load_myopac_update_password if $path =~ m|opac/myopac/update_password|;
     return $self->load_myopac_update_username if $path =~ m|opac/myopac/update_username|;
+    return $self->load_myopac_update_locale if $path =~ m|opac/myopac/update_locale|;
     return $self->load_myopac_bookbags if $path =~ m|opac/myopac/lists|;
     return $self->load_myopac_bookbag_print if $path =~ m|opac/myopac/list/print|;
     return $self->load_myopac_bookbag_update if $path =~ m|opac/myopac/list/update|;
@@ -231,7 +281,6 @@ sub load {
     return $self->load_myopac_prefs_my_lists if $path =~ m|opac/myopac/prefs_my_lists|;
     return $self->load_myopac_prefs if $path =~ m|opac/myopac/prefs|;
     return $self->load_myopac_reservations if $path =~ m|opac/myopac/reservations|;
-    return $self->load_sms_cn if $path =~ m|opac/sms_cn|;
 
     return Apache2::Const::OK;
 }
@@ -252,9 +301,17 @@ sub redirect_ssl {
 # -----------------------------------------------------------------------------
 sub redirect_auth {
     my $self = shift;
-    my $login_page = sprintf('%s://%s%s/login',($self->ctx->{is_staff} ? 'oils' : 'https'), $self->ctx->{hostname}, $self->ctx->{opac_root});
+
+    my $sso_org = $ENV{sso_loc} || $self->get_physical_loc || $self->_get_search_lib();
+    my $sso_enabled = $self->ctx->{get_org_setting}->($sso_org, 'opac.login.shib_sso.enable');
+    my $sso_native = $self->ctx->{get_org_setting}->($sso_org, 'opac.login.shib_sso.allow_native');
+
+    my $login_type = ($sso_enabled and !$sso_native) ? 'manual_shib_login' : 'login';
+    my $login_page = sprintf('%s://%s%s/%s',($self->ctx->{is_staff} ? 'oils' : 'https'), $self->ctx->{hostname}, $self->ctx->{opac_root}, $login_type);
     my $redirect_to = uri_escape_utf8($self->apache->unparsed_uri);
-    return $self->generic_redirect("$login_page?redirect_to=$redirect_to");
+    my $redirect_url = "$login_page?redirect_to=$redirect_to";
+
+    return $self->generic_redirect($redirect_url);
 }
 
 # -----------------------------------------------------------------------------
@@ -307,7 +364,13 @@ sub load_common {
         $ctx->{hostname} = 'remote';
     }
 
+    $ctx->{carousel_loc} = $self->get_carousel_loc;
     $ctx->{physical_loc} = $self->get_physical_loc;
+    my $geo_sort = $e->retrieve_config_global_flag('opac.use_geolocation');
+    $geo_sort = ($geo_sort && $U->is_true($geo_sort->enabled));
+    my $geo_org = $ctx->{physical_loc} || $self->cgi->param('loc') || $ctx->{aou_tree}->()->id;
+    my $geo_sort_for_org = $ctx->{get_org_setting}->($geo_org, 'opac.holdings_sort_by_geographic_proximity');
+    $ctx->{geo_sort} = $geo_sort && $U->is_true($geo_sort_for_org);
 
     # capture some commonly accessed pages
     $ctx->{home_page} = $ctx->{proto} . '://' . $ctx->{hostname} . $self->ctx->{opac_root} . "/home";
@@ -351,17 +414,25 @@ sub load_common {
 
     $self->extract_copy_location_group_info;
     $ctx->{search_ou} = $self->_get_search_lib();
+    if (!$ctx->{search_scope}) { # didn't get it from locg above in extract_...
+        $ctx->{search_scope} = $self->cgi->param('search_scope');
+        if ($ctx->{search_scope} =~ /^lasso\(([^)]+)\)/) {
+            $ctx->{search_lasso} = $1; # make it visible to basic search
+        }
+    }
     $self->staff_saved_searches_set_expansion_state if $ctx->{is_staff};
     $self->load_eg_cache_hash;
     $self->load_copy_location_groups;
+    $self->load_my_hold_subscriptions;
+    $self->load_hold_subscriptions if $ctx->{is_staff};
+    $self->load_lassos;
     $self->staff_saved_searches_set_expansion_state if $ctx->{is_staff};
     $self->load_search_filter_groups($ctx->{search_ou});
     $self->load_org_util_funcs;
     $self->load_perm_funcs;
 
-    # FIXME - move carousel helpers to a separate file
     $ctx->{get_visible_carousels} = sub {
-        my $org_unit = $self->ctx->{physical_loc} || $self->cgi->param('loc') || $self->ctx->{aou_tree}->()->id;
+        my $org_unit = $self->ctx->{carousel_loc} || $self->ctx->{physical_loc} || $self->cgi->param('loc') || $self->ctx->{aou_tree}->()->id;
         return $U->simplereq(
             'open-ils.actor',
             'open-ils.actor.carousel.retrieve_by_org',
@@ -370,35 +441,11 @@ sub load_common {
     };
     $ctx->{get_carousel} = sub {
         my $id = shift;
-
-        my $carousel = $e->retrieve_container_carousel($id);
-        my $ret = {
-            id   => $id,
-            name => $carousel->name
-        };
-        my $q = {
-            select => { bre => ['id'], mfde => [{ column => 'value', alias => 'title' }] },
-            from   => {
-                bre => {
-                    cbrebi => {
-                        join => {
-                            cbreb => {
-                                join => { cc => {} }
-                            }
-                        }
-                    },
-                    mfde => {}
-                }
-            },
-            where  => {
-                '+cc' => { id => $id },
-                '+bre' => { deleted => 'f' },
-                '+mfde' => { name => 'title' }
-            }
-        };
-        my $r = $e->json_query($q);
-        $ret->{bibs} = $r;
-        return $ret;
+        return $U->simplereq(
+            'open-ils.actor',
+            'open-ils.actor.carousel.get_contents',
+            $id
+        );
     };
 
     $ctx->{fetch_display_fields} = sub {
@@ -422,6 +469,9 @@ sub load_common {
 
         return $rows;
     };
+
+    $ctx->{course_ou} = int($self->cgi->param('locg')) || $self->ctx->{physical_loc} || $self->ctx->{aou_tree}->()->id;
+    $ctx->{use_courses} = $ctx->{get_org_setting}->($ctx->{course_ou}, 'circ.course_materials_opt_in') ? 1 : 0;
 
     return Apache2::Const::OK;
 }
@@ -485,6 +535,11 @@ sub get_physical_loc {
     return $self->cgi->cookie(COOKIE_PHYSICAL_LOC);
 }
 
+sub get_carousel_loc {
+    my $self = shift;
+    return $self->cgi->param('carousel_loc') || $ENV{carousel_loc};
+}
+
 # -----------------------------------------------------------------------------
 # Log in and redirect to the redirect_to URL (or home)
 # -----------------------------------------------------------------------------
@@ -495,6 +550,13 @@ sub load_login {
 
     $self->timelog("Load login begins");
 
+    my $sso_org = $ENV{sso_loc} || $self->get_physical_loc || $self->_get_search_lib();
+    $ctx->{sso_org} = $sso_org;
+    my $sso_enabled = $ctx->{get_org_setting}->($sso_org, 'opac.login.shib_sso.enable');
+    my $sso_native = $ctx->{get_org_setting}->($sso_org, 'opac.login.shib_sso.allow_native');
+    my $sso_eg_match = $ctx->{get_org_setting}->($sso_org, 'opac.login.shib_sso.evergreen_matchpoint') || 'usrname';
+    my $sso_shib_match = $ctx->{get_org_setting}->($sso_org, 'opac.login.shib_sso.shib_matchpoint') || 'uid';
+
     $ctx->{page} = 'login';
 
     my $username = $cgi->param('username') || '';
@@ -504,50 +566,84 @@ sub load_login {
     my $persist = $cgi->param('persist');
     my $client_tz = $cgi->param('client_tz');
 
-    # initial log form only
-    return Apache2::Const::OK unless $username and $password;
-
-    my $auth_proxy_enabled = 0; # default false
-    try { # if the service is not running, just let this fail silently
-        $auth_proxy_enabled = $U->simplereq(
-            'open-ils.auth_proxy',
-            'open-ils.auth_proxy.enabled');
-    } catch Error with {};
-
-    $self->timelog("Checked for auth proxy: $auth_proxy_enabled; org = $org_unit; username = $username");
-
-    my $args = {
-        type => ($persist) ? 'persist' : 'opac',
-        org => $org_unit,
-        agent => 'opac'
-    };
-
-    my $bc_regex = $ctx->{get_org_setting}->($org_unit, 'opac.barcode_regex');
-
-    # To avoid surprises, default to "Barcodes start with digits"
-    $bc_regex = '^\d' unless $bc_regex;
-
-    if ($bc_regex and ($username =~ /$bc_regex/)) {
-        $args->{barcode} = $username;
-    } else {
-        $args->{username} = $username;
-    }
-
+    my $sso_user_match_value;
     my $response;
-    if (!$auth_proxy_enabled) {
-        my $seed = $U->simplereq(
-            'open-ils.auth',
-            'open-ils.auth.authenticate.init', $username);
-        $args->{password} = md5_hex($seed . md5_hex($password));
-        $response = $U->simplereq(
-            'open-ils.auth', 'open-ils.auth.authenticate.complete', $args);
-    } else {
-        $args->{password} = $password;
-        $response = $U->simplereq(
-            'open-ils.auth_proxy',
-            'open-ils.auth_proxy.login', $args);
+    my $sso_logged_in;
+    $self->timelog("SSO is enabled") if ($sso_enabled);
+    if ($sso_enabled
+        and $sso_user_match_value = $ENV{$sso_shib_match}
+        and !$self->cgi->cookie(COOKIE_SHIB_LOGGEDOUT)
+    ) { # we have a shib session, and have not cleared a previous shib-login cookie
+        $self->timelog("Have an SSO user match value: $sso_user_match_value");
+
+        if ($sso_eg_match eq 'barcode') { # barcode is special
+            my $card = $self->editor->search_actor_card({barcode => $sso_user_match_value})->[0];
+            $sso_user_match_value = $card ? $card->usr : undef;
+            $sso_eg_match = 'id';
+        }
+
+        if ($sso_user_match_value && $sso_eg_match) {
+            my $user = $self->editor->search_actor_user({ $sso_eg_match => $sso_user_match_value })->[0];
+            if ($user) { # create a session
+                $response = $U->simplereq(
+                    'open-ils.auth_internal',
+                    'open-ils.auth_internal.session.create',
+                    { user_id => $user->id, login_type => 'opac' }
+                );
+                $sso_logged_in = $response ? 1 : 0;
+            }
+        }
+
+        $self->timelog("Checked for SSO login");
     }
-    $self->timelog("Checked password");
+
+    if (!$sso_enabled || (!$response && $sso_native)) {
+        # initial log form only
+        return Apache2::Const::OK unless $username and $password;
+
+        my $auth_proxy_enabled = 0; # default false
+        try { # if the service is not running, just let this fail silently
+            $auth_proxy_enabled = $U->simplereq(
+                'open-ils.auth_proxy',
+                'open-ils.auth_proxy.enabled');
+        } catch Error with {};
+
+        $self->timelog("Checked for auth proxy: $auth_proxy_enabled; org = $org_unit; username = $username");
+
+        my $args = {
+            type => ($persist) ? 'persist' : 'opac',
+            org => $org_unit,
+            agent => 'opac'
+        };
+
+        my $bc_regex = $ctx->{get_org_setting}->($org_unit, 'opac.barcode_regex');
+
+        # To avoid surprises, default to "Barcodes start with digits"
+        $bc_regex = '^\d' unless $bc_regex;
+
+        if ($bc_regex and ($username =~ /$bc_regex/)) {
+            $args->{barcode} = $username;
+        } else {
+            $args->{username} = $username;
+        }
+
+        if (!$auth_proxy_enabled) {
+            my $seed = $U->simplereq(
+                'open-ils.auth',
+                'open-ils.auth.authenticate.init', $username);
+            $args->{password} = md5_hex($seed . md5_hex($password));
+            $response = $U->simplereq(
+                'open-ils.auth', 'open-ils.auth.authenticate.complete', $args);
+        } else {
+            $args->{password} = $password;
+            $response = $U->simplereq(
+                'open-ils.auth_proxy',
+                'open-ils.auth_proxy.login', $args);
+        }
+        $self->timelog("Checked password");
+    } else {
+        $response ||= OpenILS::Event->new( 'LOGIN_FAILED' ); # assume failure
+    }
 
     if($U->event_code($response)) { 
         # login failed, report the reason to the template
@@ -595,9 +691,54 @@ sub load_login {
         );
     }
 
+    if ($sso_logged_in) {
+        # tells us if we're logged in via shib, so we can decide whether to try logging in again.
+        push @$cookie_list, $cgi->cookie(
+            -name => COOKIE_SHIB_LOGGEDOUT,
+            -path => '/',
+            -secure => 0,
+            -value => '0',
+            -expires => '-1h'
+        );
+        push @$cookie_list, $cgi->cookie(
+            -name => COOKIE_SHIB_LOGGEDIN,
+            -path => '/',
+            -secure => 0,
+            -value => '1',
+            -expires => $login_cookie_expires
+        );
+    }
+
     return $self->generic_redirect(
         $cgi->param('redirect_to') || $acct,
         $cookie_list
+    );
+}
+
+sub load_manual_shib_login {
+    my $self = shift;
+    my $redirect_to = shift || $self->cgi->param('redirect_to');
+
+    my $sso_org = $ENV{sso_loc} || $self->get_physical_loc || $self->_get_search_lib();
+    my $sso_entity_id = $self->ctx->{get_org_setting}->($sso_org, 'opac.login.shib_sso.entityId');
+    my $sso_shib_match = $self->ctx->{get_org_setting}->($sso_org, 'opac.login.shib_sso.shib_matchpoint') || 'uid';
+
+    return $self->load_login if ($ENV{$sso_shib_match});
+
+    my $url = '/Shibboleth.sso/Login?target=' . ($redirect_to || $self->ctx->{home_page});
+    if ($sso_entity_id) {
+        $url .= '&entityID=' . $sso_entity_id;
+    }
+
+    return $self->generic_redirect( $url,
+        [
+            $self->cgi->cookie(
+                -name => COOKIE_SHIB_LOGGEDOUT,
+                -path => '/',
+                -value => '0',
+                -expires => '-1h'
+            )
+        ]
     );
 }
 
@@ -607,6 +748,19 @@ sub load_login {
 sub load_logout {
     my $self = shift;
     my $redirect_to = shift || $self->cgi->param('redirect_to');
+    my $active_logout = $self->cgi->param('active_logout');
+
+    my $sso_org = $ENV{sso_loc} || $self->get_physical_loc || $self->_get_search_lib();
+    $self->ctx->{sso_org} = $sso_org;
+    my $sso_enabled = $self->ctx->{get_org_setting}->($sso_org, 'opac.login.shib_sso.enable');
+    my $sso_entity_id = $self->ctx->{get_org_setting}->($sso_org, 'opac.login.shib_sso.entityId');
+    my $sso_logout = $self->ctx->{get_org_setting}->($sso_org, 'opac.login.shib_sso.logout');
+    if ($sso_enabled && $sso_logout) {
+        $redirect_to = '/Shibboleth.sso/Logout?return=' . ($redirect_to || $self->ctx->{home_page});
+        if ($sso_entity_id) {
+            $redirect_to .= '&entityID=' . $sso_entity_id;
+        }
+    }
 
     # If the user was adding anyting to an anonymous cache 
     # while logged in, go ahead and clear it out.
@@ -634,6 +788,18 @@ sub load_logout {
                 -name => COOKIE_LOGGEDIN,
                 -path => '/',
                 -value => '',
+                -expires => '-1h'
+            ),
+            ($active_logout ? ($self->cgi->cookie(
+                -name => COOKIE_SHIB_LOGGEDOUT,
+                -path => '/',
+                -value => '1',
+                -expires => '2147483647'
+            )) : ()),
+            $self->cgi->cookie(
+                -name => COOKIE_SHIB_LOGGEDIN,
+                -path => '/',
+                -value => '0',
                 -expires => '-1h'
             )
         ]

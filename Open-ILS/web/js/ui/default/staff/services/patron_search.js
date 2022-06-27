@@ -259,7 +259,10 @@ function($q , $timeout , $location , egCore,  egUser , egConfirmDialog , $locale
             user.standing_penalties(),
             function(penalty) {
                 if (!angular.isObject(penalty.org_unit()))
-                    penalty.org_unit(egCore.org.get(penalty.org_unit()));
+                    // clone the org unit IDL object and set children to an empty array
+                    org_unit = egCore.idl.Clone(egCore.org.get(penalty.org_unit()));
+                    org_unit.children([])
+                    penalty.org_unit(org_unit);
             }
         );
 
@@ -331,7 +334,6 @@ function($q , $timeout , $location , egCore,  egUser , egConfirmDialog , $locale
         var p = service.current;
 
         if (service.alert_penalties.length ||
-            p.alert_message() ||
             p.active() == 'f' ||
             p.barred() == 't' ||
             service.patron_stats.holds.ready) {

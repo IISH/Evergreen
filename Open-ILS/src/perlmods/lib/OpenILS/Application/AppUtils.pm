@@ -1,5 +1,7 @@
 package OpenILS::Application::AppUtils;
 use strict; use warnings;
+use MARC::Record;
+use MARC::File::XML (BinaryEncoding => 'utf8', RecordFormat => 'USMARC');
 use OpenILS::Application;
 use base qw/OpenILS::Application/;
 use OpenSRF::Utils::Cache;
@@ -23,7 +25,6 @@ use Digest::MD5 qw(md5_hex);
 # Pile of utilty methods used accross applications.
 # ---------------------------------------------------------------------------
 my $cache_client = "OpenSRF::Utils::Cache";
-
 
 # ---------------------------------------------------------------------------
 # on sucess, returns the created session, on failure throws ERROR exception
@@ -773,6 +774,20 @@ sub find_org_by_shortname {
         return $o if $o;
     }
     return undef;
+}
+
+sub find_lasso_by_name {
+    my( $self, $name )  = @_;
+    return $self->simplereq(
+        'open-ils.cstore', 
+        'open-ils.cstore.direct.actor.org_lasso.search.atomic', { name => $name } )->[0];
+}
+
+sub fetch_lasso_org_maps {
+    my( $self, $lasso )  = @_;
+    return $self->simplereq(
+        'open-ils.cstore', 
+        'open-ils.cstore.direct.actor.org_lasso_map.search.atomic', { lasso => $lasso } );
 }
 
 sub fetch_non_cat_type_by_name_and_org {
@@ -1664,10 +1679,22 @@ sub get_copy_price {
     my $min_price = $self->ou_ancestor_setting_value($owner, OILS_SETTING_MIN_ITEM_PRICE);
     my $max_price = $self->ou_ancestor_setting_value($owner, OILS_SETTING_MAX_ITEM_PRICE);
     my $charge_on_0 = $self->ou_ancestor_setting_value($owner, OILS_SETTING_CHARGE_LOST_ON_ZERO, $e);
+    my $primary_field = $self->ou_ancestor_setting_value($owner, OILS_SETTING_PRIMARY_ITEM_VALUE_FIELD, $e);
+    my $backup_field = $self->ou_ancestor_setting_value($owner, OILS_SETTING_SECONDARY_ITEM_VALUE_FIELD, $e);
 
-    my $price = $copy->price;
+    my $price = defined $primary_field && $primary_field eq 'cost'
+        ? $copy->cost
+        : $copy->price;
 
     # set the default price if needed
+    if (!defined $price or ($price == 0 and $charge_on_0)) {
+        if (defined $backup_field && $backup_field eq 'cost') {
+            $price = $copy->cost;
+        } elsif (defined $backup_field && $backup_field eq 'price') {
+            $price = $copy->price;
+        }
+    }
+    # possible fallthrough to original default item price behavior
     if (!defined $price or ($price == 0 and $charge_on_0)) {
         # set to default price
         $price = $self->ou_ancestor_setting_value(
@@ -2074,7 +2101,8 @@ sub basic_opac_copy_query {
             ccs => [
                 {column => 'id', alias => 'status_code'},
                 {column => 'name', alias => 'copy_status'},
-                {column => 'holdable', alias => 'status_holdable'}
+                {column => 'holdable', alias => 'status_holdable'},
+                {column => 'is_available', alias => 'is_available'}
             ],
             acn => [
                 {column => 'label', alias => 'call_number_label'},
@@ -2092,6 +2120,10 @@ sub basic_opac_copy_query {
             ],
             bmp => [
                 {column => 'label', alias => 'part_label'},
+            ],
+            ($staff ? (erfcc => ['circ_count']) : ()),
+            crahp => [
+                {column => 'name', alias => 'age_protect_label'}
             ],
             ($iss_id ? (sitem => ["issuance"]) : ())
         },
@@ -2128,7 +2160,10 @@ sub basic_opac_copy_query {
                         bmp => { type => 'left', filter => { deleted => 'f' } }
                     }
                 }},
-                ($iss_id ? { # 6 
+                {'crahp' => { # 6
+                    type => 'left'
+                }},
+                ($iss_id ? { # 7
                     sitem => {
                         fkey => 'id',
                         field => 'unit',
@@ -2137,7 +2172,13 @@ sub basic_opac_copy_query {
                             sstr => { }
                         }
                     }
-                } : ())
+                } : ()),
+                ($staff ? {
+                    erfcc => {
+                        fkey => 'id',
+                        field => 'id'
+                    }
+                }: ()),
             ]
         },
 
@@ -2271,6 +2312,8 @@ sub unique_unnested_numbers {
     my $class = shift;
 
     no warnings 'numeric';
+
+    return undef unless ( scalar @_ );
 
     return uniq(
         map(
@@ -2412,6 +2455,17 @@ sub verify_migrated_user_password {
     return $class->verify_user_password(
         $e, $user_id, md5_hex($salt . $md5_pass), $pw_type);
 }
+
+
+# generate a MARC XML document from a MARC XML string
+sub marc_xml_to_doc {
+    my ($class, $xml) = @_;
+    my $marc_doc = XML::LibXML->new->parse_string($xml);
+    $marc_doc->documentElement->setNamespace(MARC_NAMESPACE, 'marc', 1);
+    $marc_doc->documentElement->setNamespace(MARC_NAMESPACE);
+    return $marc_doc;
+}
+
 
 
 1;

@@ -248,6 +248,50 @@ sub set_ou_settings {
 }
 
 __PACKAGE__->register_method(
+    method    => "fetch_visible_ou_settings_log",
+    api_name  => "open-ils.actor.org_unit.settings.history.visible.retrieve",
+    signature => {
+        desc => "Retrieves the log entries for the specified OU setting. " .
+                "If the setting has a view permission, the results are limited " .
+                "to entries at the OUs that the user has the view permission. ",
+        params => [
+            {desc => 'Authentication token', type => 'string'},
+            {desc => 'Setting name',         type => 'string'}
+        ],
+        return => {desc => 'List of fieldmapper objects of the log entries, Event on error'}
+    }
+);
+
+sub fetch_visible_ou_settings_log {
+    my( $self, $client, $auth, $setting ) = @_;
+
+    my $e = new_editor(authtoken => $auth);
+    return $e->event unless $e->checkauth;
+    return $e->die_event unless $e->allowed("STAFF_LOGIN");
+    return OpenILS::Event->new('BAD_PARAMS') unless defined($setting);
+
+    my $type = $e->retrieve_config_org_unit_setting_type([
+        $setting,
+        {flesh => 1, flesh_fields => {coust => ['view_perm']}}
+    ]);
+    return OpenILS::Event->new('BAD_PARAMS', note => 'setting type not found')
+        unless $type;
+
+    my $query = { field_name => $setting };
+    if ($type->view_perm) {
+        $query->{org} = $U->user_has_work_perm_at($e, $type->view_perm->code, {descendants => 1});
+        if (scalar @{ $query->{org} } == 0) {
+            # user doesn't have the view permission anywhere, so return nothing
+            return [];
+        }
+    }
+
+    my $results = $e->search_config_org_unit_setting_type_log([$query, {'order_by' => 'date_applied ASC'}])
+        or return $e->die_event;
+    return $results;
+}
+
+__PACKAGE__->register_method(
     method   => "user_settings",
     authoritative => 1,
     api_name => "open-ils.actor.patron.settings.retrieve",
@@ -480,6 +524,7 @@ sub update_patron {
 
     my $old_patron;
     my $barred_hook = '';
+    my $renew_hook = '';
 
     if($patron->isnew()) {
         ( $new_patron, $evt ) = _add_patron($e, _clone_patron($patron));
@@ -488,6 +533,10 @@ sub update_patron {
             return $e->die_event unless
                 $e->allowed('BAR_PATRON', $patron->home_ou);
         }
+        if(($patron->photo_url)) {
+            return $e->die_event unless
+                $e->allowed('UPDATE_USER_PHOTO_URL', $patron->home_ou);
+        }
     } else {
         $new_patron = $patron;
 
@@ -495,12 +544,19 @@ sub update_patron {
         $old_patron = $e->retrieve_actor_user($patron->id) or
             return $e->die_event;
 
+        $renew_hook = 'au.renewed' if ($old_patron->expire_date ne $new_patron->expire_date);
+
         if($U->is_true($old_patron->barred) != $U->is_true($new_patron->barred)) {
             my $perm = $U->is_true($old_patron->barred) ? 'UNBAR_PATRON' : 'BAR_PATRON';
             return $e->die_event unless $e->allowed($perm, $patron->home_ou);
 
             $barred_hook = $U->is_true($new_patron->barred) ?
                 'au.barred' : 'au.unbarred';
+        }
+
+        if($old_patron->photo_url ne $new_patron->photo_url) {
+            my $perm = 'UPDATE_USER_PHOTO_URL';
+            return $e->die_event unless $e->allowed($perm, $patron->home_ou);
         }
 
         # update the password by itself to avoid the password protection magic
@@ -546,10 +602,13 @@ sub update_patron {
     my $tses = OpenSRF::AppSession->create('open-ils.trigger');
     if($patron->isnew) {
         $tses->request('open-ils.trigger.event.autocreate',
-            'au.create', $new_patron, $new_patron->home_ou);
+            'au.created', $new_patron, $new_patron->home_ou);
     } else {
         $tses->request('open-ils.trigger.event.autocreate',
-            'au.update', $new_patron, $new_patron->home_ou);
+            'au.updated', $new_patron, $new_patron->home_ou);
+
+        $tses->request('open-ils.trigger.event.autocreate', $renew_hook,
+            $new_patron, $new_patron->home_ou) if $renew_hook;
 
         $tses->request('open-ils.trigger.event.autocreate', $barred_hook,
             $new_patron, $new_patron->home_ou) if $barred_hook;
@@ -916,6 +975,7 @@ sub _add_update_cards {
 
     my $virtual_id; #id of the card before creation
 
+    my $card_changed = 0;
     my $cards = $patron->cards();
     for my $card (@$cards) {
 
@@ -932,12 +992,17 @@ sub _add_update_cards {
                 $new_patron->card($card->id());
                 $new_patron->ischanged(1);
             }
+            $card_changed++;
 
         } elsif( ref($card) and $card->ischanged() ) {
             $evt = _update_card($e, $card);
             return (undef, $evt) if $evt;
+            $card_changed++;
         }
     }
+
+    $U->create_events_for_hook('au.barcode_changed', $new_patron, $e->requestor->ws_ou)
+        if $card_changed;
 
     return ( $new_patron, undef );
 }
@@ -1417,6 +1482,44 @@ sub get_my_org_path {
         $org_id );
 }
 
+__PACKAGE__->register_method(
+    method   => "retrieve_coordinates",
+    api_name => "open-ils.actor.geo.retrieve_coordinates",
+    signature => {
+        params => [
+            {desc => 'Authentication token', type => 'string' },
+            {type => 'number', desc => 'Context Organizational Unit'},
+            {type => 'string', desc => 'Address to look-up as a text string'}
+        ],
+        return => { desc => 'Hash/object containing latitude and longitude for the provided address.'}
+    }
+);
+
+sub retrieve_coordinates {
+    my( $self, $client, $auth, $org_id, $addr_string ) = @_;
+    my $e = new_editor(authtoken=>$auth);
+    return $e->event unless $e->checkauth;
+    $org_id = $e->requestor->ws_ou unless defined $org_id;
+
+    return $apputils->simple_scalar_request(
+        "open-ils.geo",
+        "open-ils.geo.retrieve_coordinates",
+        $org_id, $addr_string );
+}
+
+__PACKAGE__->register_method(
+    method   => "get_my_org_ancestor_at_depth",
+    api_name => "open-ils.actor.org_unit.ancestor_at_depth.retrieve"
+);
+
+sub get_my_org_ancestor_at_depth {
+    my( $self, $client, $auth, $org_id, $depth ) = @_;
+    my $e = new_editor(authtoken=>$auth);
+    return $e->event unless $e->checkauth;
+    $org_id = $e->requestor->ws_ou unless defined $org_id;
+
+    return $apputils->org_unit_ancestor_at_depth( $org_id, $depth );
+}
 
 __PACKAGE__->register_method(
     method   => "patron_adv_search",
@@ -1551,6 +1654,20 @@ __PACKAGE__->register_method(
     }
 );
 
+__PACKAGE__->register_method(
+    method    => "update_passwd",
+    api_name  => "open-ils.actor.user.locale.update",
+    signature => {
+        desc   => "Update the operator's i18n locale",
+        params => [
+            { desc => 'Authentication token', type => 'string' },
+            { desc => 'New locale',           type => 'string' },
+            { desc => 'Current password',     type => 'string' }
+        ],
+        return => {desc => '1 on success, Event on error or incorrect current password'}
+    }
+);
+
 sub update_passwd {
     my( $self, $conn, $auth, $new_val, $orig_pw ) = @_;
     my $e = new_editor(xact=>1, authtoken=>$auth);
@@ -1565,6 +1682,7 @@ sub update_passwd {
         return new OpenILS::Event('INCORRECT_PASSWORD');
     }
 
+    my $at_event = 0;
     if( $api =~ /password/o ) {
         # NOTE: with access to the plain text password we could crypt
         # the password without the extra MD5 pre-hashing.  Other changes
@@ -1587,14 +1705,23 @@ sub update_passwd {
                 return new OpenILS::Event('USERNAME_EXISTS');
             }
             $db_user->usrname($new_val);
+            $at_event++;
 
         } elsif( $api =~ /email/o ) {
             $db_user->email($new_val);
+            $at_event++;
+
+        } elsif( $api =~ /locale/o ) {
+            $db_user->locale($new_val);
+            $at_event++;
         }
     }
 
     $e->update_actor_user($db_user) or return $e->die_event;
     $e->commit;
+
+    $U->create_events_for_hook('au.updated', $db_user, $e->requestor->ws_ou)
+        if $at_event;
 
     # update the cached user to pick up these changes
     $U->simplereq('open-ils.auth', 'open-ils.auth.session.reset_timeout', $auth, 1);
@@ -1880,7 +2007,13 @@ sub user_opac_vitals {
     $out->{"total_out"} = reduce { $a + $out->{$b} } 0, qw/out overdue/;
 
     my $unread_msgs = $e->search_actor_usr_message([
-        {usr => $user_id, read_date => undef, deleted => 'f'},
+        {usr => $user_id, read_date => undef, deleted => 'f',
+            'pub' => 't', # this is for the unread message count in the opac
+            #'-or' => [ # Hiding Archived messages are for staff UI, not this
+            #    {stop_date => undef},
+            #    {stop_date => {'>' => 'now'}}
+            #],
+        },
         {idlist => 1}
     ]);
 
@@ -2137,17 +2270,17 @@ sub hold_request_count {
 
     my $resp = {
         total => scalar(@$holds),
-        ready => scalar(@ready)
+        ready => int(scalar(@ready))
     };
 
     if ($ctx_org) {
         # count of holds ready at pickup lib with behind_desk true.
-        $resp->{behind_desk} = scalar(
+        $resp->{behind_desk} = int(scalar(
             grep {
                 $_->{pickup_lib} == $ctx_org and
                 $U->is_true($_->{behind_desk})
             } @ready
-        );
+        ));
     }
 
     return $resp;
@@ -2677,126 +2810,6 @@ sub workstation_list {
     return \%results;
 }
 
-
-__PACKAGE__->register_method(
-    method        => 'fetch_patron_note',
-    api_name      => 'open-ils.actor.note.retrieve.all',
-    authoritative => 1,
-    signature     => q/
-        Returns a list of notes for a given user
-        Requestor must have VIEW_USER permission if pub==false and
-        @param authtoken The login session key
-        @param args Hash of params including
-            patronid : the patron's id
-            pub : true if retrieving only public notes
-    /
-);
-
-sub fetch_patron_note {
-    my( $self, $conn, $authtoken, $args ) = @_;
-    my $patronid = $$args{patronid};
-
-    my($reqr, $evt) = $U->checkses($authtoken);
-    return $evt if $evt;
-
-    my $patron;
-    ($patron, $evt) = $U->fetch_user($patronid);
-    return $evt if $evt;
-
-    if($$args{pub}) {
-        if( $patronid ne $reqr->id ) {
-            $evt = $U->check_perms($reqr->id, $patron->home_ou, 'VIEW_USER');
-            return $evt if $evt;
-        }
-        return $U->cstorereq(
-            'open-ils.cstore.direct.actor.usr_note.search.atomic',
-            { usr => $patronid, pub => 't' } );
-    }
-
-    $evt = $U->check_perms($reqr->id, $patron->home_ou, 'VIEW_USER');
-    return $evt if $evt;
-
-    return $U->cstorereq(
-        'open-ils.cstore.direct.actor.usr_note.search.atomic', { usr => $patronid } );
-}
-
-__PACKAGE__->register_method(
-    method    => 'create_user_note',
-    api_name  => 'open-ils.actor.note.create',
-    signature => q/
-        Creates a new note for the given user
-        @param authtoken The login session key
-        @param note The note object
-    /
-);
-sub create_user_note {
-    my( $self, $conn, $authtoken, $note ) = @_;
-    my $e = new_editor(xact=>1, authtoken=>$authtoken);
-    return $e->die_event unless $e->checkauth;
-
-    my $user = $e->retrieve_actor_user($note->usr)
-        or return $e->die_event;
-
-    return $e->die_event unless
-        $e->allowed('UPDATE_USER',$user->home_ou);
-
-    $note->creator($e->requestor->id);
-    $e->create_actor_usr_note($note) or return $e->die_event;
-    $e->commit;
-    return $note->id;
-}
-
-
-__PACKAGE__->register_method(
-    method    => 'delete_user_note',
-    api_name  => 'open-ils.actor.note.delete',
-    signature => q/
-        Deletes a note for the given user
-        @param authtoken The login session key
-        @param noteid The note id
-    /
-);
-sub delete_user_note {
-    my( $self, $conn, $authtoken, $noteid ) = @_;
-
-    my $e = new_editor(xact=>1, authtoken=>$authtoken);
-    return $e->die_event unless $e->checkauth;
-    my $note = $e->retrieve_actor_usr_note($noteid)
-        or return $e->die_event;
-    my $user = $e->retrieve_actor_user($note->usr)
-        or return $e->die_event;
-    return $e->die_event unless
-        $e->allowed('UPDATE_USER', $user->home_ou);
-
-    $e->delete_actor_usr_note($note) or return $e->die_event;
-    $e->commit;
-    return 1;
-}
-
-
-__PACKAGE__->register_method(
-    method    => 'update_user_note',
-    api_name  => 'open-ils.actor.note.update',
-    signature => q/
-        @param authtoken The login session key
-        @param note The note
-    /
-);
-
-sub update_user_note {
-    my( $self, $conn, $auth, $note ) = @_;
-    my $e = new_editor(authtoken=>$auth, xact=>1);
-    return $e->die_event unless $e->checkauth;
-    my $patron = $e->retrieve_actor_user($note->usr)
-        or return $e->die_event;
-    return $e->die_event unless
-        $e->allowed('UPDATE_USER', $patron->home_ou);
-    $e->update_actor_user_note($note)
-        or return $e->die_event;
-    $e->commit;
-    return 1;
-}
-
 __PACKAGE__->register_method(
     method        => 'fetch_patron_messages',
     api_name      => 'open-ils.actor.message.retrieve',
@@ -3002,7 +3015,9 @@ __PACKAGE__->register_method(
 );
 
 sub apply_penalty {
-    my($self, $conn, $auth, $penalty) = @_;
+    my($self, $conn, $auth, $penalty, $msg) = @_;
+
+    $msg ||= {};
 
     my $e = new_editor(authtoken=>$auth, xact => 1);
     return $e->die_event unless $e->checkauth;
@@ -3012,10 +3027,23 @@ sub apply_penalty {
 
     my $ptype = $e->retrieve_config_standing_penalty($penalty->standing_penalty) or return $e->die_event;
 
-    my $ctx_org =
-        (defined $ptype->org_depth) ?
-        $U->org_unit_ancestor_at_depth($penalty->org_unit, $ptype->org_depth) :
-        $penalty->org_unit;
+    my $ctx_org = $penalty->org_unit; # csp org_depth is now considered in the UI for the org drop-down menu
+
+    if (($msg->{title} || $msg->{message}) && ($msg->{title} ne '' || $msg->{message} ne '')) {
+        my $aum = Fieldmapper::actor::usr_message->new;
+
+        $aum->create_date('now');
+        $aum->sending_lib($e->requestor->ws_ou);
+        $aum->title($msg->{title});
+        $aum->usr($penalty->usr);
+        $aum->message($msg->{message});
+        $aum->pub($msg->{pub});
+
+        $aum = $e->create_actor_usr_message($aum)
+            or return $e->die_event;
+
+        $penalty->usr_message($aum->id);
+    }
 
     $penalty->org_unit($ctx_org);
     $penalty->staff($e->requestor->id);
@@ -3023,6 +3051,44 @@ sub apply_penalty {
 
     $e->commit;
     return $penalty->id;
+}
+
+__PACKAGE__->register_method(
+    method   => "modify_penalty",
+    api_name => "open-ils.actor.user.penalty.modify"
+);
+
+sub modify_penalty {
+    my($self, $conn, $auth, $penalty, $usr_msg) = @_;
+
+    my $e = new_editor(authtoken=>$auth, xact => 1);
+    return $e->die_event unless $e->checkauth;
+
+    my $user = $e->retrieve_actor_user($penalty->usr) or return $e->die_event;
+    return $e->die_event unless $e->allowed('UPDATE_USER', $user->home_ou);
+
+    $usr_msg->editor($e->requestor->id);
+    $usr_msg->edit_date('now');
+
+    if ($usr_msg->isnew) {
+        $usr_msg = $e->create_actor_usr_message($usr_msg)
+            or return $e->die_event;
+        $penalty->usr_message($usr_msg->id);
+    } else {
+        $usr_msg = $e->update_actor_usr_message($usr_msg)
+            or return $e->die_event;
+    }
+
+    if ($penalty->isnew) {
+        $penalty = $e->create_actor_user_standing_penalty($penalty)
+            or return $e->die_event;
+    } else {
+        $penalty = $e->update_actor_user_standing_penalty($penalty)
+            or return $e->die_event;
+    }
+
+    $e->commit;
+    return 1;
 }
 
 __PACKAGE__->register_method(
@@ -3052,14 +3118,39 @@ sub update_penalty_note {
     my $e = new_editor(authtoken=>$auth, xact => 1);
     return $e->die_event unless $e->checkauth;
     for my $penalty_id (@$penalty_ids) {
-        my $penalty = $e->search_actor_user_standing_penalty( { id => $penalty_id } )->[0];
+        my $penalty = $e->search_actor_user_standing_penalty([
+            { id => $penalty_id },
+            {   flesh => 1,
+                flesh_fields => {aum => ['usr_message']}
+            }
+        ])->[0];
         if (! $penalty ) { return $e->die_event; }
         my $user = $e->retrieve_actor_user($penalty->usr) or return $e->die_event;
         return $e->die_event unless $e->allowed('UPDATE_USER', $user->home_ou);
 
-        $penalty->note( $note ); $penalty->ischanged( 1 );
+        my $aum = $penalty->usr_message();
+        if (!$aum) {
+            $aum = Fieldmapper::actor::usr_message->new;
 
-        $e->update_actor_user_standing_penalty($penalty) or return $e->die_event;
+            $aum->create_date('now');
+            $aum->sending_lib($e->requestor->ws_ou);
+            $aum->title('');
+            $aum->usr($penalty->usr);
+            $aum->message($note);
+            $aum->pub(0);
+            $aum->isnew(1);
+
+            $aum = $e->create_actor_usr_message($aum)
+                or return $e->die_event;
+
+            $penalty->usr_message($aum->id);
+            $penalty->ischanged(1);
+            $e->update_actor_user_standing_penalty($penalty) or return $e->die_event;
+        } else {
+            $aum = $e->retrieve_actor_usr_message($aum) or return $e->die_event;
+            $aum->message($note); $aum->ischanged(1);
+            $e->update_actor_usr_message($aum) or return $e->die_event;
+        }
     }
     $e->commit;
     return 1;
@@ -3129,6 +3220,12 @@ sub new_flesh_user {
         $fetch_penalties = 1;
     }
 
+    my $fetch_notes = 0;
+    if(grep {$_ eq 'notes'} @$fields) {
+        $fields = [grep {$_ ne 'notes'} @$fields];
+        $fetch_notes = 1;
+    }
+
     my $fetch_usr_act = 0;
     if(grep {$_ eq 'usr_activity'} @$fields) {
         $fields = [grep {$_ ne 'usr_activity'} @$fields];
@@ -3177,10 +3274,26 @@ sub new_flesh_user {
                     org_unit => $U->get_org_full_path($e->requestor->ws_ou)
                 },
                 {   flesh => 1,
-                    flesh_fields => {ausp => ['standing_penalty']}
+                    flesh_fields => {ausp => ['standing_penalty','usr_message']}
                 }
             ])
         );
+    }
+
+    if($fetch_notes) {
+        # grab notes (now actor.usr_message_penalty) that have not hit their stop_date
+        # NOTE: This is a view that already filters out deleted messages that are not
+        # attached to a penalty
+        $user->notes([
+            @{ $e->search_actor_usr_message_penalty([
+                {   usr => $id,
+                    '-or' => [
+                        {stop_date => undef},
+                        {stop_date => {'>' => 'now'}}
+                    ],
+                }, {}
+            ]) }
+        ]);
     }
 
     # retrieve the most recent usr_activity entry
@@ -3617,8 +3730,8 @@ sub update_user_pending_address {
     my $e = new_editor(authtoken => $auth, xact => 1);
     return $e->die_event unless $e->checkauth;
 
+    my $user = $e->retrieve_actor_user($addr->usr) or return $e->die_event;
     if($addr->usr != $e->requestor->id) {
-        my $user = $e->retrieve_actor_user($addr->usr) or return $e->die_event;
         return $e->die_event unless $e->allowed('UPDATE_USER', $user->home_ou);
     }
 
@@ -3631,6 +3744,8 @@ sub update_user_pending_address {
     }
 
     $e->commit;
+    $U->create_events_for_hook('au.updated', $user, $e->requestor->ws_ou);
+
     return $addr->id;
 }
 
@@ -3746,16 +3861,49 @@ __PACKAGE__->register_method (
     method      => 'get_itemsout_notices',
     api_name    => 'open-ils.actor.user.itemsout.notices',
     stream      => 1,
-    argc        => 3
+    argc        => 2,
+    signature   => {
+        desc => q/Summary counts of circulat notices/,
+        params => [
+            {desc => 'authtoken', type => 'string'},
+            {desc => 'circulation identifiers', type => 'array of numbers'}
+        ],
+        return => q/Stream of summary objects/
+    }
 );
 
-sub get_itemsout_notices{
-    my( $self, $conn, $auth, $circId, $patronId) = @_;
+sub get_itemsout_notices {
+    my ($self, $client, $auth, $circ_ids) = @_;
 
     my $e = new_editor(authtoken => $auth);
     return $e->event unless $e->checkauth;
 
+    $circ_ids = [$circ_ids] unless ref $circ_ids eq 'ARRAY';
+
+    for my $circ_id (@$circ_ids) {
+        my $resp = get_itemsout_notices_impl($e, $circ_id);
+
+        if ($U->is_event($resp)) {
+            $client->respond($resp);
+            return;
+        }
+
+        $client->respond({circ_id => $circ_id, %$resp});
+    }
+
+    return undef;
+}
+
+
+
+sub get_itemsout_notices_impl {
+    my ($e, $circId) = @_;
+
     my $requestorId = $e->requestor->id;
+
+    my $circ = $e->retrieve_action_circulation($circId) or return $e->event;
+
+    my $patronId = $circ->usr;
 
     if( $patronId ne $requestorId ){
         my $user = $e->retrieve_actor_user($requestorId) or return $e->event;
@@ -3776,15 +3924,20 @@ sub get_itemsout_notices{
     #
 
     my $ctx_loc = $e->requestor->ws_ou;
-    my $exclude_courtesy_notices = $U->ou_ancestor_setting_value($ctx_loc, 'webstaff.circ.itemsout_notice_count_excludes_courtesies');
+    my $exclude_courtesy_notices = $U->ou_ancestor_setting_value(
+        $ctx_loc, 'webstaff.circ.itemsout_notice_count_excludes_courtesies');
+
     my $query = {
 	    select => { atev => ["complete_time"] },
 	    from => {
 		    atev => {
-			    atevdef => { field => "id",fkey => "event_def", join => { ath => { field => "key", fkey => "hook" }} }
+			    atevdef => { field => "id",fkey => "event_def"}
 		    }
 	    },
-	    where => {"+ath" => { key => "checkout.due" },"+atevdef" => { active => 't' },"+atev" => { target => $circId, state => 'complete' }}
+	    where => {
+            "+atevdef" => { active => 't', hook => 'checkout.due' },
+            "+atev" => { target => $circId, state => 'complete' }
+        }
     };
 
     if ($exclude_courtesy_notices){
@@ -3805,8 +3958,7 @@ sub get_itemsout_notices{
 	}
    }
 
-    $conn->respond(\%resblob);
-    return undef;
+    return \%resblob;
 }
 
 __PACKAGE__->register_method (
@@ -4333,6 +4485,28 @@ sub check_password_strength_custom {
     return 1;
 }
 
+__PACKAGE__->register_method(
+    method    => "fire_test_notification",
+    api_name  => "open-ils.actor.event.test_notification"
+);
+
+sub fire_test_notification {
+    my($self, $conn, $auth, $args) = @_;
+    my $e = new_editor(authtoken => $auth);
+    return $e->event unless $e->checkauth;
+    if ($e->requestor->id != $$args{target}) {
+        my $home_ou = $e->retrieve_actor_user($$args{target})->home_ou;
+        return $e->die_event unless $home_ou && $e->allowed('VIEW_USER', $home_ou);
+    }
+
+    my $event_hook = $$args{hook} or return $e->event;
+    return $e->event unless ($event_hook eq 'au.email.test' or $event_hook eq 'au.sms_text.test');
+
+    my $usr = $e->retrieve_actor_user($$args{target});
+    return $e->event unless $usr;
+
+    return $U->fire_object_event(undef, $event_hook, $usr, $e->requestor->ws_ou);
+}
 
 
 __PACKAGE__->register_method(

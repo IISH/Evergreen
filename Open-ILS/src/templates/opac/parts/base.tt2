@@ -8,7 +8,7 @@
         [% ELSIF ctx.authtime AND !ctx.is_staff %]
         <meta http-equiv="refresh" content="[% ctx.authtime %]; url=[% ctx.home_page %]" />
         [% END %]
-        <meta name = "viewport" content = "initial-scale = 1.0">
+        <meta name = "viewport" content = "width=device-width, initial-scale = 1.0">
         <link rel="stylesheet" type="text/css" href="[% ctx.media_prefix %]/css/skin/default/opac/semiauto.css[% ctx.cache_key %]" />
         <link rel="stylesheet" type="text/css" href="[% ctx.opac_root %]/css/style.css[% ctx.cache_key %]&amp;dir=[%
           IF ctx.get_i18n_l(ctx.eg_locale).rtl == 't' %]rtl[%
@@ -20,6 +20,12 @@
         [% IF ctx.get_org_setting(ctx.search_ou, 'opac.patron.custom_css') %]
             [% custom_css = ctx.get_org_setting(ctx.search_ou, 'opac.patron.custom_css') %]
         [% '<style>'; custom_css ; '</style>' %]                                          
+        [% END %]
+
+        [% matomo_id = ctx.get_org_setting(ctx.search_ou, 'opac.analytics.matomo_id'); %]
+        [% matomo_url = ctx.get_org_setting(ctx.search_ou, 'opac.analytics.matomo_url'); %]
+        [% IF matomo_id && matomo_url %]
+           [% matomo_enabled = 1; %]
         [% END %]
 
         [%- libname = ctx.get_aou(ctx.search_ou).name;
@@ -44,6 +50,7 @@
 
         [% IF !ctx.is_staff %]
             [% INCLUDE 'opac/parts/goog_analytics.tt2' %]
+            [% INCLUDE 'opac/parts/matomo_analytics.tt2' %]
         [% END %]
         [% PROCESS 'opac/parts/stripe.tt2' %]
     </head>

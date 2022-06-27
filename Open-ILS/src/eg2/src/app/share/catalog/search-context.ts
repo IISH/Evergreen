@@ -208,6 +208,8 @@ export class CatalogTermContext {
     date2: number;
     dateOp: string; // before, after, between, is
 
+    excludeElectronic = false;
+
     reset() {
         this.query = [''];
         this.fieldClass  = ['keyword'];
@@ -339,6 +341,7 @@ export class CatalogSearchContext {
     showBasket: boolean;
     searchOrg: IdlObject;
     global: boolean;
+    prefOu: number;
 
     termSearch: CatalogTermContext;
     marcSearch: CatalogMarcContext;
@@ -349,6 +352,9 @@ export class CatalogSearchContext {
     // Result from most recent search.
     result: CatalogSearchResults;
     searchState: CatalogSearchState = CatalogSearchState.PENDING;
+
+    // fetch and show extra holdings data, etc.
+    showResultExtras = false;
 
     // List of IDs in page/offset context.
     resultIds: number[];
@@ -490,6 +496,10 @@ export class CatalogSearchContext {
             org_unit: this.searchOrg.id()
         };
 
+        if (this.global) {
+            args.depth = this.org.root().ou_type().depth();
+        }
+
         if (this.sort) {
             const parts = this.sort.split(/\./);
             args.sort = parts[0]; // title, author, etc.
@@ -511,7 +521,13 @@ export class CatalogSearchContext {
         let query = ts.query[idx];
         const joinOp = ts.joinOp[idx];
         const matchOp = ts.matchOp[idx];
-        const fieldClass = ts.fieldClass[idx];
+        let fieldClass = ts.fieldClass[idx];
+
+        // Bookplates are filters but may be displayed as regular
+        // text search indexes.
+        if (fieldClass === 'bookplate') { return ''; }
+
+        if (fieldClass === 'jtitle') { fieldClass = 'title'; }
 
         let str = '';
         if (!query) { return str; }
@@ -563,6 +579,10 @@ export class CatalogSearchContext {
             str += '#available';
         }
 
+        if (ts.excludeElectronic) {
+            str += '-search_format(electronic)';
+        }
+
         if (this.sort) {
             // e.g. title, title.descending
             const parts = this.sort.split(/\./);
@@ -600,6 +620,23 @@ export class CatalogSearchContext {
         });
         if (qcount > 1) { str += ')'; }
         // -------
+
+        // Append bookplate queries as filters
+        ts.query.forEach((q, idx) => {
+            const space = str.length > 0 ? ' ' : '';
+            const query = ts.query[idx];
+            const fieldClass = ts.fieldClass[idx];
+            if (query && fieldClass === 'bookplate') {
+                str += `${space}copy_tag(*,${query})`;
+            }
+        });
+
+        // Journal Title queries means performing a title search
+        // with a filter.  Filters are global, so append to the front
+        // of the query.
+        if (ts.fieldClass.filter(fc => fc === 'jtitle').length > 0) {
+            str = 'bib_level(s) ' + str;
+        }
 
         if (ts.hasBrowseEntry) {
             // stored as a comma-separated string of "entryId,fieldId"
@@ -653,10 +690,17 @@ export class CatalogSearchContext {
                 this.browseSearch.reset();
                 this.identSearch.reset();
                 this.cnBrowseSearch.reset();
-                this.termSearch.hasBrowseEntry = '';
                 this.termSearch.browseEntry = null;
                 this.termSearch.fromMetarecord = null;
                 this.termSearch.facetFilters = [];
+
+                if (this.termSearch.query[0] !== '') {
+                    // If the user has entered a query, it takes precedence
+                    // over the source browse entry or source metarecord.
+                    this.termSearch.hasBrowseEntry = null;
+                    this.termSearch.fromMetarecord = null;
+                }
+
                 break;
 
             case 'ident':

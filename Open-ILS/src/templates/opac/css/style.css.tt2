@@ -8,7 +8,7 @@ body {
     margin:0;
     font-family: Arial, Helvetica, sans-serif;
     font-size: [% css_fonts.size_base %];
-    background-color: [% css_colors.primary %];
+    background-color: [% css_colors.footer %];
     [% IF rtl == 't' -%]
     direction: rtl;
     [%- END %]
@@ -47,6 +47,10 @@ a {
     margin:0;
     padding:0;
     width: 12em;
+}
+
+.truncated {
+    display: none;
 }
 
 .searchbar {
@@ -186,7 +190,7 @@ for now until a better color is picked - if needed.
 }
 
 #header-wrap {
-    background-color: [% css_colors.primary_fade %];
+    background-color: [% css_colors.header %];
     background-image: -moz-linear-gradient([% css_colors.primary %], [% css_colors.primary_fade %]);
     background-image: -o-linear-gradient([% css_colors.primary %], [% css_colors.primary_fade %]);
     background-image: -webkit-linear-gradient([% css_colors.primary %], [% css_colors.primary_fade %]);
@@ -200,16 +204,16 @@ for now until a better color is picked - if needed.
 }
 
 #header a {
-    color: [% css_colors.background %];
+    color: [% css_colors.header_links_text %];
 }
 
 #header a:hover {
-    color: [% css_colors.text_invert %];
+    color: [% css_colors.opac_button_hover_text %];
     text-decoration: none;
 }
 
 #header-links {
-    color: [% css_colors.text_invert %];
+    color: [% css_colors.header_text %];
     font-size: [% css_fonts.size_small %];
     font-weight: bold;
     position: relative;
@@ -218,7 +222,7 @@ for now until a better color is picked - if needed.
 }
 
 #header-links a {
-    color: [% css_colors.text_invert %];
+    color: [% css_colors.header_links_text %];
     display: block;
     text-decoration: none;
     [% IF rtl == 't' -%]
@@ -231,7 +235,7 @@ for now until a better color is picked - if needed.
 }
 
 #header-links a:hover {
-    color: [% css_colors.text_invert %];
+    color: [% css_colors.header_links_text_hover %];
     text-shadow: 0 0 0.2em [% css_colors.primary %], 0 0 0.2em [% css_colors.primary %];
     text-decoration: none;
 }
@@ -239,12 +243,12 @@ for now until a better color is picked - if needed.
 #header #header-links2 {
     position:relative;
     top:-8px;
-    color: [% css_colors.text_invert %];
+    color: [% css_colors.header_links_text %];
     padding-bottom: 15px;
 }
 
 #header #header-links2 a {
-    color: [% css_colors.text_invert %];
+    color: [% css_colors.header_links_text %];
 }
 
 #header #header-links2 a:hover {
@@ -276,7 +280,7 @@ for now until a better color is picked - if needed.
 
 #gold-links-holder {
     height: 24px;
-    background-color: [% css_colors.background_invert %];
+    background-color: [% css_colors.header_links_bar %];
 }
 
 #util-bar {
@@ -672,7 +676,8 @@ div.format_icon {
     padding-top: 1.5em;
 }
 
-#rdetails_status td {
+#rdetails_status td,
+#course_material_table td {
     [% IF rtl == 't' -%]
     padding: 7px 13px 3px 0px;
     [%- ELSE %]
@@ -685,7 +690,8 @@ div.format_icon {
     white-space: normal;
 }
 
-#rdetails_status thead th {
+#rdetails_status thead th,
+#course_material_table thead th {
     [% IF rtl == 't' -%]
     padding: 13px 13px 13px 0px;
     text-align: right;
@@ -698,7 +704,8 @@ div.format_icon {
     font-weight: bold;
 }
 
-#rdetails_status tbody td {
+#rdetails_status tbody td,
+#course_material_table tbody td {
     [% IF rtl == 't' -%]
     padding-right: 13px;
     text-align: right;
@@ -707,7 +714,8 @@ div.format_icon {
     text-align: left;
     [%- END %]
 }
-#rdetails_status tbody td.copy_note {
+#rdetails_status tbody td.copy_note
+#course_material_table tbody {
     color: [% css_colors.primary %];
     text-wrap:normal;
     white-space:pre-wrap !important;
@@ -1367,6 +1375,17 @@ div.result_table_utils_cont {
    text-align:center;
 }
 
+/* Stripe's payment form */
+#payment-form
+{
+    background-color: [% css_colors.accent_ultralight %];
+    width: 50%;
+}
+#card-element
+{
+    padding: 10px;
+}
+
 /* text to state what is seen on cc statement */
 .cc_disclaimer
 {
@@ -1409,6 +1428,10 @@ div.result_table_utils_cont {
 }
 
 .browse_the_catalog_lbl {
+    font-size: [% css_fonts.size_bigger %];
+}
+
+.search_courses_label {
     font-size: [% css_fonts.size_bigger %];
 }
 
@@ -1702,7 +1725,7 @@ div#facet_sidebar {
 }
 
 #footer-wrap {
-    background-color: [% css_colors.primary %];
+    background-color: [% css_colors.footer %];
     background-image: -moz-linear-gradient([% css_colors.primary_fade %], [% css_colors.primary %]);
     background-image: -o-linear-gradient([% css_colors.primary_fade %], [% css_colors.primary %]);
     background-image: -webkit-linear-gradient([% css_colors.primary_fade %], [% css_colors.primary %]);
@@ -1721,13 +1744,13 @@ div#facet_sidebar {
 }
 
 #footer a {
-    color: [% css_colors.text_invert %];
+    color: [% css_colors.footer_text %];
     text-decoration: none;
     text-shadow: 0 0 0.2em [% css_colors.primary %], 0 0 0.2em [% css_colors.primary %];
 }
 
 #copyright_text, #footer_logo {
-    color: [% css_colors.text_invert %];
+    color: [% css_colors.footer_text %];
 }
 
 .color_4 {
@@ -1864,14 +1887,14 @@ a.dash-link:hover { text-decoration: underline !important; }
     vertical-align: top;
     [% END -%]
 }
-.rdetail-author-div {
+.rdetail-author-div, .course-instructor-div {
     padding-bottom: 10px;
     display: inline-block;
 }
 
 .invisible { visibility: hidden; }
 .rdetail-extras-summary { margin: 10px; }
-.staff-hold { background-color: [% css_colors.accent_lightest %]; }
+.staff-hold { background-color: [% css_colors.background %]; }
 .expert-search tbody tr th {
     [% IF rtl == 't' -%]
     text-align: left;
@@ -1961,7 +1984,7 @@ a.dash-link:hover { text-decoration: underline !important; }
     cursor: pointer !important;
     border-radius: 5px;
     border: 1px solid [% css_colors.primary %];
-    background-color:  [% css_colors.primary_fade %];
+    background-color:  [% css_colors.button %];
     margin: 0.5em;
     padding: 0.3em;
     display: inline-block;
@@ -1969,7 +1992,8 @@ a.dash-link:hover { text-decoration: underline !important; }
 
 .opac-multiline-button > a:hover,
 .opac-button:hover, .results_header_btns a:hover, #simple-detail-view-links a:hover, #dash_wrapper a.opac-button:hover {
-    background-color: [% css_colors.primary %];
+    background-color: [% css_colors.opac_button_hover %];
+    color: [% css_colors.opac_button_hover_text %];
 }
 
 .opac-button:disabled {
@@ -1986,12 +2010,13 @@ button.opac-button::-moz-focus-inner, input.opac-button::-moz-focus-inner {
 }
 
 .opac-button-header, #dash_wrapper .opac-button {
-    background-color: [% css_colors.control %];
+    color: [% css_colors.opac_button_text %];
+    background-color: [% css_colors.opac_button %];
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
     font-size: [% css_fonts.size_base %];
 }
 a.opac-button-header:hover, #dash_wrapper a.opac-button:hover {
-    border-color: [% css_colors.control %];
+    border-color: [% css_colors.opac_button_hover %];
 }
 
 .opac-multiline-button > a {
@@ -2643,7 +2668,7 @@ a.preflib_change {
     display: none;
 }
 
-.rdetail_authors_div {
+.rdetail_authors_div, .course_instructors_div {
     margin-bottom: 1em;
 }
 
@@ -2985,14 +3010,17 @@ a.preflib_change {
     #main-content {
         margin: 0 1px;
     }
-    #rdetails_status thead {
+    #rdetails_status thead,
+    #course_material_table thead {
         display: none;
     }
-    #rdetails_status tr {
+    #rdetails_status tr,
+    #course_material_table tr {
 	display: block;
 	margin-top: 3px;
     }
-    #rdetails_status td {
+    #rdetails_status td,
+    #course_material_table td {
 	display: block;
 	padding: 1px;
     }
@@ -3400,7 +3428,7 @@ label[for*=expert_]
 */
 
 .carousel {
-    width: 40%;
+    width: 80%;
     margin: 0 auto;
 }
 .carousel-title {
@@ -3433,3 +3461,39 @@ label[for*=expert_]
 .carousel .glide__arrow--left {
     left: -5em;
 }
+.archived_course {
+    color: [% css_colors.text_badnews %];
+    font-weight: bold;
+}
+.course_details {
+    padding-top: 1em;
+}
+.course_details_div {
+    padding-bottom: 1em;
+}
+
+/*
+  Fake tables for form-rows
+*/
+
+div.egtable { display:table; }
+form.egtr, div.egtr { display:table-row; }
+span.egth { display:table-cell; font-weight: bold; }
+span.egtd { display:table-cell; }
+
+/* Example:
+
+<div class="egtable">
+    <form class="egtr" method="post" action="blah.html">
+        <span class="egtd"><input type="text"/></span>
+        <span class="egtd"><input type="text"/></span>
+    </form>
+    <div class="egtr">
+        <span class="egtd">(cell data)</span>
+        <span class="egtd">(cell data)</span>
+    </div>
+    ...
+</div>
+
+*/
+

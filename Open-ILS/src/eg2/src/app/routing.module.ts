@@ -16,12 +16,15 @@ const routes: Routes = [
   }, {
     path: 'staff',
     resolve : {startup : BaseResolver},
-    loadChildren: './staff/staff.module#StaffModule'
+    loadChildren: () => import('./staff/staff.module').then(m => m.StaffModule)
   }
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forRoot(routes, {
+    onSameUrlNavigation: 'reload',
+    relativeLinkResolution: 'legacy'
+})],
   exports: [RouterModule],
   providers: [BaseResolver]
 })

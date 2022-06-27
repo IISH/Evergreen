@@ -8,11 +8,6 @@ RETURNS actor.org_unit AS $$
     SELECT * FROM actor.org_unit WHERE parent_ou IS NULL LIMIT 1;
 $$ LANGUAGE SQL STABLE;
 
-CREATE OR REPLACE FUNCTION evergreen.array_remove_item_by_value(inp ANYARRAY, el ANYELEMENT)
-RETURNS anyarray AS $$
-    SELECT ARRAY_AGG(x.e) FROM UNNEST( $1 ) x(e) WHERE x.e <> $2;
-$$ LANGUAGE SQL STABLE;
-
 CREATE OR REPLACE FUNCTION evergreen.rank_ou(lib INT, search_lib INT, pref_lib INT DEFAULT NULL)
 RETURNS INTEGER AS $$
     SELECT COALESCE(
@@ -38,6 +33,42 @@ RETURNS INTEGER AS $$
         -- all others pay cash
         1000
     );
+$$ LANGUAGE SQL STABLE;
+
+-- geolocation-aware variant
+CREATE OR REPLACE FUNCTION evergreen.rank_ou(lib INT, search_lib INT, pref_lib INT, plat FLOAT, plon FLOAT)
+RETURNS INTEGER AS $$
+    SELECT COALESCE(
+
+        -- lib matches search_lib
+        (SELECT CASE WHEN $1 = $2 THEN -20000 END),
+
+        -- lib matches pref_lib
+        (SELECT CASE WHEN $1 = $3 THEN -10000 END),
+
+
+        -- pref_lib is a child of search_lib and lib is a child of pref lib.  
+        -- For example, searching CONS, pref lib is SYS1, 
+        -- copies at BR1 and BR2 sort to the front.
+        (SELECT distance - 5000
+            FROM actor.org_unit_descendants_distance($3) 
+            WHERE id = $1 AND $3 IN (
+                SELECT id FROM actor.org_unit_descendants($2))),
+
+        -- lib is a child of search_lib
+        (SELECT distance FROM actor.org_unit_descendants_distance($2) WHERE id = $1),
+
+        -- all others pay cash
+        1000
+    ) + ((SELECT CASE WHEN addr.latitude IS NULL THEN 0 ELSE -20038 END) + (earth_distance( -- shortest GC distance is returned, only half the circumfrence is needed
+            ll_to_earth(
+                COALESCE(addr.latitude,plat), -- if the org has no coords, we just
+                COALESCE(addr.longitude,plon) -- force 0 distance and let the above tie-break
+            ),ll_to_earth(plat,plon)
+        ) / 1000)::INT ) -- earth_distance is in meters, convert to kilometers and subtract from largest distance
+    FROM actor.org_unit org
+		 LEFT JOIN actor.org_address addr ON (org.billing_address = addr.id)
+	WHERE org.id = $1;
 $$ LANGUAGE SQL STABLE;
 
 -- this version exists mainly to accommodate JSON query transform limitations
@@ -538,7 +569,7 @@ BEGIN
 
     -- grab holdings if we need them
     IF ('holdings_xml' = ANY (includes)) THEN 
-        hxml := unapi.holdings_xml(obj_id, ouid, org, depth, evergreen.array_remove_item_by_value(includes,'holdings_xml'), slimit, soffset, include_xmlns, pref_lib);
+        hxml := unapi.holdings_xml(obj_id, ouid, org, depth, array_remove(includes,'holdings_xml'), slimit, soffset, include_xmlns, pref_lib);
     ELSE
         hxml := NULL::XML;
     END IF;
@@ -666,7 +697,7 @@ RETURNS XML AS $F$
                         XMLELEMENT(
                             name monograph_parts,
                             (SELECT XMLAGG(bmp) FROM (
-                                SELECT  unapi.bmp( id, 'xml', 'monograph_part', evergreen.array_remove_item_by_value( evergreen.array_remove_item_by_value($5,'bre'), 'holdings_xml'), $3, $4, $6, $7, FALSE)
+                                SELECT  unapi.bmp( id, 'xml', 'monograph_part', array_remove( array_remove($5,'bre'), 'holdings_xml'), $3, $4, $6, $7, FALSE)
                                   FROM  biblio.monograph_part
                                   WHERE NOT deleted AND record = $1
                             )x)
@@ -677,11 +708,11 @@ RETURNS XML AS $F$
                      name volumes,
                      (SELECT XMLAGG(acn ORDER BY rank, name, label_sortkey) FROM (
                         -- Physical copies
-                        SELECT  unapi.acn(y.id,'xml','volume',evergreen.array_remove_item_by_value( evergreen.array_remove_item_by_value($5,'holdings_xml'),'bre'), $3, $4, $6, $7, FALSE), y.rank, name, label_sortkey
+                        SELECT  unapi.acn(y.id,'xml','volume',array_remove( array_remove($5,'holdings_xml'),'bre'), $3, $4, $6, $7, FALSE), y.rank, name, label_sortkey
                         FROM evergreen.ranked_volumes($1, $2, $4, $6, $7, $9, $5) AS y
                         UNION ALL
                         -- Located URIs
-                        SELECT unapi.acn(uris.id,'xml','volume',evergreen.array_remove_item_by_value( evergreen.array_remove_item_by_value($5,'holdings_xml'),'bre'), $3, $4, $6, $7, FALSE), uris.rank, name, label_sortkey
+                        SELECT unapi.acn(uris.id,'xml','volume',array_remove( array_remove($5,'holdings_xml'),'bre'), $3, $4, $6, $7, FALSE), uris.rank, name, label_sortkey
                         FROM evergreen.located_uris($1, $2, $9) AS uris
                      )x)
                  ),
@@ -699,7 +730,7 @@ RETURNS XML AS $F$
                      XMLELEMENT(
                          name foreign_copies,
                          (SELECT XMLAGG(acp) FROM (
-                            SELECT  unapi.acp(p.target_copy,'xml','copy',evergreen.array_remove_item_by_value($5,'acp'), $3, $4, $6, $7, FALSE)
+                            SELECT  unapi.acp(p.target_copy,'xml','copy',array_remove($5,'acp'), $3, $4, $6, $7, FALSE)
                               FROM  biblio.peer_bib_copy_map p
                                     JOIN asset.copy c ON (p.target_copy = c.id)
                               WHERE NOT c.deleted AND p.peer_record = $1
@@ -724,7 +755,7 @@ CREATE OR REPLACE FUNCTION unapi.ssub ( obj_id BIGINT, format TEXT,  ename TEXT,
                         WHEN ('sdist' = ANY ($4)) THEN
                             XMLELEMENT( name distributions,
                                 (SELECT XMLAGG(sdist) FROM (
-                                    SELECT  unapi.sdist( id, 'xml', 'distribution', evergreen.array_remove_item_by_value($4,'ssub'), $5, $6, $7, $8, FALSE)
+                                    SELECT  unapi.sdist( id, 'xml', 'distribution', array_remove($4,'ssub'), $5, $6, $7, $8, FALSE)
                                       FROM  serial.distribution
                                       WHERE subscription = ssub.id
                                 )x)
@@ -747,13 +778,13 @@ CREATE OR REPLACE FUNCTION unapi.sdist ( obj_id BIGINT, format TEXT,  ename TEXT
 			            'tag:open-ils.org:U2@acn/' || bind_call_number AS bind_call_number,
                         unit_label_prefix, label, unit_label_suffix, summary_method
                     ),
-                    unapi.aou( holding_lib, $2, 'holding_lib', evergreen.array_remove_item_by_value($4,'sdist'), $5, $6, $7, $8),
-                    CASE WHEN subscription IS NOT NULL AND ('ssub' = ANY ($4)) THEN unapi.ssub( subscription, 'xml', 'subscription', evergreen.array_remove_item_by_value($4,'sdist'), $5, $6, $7, $8, FALSE) ELSE NULL END,
+                    unapi.aou( holding_lib, $2, 'holding_lib', array_remove($4,'sdist'), $5, $6, $7, $8),
+                    CASE WHEN subscription IS NOT NULL AND ('ssub' = ANY ($4)) THEN unapi.ssub( subscription, 'xml', 'subscription', array_remove($4,'sdist'), $5, $6, $7, $8, FALSE) ELSE NULL END,
                     CASE 
                         WHEN ('sstr' = ANY ($4)) THEN
                             XMLELEMENT( name streams,
                                 (SELECT XMLAGG(sstr) FROM (
-                                    SELECT  unapi.sstr( id, 'xml', 'stream', evergreen.array_remove_item_by_value($4,'sdist'), $5, $6, $7, $8, FALSE)
+                                    SELECT  unapi.sstr( id, 'xml', 'stream', array_remove($4,'sdist'), $5, $6, $7, $8, FALSE)
                                       FROM  serial.stream
                                       WHERE distribution = sdist.id
                                 )x)
@@ -764,7 +795,7 @@ CREATE OR REPLACE FUNCTION unapi.sdist ( obj_id BIGINT, format TEXT,  ename TEXT
                         CASE 
                             WHEN ('sbsum' = ANY ($4)) THEN
                                 (SELECT XMLAGG(sbsum) FROM (
-                                    SELECT  unapi.sbsum( id, 'xml', 'serial_summary', evergreen.array_remove_item_by_value($4,'sdist'), $5, $6, $7, $8, FALSE)
+                                    SELECT  unapi.sbsum( id, 'xml', 'serial_summary', array_remove($4,'sdist'), $5, $6, $7, $8, FALSE)
                                       FROM  serial.basic_summary
                                       WHERE distribution = sdist.id
                                 )x)
@@ -773,7 +804,7 @@ CREATE OR REPLACE FUNCTION unapi.sdist ( obj_id BIGINT, format TEXT,  ename TEXT
                         CASE 
                             WHEN ('sisum' = ANY ($4)) THEN
                                 (SELECT XMLAGG(sisum) FROM (
-                                    SELECT  unapi.sisum( id, 'xml', 'serial_summary', evergreen.array_remove_item_by_value($4,'sdist'), $5, $6, $7, $8, FALSE)
+                                    SELECT  unapi.sisum( id, 'xml', 'serial_summary', array_remove($4,'sdist'), $5, $6, $7, $8, FALSE)
                                       FROM  serial.index_summary
                                       WHERE distribution = sdist.id
                                 )x)
@@ -782,7 +813,7 @@ CREATE OR REPLACE FUNCTION unapi.sdist ( obj_id BIGINT, format TEXT,  ename TEXT
                         CASE 
                             WHEN ('sssum' = ANY ($4)) THEN
                                 (SELECT XMLAGG(sssum) FROM (
-                                    SELECT  unapi.sssum( id, 'xml', 'serial_summary', evergreen.array_remove_item_by_value($4,'sdist'), $5, $6, $7, $8, FALSE)
+                                    SELECT  unapi.sssum( id, 'xml', 'serial_summary', array_remove($4,'sdist'), $5, $6, $7, $8, FALSE)
                                       FROM  serial.supplement_summary
                                       WHERE distribution = sdist.id
                                 )x)
@@ -803,12 +834,12 @@ CREATE OR REPLACE FUNCTION unapi.sstr ( obj_id BIGINT, format TEXT,  ename TEXT,
                     'tag:open-ils.org:U2@sstr/' || id AS id,
                     routing_label
                 ),
-                CASE WHEN distribution IS NOT NULL AND ('sdist' = ANY ($4)) THEN unapi.sssum( distribution, 'xml', 'distribtion', evergreen.array_remove_item_by_value($4,'sstr'), $5, $6, $7, $8, FALSE) ELSE NULL END,
+                CASE WHEN distribution IS NOT NULL AND ('sdist' = ANY ($4)) THEN unapi.sssum( distribution, 'xml', 'distribtion', array_remove($4,'sstr'), $5, $6, $7, $8, FALSE) ELSE NULL END,
                 CASE 
                     WHEN ('sitem' = ANY ($4)) THEN
                         XMLELEMENT( name items,
                             (SELECT XMLAGG(sitem) FROM (
-                                SELECT  unapi.sitem( id, 'xml', 'serial_item', evergreen.array_remove_item_by_value($4,'sstr'), $5, $6, $7, $8, FALSE)
+                                SELECT  unapi.sitem( id, 'xml', 'serial_item', array_remove($4,'sstr'), $5, $6, $7, $8, FALSE)
                                   FROM  serial.item
                                   WHERE stream = sstr.id
                             )x)
@@ -830,12 +861,12 @@ CREATE OR REPLACE FUNCTION unapi.siss ( obj_id BIGINT, format TEXT,  ename TEXT,
                     create_date, edit_date, label, date_published,
                     holding_code, holding_type, holding_link_id
                 ),
-                CASE WHEN subscription IS NOT NULL AND ('ssub' = ANY ($4)) THEN unapi.ssub( subscription, 'xml', 'subscription', evergreen.array_remove_item_by_value($4,'siss'), $5, $6, $7, $8, FALSE) ELSE NULL END,
+                CASE WHEN subscription IS NOT NULL AND ('ssub' = ANY ($4)) THEN unapi.ssub( subscription, 'xml', 'subscription', array_remove($4,'siss'), $5, $6, $7, $8, FALSE) ELSE NULL END,
                 CASE 
                     WHEN ('sitem' = ANY ($4)) THEN
                         XMLELEMENT( name items,
                             (SELECT XMLAGG(sitem) FROM (
-                                SELECT  unapi.sitem( id, 'xml', 'serial_item', evergreen.array_remove_item_by_value($4,'siss'), $5, $6, $7, $8, FALSE)
+                                SELECT  unapi.sitem( id, 'xml', 'serial_item', array_remove($4,'siss'), $5, $6, $7, $8, FALSE)
                                   FROM  serial.item
                                   WHERE issuance = sstr.id
                             )x)
@@ -857,15 +888,15 @@ CREATE OR REPLACE FUNCTION unapi.sitem ( obj_id BIGINT, format TEXT,  ename TEXT
                         'tag:open-ils.org:U2@siss/' || issuance AS issuance,
                         date_expected, date_received
                     ),
-                    CASE WHEN issuance IS NOT NULL AND ('siss' = ANY ($4)) THEN unapi.siss( issuance, $2, 'issuance', evergreen.array_remove_item_by_value($4,'sitem'), $5, $6, $7, $8, FALSE) ELSE NULL END,
-                    CASE WHEN stream IS NOT NULL AND ('sstr' = ANY ($4)) THEN unapi.sstr( stream, $2, 'stream', evergreen.array_remove_item_by_value($4,'sitem'), $5, $6, $7, $8, FALSE) ELSE NULL END,
-                    CASE WHEN unit IS NOT NULL AND ('sunit' = ANY ($4)) THEN unapi.sunit( unit, $2, 'serial_unit', evergreen.array_remove_item_by_value($4,'sitem'), $5, $6, $7, $8, FALSE) ELSE NULL END,
-                    CASE WHEN uri IS NOT NULL AND ('auri' = ANY ($4)) THEN unapi.auri( uri, $2, 'uri', evergreen.array_remove_item_by_value($4,'sitem'), $5, $6, $7, $8, FALSE) ELSE NULL END
+                    CASE WHEN issuance IS NOT NULL AND ('siss' = ANY ($4)) THEN unapi.siss( issuance, $2, 'issuance', array_remove($4,'sitem'), $5, $6, $7, $8, FALSE) ELSE NULL END,
+                    CASE WHEN stream IS NOT NULL AND ('sstr' = ANY ($4)) THEN unapi.sstr( stream, $2, 'stream', array_remove($4,'sitem'), $5, $6, $7, $8, FALSE) ELSE NULL END,
+                    CASE WHEN unit IS NOT NULL AND ('sunit' = ANY ($4)) THEN unapi.sunit( unit, $2, 'serial_unit', array_remove($4,'sitem'), $5, $6, $7, $8, FALSE) ELSE NULL END,
+                    CASE WHEN uri IS NOT NULL AND ('auri' = ANY ($4)) THEN unapi.auri( uri, $2, 'uri', array_remove($4,'sitem'), $5, $6, $7, $8, FALSE) ELSE NULL END
 --                    XMLELEMENT( name notes,
 --                        CASE 
 --                            WHEN ('acpn' = ANY ($4)) THEN
 --                                (SELECT XMLAGG(acpn) FROM (
---                                    SELECT  unapi.acpn( id, 'xml', 'copy_note', evergreen.array_remove_item_by_value($4,'acp'), $5, $6, $7, $8)
+--                                    SELECT  unapi.acpn( id, 'xml', 'copy_note', array_remove($4,'acp'), $5, $6, $7, $8)
 --                                      FROM  asset.copy_note
 --                                      WHERE owning_copy = cp.id AND pub
 --                                )x)
@@ -886,7 +917,7 @@ CREATE OR REPLACE FUNCTION unapi.sssum ( obj_id BIGINT, format TEXT,  ename TEXT
                     'tag:open-ils.org:U2@sbsum/' || id AS id,
                     'sssum' AS type, generated_coverage, textual_holdings, show_generated
                 ),
-                CASE WHEN ('sdist' = ANY ($4)) THEN unapi.sdist( distribution, 'xml', 'distribtion', evergreen.array_remove_item_by_value($4,'ssum'), $5, $6, $7, $8, FALSE) ELSE NULL END
+                CASE WHEN ('sdist' = ANY ($4)) THEN unapi.sdist( distribution, 'xml', 'distribtion', array_remove($4,'ssum'), $5, $6, $7, $8, FALSE) ELSE NULL END
             )
       FROM  serial.supplement_summary ssum
       WHERE id = $1
@@ -901,7 +932,7 @@ CREATE OR REPLACE FUNCTION unapi.sbsum ( obj_id BIGINT, format TEXT,  ename TEXT
                     'tag:open-ils.org:U2@sbsum/' || id AS id,
                     'sbsum' AS type, generated_coverage, textual_holdings, show_generated
                 ),
-                CASE WHEN ('sdist' = ANY ($4)) THEN unapi.sdist( distribution, 'xml', 'distribtion', evergreen.array_remove_item_by_value($4,'ssum'), $5, $6, $7, $8, FALSE) ELSE NULL END
+                CASE WHEN ('sdist' = ANY ($4)) THEN unapi.sdist( distribution, 'xml', 'distribtion', array_remove($4,'ssum'), $5, $6, $7, $8, FALSE) ELSE NULL END
             )
       FROM  serial.basic_summary ssum
       WHERE id = $1
@@ -916,7 +947,7 @@ CREATE OR REPLACE FUNCTION unapi.sisum ( obj_id BIGINT, format TEXT,  ename TEXT
                     'tag:open-ils.org:U2@sbsum/' || id AS id,
                     'sisum' AS type, generated_coverage, textual_holdings, show_generated
                 ),
-                CASE WHEN ('sdist' = ANY ($4)) THEN unapi.sdist( distribution, 'xml', 'distribtion', evergreen.array_remove_item_by_value($4,'ssum'), $5, $6, $7, $8, FALSE) ELSE NULL END
+                CASE WHEN ('sdist' = ANY ($4)) THEN unapi.sdist( distribution, 'xml', 'distribtion', array_remove($4,'ssum'), $5, $6, $7, $8, FALSE) ELSE NULL END
             )
       FROM  serial.index_summary ssum
       WHERE id = $1
@@ -1033,7 +1064,7 @@ CREATE OR REPLACE FUNCTION unapi.bmp ( obj_id BIGINT, format TEXT,  ename TEXT, 
                         WHEN ('acp' = ANY ($4)) THEN
                             XMLELEMENT( name copies,
                                 (SELECT XMLAGG(acp) FROM (
-                                    SELECT  unapi.acp( cp.id, 'xml', 'copy', evergreen.array_remove_item_by_value($4,'bmp'), $5, $6, $7, $8, FALSE)
+                                    SELECT  unapi.acp( cp.id, 'xml', 'copy', array_remove($4,'bmp'), $5, $6, $7, $8, FALSE)
                                       FROM  asset.copy cp
                                             JOIN asset.copy_part_map cpm ON (cpm.target_copy = cp.id)
                                       WHERE cpm.part = $1
@@ -1046,7 +1077,7 @@ CREATE OR REPLACE FUNCTION unapi.bmp ( obj_id BIGINT, format TEXT,  ename TEXT, 
                             )
                         ELSE NULL
                     END,
-                    CASE WHEN ('bre' = ANY ($4)) THEN unapi.bre( record, 'marcxml', 'record', evergreen.array_remove_item_by_value($4,'bmp'), $5, $6, $7, $8, FALSE) ELSE NULL END
+                    CASE WHEN ('bre' = ANY ($4)) THEN unapi.bre( record, 'marcxml', 'record', array_remove($4,'bmp'), $5, $6, $7, $8, FALSE) ELSE NULL END
                 )
           FROM  biblio.monograph_part
           WHERE NOT deleted AND id = $1
@@ -1063,16 +1094,16 @@ CREATE OR REPLACE FUNCTION unapi.acp ( obj_id BIGINT, format TEXT,  ename TEXT, 
                         ref, holdable, deleted, deposit_amount, price, barcode,
                         circ_modifier, circ_as_type, opac_visible, age_protect
                     ),
-                    unapi.ccs( status, $2, 'status', evergreen.array_remove_item_by_value($4,'acp'), $5, $6, $7, $8, FALSE),
-                    unapi.acl( location, $2, 'location', evergreen.array_remove_item_by_value($4,'acp'), $5, $6, $7, $8, FALSE),
-                    unapi.aou( circ_lib, $2, 'circ_lib', evergreen.array_remove_item_by_value($4,'acp'), $5, $6, $7, $8),
-                    unapi.aou( circ_lib, $2, 'circlib', evergreen.array_remove_item_by_value($4,'acp'), $5, $6, $7, $8),
-                    CASE WHEN ('acn' = ANY ($4)) THEN unapi.acn( call_number, $2, 'call_number', evergreen.array_remove_item_by_value($4,'acp'), $5, $6, $7, $8, FALSE) ELSE NULL END,
+                    unapi.ccs( status, $2, 'status', array_remove($4,'acp'), $5, $6, $7, $8, FALSE),
+                    unapi.acl( location, $2, 'location', array_remove($4,'acp'), $5, $6, $7, $8, FALSE),
+                    unapi.aou( circ_lib, $2, 'circ_lib', array_remove($4,'acp'), $5, $6, $7, $8),
+                    unapi.aou( circ_lib, $2, 'circlib', array_remove($4,'acp'), $5, $6, $7, $8),
+                    CASE WHEN ('acn' = ANY ($4)) THEN unapi.acn( call_number, $2, 'call_number', array_remove($4,'acp'), $5, $6, $7, $8, FALSE) ELSE NULL END,
                     CASE 
                         WHEN ('acpn' = ANY ($4)) THEN
                             XMLELEMENT( name copy_notes,
                                 (SELECT XMLAGG(acpn) FROM (
-                                    SELECT  unapi.acpn( id, 'xml', 'copy_note', evergreen.array_remove_item_by_value($4,'acp'), $5, $6, $7, $8, FALSE)
+                                    SELECT  unapi.acpn( id, 'xml', 'copy_note', array_remove($4,'acp'), $5, $6, $7, $8, FALSE)
                                       FROM  asset.copy_note
                                       WHERE owning_copy = cp.id AND pub
                                 )x)
@@ -1083,7 +1114,7 @@ CREATE OR REPLACE FUNCTION unapi.acp ( obj_id BIGINT, format TEXT,  ename TEXT, 
                         WHEN ('ascecm' = ANY ($4)) THEN
                             XMLELEMENT( name statcats,
                                 (SELECT XMLAGG(ascecm) FROM (
-                                    SELECT  unapi.ascecm( stat_cat_entry, 'xml', 'statcat', evergreen.array_remove_item_by_value($4,'acp'), $5, $6, $7, $8, FALSE)
+                                    SELECT  unapi.ascecm( stat_cat_entry, 'xml', 'statcat', array_remove($4,'acp'), $5, $6, $7, $8, FALSE)
                                       FROM  asset.stat_cat_entry_copy_map
                                       WHERE owning_copy = cp.id
                                 )x)
@@ -1106,7 +1137,7 @@ CREATE OR REPLACE FUNCTION unapi.acp ( obj_id BIGINT, format TEXT,  ename TEXT, 
                         WHEN ('bmp' = ANY ($4)) THEN
                             XMLELEMENT( name monograph_parts,
                                 (SELECT XMLAGG(bmp) FROM (
-                                    SELECT  unapi.bmp( part, 'xml', 'monograph_part', evergreen.array_remove_item_by_value($4,'acp'), $5, $6, $7, $8, FALSE)
+                                    SELECT  unapi.bmp( part, 'xml', 'monograph_part', array_remove($4,'acp'), $5, $6, $7, $8, FALSE)
                                       FROM  asset.copy_part_map
                                       WHERE target_copy = cp.id
                                 )x)
@@ -1117,7 +1148,7 @@ CREATE OR REPLACE FUNCTION unapi.acp ( obj_id BIGINT, format TEXT,  ename TEXT, 
                         WHEN ('circ' = ANY ($4)) THEN
                             XMLELEMENT( name current_circulation,
                                 (SELECT XMLAGG(circ) FROM (
-                                    SELECT  unapi.circ( id, 'xml', 'circ', evergreen.array_remove_item_by_value($4,'circ'), $5, $6, $7, $8, FALSE)
+                                    SELECT  unapi.circ( id, 'xml', 'circ', array_remove($4,'circ'), $5, $6, $7, $8, FALSE)
                                       FROM  action.circulation
                                       WHERE target_copy = cp.id
                                             AND checkin_time IS NULL
@@ -1147,16 +1178,16 @@ CREATE OR REPLACE FUNCTION unapi.sunit ( obj_id BIGINT, format TEXT,  ename TEXT
                         status_changed_time, floating, mint_condition,
                         detailed_contents, sort_key, summary_contents, cost 
                     ),
-                    unapi.ccs( status, $2, 'status', evergreen.array_remove_item_by_value( evergreen.array_remove_item_by_value($4,'acp'),'sunit'), $5, $6, $7, $8, FALSE),
-                    unapi.acl( location, $2, 'location', evergreen.array_remove_item_by_value( evergreen.array_remove_item_by_value($4,'acp'),'sunit'), $5, $6, $7, $8, FALSE),
-                    unapi.aou( circ_lib, $2, 'circ_lib', evergreen.array_remove_item_by_value( evergreen.array_remove_item_by_value($4,'acp'),'sunit'), $5, $6, $7, $8),
-                    unapi.aou( circ_lib, $2, 'circlib', evergreen.array_remove_item_by_value( evergreen.array_remove_item_by_value($4,'acp'),'sunit'), $5, $6, $7, $8),
-                    CASE WHEN ('acn' = ANY ($4)) THEN unapi.acn( call_number, $2, 'call_number', evergreen.array_remove_item_by_value($4,'acp'), $5, $6, $7, $8, FALSE) ELSE NULL END,
+                    unapi.ccs( status, $2, 'status', array_remove( array_remove($4,'acp'),'sunit'), $5, $6, $7, $8, FALSE),
+                    unapi.acl( location, $2, 'location', array_remove( array_remove($4,'acp'),'sunit'), $5, $6, $7, $8, FALSE),
+                    unapi.aou( circ_lib, $2, 'circ_lib', array_remove( array_remove($4,'acp'),'sunit'), $5, $6, $7, $8),
+                    unapi.aou( circ_lib, $2, 'circlib', array_remove( array_remove($4,'acp'),'sunit'), $5, $6, $7, $8),
+                    CASE WHEN ('acn' = ANY ($4)) THEN unapi.acn( call_number, $2, 'call_number', array_remove($4,'acp'), $5, $6, $7, $8, FALSE) ELSE NULL END,
                     XMLELEMENT( name copy_notes,
                         CASE 
                             WHEN ('acpn' = ANY ($4)) THEN
                                 (SELECT XMLAGG(acpn) FROM (
-                                    SELECT  unapi.acpn( id, 'xml', 'copy_note', evergreen.array_remove_item_by_value( evergreen.array_remove_item_by_value($4,'acp'),'sunit'), $5, $6, $7, $8, FALSE)
+                                    SELECT  unapi.acpn( id, 'xml', 'copy_note', array_remove( array_remove($4,'acp'),'sunit'), $5, $6, $7, $8, FALSE)
                                       FROM  asset.copy_note
                                       WHERE owning_copy = cp.id AND pub
                                 )x)
@@ -1167,7 +1198,7 @@ CREATE OR REPLACE FUNCTION unapi.sunit ( obj_id BIGINT, format TEXT,  ename TEXT
                         CASE 
                             WHEN ('ascecm' = ANY ($4)) THEN
                                 (SELECT XMLAGG(ascecm) FROM (
-                                    SELECT  unapi.ascecm( stat_cat_entry, 'xml', 'statcat', evergreen.array_remove_item_by_value($4,'acp'), $5, $6, $7, $8, FALSE)
+                                    SELECT  unapi.ascecm( stat_cat_entry, 'xml', 'statcat', array_remove($4,'acp'), $5, $6, $7, $8, FALSE)
                                       FROM  asset.stat_cat_entry_copy_map
                                       WHERE owning_copy = cp.id
                                 )x)
@@ -1189,7 +1220,7 @@ CREATE OR REPLACE FUNCTION unapi.sunit ( obj_id BIGINT, format TEXT,  ename TEXT
                         WHEN ('bmp' = ANY ($4)) THEN
                             XMLELEMENT( name monograph_parts,
                                 (SELECT XMLAGG(bmp) FROM (
-                                    SELECT  unapi.bmp( part, 'xml', 'monograph_part', evergreen.array_remove_item_by_value($4,'acp'), $5, $6, $7, $8, FALSE)
+                                    SELECT  unapi.bmp( part, 'xml', 'monograph_part', array_remove($4,'acp'), $5, $6, $7, $8, FALSE)
                                       FROM  asset.copy_part_map
                                       WHERE target_copy = cp.id
                                 )x)
@@ -1200,7 +1231,7 @@ CREATE OR REPLACE FUNCTION unapi.sunit ( obj_id BIGINT, format TEXT,  ename TEXT
                         WHEN ('circ' = ANY ($4)) THEN
                             XMLELEMENT( name current_circulation,
                                 (SELECT XMLAGG(circ) FROM (
-                                    SELECT  unapi.circ( id, 'xml', 'circ', evergreen.array_remove_item_by_value($4,'circ'), $5, $6, $7, $8, FALSE)
+                                    SELECT  unapi.circ( id, 'xml', 'circ', array_remove($4,'circ'), $5, $6, $7, $8, FALSE)
                                       FROM  action.circulation
                                       WHERE target_copy = cp.id
                                             AND checkin_time IS NULL
@@ -1230,13 +1261,13 @@ CREATE OR REPLACE FUNCTION unapi.acn ( obj_id BIGINT, format TEXT,  ename TEXT, 
                         o.opac_visible AS opac_visible,
                         deleted, label, label_sortkey, label_class, record
                     ),
-                    unapi.aou( owning_lib, $2, 'owning_lib', evergreen.array_remove_item_by_value($4,'acn'), $5, $6, $7, $8),
+                    unapi.aou( owning_lib, $2, 'owning_lib', array_remove($4,'acn'), $5, $6, $7, $8),
                     CASE 
                         WHEN ('acp' = ANY ($4)) THEN
                             CASE WHEN $6 IS NOT NULL THEN
                                 XMLELEMENT( name copies,
                                     (SELECT XMLAGG(acp ORDER BY rank_avail) FROM (
-                                        SELECT  unapi.acp( cp.id, 'xml', 'copy', evergreen.array_remove_item_by_value($4,'acn'), $5, $6, $7, $8, FALSE),
+                                        SELECT  unapi.acp( cp.id, 'xml', 'copy', array_remove($4,'acn'), $5, $6, $7, $8, FALSE),
                                             evergreen.rank_cp(cp) AS rank_avail
                                           FROM  asset.copy cp
                                                 JOIN actor.org_unit_descendants( (SELECT id FROM actor.org_unit WHERE shortname = $5), $6) aoud ON (cp.circ_lib = aoud.id)
@@ -1250,7 +1281,7 @@ CREATE OR REPLACE FUNCTION unapi.acn ( obj_id BIGINT, format TEXT,  ename TEXT, 
                             ELSE
                                 XMLELEMENT( name copies,
                                     (SELECT XMLAGG(acp ORDER BY rank_avail) FROM (
-                                        SELECT  unapi.acp( cp.id, 'xml', 'copy', evergreen.array_remove_item_by_value($4,'acn'), $5, $6, $7, $8, FALSE),
+                                        SELECT  unapi.acp( cp.id, 'xml', 'copy', array_remove($4,'acn'), $5, $6, $7, $8, FALSE),
                                             evergreen.rank_cp(cp) AS rank_avail
                                           FROM  asset.copy cp
                                                 JOIN actor.org_unit_descendants( (SELECT id FROM actor.org_unit WHERE shortname = $5) ) aoud ON (cp.circ_lib = aoud.id)
@@ -1266,11 +1297,11 @@ CREATE OR REPLACE FUNCTION unapi.acn ( obj_id BIGINT, format TEXT,  ename TEXT, 
                     END,
                     XMLELEMENT(
                         name uris,
-                        (SELECT XMLAGG(auri) FROM (SELECT unapi.auri(uri,'xml','uri', evergreen.array_remove_item_by_value($4,'acn'), $5, $6, $7, $8, FALSE) FROM asset.uri_call_number_map WHERE call_number = acn.id)x)
+                        (SELECT XMLAGG(auri) FROM (SELECT unapi.auri(uri,'xml','uri', array_remove($4,'acn'), $5, $6, $7, $8, FALSE) FROM asset.uri_call_number_map WHERE call_number = acn.id)x)
                     ),
-                    unapi.acnp( acn.prefix, 'marcxml', 'prefix', evergreen.array_remove_item_by_value($4,'acn'), $5, $6, $7, $8, FALSE),
-                    unapi.acns( acn.suffix, 'marcxml', 'suffix', evergreen.array_remove_item_by_value($4,'acn'), $5, $6, $7, $8, FALSE),
-                    CASE WHEN ('bre' = ANY ($4)) THEN unapi.bre( acn.record, 'marcxml', 'record', evergreen.array_remove_item_by_value($4,'acn'), $5, $6, $7, $8, FALSE) ELSE NULL END
+                    unapi.acnp( acn.prefix, 'marcxml', 'prefix', array_remove($4,'acn'), $5, $6, $7, $8, FALSE),
+                    unapi.acns( acn.suffix, 'marcxml', 'suffix', array_remove($4,'acn'), $5, $6, $7, $8, FALSE),
+                    CASE WHEN ('bre' = ANY ($4)) THEN unapi.bre( acn.record, 'marcxml', 'record', array_remove($4,'acn'), $5, $6, $7, $8, FALSE) ELSE NULL END
                 ) AS x
           FROM  asset.call_number acn
                 JOIN actor.org_unit o ON (o.id = acn.owning_lib)
@@ -1322,7 +1353,7 @@ CREATE OR REPLACE FUNCTION unapi.auri ( obj_id BIGINT, format TEXT,  ename TEXT,
                     CASE 
                         WHEN ('acn' = ANY ($4)) THEN
                             XMLELEMENT( name copies,
-                                (SELECT XMLAGG(acn) FROM (SELECT unapi.acn( call_number, 'xml', 'copy', evergreen.array_remove_item_by_value($4,'auri'), $5, $6, $7, $8, FALSE) FROM asset.uri_call_number_map WHERE uri = uri.id)x)
+                                (SELECT XMLAGG(acn) FROM (SELECT unapi.acn( call_number, 'xml', 'copy', array_remove($4,'auri'), $5, $6, $7, $8, FALSE) FROM asset.uri_call_number_map WHERE uri = uri.id)x)
                             )
                         ELSE NULL
                     END
@@ -1399,8 +1430,8 @@ CREATE OR REPLACE FUNCTION unapi.circ (obj_id BIGINT, format TEXT, ename TEXT, i
             xact_start,
             due_date
         ),
-        CASE WHEN ('aou' = ANY ($4)) THEN unapi.aou( circ_lib, $2, 'circ_lib', evergreen.array_remove_item_by_value($4,'circ'), $5, $6, $7, $8, FALSE) ELSE NULL END,
-        CASE WHEN ('acp' = ANY ($4)) THEN unapi.acp( circ_lib, $2, 'target_copy', evergreen.array_remove_item_by_value($4,'circ'), $5, $6, $7, $8, FALSE) ELSE NULL END
+        CASE WHEN ('aou' = ANY ($4)) THEN unapi.aou( circ_lib, $2, 'circ_lib', array_remove($4,'circ'), $5, $6, $7, $8, FALSE) ELSE NULL END,
+        CASE WHEN ('acp' = ANY ($4)) THEN unapi.acp( circ_lib, $2, 'target_copy', array_remove($4,'circ'), $5, $6, $7, $8, FALSE) ELSE NULL END
     )
     FROM action.circulation
     WHERE id = $1;
@@ -1553,11 +1584,11 @@ RETURNS XML AS $F$
                      name volumes,
                      (SELECT XMLAGG(acn ORDER BY rank, name, label_sortkey) FROM (
                         -- Physical copies
-                        SELECT  unapi.acn(y.id,'xml','volume',evergreen.array_remove_item_by_value( evergreen.array_remove_item_by_value($5,'holdings_xml'),'bre'), $3, $4, $6, $7, FALSE), y.rank, name, label_sortkey
+                        SELECT  unapi.acn(y.id,'xml','volume',array_remove( array_remove($5,'holdings_xml'),'bre'), $3, $4, $6, $7, FALSE), y.rank, name, label_sortkey
                         FROM evergreen.ranked_volumes((SELECT ARRAY_AGG(source) FROM metabib.metarecord_source_map WHERE metarecord = $1), $2, $4, $6, $7, $9, $5) AS y
                         UNION ALL
                         -- Located URIs
-                        SELECT unapi.acn(uris.id,'xml','volume',evergreen.array_remove_item_by_value( evergreen.array_remove_item_by_value($5,'holdings_xml'),'bre'), $3, $4, $6, $7, FALSE), uris.rank, name, label_sortkey
+                        SELECT unapi.acn(uris.id,'xml','volume',array_remove( array_remove($5,'holdings_xml'),'bre'), $3, $4, $6, $7, FALSE), uris.rank, name, label_sortkey
                         FROM evergreen.located_uris((SELECT ARRAY_AGG(source) FROM metabib.metarecord_source_map WHERE metarecord = $1), $2, $9) AS uris
                      )x)
                  ),
@@ -1632,7 +1663,7 @@ BEGIN
     IF format = 'holdings_xml' THEN -- the special case
         output := unapi.mmr_holdings_xml(
             obj_id, ouid, org, depth,
-            evergreen.array_remove_item_by_value(includes,'holdings_xml'),
+            array_remove(includes,'holdings_xml'),
             slimit, soffset, include_xmlns, pref_lib);
         RETURN output;
     END IF;
@@ -1660,7 +1691,7 @@ BEGIN
     IF ('holdings_xml' = ANY (includes)) THEN
         hxml := unapi.mmr_holdings_xml(
                     obj_id, ouid, org, depth,
-                    evergreen.array_remove_item_by_value(includes,'holdings_xml'),
+                    array_remove(includes,'holdings_xml'),
                     slimit, soffset, include_xmlns, pref_lib);
     END IF;
 
@@ -1738,6 +1769,21 @@ BEGIN
     RETURN output;
 END;
 $F$ LANGUAGE PLPGSQL STABLE;
+
+-- note not adding a companion version which takes an int[] as 
+-- the first arument, similar to evergreen.located_uris(), because
+-- json_query is unable to distinguish between the type of paramaters, 
+-- leading to 'Could not choose a best candidate function' errors.
+CREATE OR REPLACE FUNCTION evergreen.located_uris_as_uris 
+    (bibid BIGINT, ouid INT, pref_lib INT DEFAULT NULL)
+    RETURNS SETOF asset.uri AS $FUNK$
+    /* Maps a bib directly to its scoped asset.uri's */
+
+    SELECT uri.* 
+    FROM evergreen.located_uris($1, $2, $3) located_uri
+    JOIN asset.uri_call_number_map map ON (map.call_number = located_uri.id)
+    JOIN asset.uri uri ON (uri.id = map.uri)
+$FUNK$ LANGUAGE SQL STABLE;
 
 
 /*

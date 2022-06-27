@@ -30,6 +30,10 @@ export class GridColumnComponent implements OnInit {
     // result filtering
     @Input() filterable: boolean;
 
+    // optional initial filter values
+    @Input() initialFilterOperator: string;
+    @Input() initialFilterValue: string;
+
     // Display date and time when datatype = timestamp
     @Input() datePlusTime: boolean;
 
@@ -41,6 +45,7 @@ export class GridColumnComponent implements OnInit {
     @Input() cellTemplate: TemplateRef<any>;
 
     @Input() disableTooltip: boolean;
+    @Input() asyncSupportsEmptyTermClick: boolean;
 
     // get a reference to our container grid.
     constructor(@Host() private grid: GridComponent) {}
@@ -58,12 +63,15 @@ export class GridColumnComponent implements OnInit {
         col.label = this.label;
         col.flex = this.flex;
         col.hidden = this.hidden === true;
+        col.asyncSupportsEmptyTermClick = this.asyncSupportsEmptyTermClick === true;
         col.isIndex = this.index === true;
         col.cellTemplate = this.cellTemplate;
         col.cellContext = this.cellContext;
         col.disableTooltip = this.disableTooltip;
         col.isSortable = this.sortable;
         col.isFilterable = this.filterable;
+        col.filterOperator = this.initialFilterOperator;
+        col.filterValue = this.initialFilterValue;
         col.isMultiSortable = this.multiSortable;
         col.datatype = this.datatype;
         col.datePlusTime = this.datePlusTime;

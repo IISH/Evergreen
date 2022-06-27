@@ -23,7 +23,7 @@
   <div class="row pt-3">
     <div class="col-lg-6 offset-lg-3">
       <div class="alert alert-warning">
-        <span i18n>No Maching Items Were Found</span>
+        <span i18n>No Matching Items Were Found</span>
       </div>
     </div>
   </div>
@@ -31,11 +31,12 @@
 
 <!-- header, pager, and list of records -->
 <div id="staff-catalog-results-container" *ngIf="searchHasResults()">
+
+  <eg-catalog-browse-pager *ngIf="searchContext.termSearch.browseEntry">
+  </eg-catalog-browse-pager>
+
   <div class="row">
     <div class="col-lg-2" *ngIf="!searchContext.basket">
-      <ng-container *ngIf="searchContext.termSearch.browseEntry">
-        <h3 i18n>Results for browse "{{searchContext.termSearch.browseEntry.value()}}"</h3>
-      </ng-container>
       <ng-container *ngIf="!searchContext.termSearch.browseEntry">
         <h3 i18n>Search Results ({{searchContext.result.count}})</h3>
       </ng-container>
@@ -43,7 +44,7 @@
     <div class="col-lg-2" *ngIf="searchContext.basket">
       <h3 i18n>Basket View</h3>
     </div>
-    <div class="col-lg-2">
+    <div class="col-lg-3">
       <label class="checkbox" *ngIf="!searchContext.basket">
         <input type='checkbox' [(ngModel)]="allRecsSelected" 
             (change)="toggleAllRecsSelected()"/>
@@ -51,8 +52,12 @@
           {{searchContext.pager.rowNumber(searchContext.currentResultIds().length - 1)}}
         </span>
       </label>
+      <button class="btn btn-outline-dark ml-2" (click)="toggleShowMore()">
+        <ng-container *ngIf="showMoreDetails" i18n>Show Fewer Details</ng-container>
+        <ng-container *ngIf="!showMoreDetails" i18n>Show More Details</ng-container>
+      </button>
     </div>
-    <div class="col-lg-8">
+    <div class="col-lg-7">
       <div class="float-right">
         <eg-catalog-result-pagination></eg-catalog-result-pagination>
       </div>
@@ -65,14 +70,16 @@
       </div>
       <div
         [ngClass]="{'col-lg-10': !searchContext.basket, 'col-lg-12': searchContext.basket}">
-        <div *ngIf="shouldStartRendering()">
-          <div *ngFor="let summary of searchContext.result.records; let idx = index">
-            <div *ngIf="summary">
-              <eg-catalog-result-record [summary]="summary" [index]="idx">
-              </eg-catalog-result-record>
-            </div>
+        <div *ngFor="let summary of searchContext.result.records; let idx = index">
+          <div *ngIf="summary">
+            <eg-catalog-result-record [summary]="summary" [index]="idx">
+            </eg-catalog-result-record>
           </div>
         </div>
+        <div class="float-right">
+          <eg-catalog-result-pagination></eg-catalog-result-pagination>
+        </div>
+
       </div>
     </div>
   </div>

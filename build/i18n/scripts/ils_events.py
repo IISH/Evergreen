@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # ils_events.py
 """
 This class enables translation of Evergreen's ils_events XML file.
@@ -151,7 +151,7 @@ class ILSEventHandler(xml.sax.handler.ContentHandler):
         if name == 'desc' and self.en_us_flag is True:
             lineno = self.locator.getLineNumber()
             event = "%d.%s" % (int(self.numcode), self.textcode)
-            if self.events.has_key(self.desc):
+            if self.desc in self.events:
                 self.events[self.desc].append([str(event), lineno])
             else:
                 self.events[self.desc] = [[str(event), lineno]]

@@ -254,9 +254,6 @@
 	<event code='1532' textcode='MONEY_BILLABLE_TRANSACTION_SUMMARY_NOT_FOUND'>
 		<desc xml:lang='en-US'>The requested money_billable_transaction_summary was not found</desc>
 	</event>
-	<event code='1533' textcode='ACTOR_USR_NOTE_NOT_FOUND'>
-		<desc xml:lang='en-US'>The requested actor_usr_note was not found</desc>
-	</event>
 	<event code='1534' textcode='ACTOR_USER_SETTING_NOT_FOUND'>
 		<desc xml:lang='en-US'>The requested actor_user_setting was not found</desc>
 	</event>
@@ -938,6 +935,24 @@
 	<event code='7029' textcode='MAX_AUTO_RENEWALS_REACHED'>
 		<desc xml:lang="en-US">Circulation has no more auto-renewals remaining</desc>
 	</event>
+	<event code='7030' textcode='CURBSIDE_NOT_ALLOWED'>
+		<desc xml:lang="en-US">Curbside pickup is not enabled for this location</desc>
+	</event>
+	<event code='7031' textcode='CURBSIDE_MAX_FOR_TIME'>
+		<desc xml:lang="en-US">Maximum scheduled curbside pickups at the requested time</desc>
+	</event>
+	<event code='7032' textcode='CURBSIDE_EXISTS'>
+		<desc xml:lang="en-US">A scheduled, unfilled curbside request already exists</desc>
+	</event>
+	<event code='7033' textcode='GEOCODING_NOT_ENABLED'>
+		<desc xml:lang="en-US">Geo-Coding is not enabled for this installation</desc>
+	</event>
+	<event code='7034' textcode='GEOCODING_NOT_ALLOWED'>
+		<desc xml:lang="en-US">A Geographic Location Service is not configured for this library</desc>
+	</event>
+	<event code='7035' textcode='GEOCODING_LOCATION_NOT_FOUND'>
+		<desc xml:lang="en-US">No location returned by Geographic Location Service</desc>
+	</event>
 
 
 	<!-- ================================================================ -->
@@ -1076,6 +1091,12 @@
     </event>
     <event code='12002' textcode='ITEM_TO_MARK_LAST_HOLD_COPY'>
       <desc xml:lang="en-US">The item to be marked is the last possible target for a hold.</desc>
+    </event>
+
+	<!-- ================================================================ -->
+
+    <event code='12003' textcode='TITLE_HAS_HOLDS'>
+      <desc xml:lang="en-US">This title has hold requests on it that will be canceled if they are not transferred.</desc>
     </event>
 </ils_events>
 

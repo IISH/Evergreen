@@ -89,12 +89,30 @@ function updateDashboard() {
     var total_holds_pending = (typeof xacts.holds_pending === 'undefined') ? '-' : xacts.holds_pending.length;
     var total_holds_ready = (typeof xacts.holds_ready === 'undefined') ? '-' : xacts.holds_ready.length;
     // update totals
-    dojo.byId('dash_e_checked').innerHTML = total_checkouts;
-    dojo.byId('dash_e_holds').innerHTML = total_holds_pending;
-    dojo.byId('dash_e_pickup').innerHTML = total_holds_ready;
-    // unhide ebook dashboard
-    dojo.removeClass('dashboard_e', "hidden");
+    var eCheckout =  document.getElementById('dash_e_checked');
+    var eHolds =  document.getElementById('dash_e_holds');
+    var ePickup =  document.getElementById('dash_e_pickup');
+    var eDash =  document.getElementById('dashboard_e');
+
+    if(typeof(eCheckout) != 'undefined' && eCheckout != null)
+    {
+        dojo.byId('dash_e_checked').innerHTML = total_checkouts;
+    }
+    if(typeof(eHolds) != 'undefined' && eHolds != null)
+    {
+        dojo.byId('dash_e_holds').innerHTML = total_holds_pending;
+    }
+    if(typeof(ePickup) != 'undefined' && ePickup != null)
+    {
+        dojo.byId('dash_e_pickup').innerHTML = total_holds_ready;
+    }
+    if(typeof(eDash) != 'undefined' && eDash != null)
+    {
+        // unhide ebook dashboard
+        dojo.removeClass('dashboard_e', "hidden");
+    }
 }
+
 
 function updateMyAccountSummary() {
     if (myopac_page === 'main') {
@@ -128,7 +146,9 @@ function updateCheckoutView() {
             if (x.download_url) {
                 dl_td.innerHTML = '<a href="' + x.download_url + '">' + l_strings.download + '</a>';
             }
-            if (x.formats) {
+            if (x.download_redirect) {
+                dl_td.innerHTML = '<a target="_blank" href="' + x.download_redirect + '">' + l_strings.download + '</a>';
+            } else if (x.formats) {
                 var select = dojo.create("select", { id: "download-format" }, dl_td);
                 for (f in x.formats) {
                     dojo.create("option", { value: x.formats[f], innerHTML: f }, select);
@@ -300,6 +320,11 @@ function doCheckout() {
             // Use download URL from checkout response, if available.
             new_xact.download_url = resp.download_url;
             dojo.create("a", { href: new_xact.download_url, innerHTML: l_strings.download }, dojo.byId('checkout-button-td'));
+            new_xact.finish();
+        } else if (resp.download_redirect) {
+            // Use download URL from checkout response, if available.
+            new_xact.download_redirect = resp.download_redirect;
+            dojo.create("a", { target: "_blank", href: new_xact.download_redirect, innerHTML: l_strings.download }, dojo.byId('checkout-button-td'));
             new_xact.finish();
         } else if (typeof resp.formats !== 'undefined') {
             // User must select download format from list of options.

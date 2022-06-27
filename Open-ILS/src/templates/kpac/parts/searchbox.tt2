@@ -4,9 +4,7 @@
         <input type="text" name='query' 
             value="[% CGI.param('nosprop') ? '' : CGI.param('query') | html %]"
             [% seed = l(' Enter Text... ') | html %]
-            class="sub_sidebar_search_box" style="color:#aaa;" value="[% seed %]"
-            onfocus="if(this.value=='[% seed %]'){this.value='';this.style.color='#424242';}" 
-            onblur="if(this.value==''){this.value='[% seed %]'; this.style.color='#aaa';}" />
+            class="sub_sidebar_search_box" style="color:#aaa;" placeholder="[% seed %]" />
     </div>
     <table cellpadding="0" cellspacing="0" border="0" class="sub_sidebar_search_st">
         <tr>
@@ -49,3 +47,13 @@
     </div>
 </form>
 
+[% IF ctx.search_summary.suggestions.one_class_one_term %]
+<br/>
+<div class="result_block_visible refine_search" id="did_you_mean">
+    <em><strong>[% s_list = ctx.search_summary.suggestions.one_class_one_term; l('Did you mean: ') %]</strong></em>
+    [% FOREACH s IN s_list.suggestions %]
+        [% IF !loop.first(); l('or'); END %]
+        <a href="[% mkurl(ctx.kpac_root _ '/results', {qtype=>s_list.class, query=>s.suggestion}) %]">[% s.suggestion | html %]</a>
+    [% END %]
+</div>
+[% END %]

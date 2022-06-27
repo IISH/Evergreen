@@ -1,0 +1,125 @@
+= Ordering materials =
+:toc:
+
+== Introduction ==
+
+Acquisitions allows you to order materials, track the expenditure of your
+collections funds, track invoices and set up policies for manual claiming. In
+this chapter, we're going to be describing how to use the most essential
+functions of acquisitions in the Evergreen system.
+
+== When should libraries use acquisitions? ==
+* When you want to track spending of your collections budget.
+* When you want to use Evergreen to place orders electronically with your
+  vendors.
+* When you want to import large batches of records to quickly get your on-order
+  titles into the system.
+
+If your library simply wants to add on-order items to the catalog so that
+patrons can view and place holds on titles that have not yet arrived,
+acquisitions may be more than you need. Adding those on-order records via
+cataloging is a simpler option that works well for this use case.
+
+Below are the basic administrative settings to be configured to get started
+with acquisitions. At a minimum, a library must configure *Funding Sources*,
+*Funds*, and *Providers* to use acquisitions.
+
+== Managing Funds ==
+
+Please see the xref:admin:acquisitions_admin.adoc#acq_fund_admin[Fund Administration] documentation for information about setting up Funding Sources, Funds, and Fund Tags.
+
+== Ordering ==
+
+=== Providers (Required) ===
+
+Providers are the vendors from whom you order titles.
+
+Please see the xref:admin:acquisitions_admin.adoc#acq_providers[Providers] documentation for information about setting up Providers.
+
+=== Distribution Formulas (Optional) ===
+
+If you are ordering for a multi-branch library system, distribution formulas are a useful way to specify the number of items that should be distributed to specific branches and item locations.
+
+Please see the xref:admin:acquisitions_admin.adoc#acq_distribution_formulas[Distribution Forumals] documentation for information about setting up Distribution Formulas.
+
+=== Helpful acquisitions Library Settings ===
+There are several acquisitions Library Settings available that will help with
+acquisitions workflow. These settings can be found at *Administration -> Local
+Administration -> Library Settings Editor*.
+
+* Default circulation modifier - Automatically applies a default circulation
+  modifier to all of your acquisitions items. Useful if you use a specific
+  circulation modifier for on-order items.
+* Default copy location - Automatically applies a default item location (e.g.
+  On Order) to acquisitions items.
+* Temporary barcode prefix - Applies a unique prefix to the barcode that is
+  automatically generated during the acquisitions process.
+* Temporary call number prefix - Applies a unique prefix to the start of the
+  call number that is automatically generated during the acquisitions process.
+
+=== Preparing for order record loading ===
+If your library is planning to upload order records in a batch, you need to add
+some information to your provider records so that Evergreen knows how to map
+the item data contained in the order record.
+
+. Retrieve the record for the provider that has supplied the order records by
+  selecting *Administration -> Acquisitions Administration -> Providers*. Alternatively, you can access this from *Acquisitions -> Provider Search*. 
+. Double-click the Provider name in the results grid to retrieve the Provider.
+. Select the *Holdings Definitions* tab.
+. Add the MARC tag that contains your holdings data in the
+  *Holdings Tag* field.
+. To map the tag's subfields to the appropriate copy data, select the *New Holding
+  Subfield* button.  Add the appropriate subfield and name, and select *Save*.
+. If your vendor is sending other data in a MARC tag that needs to be mapped to
+a field in acquisitions, you can do so by selecting the *Attribute Definitions*
+tab. As an example, if you need to import the PO Name, you could set up an
+attribute definition by adding an XPath similar to:
++
+------------------------------------------------------------------------------
+code => purchase_order
+xpath => //*[@tag="962"]/*[@code="p"]
+Is Identifier => false
+------------------------------------------------------------------------------
++
+where 962 is the holdings tag and p is the subfield that contains the PO Name.
+
+=== Preparing to send electronic orders from Evergreen ===
+If your library wants to transmit electronic order information to a vendor, you
+will need to configure your server to use EDI. You need to install the EDI
+translator and EDI scripts on your server by following the instructions in the
+command line system administration manual.
+
+Configure your provider's EDI information by selecting *Administration -> 
+Acquisitions Administration -> EDI Accounts*. Alternatively, you can add a new EDI Account from the *EDI* tab in the Provider Details interface. Click *New EDI Account* Button. Give the
+account a name in the *Label* box.
+
+. *Host* is the vendor-assigned FTP/SFTP/SSH hostname.
+. *Username* is the vendor-assigned FTP/SFTP/SSH username.
+. *Password* is the vendor-assigned FTP/SFTP/SSH password.
+. *Account* This field enables you to add a supplemental password for
+  entry to a remote system after log in has been completed. This field is
+  optional for the ILS but may be required by your provider.
+. *Owner* is the organizational unit who owns the EDI account
+. *Last Activity* is the date of last activity for the account
+. *Provider* is a link to the codes for the Provider record.
+. *Path* is the path on the vendor’s server where Evergreen will deposit its
+  outgoing order files.
+. *Incoming Directory* is the path on the vendor’s server where Evergreen
+  will retrieve incoming order responses and invoices.
+. *Vendor Account Number* is the Vendor assigned account number.
+. *Vendor Assigned Code* is usually a sub-account designation. It can be used
+  with or without the Vendor Account Number.
+
+You now need to add this *EDI Account* and the *SAN* code to the provider's record.
+
+. Select *Administration -> Acquisitions Administration -> Providers*. Alternatively, you can access this from *Acquisitions -> Provider Search*.
+. Double-click the Provider name in the results grid to retrieve the Provider.
+. Select the account you just created in the *EDI Default* field.
+. Add the vendor-provided SAN code to the *SAN* field.
+. Select *Save* to save your changes.
+
+The last step is to add your library's SAN code to Evergreen.
+
+. Select *Administration -> Server Administration ->  Organizational Units*.
+. Select your library from the organizational hierarchy in the left pane.
+. Click the *Addresses* tab and add your library's SAN code to the *SAN* field.

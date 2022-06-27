@@ -51,6 +51,9 @@ export class HoldCancelDialogComponent
 
     open(args: NgbModalOptions): Observable<boolean> {
 
+        this.numSucceeded = 0;
+        this.numFailed = 0;
+
         if (this.cancelReasons.length === 0) {
             this.pcrud.retrieveAll('ahrcc', {}, {atomic: true}).toPromise()
             .then(reasons => {
@@ -81,7 +84,7 @@ export class HoldCancelDialogComponent
                     console.error(this.evt.parse(result));
                     this.toast.warning(await this.errorMsg.current());
                 }
-                this.cancelNext(ids);
+                return this.cancelNext(ids);
             }
         );
     }

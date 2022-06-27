@@ -803,11 +803,14 @@
 
 -%]
 
+
 [%- BLOCK carousels;
     config = {
         animated => 0,
         animation_interval => 5,
-        width => 4,
+        width => 5,
+        sm_width => 3,
+        xs_width => 2,
     };
     config.import(args);
     carousels = [];
@@ -856,6 +859,14 @@
         type: 'carousel',
         rewind: false,
         perView: [% config.width %],
+        breakpoints: {
+            992: {
+                perView: [% config.sm_width %]
+            },
+            768: {
+                perView: [% config.xs_width %]
+            }
+        },
         startAt: 0,
         [% IF config.animated %] autoplay: [% config.animation_interval * 1000 %],[% END %]
     });
@@ -866,3 +877,22 @@
 </div>
 [% END -%]
 [% END -%]
+[% MACRO accordion(str, trunc_length, element) BLOCK;
+    IF truncate_contents != 1;
+        ctx.defang_string(str);
+    ELSE;
+        UNLESS trunc_length;
+            trunc_length = contents_truncate_length || 100;
+        END;
+        IF str.length > trunc_length;
+            accordion_res = ctx.split_for_accordion(str, trunc_length);
+            str = accordion_res.0;
+            IF accordion_res.1;
+                str = str _ " <a onclick='toggleAccordion(this, " _ element _ ")'>" _ l('Read More') _ "</a>";
+            END;
+            str;
+        ELSE;
+            ctx.defang_string(str);
+        END;
+    END;
+END; %]

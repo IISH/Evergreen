@@ -44,6 +44,10 @@ export class AdminPageComponent implements OnInit {
     // Size of create/edito dialog.  Uses large by default.
     @Input() dialogSize: 'sm' | 'lg' = 'lg';
 
+    // Optional comma-separated list of field names defining the order in which
+    // fields should be rendered in the fm-editor and grid.
+    @Input() fieldOrder: string;
+
     // comma-separated list of fields to hide.
     // This does not imply all other fields should be visible, only that
     // the selected fields will be hidden.
@@ -88,6 +92,11 @@ export class AdminPageComponent implements OnInit {
     // Used as the first part of the routerLink path when creating
     // links to related tables via configField's.
     @Input() configLinkBasePath: string;
+
+    // Bonus fields to add to the grid by passing arbitrary templates,
+    // for example, a column created by callbacks based on data from
+    // other columns
+    @Input() templateFields: TemplateField[];
 
     @ViewChild('grid', { static: true }) grid: GridComponent;
     @ViewChild('editDialog', { static: true }) editDialog: FmRecordEditorComponent;
@@ -153,7 +162,7 @@ export class AdminPageComponent implements OnInit {
 
         if (this.orgField) {
             this.orgFieldLabel = this.idlClassDef.field_map[this.orgField].label;
-            this.contextOrg = this.org.get(orgId) || this.org.root();
+            this.contextOrg = this.org.get(orgId) || this.org.get(this.auth.user().ws_ou()) || this.org.root();
             this.searchOrgs = {primaryOrgId: this.contextOrg.id()};
         }
     }
@@ -222,11 +231,6 @@ export class AdminPageComponent implements OnInit {
         if (!this.dataSource) {
             this.initDataSource();
         }
-
-        // TODO: pass the row activate handler via the grid markup
-        this.grid.onRowActivate.subscribe(
-            (idlThing: IdlObject) => this.showEditDialog(idlThing)
-        );
     }
 
     checkCreatePerms() {
@@ -265,23 +269,36 @@ export class AdminPageComponent implements OnInit {
                 order_by: orderBy
             };
 
-            if (!this.contextOrg && !this.gridFilters) {
+            if (!this.contextOrg && !this.gridFilters && !Object.keys(this.dataSource.filters).length) {
                 // No org filter -- fetch all rows
                 return this.pcrud.retrieveAll(
                     this.idlClass, searchOps, {fleshSelectors: true});
             }
 
-            const search: any = {};
+            const search: any[] = new Array();
+            const orgFilter: any = {};
 
-            if (this.orgField) {
-                search[this.orgField] =
+            if (this.orgField && (this.searchOrgs || this.contextOrg)) {
+                orgFilter[this.orgField] =
                     this.searchOrgs.orgIds || [this.contextOrg.id()];
+                search.push(orgFilter);
             }
 
+            Object.keys(this.dataSource.filters).forEach(key => {
+                Object.keys(this.dataSource.filters[key]).forEach(key2 => {
+                    search.push(this.dataSource.filters[key][key2]);
+                });
+            });
+
+            // FIXME - do we want to remove this, which is used in several
+            // secondary admin pages, in favor of switching it to the built-in
+            // grid filtering?
             if (this.gridFilters) {
                 // Lay the URL grid filters over our search object.
                 Object.keys(this.gridFilters).forEach(key => {
-                    search[key] = this.gridFilters[key];
+                    const urlProvidedFilters = {};
+                    urlProvidedFilters[key] = this.gridFilters[key];
+                    search.push(urlProvidedFilters);
                 });
             }
 
@@ -327,7 +344,6 @@ export class AdminPageComponent implements OnInit {
         idlThings.forEach(idlThing => idlThing.isdeleted(true));
         this.pcrud.autoApply(idlThings).subscribe(
             val => {
-                console.debug('deleted: ' + val);
                 this.deleteSuccessString.current()
                     .then(str => this.toast.success(str));
             },
@@ -486,4 +502,8 @@ export class AdminPageComponent implements OnInit {
     }
 }
 
+export interface TemplateField {
+    cellTemplate: TemplateRef<any>;
+    name: string;
+}
 

@@ -78,12 +78,12 @@
               <eg-bucket-dialog #bucketDialog bucketClass="biblio" [fromBibQueue]="queueId">
               </eg-bucket-dialog>
               <div class="flex-1">
-                <a [routerLink]="" (click)="bucketDialog.open({size:'lg'})" i18n>
+                <a href="javascript:;" (click)="bucketDialog.open({size:'lg'})" i18n>
                   Copy Queue To Bucket
                 </a>
               </div>
               <div class="flex-1">
-                <a [routerLink]="" (click)="deleteQueue()" i18n>Delete Queue</a>
+                <a href="javascript:;" (click)="deleteQueue()" i18n>Delete Queue</a>
               </div>
             </div>
           </li>
@@ -114,10 +114,9 @@
   <a *ngIf="queueType=='bib'" routerLink="/staff/catalog/record/{{row.imported_as}}">
     {{row.imported_as}}
   </a>
-  <a *ngIf="queueType=='auth'" href="/eg/staff/cat/catalog/authority/{{row.imported_as}}/marc_edit">
+  <a *ngIf="queueType=='auth'" routerLink="/staff/cat/authority/edit/{{row.imported_as}}">
     {{row.imported_as}}
   </a>
-
 </ng-template>
 
 

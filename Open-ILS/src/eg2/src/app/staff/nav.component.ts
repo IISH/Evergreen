@@ -25,6 +25,7 @@ export class StaffNavComponent implements OnInit, OnDestroy {
 
     // When active, show a link to the experimental Angular staff catalog
     showAngularCatalog: boolean;
+    curbsideEnabled: boolean;
 
     @ViewChild('navOpChange', {static: false}) opChange: OpChangeComponent;
     permFailedSub: Subscription;
@@ -60,6 +61,9 @@ export class StaffNavComponent implements OnInit, OnDestroy {
             this.org.settings('ui.staff.angular_catalog.enabled')
             .then(settings => this.showAngularCatalog =
                 Boolean(settings['ui.staff.angular_catalog.enabled']));
+            this.org.settings('circ.curbside')
+            .then(settings => this.curbsideEnabled =
+                Boolean(settings['circ.curbside']));
         }
 
         // Wire up our op-change component as the general purpose
@@ -80,8 +84,16 @@ export class StaffNavComponent implements OnInit, OnDestroy {
         return this.auth.user() ? this.auth.user().usrname() : '';
     }
 
+    user_id() {
+        return this.auth.user() ? this.auth.user().id() : '';
+    }
+
     workstation() {
         return this.auth.user() ? this.auth.workstation() : '';
+    }
+
+    ws_ou() {
+        return this.auth.user() ? this.auth.user().ws_ou() : '';
     }
 
     setLocale(locale: any) {
@@ -104,11 +116,10 @@ export class StaffNavComponent implements OnInit, OnDestroy {
         this.printer.reprintLast();
     }
 
-    // TODO: Point to Angular catalog when the time comes
     retrieveLastRecord() {
         const recId = this.store.getLocalItem('eg.cat.last_record_retrieved');
         if (recId) {
-            window.location.href = '/eg/staff/cat/catalog/record/' + recId;
+            this.router.navigate(['/staff/catalog/record/' + recId]);
         }
     }
 }

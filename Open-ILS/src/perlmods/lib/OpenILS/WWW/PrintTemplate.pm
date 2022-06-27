@@ -208,7 +208,19 @@ $helpers = {
         my $tz = shift || 'local';
         my $date = DateTime->now(time_zone => $tz);
         return $helpers->{format_date}->($date);
-    }
+    },
+
+    get_org_unit => sub {
+        my $org_id = shift;
+        return $org_id if ref $org_id;
+        return new_editor()->retrieve_actor_org_unit($org_id);
+    },
+
+    get_org_setting => sub {
+        my($org_id, $setting) = @_;
+        return $U->ou_ancestor_setting_value($org_id, $setting);
+    },
+
 };
 
 

@@ -20,15 +20,13 @@ config.status
 config.sub
 configure
 depcomp
-docs/RELEASE_NOTES_2_2.html
-docs/root.html
-docs/root.pdf
 install-sh
 libtool
 ltmain.sh
 Makefile
 Makefile.in
 missing
+node-v*-linux-x64.tar.?z
 Open-ILS/examples/Makefile
 Open-ILS/src/apachemods/.libs/
 Open-ILS/src/apachemods/Makefile
@@ -53,8 +51,6 @@ Open-ILS/src/extras/.libs/
 Open-ILS/src/extras/Makefile
 Open-ILS/src/extras/Makefile.in
 Open-ILS/src/extras/oils_requestor
-Open-ILS/src/java/Makefile
-Open-ILS/src/java/Makefile.in
 Open-ILS/src/Makefile
 Open-ILS/src/Makefile.in
 Open-ILS/src/perlmods/blib/
@@ -65,10 +61,6 @@ Open-ILS/src/perlmods/Makefile
 Open-ILS/src/perlmods/Makefile.in
 Open-ILS/src/perlmods/MYMETA.json
 Open-ILS/src/perlmods/MYMETA.yml
-Open-ILS/src/python/build/
-Open-ILS/src/python/Evergreen.egg-info/
-Open-ILS/src/python/Makefile
-Open-ILS/src/python/Makefile.in
 Open-ILS/src/support-scripts/action_trigger_aggregator.pl
 Open-ILS/src/support-scripts/action_trigger_runner.pl
 Open-ILS/src/support-scripts/authority_authority_linker.pl
@@ -336,8 +328,6 @@ Open-ILS/xul/staff_client/server/locale/sv-SE/
 Open-ILS/xul/staff_client/server/locale/tr-TR/
 Open-ILS/xul/staff_client/evergreen_staff_client.tar.bz2
 Open-ILS/xul/staff_client/xulrunner/
-README.html
-HACKING.html
 Open-ILS/examples/apache/eg.conf
 Open-ILS/examples/apache/eg_startup
 Open-ILS/examples/apache/eg_vhost.conf
@@ -353,7 +343,13 @@ Open-ILS/xul/staff_client/external/libmar/stamp-h1
 Open-ILS/xul/staff_client/external/libmar/tool/.deps/
 Open-ILS/src/c-apps/tests/.libs/
 Open-ILS/src/c-apps/tests/check_idl
+Open-ILS/src/c-apps/tests/check_idl.log
+Open-ILS/src/c-apps/tests/check_idl.trs
 Open-ILS/src/c-apps/tests/check_util
+Open-ILS/src/c-apps/tests/check_util.log
+Open-ILS/src/c-apps/tests/check_util.trs
+Open-ILS/src/c-apps/tests/test-suite.log
+Open-ILS/src/edi_translator/data/test_output
 Open-ILS/xul/staff_client/branding/
 Open-ILS/xul/staff_client/evergreen.xpi.md5
 Open-ILS/xul/staff_client/external/libmar/tool/mar
@@ -369,3 +365,4 @@ Open-ILS/web/js/ui/default/staff/node_modules/
 Open-ILS/web/js/ui/default/staff/bower_components/
 Open-ILS/web/js/ui/default/common/build/
 Open-ILS/web/eg2/
+Open-ILS/web/opac/deps/node_modules/

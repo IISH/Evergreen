@@ -120,28 +120,49 @@ CREATE TABLE asset.copy_part_map (
 );
 CREATE UNIQUE INDEX copy_part_map_cp_part_idx ON asset.copy_part_map (target_copy, part);
 
-CREATE TABLE asset.latest_inventory (
+CREATE TABLE asset.copy_inventory (
     id                          SERIAL                      PRIMARY KEY,
     inventory_workstation       INTEGER                     REFERENCES actor.workstation (id) DEFERRABLE INITIALLY DEFERRED,
-    inventory_date              TIMESTAMP WITH TIME ZONE    DEFAULT NOW(),
-    copy                        BIGINT				        NOT NULL
+    inventory_date              TIMESTAMP WITH TIME ZONE    NOT NULL DEFAULT NOW(),
+    copy                        BIGINT                      NOT NULL
 );
-CREATE INDEX latest_inventory_copy_idx ON asset.latest_inventory (copy);
+CREATE INDEX copy_inventory_copy_idx ON asset.copy_inventory (copy);
+CREATE UNIQUE INDEX asset_copy_inventory_date_once_per_copy ON asset.copy_inventory (inventory_date, copy);
 
-CREATE TABLE asset.opac_visible_copies (
-  id        BIGSERIAL primary key,
-  copy_id   BIGINT, -- copy id
-  record    BIGINT,
-  circ_lib  INTEGER
-);
-COMMENT ON TABLE asset.opac_visible_copies IS $$
-Materialized view of copies that are visible in the OPAC, used by
-search.query_parser_fts() to speed up OPAC visibility checks on large
-databases.  Contents are maintained by a set of triggers.
-$$;
-CREATE INDEX opac_visible_copies_idx1 on asset.opac_visible_copies (record, circ_lib);
-CREATE INDEX opac_visible_copies_copy_id_idx on asset.opac_visible_copies (copy_id);
-CREATE UNIQUE INDEX opac_visible_copies_once_per_record_idx on asset.opac_visible_copies (copy_id, record);
+CREATE OR REPLACE FUNCTION asset.copy_may_float_to_inventory_workstation() RETURNS TRIGGER AS $func$
+DECLARE
+    copy asset.copy%ROWTYPE;
+    workstation actor.workstation%ROWTYPE;
+BEGIN
+    SELECT * INTO copy FROM asset.copy WHERE id = NEW.copy;
+    IF FOUND THEN
+        SELECT * INTO workstation FROM actor.workstation WHERE id = NEW.inventory_workstation;
+        IF FOUND THEN
+           IF copy.floating IS NULL THEN
+              IF copy.circ_lib <> workstation.owning_lib THEN
+                 RAISE EXCEPTION 'Inventory workstation owning lib (%) does not match copy circ lib (%).',
+                       workstation.owning_lib, copy.circ_lib;
+              END IF;
+           ELSE
+              IF NOT evergreen.can_float(copy.floating, copy.circ_lib, workstation.owning_lib) THEN
+                 RAISE EXCEPTION 'Copy (%) cannot float to inventory workstation owning lib (%).',
+                       copy.id, workstation.owning_lib;
+              END IF;
+           END IF;
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$func$ LANGUAGE PLPGSQL VOLATILE COST 50;
+
+CREATE CONSTRAINT TRIGGER asset_copy_inventory_allowed_trig
+        AFTER UPDATE OR INSERT ON asset.copy_inventory
+        DEFERRABLE FOR EACH ROW EXECUTE PROCEDURE asset.copy_may_float_to_inventory_workstation();
+
+CREATE VIEW asset.latest_inventory (id, inventory_workstation, inventory_date, copy) AS
+SELECT DISTINCT ON (copy) id, inventory_workstation, inventory_date, copy
+FROM asset.copy_inventory
+ORDER BY copy, inventory_date DESC;
 
 CREATE OR REPLACE FUNCTION asset.acp_status_changed()
 RETURNS TRIGGER AS $$
@@ -480,6 +501,8 @@ CREATE INDEX asset_call_number_label_sortkey ON asset.call_number(oils_text_as_b
 CREATE UNIQUE INDEX asset_call_number_label_once_per_lib ON asset.call_number (record, owning_lib, label, prefix, suffix) WHERE deleted = FALSE OR deleted IS FALSE;
 CREATE INDEX asset_call_number_label_sortkey_browse ON asset.call_number(oils_text_as_bytea(label_sortkey), oils_text_as_bytea(label), id, owning_lib) WHERE deleted IS FALSE OR deleted = FALSE;
 CREATE RULE protect_cn_delete AS ON DELETE TO asset.call_number DO INSTEAD UPDATE asset.call_number SET deleted = TRUE WHERE OLD.id = asset.call_number.id;
+CREATE RULE protect_acn_id_neg1 AS ON UPDATE TO asset.call_number WHERE OLD.id = -1 DO INSTEAD NOTHING;
+
 CREATE TRIGGER asset_label_sortkey_trigger
     BEFORE UPDATE OR INSERT ON asset.call_number
     FOR EACH ROW EXECUTE PROCEDURE asset.label_normalizer();
@@ -950,9 +973,11 @@ DECLARE
     copy_id BIGINT;
 BEGIN
     EXECUTE 'SELECT ($1).' || quote_ident(TG_ARGV[0]) INTO copy_id USING NEW;
-    PERFORM * FROM asset.copy WHERE id = copy_id;
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'Key (%.%=%) does not exist in asset.copy', TG_TABLE_SCHEMA, TG_TABLE_NAME, copy_id;
+    IF copy_id IS NOT NULL THEN
+        PERFORM * FROM asset.copy WHERE id = copy_id;
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'Key (%.%=%) does not exist in asset.copy', TG_TABLE_SCHEMA, TG_TABLE_NAME, copy_id;
+        END IF;
     END IF;
     RETURN NULL;
 END;
@@ -1104,6 +1129,57 @@ CREATE VIEW asset.active_copy_alert AS
     SELECT  *
       FROM  asset.copy_alert
       WHERE ack_time IS NULL;
+
+CREATE TABLE asset.course_module_course (
+    id              SERIAL PRIMARY KEY,
+    name            TEXT NOT NULL,
+    course_number   TEXT NOT NULL,
+    section_number  TEXT,
+    owning_lib      INT REFERENCES actor.org_unit (id),
+    is_archived        BOOLEAN DEFAULT false
+);
+
+CREATE TABLE asset.course_module_role (
+    id              SERIAL  PRIMARY KEY,
+    name            TEXT    UNIQUE NOT NULL,
+    is_public       BOOLEAN NOT NULL DEFAULT false
+);
+
+CREATE TABLE asset.course_module_course_users (
+    id              SERIAL PRIMARY KEY,
+    course          INT NOT NULL REFERENCES asset.course_module_course (id),
+    usr             INT NOT NULL REFERENCES actor.usr (id),
+    usr_role        INT REFERENCES asset.course_module_role (id) ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+);
+
+CREATE TABLE asset.course_module_course_materials (
+    id              SERIAL PRIMARY KEY,
+    course          INT NOT NULL REFERENCES asset.course_module_course (id),
+    item            INT REFERENCES asset.copy (id),
+    relationship    TEXT,
+    record          INT REFERENCES biblio.record_entry (id),
+    temporary_record       BOOLEAN,
+    original_location      INT REFERENCES asset.copy_location,
+    original_status        INT REFERENCES config.copy_status,
+    original_circ_modifier TEXT, --REFERENCES config.circ_modifier
+    original_callnumber    INT REFERENCES asset.call_number,
+    unique (course, item, record)
+);
+
+CREATE TABLE asset.course_module_term (
+    id              SERIAL  PRIMARY KEY,
+    name            TEXT NOT NULL,
+    owning_lib      INT REFERENCES actor.org_unit (id),
+	start_date      TIMESTAMP WITH TIME ZONE,
+	end_date        TIMESTAMP WITH TIME ZONE,
+    CONSTRAINT cmt_once_per_owning_lib UNIQUE (owning_lib, name)
+);
+
+CREATE TABLE asset.course_module_term_course_map (
+    id              BIGSERIAL  PRIMARY KEY,
+    term            INT     NOT NULL REFERENCES asset.course_module_term (id) ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+    course          INT     NOT NULL REFERENCES asset.course_module_course (id) ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+);
 
 COMMIT;
 

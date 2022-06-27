@@ -571,13 +571,40 @@ sub nearest_hold {
             JOIN action.hold_copy_map hm ON (hm.hold = h.id)
             JOIN actor.usr au ON (au.id = h.usr)
             JOIN permission.grp_tree pgt ON (au.profile = pgt.id)
+            JOIN asset.copy acp ON (hm.target_copy = acp.id)
+            LEFT JOIN config.rule_age_hold_protect cahp ON (acp.age_protect = cahp.id)
             LEFT JOIN actor.usr_standing_penalty ausp
                 ON ( au.id = ausp.usr AND ( ausp.stop_date IS NULL OR ausp.stop_date > NOW() ) )
             LEFT JOIN config.standing_penalty csp
                 ON ( csp.id = ausp.standing_penalty AND csp.block_list LIKE '%CAPTURE%' )
+            LEFT JOIN LATERAL (
+                SELECT OILS_JSON_TO_TEXT(value) AS age
+                  FROM actor.org_unit_ancestor_setting('circ.pickup_hold_stalling.soft', h.pickup_lib)
+            ) AS pickup_stall ON TRUE
             $addl_join
           WHERE hm.target_copy = ?
-            AND (AGE(NOW(),h.request_time) >= CAST(? AS INTERVAL) OR hm.proximity = 0 OR p.prox = 0)
+
+                /* not protected, or protection is expired or we're in range */
+            AND (cahp.id IS NULL OR (AGE(NOW(),acp.active_date) >= cahp.age OR cahp.prox >= hm.proximity))
+
+                /* the complicated hold stalling logic */
+            AND CASE WHEN pickup_stall.age IS NOT NULL AND h.request_time + pickup_stall.age::INTERVAL > NOW()
+                        THEN -- pickup lib oriented stalling is configured for this hold's pickup lib, and it's "too young"
+                            CASE WHEN p.prox = 0
+                                THEN TRUE -- Cheap test: allow it when scanning at pickup lib
+                                ELSE action.hold_copy_calculated_proximity( -- have to call this because we don't know if pprox will be included
+                                        h.id,
+                                        acp.id,
+                                        p.from_org -- equals scan lib, see first JOIN above
+                                     ) <= 0 -- else more expensive test for scan-lib calc prox
+                            END
+                    ELSE ( h.request_time + CAST(? AS INTERVAL) < NOW()
+                           OR hm.proximity <= 0
+                           OR p.prox = 0
+                         ) -- not "too young" OR copy-owner/pickup prox OR scan-lib/pickup prox
+                END
+
+                /* simple, quick tests */
             AND h.capture_time IS NULL
             AND h.cancel_time IS NULL
             AND (h.expire_time IS NULL OR h.expire_time > NOW())
@@ -2142,6 +2169,9 @@ sub wide_hold_data {
     my $last_captured_hold = delete($$restrictions{last_captured_hold}) || 'false';
     $last_captured_hold = $last_captured_hold eq 'true' ? 1 : 0;
 
+    # option to filter for hopeless holds by date range
+    my $hopeless_holds = delete($$restrictions{hopeless_holds}) || 'false';
+
     my $initial_condition = 'TRUE';
     if ($last_captured_hold) {
         $initial_condition = <<"        SQL";
@@ -2156,17 +2186,26 @@ sub wide_hold_data {
         SQL
     }
 
+    if (ref($hopeless_holds) =~ /HASH/ && $$hopeless_holds{start_date} && $$hopeless_holds{end_date}) {
+        my $start_date = DateTime::Format::ISO8601->parse_datetime(clean_ISO8601($$hopeless_holds{start_date}));
+        my $end_date = DateTime::Format::ISO8601->parse_datetime(clean_ISO8601($$hopeless_holds{end_date}));
+        my $hopeless_condition = "(frozen IS FALSE AND h.hopeless_date >= '$start_date' AND h.hopeless_date <= '$end_date')";
+        $initial_condition .= " AND $hopeless_condition";
+    }
+
     my $select = <<"    SQL";
 WITH
     t_field AS (SELECT field FROM config.display_field_map WHERE name = 'title'),
-    a_field AS (SELECT field FROM config.display_field_map WHERE name = 'author')
+    a_field AS (SELECT field FROM config.display_field_map WHERE name = 'author'),
+    s_field AS (SELECT field FROM config.display_field_map WHERE name = 'series_title')
 SELECT  h.id, h.request_time, h.capture_time, h.fulfillment_time, h.checkin_time,
         h.return_time, h.prev_check_time, h.expire_time, h.cancel_time, h.cancel_cause,
         h.cancel_note, h.target, h.current_copy, h.fulfillment_staff, h.fulfillment_lib,
         h.request_lib, h.requestor, h.usr, h.selection_ou, h.selection_depth, h.pickup_lib,
         h.hold_type, h.holdable_formats, h.phone_notify, h.email_notify, h.sms_notify,
-        h.sms_carrier, h.frozen, h.thaw_date, h.shelf_time, h.cut_in_line, h.mint_condition,
-        h.shelf_expire_time, h.current_shelf_lib, h.behind_desk,
+        (SELECT name FROM config.sms_carrier WHERE id = h.sms_carrier) AS "sms_carrier",
+        h.frozen, h.thaw_date, h.shelf_time, h.cut_in_line, h.mint_condition,
+        h.shelf_expire_time, h.current_shelf_lib, h.behind_desk, h.hopeless_date,
 
         CASE WHEN h.cancel_time IS NOT NULL THEN 6
              WHEN h.frozen AND h.capture_time IS NULL THEN 7
@@ -2213,7 +2252,7 @@ SELECT  h.id, h.request_time, h.capture_time, h.fulfillment_time, h.checkin_time
         u.barred AS usr_barred, u.deleted AS usr_deleted, u.juvenile AS usr_juvenile,
         u.usrgroup AS usr_usrgroup, u.claims_returned_count AS usr_claims_returned_count,
         u.credit_forward_balance AS usr_credit_forward_balance, u.last_xact_id AS usr_last_xact_id,
-        u.alert_message AS usr_alert_message, u.create_date AS usr_create_date,
+        u.create_date AS usr_create_date,
         u.expire_date AS usr_expire_date, u.claims_never_checked_out_count AS usr_claims_never_checked_out_count,
         u.last_update_time AS usr_last_update_time,
 
@@ -2261,7 +2300,7 @@ SELECT  h.id, h.request_time, h.capture_time, h.fulfillment_time, h.checkin_time
         ru.barred AS rusr_barred, ru.deleted AS rusr_deleted, ru.juvenile AS rusr_juvenile,
         ru.usrgroup AS rusr_usrgroup, ru.claims_returned_count AS rusr_claims_returned_count,
         ru.credit_forward_balance AS rusr_credit_forward_balance, ru.last_xact_id AS rusr_last_xact_id,
-        ru.alert_message AS rusr_alert_message, ru.create_date AS rusr_create_date,
+        ru.create_date AS rusr_create_date,
         ru.expire_date AS rusr_expire_date, ru.claims_never_checked_out_count AS rusr_claims_never_checked_out_count,
         ru.last_update_time AS rusr_last_update_time,
 
@@ -2299,6 +2338,7 @@ SELECT  h.id, h.request_time, h.capture_time, h.fulfillment_time, h.checkin_time
 
         t.value AS title,
         a.value AS author,
+        s.value AS series_title,
 
         acpl.id AS acpl_id, acpl.name AS acpl_name, acpl.owning_lib AS acpl_owning_lib, acpl.holdable AS acpl_holdable,
         acpl.hold_verify AS acpl_hold_verify, acpl.opac_visible AS acpl_opac_visible, acpl.circulate AS acpl_circulate,
@@ -2338,6 +2378,7 @@ SELECT  h.id, h.request_time, h.capture_time, h.fulfillment_time, h.checkin_time
         JOIN actor.org_unit pl ON (h.pickup_lib = pl.id)
         JOIN t_field ON TRUE
         JOIN a_field ON TRUE
+        JOIN s_field ON TRUE
         LEFT JOIN action.hold_request_cancel_cause cc ON (h.cancel_cause = cc.id)
         LEFT JOIN biblio.monograph_part p ON (h.hold_type = 'P' AND p.id = h.target)
         LEFT JOIN serial.issuance siss ON (h.hold_type = 'I' AND siss.id = h.target)
@@ -2357,6 +2398,7 @@ SELECT  h.id, h.request_time, h.capture_time, h.fulfillment_time, h.checkin_time
         LEFT JOIN LATERAL (SELECT COUNT(*), MAX(notify_time) FROM action.hold_notification WHERE h.id = hold) n ON TRUE
         LEFT JOIN LATERAL (SELECT FIRST(value) AS value FROM metabib.display_entry WHERE source = r.bib_record AND field = t_field.field) t ON TRUE
         LEFT JOIN LATERAL (SELECT FIRST(value) AS value FROM metabib.display_entry WHERE source = r.bib_record AND field = a_field.field) a ON TRUE
+        LEFT JOIN LATERAL (SELECT FIRST(value) AS value FROM metabib.display_entry WHERE source = r.bib_record AND field = s_field.field) s ON TRUE
         LEFT JOIN LATERAL actor.org_unit_ancestor_setting('circ.holds.default_estimated_wait_interval',u.home_ou) AS default_estimated_wait_interval ON TRUE
         LEFT JOIN LATERAL actor.org_unit_ancestor_setting('circ.holds.min_estimated_wait_interval',u.home_ou) AS min_estimated_wait_interval ON TRUE
         LEFT JOIN LATERAL actor.org_unit_ancestor_setting('circ.hold_shelf_status_delay',h.pickup_lib) AS hold_wait_time ON TRUE,
@@ -2435,7 +2477,7 @@ SELECT  h.id, h.request_time, h.capture_time, h.fulfillment_time, h.checkin_time
     $sth->execute();
 
     my @list = $sth->fetchall_hash;
-    $client->respond(scalar(@list)); # send the row count first, for progress tracking
+    $client->respond(int(scalar(@list))); # send the row count first, for progress tracking
     $client->respond( $_ ) for (@list);
 
     $client->respond_complete;

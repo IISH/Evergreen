@@ -147,7 +147,7 @@ function($q , $timeout , $rootScope , $window , $location , egNet , egHatch , $i
 
             // NOTE: egEnv also defines basePath, but we cannot import
             // egEnv here becuase it creates a circular reference.
-            $window.location.href = '/eg/staff' + ws_path;
+            $window.location.href = '/eg2/staff' + ws_path;
             deferred.resolve();
         });
     }
@@ -464,6 +464,34 @@ function($q , egNet , egAuth , egOrg) {
             });
             if (!isArray) response = response[permList[0]];
             return response;
+        });
+    }
+
+    /*
+     * Returns a union of the full org path of each org unit at which the
+     * currently logged in user has the selected permissions.
+     * @permList - list or string.  Unlike hasPermAt, the response object
+     * is always a list of org ids (or an empty list).
+     */
+    service.hasPermFullPathAt = function(permList) {
+        return service.hasPermAt(permList, true)
+        .then(function(orgs) {
+            var orgHash = {};
+            if (permList.constructor != Array) {
+                orgHash[permList] = orgs;
+            } else {
+                orgHash = orgs;
+            }
+            var org_seen = {};
+            angular.forEach(orgHash, function(orgList) {
+                angular.forEach(orgList, function(org) {
+                    var full_path = egOrg.fullPath(org,true);
+                    angular.forEach(full_path, function(org2) {
+                        org_seen[org2] = true;
+                    });
+                });
+            });
+            return Object.keys(org_seen).map(function(o) { return Number(o); });
         });
     }
 

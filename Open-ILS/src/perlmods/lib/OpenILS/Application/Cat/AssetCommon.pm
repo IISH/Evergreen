@@ -592,7 +592,7 @@ sub create_volume {
     my($class, $override, $editor, $vol) = @_;
     my $evt;
 
-    return $evt if ( $evt = $class->org_cannot_have_vols($editor, $vol->owning_lib) );
+    return (undef, $evt) if ( $evt = $class->org_cannot_have_vols($editor, $vol->owning_lib) );
 
     $override = { all => 1 } if($override && !ref $override);
     $override = { all => 0 } if(!ref $override);
@@ -600,8 +600,11 @@ sub create_volume {
    # see if the record this volume references is marked as deleted
    my $rec = $editor->retrieve_biblio_record_entry($vol->record)
       or return $editor->die_event;
-   return OpenILS::Event->new('BIB_RECORD_DELETED', rec => $rec->id) 
-      if $U->is_true($rec->deleted);
+
+    return (
+        undef, 
+        OpenILS::Event->new('BIB_RECORD_DELETED', rec => $rec->id)
+    ) if $U->is_true($rec->deleted);
 
     # first lets see if there are any collisions
     my $vols = $editor->search_asset_call_number( { 
@@ -620,8 +623,10 @@ sub create_volume {
         if($override->{all} || grep { $_ eq 'VOLUME_LABEL_EXISTS' } @{$override->{events}}) {
             $label = $vol->label;
         } else {
-            return OpenILS::Event->new(
-                'VOLUME_LABEL_EXISTS', payload => $vol->id);
+            return (
+                undef, 
+                OpenILS::Event->new('VOLUME_LABEL_EXISTS', payload => $vol->id)
+            );
         }
     }
 
@@ -635,7 +640,7 @@ sub create_volume {
     $vol->edit_date('now');
     $vol->clear_id;
 
-    $editor->create_asset_call_number($vol) or return $editor->die_event;
+    $editor->create_asset_call_number($vol) or return (undef, $editor->die_event);
 
     if($label) {
         # now restore the label and merge into the existing record
@@ -723,6 +728,12 @@ sub remove_empty_objects {
 
         return OpenILS::Event->new('TITLE_LAST_COPY', payload => $vol->record ) 
             if $aoe and not ($override->{all} || grep { $_ eq 'TITLE_LAST_COPY' } @{$override->{events}}) and not $force_delete_empty_bib;
+
+        # check for any holds on the title and alert the user before plowing ahead
+        if( OpenILS::Application::Cat::BibCommon->title_has_holds($editor, $vol->record) ) {
+            return OpenILS::Event->new('TITLE_HAS_HOLDS', payload => $vol->record )
+                if not ($override->{all} || grep { $_ eq 'TITLE_HAS_HOLDS' } @{$override->{events}}) and not $force_delete_empty_bib;
+        }
 
         unless($koe and not $force_delete_empty_bib) {
             # delete the bib record if the keep-on-empty setting is not set (and we're not otherwise forcing things, say through acq settings)

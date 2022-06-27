@@ -8,11 +8,18 @@ OPT_Z3950_CONFIG="SYSCONFDIR/oils_z3950.xml"
 OPT_YAZ_CONFIG="SYSCONFDIR/oils_yaz.xml"
 Z3950_LOG="LOCALSTATEDIR/log/oils_z3950.log"
 SIP_DIR="/opt/SIPServer";
+if [ -z "${PERL5LIB}" ]; then
+    export PERL5LIB="${SIP_DIR}"
+else
+    if ! grep -q "${SIP_DIR}" <<< "${PERL5LIB}"; then
+        PERL5LIB="${PERL5LIB}:${SIP_DIR}"
+    fi
+fi
 
 # ---------------------------------------------------------------------------
-# Make sure we're running as the correct user
+# Make sure we're not running as the root user
 # ---------------------------------------------------------------------------
-[ $(whoami) != 'opensrf' ] && echo 'Must run as user "opensrf"' && exit;
+[ `id -u` -eq 0 ] && echo 'Not to be run as root' && exit 1;
 
 
 function usage {

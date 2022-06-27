@@ -3,7 +3,12 @@ import {RouterModule, Routes} from '@angular/router';
 
 const routes: Routes = [
   { path: 'bcsearch',
-    loadChildren: '@eg/staff/circ/patron/bcsearch/bcsearch.module#BcSearchModule'
+    loadChildren: () =>
+      import('./bcsearch/bcsearch.module').then(m => m.BcSearchModule)
+  },
+  { path: 'event-log',
+    loadChildren: () =>
+      import('./event-log/event-log.module').then(m => m.EventLogModule)
   }
 ];
 

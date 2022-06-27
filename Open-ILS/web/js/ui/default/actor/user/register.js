@@ -153,6 +153,9 @@ function load() {
         'ui.patron.edit.au.ident_value.suggest',
         'ui.patron.edit.au.ident_value2.show',
         'ui.patron.edit.au.ident_value2.suggest',
+        'ui.patron.edit.au.photo_url.require',
+        'ui.patron.edit.au.photo_url.show',
+        'ui.patron.edit.au.photo_url.suggest',
         'ui.patron.edit.au.email.require',
         'ui.patron.edit.au.email.show',
         'ui.patron.edit.au.email.suggest',
@@ -185,8 +188,6 @@ function load() {
         'ui.patron.edit.au.claims_returned_count.suggest',
         'ui.patron.edit.au.claims_never_checked_out_count.show',
         'ui.patron.edit.au.claims_never_checked_out_count.suggest',
-        'ui.patron.edit.au.alert_message.show',
-        'ui.patron.edit.au.alert_message.suggest',
         'ui.patron.edit.aua.post_code.regex',
         'ui.patron.edit.aua.post_code.example',
         'ui.patron.edit.aua.county.require',
@@ -1207,6 +1208,21 @@ function fleshFMRow(row, fmcls, args) {
                 }
             }
             break;
+            if(fmfield == 'photo_url') {
+                 // Are we allowed to update the photo url?
+                 var permission = 'UPDATE_USER_PHOTO_URL';
+                 var ou = staff.ws_ou();
+                 if(fmObject.home_ou() != null) {
+                     ou = fmObject.home_ou();
+                 }
+             var resp = fieldmapper.standardRequest(
+                 ['open-ils.actor', 'open-ils.actor.user.perm.check'],
+                 { params : [openils.User.authtoken, staff.id(), ou, [permission] ] }
+             );
+             if(resp[0]) { // No permission to edit the photo url
+                 disabled = true;
+             }
+        }
         case 'ac' : if(!editCard) editCard = patron.card(); fmObject = editCard; break;
         case 'aua' : 
             fmObject = patron.addresses().filter(

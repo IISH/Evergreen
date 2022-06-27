@@ -3,6 +3,10 @@ use strict; use warnings;
 use Apache2::Const -compile => qw(OK DECLINED FORBIDDEN HTTP_INTERNAL_SERVER_ERROR REDIRECT HTTP_BAD_REQUEST);
 use File::Spec;
 use Time::HiRes qw/time sleep/;
+use List::MoreUtils qw(uniq);
+use HTML::TreeBuilder;
+use HTML::Element;
+use HTML::Defang;
 use OpenSRF::Utils::Cache;
 use OpenSRF::Utils::Logger qw/$logger/;
 use OpenILS::Utils::CStoreEditor qw/:funcs/;
@@ -10,6 +14,7 @@ use OpenILS::Utils::Fieldmapper;
 use OpenILS::Application::AppUtils;
 use OpenSRF::MultiSession;
 
+my $defang = HTML::Defang->new;
 my $U = 'OpenILS::Application::AppUtils';
 
 my $ro_object_subs; # cached subs
@@ -69,87 +74,9 @@ sub init_ro_object_cache {
     my $locale_subs = {};
     my $locale = $ctx->{locale};
 
-    # make all "field_safe" classes accesible by default in the template context
-    my @classes = grep {
-        ($Fieldmapper::fieldmap->{$_}->{field_safe} || '') =~ /true/i
-    } keys %{ $Fieldmapper::fieldmap };
+    # Create special-purpose subs
 
-    for my $class (@classes) {
-
-        my $hint = $Fieldmapper::fieldmap->{$class}->{hint};
-        next if $hint eq 'aou'; # handled separately
-
-        my $ident_field =  $Fieldmapper::fieldmap->{$class}->{identity};
-        (my $eclass = $class) =~ s/Fieldmapper:://o;
-        $eclass =~ s/::/_/g;
-
-        my $list_key = "${hint}_list";
-        my $get_key = "get_$hint";
-        my $search_key = "search_$hint";
-
-        my $memcache_key = join('.', 'EGWeb',$locale,$hint) . '.';
-
-        # Retrieve the full set of objects with class $hint
-        $locale_subs->{$list_key} = sub {
-            my $from_memcache = 0;
-            my $list = $memcache->get_cache($memcache_key.'list');
-            if ($list) {
-                $cache{list}{$locale}{$hint} = $list;
-                $from_memcache = 1;
-            }
-            my $method = "retrieve_all_$eclass";
-            my $e = new_editor();
-            $cache{list}{$locale}{$hint} = $e->$method() unless $cache{list}{$locale}{$hint};
-            undef $e;
-            $memcache->put_cache($memcache_key.'list',$cache{list}{$locale}{$hint}) unless $from_memcache;
-            return $cache{list}{$locale}{$hint};
-        };
-
-        # locate object of class $hint with Ident field $id
-        $cache{map}{$hint} = {};
-        $locale_subs->{$get_key} = sub {
-            my $id = shift;
-            return $cache{map}{$locale}{$hint}{$id} if $cache{map}{$locale}{$hint}{$id};
-            ($cache{map}{$locale}{$hint}{$id}) = grep { $_->$ident_field eq $id } @{$locale_subs->{$list_key}->()};
-            return $cache{map}{$locale}{$hint}{$id};
-        };
-
-        # search for objects of class $hint where field=value
-        $cache{search}{$hint} = {};
-        $locale_subs->{$search_key} = sub {
-            my ($field, $val, $filterfield, $filterval) = @_;
-            my $method = "search_$eclass";
-            my $cacheval = $val;
-            my $scalar_cacheval = 1;
-
-            if (ref $val) {
-                $scalar_cacheval = 0;
-                $val = [sort(@$val)] if ref $val eq 'ARRAY';
-                $cacheval = OpenSRF::Utils::JSON->perl2JSON($val);
-                #$self->apache->log->info("cacheval : $cacheval");
-            }
-
-            my $search_obj = {$field => $val};
-            if($filterfield) {
-                $search_obj->{$filterfield} = $filterval;
-                $cacheval .= ':' . $filterfield . ':' . $filterval;
-            } elsif (
-                $scalar_cacheval
-                and $cache{list}{$locale}{$hint}
-                and !$cache{search}{$locale}{$hint}{$field}{$cacheval}
-            ) {
-                return $cache{search}{$locale}{$hint}{$field}{$cacheval} =
-                    [ grep { $_->$field() eq $val } @{$cache{list}{$locale}{$hint}} ];
-            }
-
-            my $e = new_editor();
-            $cache{search}{$locale}{$hint}{$field}{$cacheval} = $e->$method($search_obj)
-                unless $cache{search}{$locale}{$hint}{$field}{$cacheval};
-            undef $e;
-            return $cache{search}{$locale}{$hint}{$field}{$cacheval};
-        };
-    }
-
+    # aou is special because it's tree-ish
     $locale_subs->{aou_tree} = sub {
 
         # fetch the org unit tree
@@ -189,6 +116,11 @@ sub init_ro_object_cache {
         return $cache{map}{$locale}{aou}{$org_id};
     };
 
+    # Returns a flat list of aout objects, sorted by depth and opac_label.
+    $locale_subs->{sorted_aout_list} = sub {
+        return [ sort { $a->depth() <=> $b->depth() || $a->opac_label() cmp $b->opac_label() } @{$locale_subs->{aout_list}->()} ];
+    };
+
     # Returns a flat list of aou objects.  often easier to manage than a tree.
     $locale_subs->{aou_list} = sub {
         $locale_subs->{aou_tree}->(); # force the org tree to load
@@ -200,6 +132,87 @@ sub init_ro_object_cache {
         my $sn = shift or return undef;
         my $list = $locale_subs->{aou_list}->();
         return (grep {$_->shortname eq $sn} @$list)[0];
+    };
+
+    # Defang an HTML string
+    $locale_subs->{defang_string} = sub {
+        my $html = shift;
+        return $defang->defang($html);
+    };
+
+    # Turns one string into two for long text strings
+    $locale_subs->{split_for_accordion} = sub {
+        my $html = shift;
+        my $trunc_length = shift;
+
+        return unless defined $html && defined $trunc_length;
+        
+        my $html_string = "";
+        my $trunc_str = "<span class='truncEllipse'>...</span><span class='truncated' style='display:none'>";
+        my $current_length = 0;
+        my $truncated;
+        my @html_strings;
+
+        my $html_tree = HTML::TreeBuilder->new;
+        $html_tree->parse($html);
+        $html_tree->eof();
+
+        # Navigate #html_tree to determine length of contained strings
+        my @nodes = $html_tree->guts();
+        foreach my $node(@nodes) {
+            my $nref = ref $node;
+            if ($nref eq "HTML::Element") {
+                $current_length += length $node->as_text();
+                my $escaped_html = $defang->defang($node->as_HTML());
+                push(@html_strings, $escaped_html);
+            } else {
+                # Node is whitespace - handling this like regular simple text
+                # doesn't like to play nice, so handling separately
+                if ($node eq ' ') { 
+                    $current_length++;
+                    if ($current_length >= $trunc_length and not $truncated) {
+                        push(@html_strings, " $trunc_str");
+                        $truncated = 1;
+                    } else {
+                        push(@html_strings, $defang->defang($node));
+                    }
+                # Node is simple text
+                } else {
+                    my $new_length += length $node;
+                    if ($new_length >= $trunc_length and not $truncated) {
+                        my $nshort;
+                        my $nrest;
+                        my $calc_length = abs($trunc_length - $current_length);
+                        if ((substr $node, $calc_length, 1) =~ /\s/) {
+                            $nshort = substr $node, 0, $calc_length;
+                            $nrest = substr $node, $calc_length;
+                        } else {
+                            my $nloc = rindex $node, ' ', $calc_length;
+                            $nshort = substr $node, 0, $nloc;
+                            $nrest = substr $node, $nloc;
+                        }
+                        $nshort = $defang->defang($nshort);
+                        $nrest = $defang->defang($nrest);
+                        push(@html_strings, "$nshort $trunc_str $nrest");
+                        $truncated = 1;
+                    } else {
+                        push(@html_strings, $defang->defang($node));
+                    }
+                    $current_length += length $node;
+                }
+            }
+        }
+        if ($truncated) {
+            push(@html_strings, "</span>");
+        }
+ 
+        if (@html_strings > 1) {
+            $html_string = join '', @html_strings;
+        } else {
+            $html_string = $html_strings[0];
+        }
+
+        return ($html_string, $truncated);
     };
 
     $locale_subs->{aouct_tree} = sub {
@@ -324,6 +337,87 @@ sub init_ro_object_cache {
 
         return $cache{authority_fields}{$locale}{$control_set};
     };
+
+    # make all "field_safe" classes accesible by default in the template context
+    my @classes = grep {
+        ($Fieldmapper::fieldmap->{$_}->{field_safe} || '') =~ /true/i
+    } keys %{ $Fieldmapper::fieldmap };
+
+    for my $class (@classes) {
+
+        my $hint = $Fieldmapper::fieldmap->{$class}->{hint};
+        next if $hint eq 'aou'; # handled separately
+
+        my $ident_field =  $Fieldmapper::fieldmap->{$class}->{identity};
+        (my $eclass = $class) =~ s/Fieldmapper:://o;
+        $eclass =~ s/::/_/g;
+
+        my $list_key = "${hint}_list";
+        my $get_key = "get_$hint";
+        my $search_key = "search_$hint";
+
+        my $memcache_key = join('.', 'EGWeb',$locale,$hint) . '.';
+
+        # Retrieve the full set of objects with class $hint
+        $locale_subs->{$list_key} ||= sub {
+            my $from_memcache = 0;
+            my $list = $memcache->get_cache($memcache_key.'list');
+            if ($list) {
+                $cache{list}{$locale}{$hint} = $list;
+                $from_memcache = 1;
+            }
+            my $method = "retrieve_all_$eclass";
+            my $e = new_editor();
+            $cache{list}{$locale}{$hint} = $e->$method() unless $cache{list}{$locale}{$hint};
+            undef $e;
+            $memcache->put_cache($memcache_key.'list',$cache{list}{$locale}{$hint}) unless $from_memcache;
+            return $cache{list}{$locale}{$hint};
+        };
+
+        # locate object of class $hint with Ident field $id
+        $cache{map}{$hint} = {};
+        $locale_subs->{$get_key} ||= sub {
+            my $id = shift;
+            return $cache{map}{$locale}{$hint}{$id} if $cache{map}{$locale}{$hint}{$id};
+            ($cache{map}{$locale}{$hint}{$id}) = grep { $_->$ident_field eq $id } @{$locale_subs->{$list_key}->()};
+            return $cache{map}{$locale}{$hint}{$id};
+        };
+
+        # search for objects of class $hint where field=value
+        $cache{search}{$hint} = {};
+        $locale_subs->{$search_key} ||= sub {
+            my ($field, $val, $filterfield, $filterval) = @_;
+            my $method = "search_$eclass";
+            my $cacheval = $val;
+            my $scalar_cacheval = 1;
+
+            if (ref $val) {
+                $scalar_cacheval = 0;
+                $val = [sort(@$val)] if ref $val eq 'ARRAY';
+                $cacheval = OpenSRF::Utils::JSON->perl2JSON($val);
+                #$self->apache->log->info("cacheval : $cacheval");
+            }
+
+            my $search_obj = {$field => $val};
+            if($filterfield) {
+                $search_obj->{$filterfield} = $filterval;
+                $cacheval .= ':' . $filterfield . ':' . $filterval;
+            } elsif (
+                $scalar_cacheval
+                and $cache{list}{$locale}{$hint}
+                and !$cache{search}{$locale}{$hint}{$field}{$cacheval}
+            ) {
+                return $cache{search}{$locale}{$hint}{$field}{$cacheval} =
+                    [ grep { $_->$field() eq $val } @{$cache{list}{$locale}{$hint}} ];
+            }
+
+            my $e = new_editor();
+            $cache{search}{$locale}{$hint}{$field}{$cacheval} = $e->$method($search_obj)
+                unless $cache{search}{$locale}{$hint}{$field}{$cacheval};
+            undef $e;
+            return $cache{search}{$locale}{$hint}{$field}{$cacheval};
+        };
+    }
 
     $ctx->{$_} = $locale_subs->{$_} for keys %$locale_subs;
     $ro_object_subs->{$locale} = $locale_subs;
@@ -656,15 +750,24 @@ sub load_eg_cache_hash {
 }
 
 # Extracts the copy location org unit and group from the 
-# "logc" param, which takes the form org_id:grp_id.
+# "logc" param, which takes the form org_id:grp, where
+# grp can either be a location group id or can match the
+# pattern "lasso(lasso_name_or_id)".
 sub extract_copy_location_group_info {
     my $self = shift;
     my $ctx = $self->ctx;
     if (my $clump = $self->cgi->param('locg')) {
         my ($org, $grp) = split(/:/, $clump);
+        if ($grp =~ /^lasso\(([^)]+)\)/) {
+            $ctx->{search_lasso} = $1;
+            $ctx->{search_scope} = $grp;
+            $self->search_lasso_orgs;
+        } elsif ($grp) {
+            $ctx->{copy_location_group} = $grp;
+            $ctx->{search_scope} = "location_groups($grp)";
+        }
         $ctx->{copy_location_group_org} =
             $self->_resolve_org_id_or_shortname($org);
-        $ctx->{copy_location_group} = $grp if $grp;
     }
 }
 
@@ -693,12 +796,77 @@ sub load_copy_location_groups {
                 }
             }
         },
-        {order_by => {acplg => 'pos'}}
+        {order_by => {acplg => ['pos','name']}}
     ]);
 
     my %buckets;
     push(@{$buckets{$_->owner}}, $_) for @$grps;
     $ctx->{copy_location_groups} = \%buckets;
+}
+
+sub load_hold_subscriptions {
+    my $self = shift;
+    my $ctx = $self->ctx;
+
+    return unless $ctx->{authtoken};
+
+    my $e = new_editor(authtoken => $ctx->{authtoken});
+    $e->personality('open-ils.pcrud'); # use pcrud mode to filter appropriately
+
+    $ctx->{hold_subscriptions} =
+        $e->search_container_user_bucket([
+            { btype => 'hold_subscription' },
+            { order_by => {cub => 'name'} }
+        ]);
+
+}
+
+sub load_my_hold_subscriptions {
+    my $self = shift;
+    my $ctx = $self->ctx;
+
+    return unless $ctx->{authtoken};
+
+    my $sub_entries = $self->editor->search_container_user_bucket_item(
+        { target_user => $ctx->{user}->id }
+    );
+
+    my $sub_ids = [ uniq map { $_->bucket } @$sub_entries ];
+    $ctx->{my_hold_subscriptions} = scalar(@$sub_ids) ?
+        $self->editor->search_container_user_bucket(
+            {btype => 'hold_subscription', id => $sub_ids, pub => 't'}
+        ) : [];
+}
+
+sub search_lasso_orgs {
+    my $self = shift;
+    my $ctx = $self->ctx;
+    return $ctx->{search_lasso_orgs} if defined $ctx->{search_lasso_orgs};
+    return undef unless $ctx->{search_lasso};
+
+    # User can access global lassos and those at the current search lib
+    my $lasso_maps = $self->editor->search_actor_org_lasso_map(
+        { lasso => $ctx->{search_lasso} }
+    );
+    $ctx->{search_lasso_orgs} = [ map { $_->org_unit } @$lasso_maps];
+}
+
+sub load_lassos {
+    my $self = shift;
+    my $ctx = $self->ctx;
+
+    # User can access global lassos and those at the current search lib
+    my $direct_lassos = $self->editor->search_actor_org_lasso_map(
+        { org_unit => $ctx->{search_ou} }
+    );
+    $direct_lassos = [ map { $_->lasso } @$direct_lassos];
+
+    my $lassos = $self->editor->search_actor_org_lasso(
+        { '-or' => { global => 't', @$direct_lassos ? (id => { in => $direct_lassos}) : () } }
+    );
+
+    $ctx->{lassos} = [ sort { $a->name cmp $b->name } @$lassos ];
+    $self->apache->log->info("Fetched ".scalar(@$lassos)." lassos");
 }
 
 sub set_file_download_headers {

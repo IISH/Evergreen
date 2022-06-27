@@ -12,7 +12,8 @@ const CATALOG_PREFS = [
     'eg.search.search_lib',
     'eg.search.pref_lib',
     'eg.search.adv_pane',
-    'eg.catalog.results.count'
+    'eg.catalog.results.count',
+    'eg.staffcat.exclude_electronic'
 ];
 
 @Component({
@@ -60,6 +61,15 @@ export class PreferencesComponent implements OnInit {
         });
     }
 
+    checkboxChanged(setting: string) {
+        const value = this.settings[setting];
+        this.updateValue(setting, value || null);
+
+        if (setting === 'eg.staffcat.exclude_electronic') {
+            this.staffCat.showExcludeElectronic = value;
+        }
+    }
+
     updateValue(setting: string, value: any): Promise<any> {
         const promise = (value === null) ?
             this.store.removeItem(setting) :
@@ -68,6 +78,14 @@ export class PreferencesComponent implements OnInit {
         return promise
             .then(_ => this.toast.success(this.successMsg.text))
             .then(_ => value);
+    }
+
+    hasNoHistory(): boolean {
+        return history.length === 0;
+    }
+
+    goBack() {
+        history.back();
     }
 }
 

@@ -1,10 +1,11 @@
---002.schema.config.sql:
 INSERT INTO config.bib_source (id, quality, source, transcendant, can_have_copies) VALUES 
     (1, 90, oils_i18n_gettext(1, 'oclc', 'cbs', 'source'), FALSE, TRUE);
 INSERT INTO config.bib_source (id, quality, source, transcendant, can_have_copies) VALUES 
     (2, 10, oils_i18n_gettext(2, 'System Local', 'cbs', 'source'), FALSE, TRUE);
 INSERT INTO config.bib_source (id, quality, source, transcendant, can_have_copies) VALUES 
     (3, 1, oils_i18n_gettext(3, 'Project Gutenberg', 'cbs', 'source'), TRUE, TRUE);
+INSERT INTO config.bib_source (id, quality, source, transcendant, can_have_copies) VALUES
+    (4, 1, oils_i18n_gettext(4, 'Course materials module', 'cbs', 'source'), TRUE, FALSE);
 SELECT SETVAL('config.bib_source_id_seq'::TEXT, 100);
 
 INSERT INTO biblio.peer_type (id,name) VALUES
@@ -322,7 +323,7 @@ INSERT INTO config.metabib_field (id, field_class, name, format,
 VALUES (
     52, 'identifier', 'origin_info', 'marcxml',
     oils_i18n_gettext(52, 'Origin Info', 'cmf', 'label'),
-    $$//*[@tag='260']$$,
+    $$//*[@tag='260' or @tag='264'][1]$$,
     $$//*[local-name()='subfield' and contains('abc',@code)]$$,
     TRUE, FALSE, FALSE
 );
@@ -1655,8 +1656,6 @@ INSERT INTO permission.perm_list ( id, code, description ) VALUES
     'VIEW_MERGE_PROFILE', 'ppl', 'description' )),
  ( 479, 'VIEW_SERIAL_SUBSCRIPTION', oils_i18n_gettext( 479, 
     'VIEW_SERIAL_SUBSCRIPTION', 'ppl', 'description' )),
- ( 480, 'VIEW_STANDING_PENALTY', oils_i18n_gettext( 480, 
-    'VIEW_STANDING_PENALTY', 'ppl', 'description' )),
  ( 481, 'ADMIN_SERIAL_CAPTION_PATTERN', oils_i18n_gettext( 481, 
     'ADMIN_SERIAL_CAPTION_PATTERN', 'ppl', 'description' )),
  ( 482, 'ADMIN_SERIAL_DISTRIBUTION', oils_i18n_gettext( 482, 
@@ -1939,9 +1938,40 @@ INSERT INTO permission.perm_list ( id, code, description ) VALUES
  ( 621, 'VIEW_BOOKING_RESOURCE_TYPE', oils_i18n_gettext(621,
     'View booking resource types', 'ppl', 'description')),
  ( 622, 'VIEW_BOOKING_RESOURCE', oils_i18n_gettext(622,
-    'View booking resources', 'ppl', 'description'))
+    'View booking resources', 'ppl', 'description')),
+ ( 623, 'UPDATE_ORG_UNIT_SETTING.opac.matomo', oils_i18n_gettext(623,
+    'Allows a user to configure Matomo Analytics org unit settings', 'ppl', 'description')),
+ ( 624, 'MANAGE_RESERVES', oils_i18n_gettext(624,
+    'Allows user to manage Courses, Course Materials, and associate Users with Courses.', 'ppl', 'description')),
+ ( 625, 'VIEW_BOOKING_RESERVATION', oils_i18n_gettext(625,
+    'View booking reservations', 'ppl', 'description')),
+ ( 626, 'VIEW_BOOKING_RESERVATION_ATTR_MAP', oils_i18n_gettext(626,
+    'View booking reservation attribute maps', 'ppl', 'description')),
+ ( 627, 'SSO_ADMIN', oils_i18n_gettext(627,
+    'Modify patron SSO settings', 'ppl', 'description')),
+ ( 628, 'MANAGE_HOLD_GROUPS', oils_i18n_gettext(628,
+    'Manage batch (subscription) hold events', 'ppl', 'description')),
+ ( 629, 'ADMIN_LIBRARY_GROUPS', oils_i18n_gettext(629,
+    'Administer library groups', 'ppl', 'description')),
+ ( 630, 'VIEW_GEOLOCATION_SERVICES', oils_i18n_gettext(630,
+    'View geographic location services', 'ppl', 'description')),
+ ( 631, 'ADMIN_GEOLOCATION_SERVICES', oils_i18n_gettext(631,
+    'Administer geographic location services', 'ppl', 'description')),
+ ( 632, 'UPDATE_USER_PHOTO_URL', oils_i18n_gettext(632,
+    'Update the user photo url field in patron registration and editor', 'ppl', 'description')),
+ ( 633, 'CREATE_RECORD_NOTE', oils_i18n_gettext(633,
+    'Allow the user to create a record note', 'ppl', 'description')),
+ ( 634, 'UPDATE_RECORD_NOTE', oils_i18n_gettext(634,
+    'Allow the user to update a record note', 'ppl', 'description')),
+ ( 635, 'DELETE_RECORD_NOTE', oils_i18n_gettext(635,
+    'Allow the user to delete a record note', 'ppl', 'description')),
+ ( 636, 'ADMIN_STAFF_PORTAL_PAGE', oils_i18n_gettext( 636,
+    'Update the staff client portal page', 'ppl', 'description' )),
+ ( 637, 'UPLOAD_COVER_IMAGE', oils_i18n_gettext(637,
+    'Upload local cover images for added content.', 'ppl', 'description')),
+ ( 638, 'RUN_SIMPLE_REPORTS', oils_i18n_gettext(638,
+    'Build and run simple reports', 'ppl', 'description'))
 ;
-
 
 SELECT SETVAL('permission.perm_list_id_seq'::TEXT, 1000);
 
@@ -2197,7 +2227,10 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 			'VIEW_AUTHORITY_RECORD_NOTES',
 			'CREATE_AUTHORITY_RECORD',
 			'DELETE_AUTHORITY_RECORD',
-			'UPDATE_AUTHORITY_RECORD');
+			'UPDATE_AUTHORITY_RECORD',
+		        'CREATE_RECORD_NOTE',
+		        'UPDATE_RECORD_NOTE',
+		        'DELETE_RECORD_NOTE');
 
 INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 	SELECT
@@ -2313,6 +2346,7 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 			'CREATE_COPY_STAT_CAT_ENTRY',
 			'CREATE_COPY_STAT_CAT_ENTRY_MAP',
 			'RUN_REPORTS',
+			'RUN_SIMPLE_REPORTS',
 			'CREATE_REPORT_TEMPLATE',
 			'SHARE_REPORT_FOLDER',
 			'UPDATE_COPY_LOCATION',
@@ -2375,8 +2409,9 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 			'UPDATE_PICKUP_LIB_FROM_HOLDS_SHELF',
 			'VIEW_BOOKING_RESOURCE',
 			'VIEW_BOOKING_RESOURCE_TYPE',
+			'VIEW_BOOKING_RESERVATION',
+			'VIEW_BOOKING_RESERVATION_ATTR_MAP',
 			'VIEW_GROUP_PENALTY_THRESHOLD',
-			'VIEW_STANDING_PENALTY',
 			'VOID_BILLING',
 			'VOLUME_HOLDS');
 
@@ -2420,7 +2455,8 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 			'PATRON_EXCEEDS_FINES.override',
 			'PATRON_EXCEEDS_OVERDUE_COUNT.override',
 			'RETRIEVE_RESERVATION_PULL_LIST',
-			'UPDATE_HOLD');
+			'UPDATE_HOLD',
+            'UPDATE_USER_PHOTO_URL');
 
 
 -- Add advanced circulation permissions to the Circulation Admin group
@@ -2453,6 +2489,7 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 			'CREATE_CIRC_DURATION',
 			'CREATE_PRECAT',
 			'DELETE_CIRC_DURATION',
+            'MANAGE_RESERVES',
 			'MARK_ITEM_MISSING_PIECES',
 			'UPDATE_CIRC_DURATION',
 			'UPDATE_HOLD_REQUEST_TIME',
@@ -2537,8 +2574,9 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 			'UPDATE_USER',
 			'VIEW_BOOKING_RESOURCE',
 			'VIEW_BOOKING_RESOURCE_TYPE',
+			'VIEW_BOOKING_RESERVATION',
+			'VIEW_BOOKING_RESERVATION_ATTR_MAP',
 			'VIEW_REPORT_OUTPUT',
-			'VIEW_STANDING_PENALTY',
 			'VOID_BILLING',
             'TRANSIT_CHECKIN_INTERVAL_BLOCK.override',
 			'VOLUME_HOLDS',
@@ -2628,6 +2666,13 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 		pgt.name = 'Acquisitions' AND
 		aout.name = 'Consortium' AND
 		perm.code IN (
+			'ACQ_ADD_LINEITEM_IDENTIFIER',
+			'ACQ_INVOICE-REOPEN',
+			'ACQ_SET_LINEITEM_IDENTIFIER',
+			'ADMIN_ACQ_FUND',
+			'ADMIN_ACQ_DISTRIB_FORMULA',
+			'ADMIN_FUND',
+			'ADMIN_INVOICE',
 			'ALLOW_ALT_TCN',
 			'CLEAR_PURCHASE_REQUEST',
 			'CREATE_BIB_IMPORT_QUEUE',
@@ -2644,6 +2689,7 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 			'DELETE_VOLUME_NOTE',
 			'GENERAL_ACQ',
 			'IMPORT_ACQ_LINEITEM_BIB_RECORD',
+			'IMPORT_ACQ_LINEITEM_BIB_RECORD_UPLOAD',
 			'IMPORT_MARC',
 			'MANAGE_CLAIM',
 			'MANAGE_FUND',
@@ -2686,6 +2732,8 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 			'VIEW_PICKLIST',
 			'VIEW_PROVIDER',
 			'VIEW_PURCHASE_ORDER',
+			'VIEW_IMPORT_MATCH_SET',
+			'VIEW_MERGE_PROFILE',
 			'VIEW_REPORT_OUTPUT');
 
 
@@ -2739,11 +2787,37 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 			'DELETE_INVOICE_METHOD',
 			'DELETE_PROVIDER',
 			'RUN_REPORTS',
+			'RUN_SIMPLE_REPORTS',
 			'CREATE_REPORT_TEMPLATE',
 			'SHARE_REPORT_FOLDER',
 			'UPDATE_ACQ_FUNDING_SOURCE',
 			'UPDATE_INVOICE_ITEM_TYPE',
 			'UPDATE_INVOICE_METHOD',
+			'VIEW_FUND',
+			'VIEW_FUNDING_SOURCE',
+			'VIEW_FUND_ALLOCATION',
+			'VIEW_PICKLIST',
+			'VIEW_PROVIDER',
+			'VIEW_PURCHASE_ORDER',
+			'VIEW_INVOICE',
+			'CREATE_PICKLIST',
+			'ACQ_ADD_LINEITEM_IDENTIFIER',
+			'ACQ_SET_LINEITEM_IDENTIFIER',
+			'MANAGE_FUND',
+			'CREATE_INVOICE',
+			'CREATE_PURCHASE_ORDER',
+			'IMPORT_ACQ_LINEITEM_BIB_RECORD',
+			'IMPORT_ACQ_LINEITEM_BIB_RECORD_UPLOAD',
+			'MANAGE_CLAIM',
+			'MANAGE_PROVIDER',
+			'MANAGE_FUNDING_SOURCE',
+			'RECEIVE_PURCHASE_ORDER',
+			'ADMIN_ACQ_LINEITEM_ALERT_TEXT',
+			'UPDATE_FUNDING_SOURCE',
+			'UPDATE_PROVIDER',
+			'VIEW_IMPORT_MATCH_SET',
+			'VIEW_MERGE_PROFILE',
+			'IMPORT_MARC',
 			'UPDATE_PICKLIST'
 		);
 
@@ -2853,6 +2927,7 @@ INSERT INTO action.hold_request_cancel_cause (id,label) VALUES (4, oils_i18n_get
 INSERT INTO action.hold_request_cancel_cause (id,label) VALUES (5, oils_i18n_gettext(5, 'Staff forced', 'ahrcc', 'label'));
 INSERT INTO action.hold_request_cancel_cause (id,label) VALUES (6, oils_i18n_gettext(6, 'Patron via OPAC', 'ahrcc', 'label'));
 INSERT INTO action.hold_request_cancel_cause (id,label) VALUES (7, oils_i18n_gettext(7, 'Patron via SIP', 'ahrcc', 'label'));
+INSERT INTO action.hold_request_cancel_cause (id,label) VALUES (8, oils_i18n_gettext(8, 'Hold Group Event rollback', 'ahrcc', 'label'));
 SELECT SETVAL('action.hold_request_cancel_cause_id_seq', 100);
 
 
@@ -2922,9 +2997,9 @@ INSERT INTO config.usr_setting_type (name,opac_visible,label,description,datatyp
     'object');
 
 INSERT INTO config.usr_setting_type (name, label, description, datatype)
-    VALUES ('webstaff.cat.copy.templates',
-    oils_i18n_gettext('webstaff.cat.copy.templates', 'Web Client Copy Editor Templates', 'cust', 'label'),
-    oils_i18n_gettext('webstaff.cat.copy.templates', 'Web Client Copy Editor Templates', 'cust', 'description'),
+    VALUES ('cat.copy.templates',
+    oils_i18n_gettext('cat.copy.templates', 'Web Client Copy Editor Templates', 'cust', 'label'),
+    oils_i18n_gettext('cat.copy.templates', 'Web Client Copy Editor Templates', 'cust', 'description'),
     'object');
 
 INSERT INTO config.usr_setting_type (name,opac_visible,label,description,datatype)
@@ -2976,6 +3051,58 @@ INSERT INTO config.usr_setting_type (name,opac_visible,label,description,datatyp
         ),
         'string'
     );
+
+INSERT INTO config.usr_setting_type (
+    name,
+    opac_visible,
+    label,
+    description,
+    datatype,
+    reg_default
+) VALUES (
+    'circ.default_overdue_notices_enabled',
+    TRUE,
+    oils_i18n_gettext(
+        'circ.default_overdue_notices_enabled',
+        'Receive Overdue and Courtesy Emails',
+        'cust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'circ.default_overdue_notices_enabled',
+        'Receive overdue and predue email notifications',
+        'cust',
+        'description'
+    ),
+    'bool',
+    'true'
+);
+
+INSERT INTO config.usr_setting_type (
+    name,
+    opac_visible,
+    label,
+    description,
+    datatype,
+    reg_default
+) VALUES (
+    'circ.collections.exempt',
+    FALSE,
+    oils_i18n_gettext(
+        'circ.collections.exempt',
+        'Collections: Exempt',
+        'cust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'circ.collections.exempt',
+        'User is exempt from collections tracking/processing',
+        'cust',
+        'description'
+    ),
+    'bool',
+    'false'
+);
 
 -- Add groups for org_unit settings
 INSERT INTO config.settings_group (name, label) VALUES
@@ -3483,9 +3610,27 @@ INSERT into config.org_unit_setting_type
         'Soft stalling interval',
         'coust', 'label'),
     oils_i18n_gettext('circ.hold_stalling.soft',
-        'How long to wait before allowing remote items to be opportunistically captured for a hold.  Example "5 days"',
+        'How long to wait before allowing opportunistic capture of holds with a pickup library other than the context item''s circulating library',
         'coust', 'description'),
     'interval', null)
+
+,( 'circ.pickup_hold_stalling.soft', 'holds',
+    oils_i18n_gettext('circ.pickup_hold_stalling.soft',
+        'Pickup Library Soft stalling interval',
+        'coust', 'label'),
+    oils_i18n_gettext('circ.pickup_hold_stalling.soft',
+        'When set for the pickup library, this specifies that for holds with a request time age smaller than this interval only items scanned at the pickup library can be opportunistically captured. Example "5 days". This setting takes precedence over "Soft stalling interval" (circ.hold_stalling.soft) when the interval is in force.',
+        'coust', 'description'),
+    'interval', null)
+
+,( 'circ.pickup_hold_stalling.hard', 'holds',
+  oils_i18n_gettext('circ.pickup_hold_stalling.hard',
+        'Pickup Library Hard stalling interval',
+        'coust','label'),
+  oils_i18n_gettext('circ.pickup_hold_stalling.hard',
+        'When set for the pickup library, this specifies that no items with a calculated proximity greater than 0 from the pickup library can be directly targeted for this time period if there are local available copies.  Example "3 days".',
+        'coust','description'),
+  'interval', null)
 
 ,( 'circ.hold_stalling_hard', 'holds',
     oils_i18n_gettext('circ.hold_stalling_hard',
@@ -3565,6 +3710,15 @@ INSERT into config.org_unit_setting_type
         'coust', 'label'),
     oils_i18n_gettext('circ.holds.expired_patron_block',
         'Block hold request if hold recipient privileges have expired',
+        'coust', 'description'),
+    'bool', null)
+
+,( 'circ.renew.expired_patron_allow', 'circ',
+    oils_i18n_gettext('circ.renew.expired_patron_allow',
+        'Allow renewal request if renewal recipient privileges have expired',
+        'coust', 'label'),
+    oils_i18n_gettext('circ.renew.expired_patron_allow',
+        'If enabled, users within the org unit who are expired may still renew items.',
         'coust', 'description'),
     'bool', null)
 
@@ -3792,6 +3946,40 @@ INSERT into config.org_unit_setting_type
         'During offline circulations, allow patrons to identify themselves with usernames in addition to barcode.  For this setting to work, a barcode format must also be defined',
         'coust', 'description'),
     'bool', null)
+
+,( 'circ.course_materials_opt_in', 'circ',
+    oils_i18n_gettext(
+        'circ.course_materials_opt_in',
+        'Opt Org Unit into the Course Materials Module',
+        'coust', 'label'),
+    oils_i18n_gettext(
+        'circ.course_materials_opt_in',
+        'If enabled, the Org Unit will utilize Course Material functionality.',
+        'coust', 'description'),
+    'bool', null)
+
+,( 'circ.course_materials_browse_by_instructor', 'circ',
+    oils_i18n_gettext(
+        'circ.course_materials_browse_by_instructor',
+        'Allow users to browse Courses by Instructor',
+        'coust', 'label'),
+    oils_i18n_gettext(
+        'circ.course_materials_browse_by_instructor',
+        'If enabled, the Org Unit will allow OPAC users to browse Courses by instructor name.',
+        'coust', 'description'),
+    'bool', null)
+
+,( 'circ.course_materials_brief_record_bib_source', 'circ',
+    oils_i18n_gettext(
+        'circ.course_materials_brief_record_bib_source',
+        'Bib source for brief records created in the course materials module',
+        'coust', 'label'),
+    oils_i18n_gettext(
+        'circ.course_materials_brief_record_bib_source',
+        'The course materials module will use this bib source for any new brief bibliographic records made inside that module. For best results, use a transcendant bib source.',
+        'coust', 'description'),
+    'link', 'cbs')
+
 
 ,( 'circ.password_reset_request_per_user_limit', 'sec',
     oils_i18n_gettext('circ.password_reset_request_per_user_limit',
@@ -4060,6 +4248,15 @@ INSERT into config.org_unit_setting_type
         'coust', 'label'),
     oils_i18n_gettext('circ.void_lost_on_checkin',
         'Void lost item billing when returned',
+        'coust', 'description'),
+    'bool', null)
+
+,( 'circ.void_item_deposit', 'circ',
+    oils_i18n_gettext('circ.void_item_deposit',
+        'Void item deposit fee on checkin',
+        'coust', 'label'),
+    oils_i18n_gettext('circ.void_item_deposit',
+        'If a deposit was charged when checking out an item, void it when the item is returned',
         'coust', 'description'),
     'bool', null)
 
@@ -4463,6 +4660,15 @@ INSERT into config.org_unit_setting_type
         'coust', 'description'),
     'string', null)
 
+,( 'opac.patron.custom_jquery', 'opac',
+    oils_i18n_gettext('opac.patron.custom_jquery',
+        'Custom jQuery for the OPAC',
+        'coust', 'label'),
+    oils_i18n_gettext('opac.patron.custom_jquery',
+        'Custom jQuery for the OPAC',
+        'coust', 'description'),
+    'string', NULL)
+
 ,( 'org.patron_opt_boundary', 'sec',
     oils_i18n_gettext('org.patron_opt_boundary',
         'Patron Opt-In Boundary',
@@ -4643,7 +4849,7 @@ INSERT into config.org_unit_setting_type
     oils_i18n_gettext('ui.patron.default_inet_access_level',
         'Default level of patrons'' internet access',
         'coust', 'description'),
-    'integer', null)
+    'link', 'cnal')
 
 ,( 'ui.patron.edit.au.active.show', 'gui',
     oils_i18n_gettext('ui.patron.edit.au.active.show',
@@ -4660,24 +4866,6 @@ INSERT into config.org_unit_setting_type
         'coust', 'label'),
     oils_i18n_gettext('ui.patron.edit.au.active.suggest',
         'The active field will be suggested on the patron registration screen. Suggesting a field makes it appear when suggested fields are shown. If the field is shown or required this setting is ignored.',
-        'coust', 'description'),
-    'bool', null)
-
-,( 'ui.patron.edit.au.alert_message.show', 'gui',
-    oils_i18n_gettext('ui.patron.edit.au.alert_message.show',
-        'Show alert_message field on patron registration',
-        'coust', 'label'),
-    oils_i18n_gettext('ui.patron.edit.au.alert_message.show',
-        'The alert_message field will be shown on the patron registration screen. Showing a field makes it appear with required fields even when not required. If the field is required this setting is ignored.',
-        'coust', 'description'),
-    'bool', null)
-
-,( 'ui.patron.edit.au.alert_message.suggest', 'gui',
-    oils_i18n_gettext('ui.patron.edit.au.alert_message.suggest',
-        'Suggest alert_message field on patron registration',
-        'coust', 'label'),
-    oils_i18n_gettext('ui.patron.edit.au.alert_message.suggest',
-        'The alert_message field will be suggested on the patron registration screen. Suggesting a field makes it appear when suggested fields are shown. If the field is shown or required this setting is ignored.',
         'coust', 'description'),
     'bool', null)
 
@@ -5232,22 +5420,12 @@ INSERT into config.org_unit_setting_type
 
 ,( 'ui.staff.require_initials.patron_standing_penalty', 'gui',
     oils_i18n_gettext('ui.staff.require_initials.patron_standing_penalty',
-        'Require staff initials for entry/edit of patron standing penalties and messages.',
+        'Require staff initials for entry/edit of patron standing penalties and notes.',
         'coust', 'label'),
     oils_i18n_gettext('ui.staff.require_initials.patron_standing_penalty',
-        'Appends staff initials and edit date into patron standing penalties and messages.',
+        'Require staff initials for entry/edit of patron standing penalties and notes.',
         'coust', 'description'),
     'bool', null)
-
-,( 'ui.staff.require_initials.patron_info_notes', 'gui',
-    oils_i18n_gettext('ui.staff.require_initials.patron_info_notes',
-        'Require staff initials for entry/edit of patron notes.',
-        'coust', 'label'),
-    oils_i18n_gettext('ui.staff.require_initials.patron_info_notes',
-        'Appends staff initials and edit date into patron note content.',
-        'coust', 'description'),
-    'bool', null)
-
 ,( 'ui.staff.require_initials.copy_notes', 'gui',
     oils_i18n_gettext('ui.staff.require_initials.copy_notes',
         'Require staff initials for entry/edit of copy notes.',
@@ -5563,6 +5741,38 @@ INSERT into config.org_unit_setting_type
      'For staff-placed holds, in the absence of a patron preferred pickup location, fall back to using the staff workstation OU (rather than patron home OU)',
      'coust', 'description'),
    'bool', null)
+,( 'ui.patron.edit.au.photo_url.require', 'gui',
+    oils_i18n_gettext('ui.patron.edit.au.photo_url.require',
+        'Require Photo URL field on patron registration',
+        'coust', 'label'),
+    oils_i18n_gettext('ui.patron.edit.au.photo_url.require',
+        'The Photo URL field will be required on the patron registration screen.',
+        'coust', 'description'),
+    'bool', null)
+,( 'ui.patron.edit.au.photo_url.show', 'gui',
+    oils_i18n_gettext('ui.patron.edit.au.photo_url.show',
+        'Show Photo URL field on patron registration',
+        'coust', 'label'),
+    oils_i18n_gettext('ui.patron.edit.au.photo_url.show',
+        'The Photo URL field will be shown on the patron registration screen. Showing a field makes it appear with required fields even when not required. If the field is required this setting is ignored.',
+        'coust', 'description'),
+    'bool', null)
+,( 'ui.patron.edit.au.photo_url.suggest', 'gui',
+    oils_i18n_gettext('ui.patron.edit.au.photo_url.suggest',
+        'Suggest Photo URL field on patron registration',
+        'coust', 'label'),
+    oils_i18n_gettext('ui.patron.edit.au.photo_url.suggest',
+        'The Photo URL field will be suggested on the patron registration screen. Suggesting a field makes it appear when suggested fields are shown. If the field is shown or required this setting is ignored.',
+        'coust', 'description'),
+    'bool', null)
+,( 'lib.my_account_url', 'lib',
+    oils_i18n_gettext('lib.my_account_url',
+        'My Account URL (such as "https://example.com/eg/opac/login")',
+        'coust', 'label'),
+    oils_i18n_gettext('lib.my_account_url',
+        'URL for a My Account link. Use a complete URL, such as "https://example.com/eg/opac/login".',
+        'coust', 'description'),
+    'string', null)
 ;
 
 UPDATE config.org_unit_setting_type
@@ -5731,6 +5941,7 @@ INSERT INTO container.user_bucket_type (code,label) VALUES ('folks:hold.view', o
 INSERT INTO container.user_bucket_type (code,label) VALUES ('folks:hold.cancel', oils_i18n_gettext('folks:hold.cancel', 'Cancel Holds', 'cubt', 'label'));
 
 INSERT INTO container.user_bucket_type (code,label) SELECT code,label FROM container.copy_bucket_type where code = 'staff_client';
+INSERT INTO container.user_bucket_type (code,label) VALUES ('hold_subscription', oils_i18n_gettext('hold_subscription', 'Hold Group Container', 'cubt', 'label'));
 
 ----------------------------------
 -- MARC21 record structure data --
@@ -6626,6 +6837,14 @@ INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, leng
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('MRec', '008', 'VIS', 38, 1, ' ');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('S/L', '006', 'SER', 17, 1, '0');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('S/L', '008', 'SER', 34, 1, '0');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Srce', '008', 'BKS', 39, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Srce', '008', 'COM', 39, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Srce', '008', 'MAP', 39, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Srce', '008', 'MIX', 39, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Srce', '008', 'REC', 39, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Srce', '008', 'SCO', 39, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Srce', '008', 'SER', 39, 1, ' ');
+INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Srce', '008', 'VIS', 39, 1, ' ');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('TMat', '006', 'VIS', 16, 1, ' ');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('TMat', '008', 'VIS', 33, 1, ' ');
 INSERT INTO config.marc21_ff_pos_map (fixed_field, tag, rec_type,start_pos, length, default_val) VALUES ('Type', 'ldr', 'BKS', 6, 1, 'a');
@@ -6811,6 +7030,7 @@ INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('lang
 INSERT INTO config.record_attr_definition (name,label,fixed_field,description) values ('lit_form','LitF','LitF',oils_i18n_gettext('lit_form', 'Literary Form', 'crad', 'description'));
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('mrec','MRec','MRec');
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('ff_sl','S/L','S/L');
+INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('srce','Srce','Srce');
 INSERT INTO config.record_attr_definition (name,label,fixed_field) values ('type_mat','TMat','TMat');
 INSERT INTO config.record_attr_definition (name,label,fixed_field,multi,description) values ('item_type','Type','Type',FALSE,oils_i18n_gettext('item_type', 'Item Type', 'crad', 'description'));
 INSERT INTO config.record_attr_definition (name,label,phys_char_sf,description) values ('vr_format','Videorecording format',72,oils_i18n_gettext('vr_format', 'Video Format', 'crad', 'description'));
@@ -7541,7 +7761,10 @@ INSERT INTO config.coded_value_map
     oils_i18n_gettext(584, 'Phonograph music recording', 'ccvm', 'search_label')),
 (585, 'icon_format', 'lpbook', 
     oils_i18n_gettext(585, 'Large Print Book', 'ccvm', 'value'),
-    oils_i18n_gettext(585, 'Large Print Book', 'ccvm', 'search_label'));
+    oils_i18n_gettext(585, 'Large Print Book', 'ccvm', 'search_label')),
+(1736,'icon_format','preloadedaudio',
+        oils_i18n_gettext(1736, 'Preloaded Audio', 'ccvm', 'value'),
+        oils_i18n_gettext(1736, 'Preloaded Audio', 'ccvm', 'search_label'));
 
 INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES 
 (586, 'item_form', 'o', oils_i18n_gettext('586', 'Online', 'ccvm', 'value')),
@@ -7704,7 +7927,13 @@ INSERT INTO config.coded_value_map
     oils_i18n_gettext(632, 'All Music', 'ccvm', 'search_label')),
 (633, 'search_format', 'blu-ray', 
     oils_i18n_gettext(633, 'Blu-ray', 'ccvm', 'value'),
-    oils_i18n_gettext(633, 'Blu-ray', 'ccvm', 'search_label'));
+    oils_i18n_gettext(633, 'Blu-ray', 'ccvm', 'search_label')),
+(1737,'search_format','preloadedaudio',
+    oils_i18n_gettext(1737, 'Preloaded Audio', 'ccvm', 'value'),
+    oils_i18n_gettext(1737, 'Preloaded Audio', 'ccvm', 'search_label')),
+(1738,'search_format','video',
+    oils_i18n_gettext(1738, 'All Videos', 'ccvm', 'value'),
+    oils_i18n_gettext(1738, 'All Videos', 'ccvm', 'search_label'));
 
 -- Electronic search format, not opac_visible
 INSERT INTO config.coded_value_map
@@ -9114,6 +9343,11 @@ INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES
 INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1733, 'ills4', 'o', oils_i18n_gettext('1733', 'Photographs', 'ccvm', 'value'), FALSE);
 INSERT INTO config.coded_value_map (id, ctype, code, value, opac_visible) VALUES (1734, 'ills4', 'p', oils_i18n_gettext('1734', 'Illuminations', 'ccvm', 'value'), FALSE);
 
+INSERT INTO config.coded_value_map (id, ctype, code, value) VALUES
+(1750, 'srce', ' ', oils_i18n_gettext('1750', 'National bibliographic agency', 'ccvm', 'value')),
+(1751, 'srce', 'c', oils_i18n_gettext('1751', 'Cooperative cataloging program', 'ccvm', 'value')),
+(1752, 'srce', 'd', oils_i18n_gettext('1752', 'Other', 'ccvm', 'value'));
+
 
 -- carve out a slot of 10k IDs for stock CCVMs
 SELECT SETVAL('config.coded_value_map_id_seq'::TEXT, 10000);
@@ -9202,6 +9436,15 @@ INSERT INTO config.composite_attr_entry_definition
 INSERT INTO config.composite_attr_entry_definition
     (coded_value, definition) VALUES
 (712, '[{"_attr":"item_form","_val":"s"},{"_attr":"item_form","_val":"o"}]');
+
+--preloaded audio
+INSERT INTO config.composite_attr_entry_definition
+    (coded_value, definition) VALUES
+(1736,'{"0":{"_attr":"item_type","_val":"i"},"1":{"_attr":"item_form","_val":"q"}}');
+
+--all videos
+INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES
+    (1738, '{"_attr":"item_type","_val":"g"}');
 
 -- use the definitions from the icon_format as the basis for the MR hold format definitions
 DO $$
@@ -9378,13 +9621,12 @@ INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VAL
 INSERT INTO config.composite_attr_entry_definition (coded_value, definition) VALUES (1673, '[{"_attr":"ills4","_val":"p"},{"_attr":"ills3","_val":"p"},{"_attr":"ills2","_val":"p"},{"_attr":"ills1","_val":"p"}]');
 
 
-
 -- Trigger Event Definitions -------------------------------------------------
 
 -- Sample Overdue Notice --
 
-INSERT INTO action_trigger.event_definition (id, active, owner, name, hook, validator, reactor, delay, delay_field, group_field, max_delay, template) 
-    VALUES (1, 'f', 1, '7 Day Overdue Email Notification', 'checkout.due', 'CircIsOverdue', 'SendEmail', '7 days', 'due_date', 'usr', '8 days', 
+INSERT INTO action_trigger.event_definition (id, active, owner, name, hook, validator, reactor, delay, delay_field, group_field, max_delay, opt_in_setting, usr_field, template)
+    VALUES (1, 'f', 1, '7 Day Overdue Email Notification', 'checkout.due', 'CircIsOverdue', 'SendEmail', '7 days', 'due_date', 'usr', '8 days', 'circ.default_overdue_notices_enabled', 'usr',
 $$
 [%- USE date -%]
 [%- user = target.0.usr -%]
@@ -10740,8 +10982,8 @@ INSERT INTO config.record_attr_index_norm_map (attr,norm,pos)
 
 -- Sample Pre-due Notice --
 
-INSERT INTO action_trigger.event_definition (id, active, owner, name, hook, validator, reactor, delay, delay_field, group_field, max_delay, template) 
-    VALUES (6, 'f', 1, '3 Day Courtesy Notice', 'checkout.due', 'CircIsOpen', 'SendEmail', '-3 days', 'due_date', 'usr', '-2 days',
+INSERT INTO action_trigger.event_definition (id, active, owner, name, hook, validator, reactor, delay, delay_field, group_field, max_delay, opt_in_setting, usr_field, template)
+    VALUES (6, 'f', 1, '3 Day Courtesy Notice', 'checkout.due', 'CircIsOpen', 'SendEmail', '-3 days', 'due_date', 'usr', '-2 days', 'circ.default_overdue_notices_enabled', 'usr',
 $$
 [%- USE date -%]
 [%- user = target.0.usr -%]
@@ -11976,42 +12218,49 @@ INSERT INTO action_trigger.event_definition (
 $$
 [%- USE date -%]
 [%- SET user = target.0.owner -%]
-To: [%- params.recipient_email || user.email %]
+To: [%- params.recipient_email || user_data.0.email || user.email %]
 From: [%- params.sender_email || default_sender %]
 Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
-Subject: Bibliographic Records
+Subject: [%- user_data.0.subject || 'Bibliographic Records' %]
 Auto-Submitted: auto-generated
 
-[% FOR cbreb IN target %]
-[% FOR item IN cbreb.items;
-    bre_id = item.target_biblio_record_entry;
+[%- FOR cbreb IN target;
 
-    bibxml = helpers.unapi_bre(bre_id, {flesh => '{mra}'});
-    title = '';
-    FOR part IN bibxml.findnodes('//*[@tag="245"]/*[@code="a" or @code="b"]');
-        title = title _ part.textContent;
+    flesh_list = '{mra';
+    IF user_data.0.type == 'full';
+        flesh_list = flesh_list _ ',holdings_xml,acp';
+        IF params.holdings_limit;
+            flimit = 'acn=>' _ params.holdings_limit _ ',acp=>' _ params.holdings_limit;
+        END;
     END;
+    flesh_list = flesh_list _ '}';
 
-    author = bibxml.findnodes('//*[@tag="100"]/*[@code="a"]').textContent;
-    item_type = bibxml.findnodes('//*[local-name()="attributes"]/*[local-name()="field"][@name="item_type"]').getAttribute('coded-value');
-    publisher = bibxml.findnodes('//*[@tag="260"]/*[@code="b"]').textContent;
-    pubdate = bibxml.findnodes('//*[@tag="260"]/*[@code="c"]').textContent;
-    isbn = bibxml.findnodes('//*[@tag="020"]/*[@code="a"]').textContent;
-    issn = bibxml.findnodes('//*[@tag="022"]/*[@code="a"]').textContent;
-    upc = bibxml.findnodes('//*[@tag="024"]/*[@code="a"]').textContent;
-%]
+    item_list = helpers.sort_bucket_unapi_bre(cbreb.items,{flesh => flesh_list, site => user_data.0.context_org, flesh_limit => flimit}, user_data.0.sort_by, user_data.0.sort_dir);
 
-[% loop.count %]/[% loop.size %].  Bib ID# [% bre_id %] 
-[% IF isbn %]ISBN: [% isbn _ "\n" %][% END -%]
-[% IF issn %]ISSN: [% issn _ "\n" %][% END -%]
-[% IF upc  %]UPC:  [% upc _ "\n" %] [% END -%]
-Title: [% title %]
-Author: [% author %]
-Publication Info: [% publisher %] [% pubdate %]
-Item Type: [% item_type %]
+FOR item IN item_list -%]
 
-[% END %]
-[% END %]
+[% loop.count %]/[% loop.size %].  Bib ID# [% item.id %]
+[% IF item.isbn %]ISBN: [% item.isbn _ "\n" %][% END -%]
+[% IF item.issn %]ISSN: [% item.issn _ "\n" %][% END -%]
+[% IF item.upc  %]UPC:  [% item.upc _ "\n" %][% END -%]
+Title: [% item.title %]
+[% IF item.author %]Author: [% item.author _ "\n" %][% END -%]
+Publication Info: [% item.publisher %] [% item.pubdate %]
+Item Type: [% item.item_type %]
+[% IF user_data.0.type == 'full' && item.holdings.size == 0 %]
+ * No items for this record at the selected location
+[%- END %]
+[% FOR cp IN item.holdings -%]
+ * Library: [% cp.circ_lib %]
+   Location: [% cp.location %]
+   Call Number: [% cp.prefix _ ' ' _ cp.callnumber _ ' ' _ cp.suffix %]
+[% IF cp.parts %]   Parts: [% cp.parts _ "\n" %][% END -%]
+   Status: [% cp.status_label %]
+   Barcode: [% cp.barcode %]
+
+[% END -%]
+[%- END -%]
+[%- END -%]
 $$
     )
     ,(
@@ -12031,29 +12280,43 @@ $$
 <div>
     <style> li { padding: 8px; margin 5px; }</style>
     <ol>
-    [% FOR cbreb IN target %]
-    [% FOR item IN cbreb.items;
-        bre_id = item.target_biblio_record_entry;
+    [% FOR cbreb IN target;
 
-        bibxml = helpers.unapi_bre(bre_id, {flesh => '{mra}'});
-        title = '';
-        FOR part IN bibxml.findnodes('//*[@tag="245"]/*[@code="a" or @code="b"]');
-            title = title _ part.textContent;
+    flesh_list = '{mra';
+    IF user_data.0.type == 'full';
+        flesh_list = flesh_list _ ',holdings_xml,acp';
+        IF params.holdings_limit;
+            flimit = 'acn=>' _ params.holdings_limit _ ',acp=>' _ params.holdings_limit;
         END;
+    END;
+    flesh_list = flesh_list _ '}';
 
-        author = bibxml.findnodes('//*[@tag="100"]/*[@code="a"]').textContent;
-        item_type = bibxml.findnodes('//*[local-name()="attributes"]/*[local-name()="field"][@name="item_type"]').getAttribute('coded-value');
-        publisher = bibxml.findnodes('//*[@tag="260"]/*[@code="b"]').textContent;
-        pubdate = bibxml.findnodes('//*[@tag="260"]/*[@code="c"]').textContent;
-        isbn = bibxml.findnodes('//*[@tag="020"]/*[@code="a"]').textContent;
-        %]
-
+    item_list = helpers.sort_bucket_unapi_bre(cbreb.items,{flesh => flesh_list, site => user_data.0.context_org, flesh_limit => flimit}, user_data.0.sort_by, user_data.0.sort_dir);
+    FOR item IN item_list %]
         <li>
-            Bib ID# [% bre_id %] ISBN: [% isbn %]<br />
-            Title: [% title %]<br />
-            Author: [% author %]<br />
-            Publication Info: [% publisher %] [% pubdate %]<br/>
-            Item Type: [% item_type %]
+            Bib ID# [% item.id %]<br />
+            [% IF item.isbn %]ISBN: [% item.isbn %]<br />[% END %]
+            [% IF item.issn %]ISSN: [% item.issn %]<br />[% END %]
+            [% IF item.upc  %]UPC:  [% item.upc %]<br />[% END %]
+            Title: [% item.title %]<br />
+[% IF item.author %]            Author: [% item.author %]<br />[% END -%]
+            Publication Info: [% item.publisher %] [% item.pubdate %]<br/>
+            Item Type: [% item.item_type %]
+            <ul>
+            [% IF user_data.0.type == 'full' && item.holdings.size == 0 %]
+                <li>No items for this record at the selected location</li>
+            [% END %]
+            [% FOR cp IN item.holdings -%]
+                <li>
+                    Library: [% cp.circ_lib %]<br/>
+                    Location: [% cp.location %]<br/>
+                    Call Number: [% cp.prefix _ ' ' _ cp.callnumber _ ' ' _ cp.suffix %]<br/>
+                    [% IF cp.parts %]Parts: [% cp.parts %]<br/>[% END %]
+                    Status: [% cp.status_label %]<br/>
+                    Barcode: [% cp.barcode %]
+                </li>
+            [% END %]
+            </ul>
         </li>
     [% END %]
     [% END %]
@@ -15178,8 +15441,8 @@ INSERT INTO action_trigger.environment (
 INSERT INTO vandelay.merge_profile (id, owner, name, replace_spec, update_bib_source) 
     VALUES (1, 1, oils_i18n_gettext(1, 'Match-Only Merge', 'vmp', 'name'), '901c', false);
 
-INSERT INTO vandelay.merge_profile (id, owner, name, preserve_spec, update_bib_source)
-    VALUES (2, 1, oils_i18n_gettext(2, 'Full Overlay', 'vmp', 'name'), '901c', true);
+INSERT INTO vandelay.merge_profile (id, owner, name, preserve_spec, update_bib_source, update_bib_editor)
+    VALUES (2, 1, oils_i18n_gettext(2, 'Full Overlay', 'vmp', 'name'), '901c', true, true);
 
 SELECT SETVAL('vandelay.merge_profile_id_seq'::TEXT, 100);
 
@@ -16574,6 +16837,15 @@ INSERT INTO action_trigger.environment (event_def, path) VALUES
 INSERT INTO action_trigger.hook (key, core_type, description, passive)
     VALUES ('au.created', 'au', 'A user was created', 't');
 	
+INSERT INTO action_trigger.hook (key, core_type, description, passive)
+    VALUES ('au.updated', 'au', 'A user was updated', 't');
+	
+INSERT INTO action_trigger.hook (key, core_type, description, passive)
+    VALUES ('au.barcode_changed', 'au', 'A card was updated or created for an existing user', 't');
+	
+INSERT INTO action_trigger.hook (key, core_type, description, passive)
+    VALUES ('au.renewed', 'au', 'A user was renewed by having their expire date changed', 't');
+
 --SQL to create event definition for new account creation notice
 --Inactive, owned by top of org tree by default.  Modify to suit needs.
 
@@ -16834,12 +17106,13 @@ VALUES (
     ),
     oils_i18n_gettext(
         'ui.circ.items_out.longoverdue',
-'Value is a numeric code, describing which list the circulation '||
-'should appear while checked out and whether the circulation should '||
-'continue to appear in the bottom list, when checked in with '||
-'oustanding fines.  '||
-'1 = top list, bottom list.  2 = bottom list, bottom list.  ' ||
-'5 = top list, do not display.  6 = bottom list, do not display.',
+'Value is a numeric code, describing: A. In which tab ("Items Checked Out", '||
+'or "Other/Special Circulations") the circulation '||
+'should appear while checked out, and B. Whether the circulation should '||
+'continue to appear in the "Other" tab when checked in with '||
+'outstanding fines.  '||
+'1 = (A) "Items", (B) "Other".  2 = (A) "Other", (B) "Other".  ' ||
+'5 = (A) "Items", (B) do not display.  6 = (A) "Other", (B) do not display.',
         'coust',
         'description'
     )
@@ -16853,12 +17126,13 @@ VALUES (
     ),
     oils_i18n_gettext(
         'ui.circ.items_out.lost',
-'Value is a numeric code, describing which list the circulation '||
-'should appear while checked out and whether the circulation should '||
-'continue to appear in the bottom list, when checked in with '||
-'oustanding fines.  '||
-'1 = top list, bottom list.  2 = bottom list, bottom list.  ' ||
-'5 = top list, do not display.  6 = bottom list, do not display.',
+'Value is a numeric code, describing: A. In which tab ("Items Checked Out", '||
+'or "Other/Special Circulations") the circulation '||
+'should appear while checked out, and B. Whether the circulation should '||
+'continue to appear in the "Other" tab when checked in with '||
+'outstanding fines.  '||
+'1 = (A) "Items", (B) "Other".  2 = (A) "Other", (B) "Other".  ' ||
+'5 = (A) "Items", (B) do not display.  6 = (A) "Other", (B) do not display.',
         'coust',
         'description'
     )
@@ -16872,12 +17146,13 @@ VALUES (
     ),
     oils_i18n_gettext(
         'ui.circ.items_out.claimsreturned',
-'Value is a numeric code, describing which list the circulation '||
-'should appear while checked out and whether the circulation should '||
-'continue to appear in the bottom list, when checked in with '||
-'oustanding fines.  '||
-'1 = top list, bottom list.  2 = bottom list, bottom list.  ' ||
-'5 = top list, do not display.  6 = bottom list, do not display.',
+'Value is a numeric code, describing: A. In which tab ("Items Checked Out", '||
+'or "Other/Special Circulations") the circulation '||
+'should appear while checked out, and B. Whether the circulation should '||
+'continue to appear in the "Other" tab when checked in with '||
+'outstanding fines.  '||
+'1 = (A) "Items", (B) "Other".  2 = (A) "Other", (B) "Other".  ' ||
+'5 = (A) "Items", (B) do not display.  6 = (A) "Other", (B) do not display.',
         'coust',
         'description'
     )
@@ -17149,6 +17424,176 @@ INSERT INTO action_trigger.environment (
     currval('action_trigger.event_definition_id_seq'),
     'circ_lib'
 );
+
+INSERT INTO action_trigger.event_definition (active, owner, name, hook, validator, reactor, delay, template)
+VALUES (
+    't', 1, 'Send Test Email', 'au.email.test', 'NOOP_True', 'SendEmail', '00:01:00',
+$$
+[%- USE date -%]
+[%- user = target -%]
+[%- lib = target.home_ou -%]
+To: [%- user.email %]
+From: [%- helpers.get_org_setting(target.home_ou.id, 'org.bounced_emails') || lib.email || params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
+Reply-To: [%- lib.email || params.sender_email || default_sender %]
+Subject: Email Test Notification
+Auto-Submitted: auto-generated
+
+Dear [% user.first_given_name %] [% user.family_name %],
+
+This is a test of the email associated with your account at [%- lib.name -%]. If you are receiving this message, your email information is correct.
+
+Sincerely,
+[% lib.name %]
+
+Contact your library for more information:
+
+[% lib.name %]
+[%- SET addr = lib.mailing_address -%]
+[%- IF !addr -%] [%- SET addr = lib.billing_address -%] [%- END %]
+[% addr.street1 %] [% addr.street2 %]
+[% addr.city %], [% addr.state %]
+[% addr.post_code %]
+[% lib.phone %]
+
+$$);
+INSERT INTO action_trigger.environment (event_def, path)
+VALUES (currval('action_trigger.event_definition_id_seq'), 'home_ou'),
+       (currval('action_trigger.event_definition_id_seq'), 'home_ou.mailing_address'),
+       (currval('action_trigger.event_definition_id_seq'), 'home_ou.billing_address');
+
+INSERT INTO action_trigger.event_definition (active, owner, name, hook, validator, reactor, delay, template)
+VALUES (
+    't', 1, 'Send Test SMS', 'au.sms_text.test', 'NOOP_True', 'SendSMS', '00:01:00',
+$$
+[%- USE date -%]
+[%- user = target -%]
+[%- lib = user.home_ou -%]
+[%- sms_number = helpers.get_user_setting(target.id, 'opac.default_sms_notify') -%]
+[%- sms_carrier = helpers.get_user_setting(target.id, 'opac.default_sms_carrier') -%]
+From: [%- helpers.get_org_setting(target.home_ou.id, 'org.bounced_emails') || lib.email || params.sender_email || default_sender %]
+To: [%- helpers.get_sms_gateway_email(sms_carrier,sms_number) %]
+Subject: Test Text Message
+
+This is a test confirming your mobile number for [% lib.name %] is correct.
+
+Sincerely,
+[% lib.name %]
+
+Contact your library for more information:
+
+[% lib.name %]
+[%- SET addr = lib.mailing_address -%]
+[%- IF !addr -%] [%- SET addr = lib.billing_address -%] [%- END %]
+[% addr.street1 %] [% addr.street2 %]
+[% addr.city %], [% addr.state %]
+[% addr.post_code %]
+[% lib.phone %]
+
+$$);
+INSERT INTO action_trigger.environment (event_def, path)
+VALUES (currval('action_trigger.event_definition_id_seq'), 'home_ou'),
+       (currval('action_trigger.event_definition_id_seq'), 'home_ou.mailing_address'),
+       (currval('action_trigger.event_definition_id_seq'), 'home_ou.billing_address');
+
+INSERT INTO action_trigger.event_definition (active, owner, name, hook, validator, reactor, delay, delay_field, group_field, cleanup_success, template)
+    VALUES ('f', 1, 'Hold Group Hold Placed for Patron Email Notification', 'hold_request.success', 'NOOP_True', 'SendEmail', '30 minutes', 'request_time', 'usr', 'CreateHoldNotification',
+$$
+[%- USE date -%]
+[%- user = target.0.usr -%]
+To: [%- params.recipient_email || user.email %]
+From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
+Subject: Subcription Hold placed for you
+Auto-Submitted: auto-generated
+
+Dear [% user.family_name %], [% user.first_given_name %]
+The following items have been placed on hold for you:
+
+[% FOR hold IN target %]
+    [%- copy_details = helpers.get_copy_bib_basics(hold.current_copy.id) -%]
+    Title: [% copy_details.title %]
+    Author: [% copy_details.author %]
+    Call Number: [% hold.current_copy.call_number.label %]
+    Barcode: [% hold.current_copy.barcode %]
+    Library: [% hold.pickup_lib.name %]
+[% END %]
+
+$$);
+
+INSERT INTO action_trigger.environment (event_def, path ) VALUES
+( currval('action_trigger.event_definition_id_seq'), 'usr' ),
+( currval('action_trigger.event_definition_id_seq'), 'pickup_lib' ),
+( currval('action_trigger.event_definition_id_seq'), 'current_copy.call_number' );
+
+INSERT INTO action_trigger.event_definition (
+    active, owner, name, hook, validator, reactor, cleanup_success,
+    delay, delay_field, group_field, template
+) VALUES (
+    false, 1, 'Hold Group Hold Placed for Patron SMS Notification', 'hold_request.success', 'NOOP_True',
+    'SendSMS', 'CreateHoldNotification', '00:30:00', 'shelf_time', 'sms_notify',
+    '[%- USE date -%]
+[%- user = target.0.usr -%]
+From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, ''%a, %d %b %Y %T -0000'', gmt => 1) %]
+To: [%- params.recipient_email || helpers.get_sms_gateway_email(target.0.sms_carrier,target.0.sms_notify) %]
+Subject: [% target.size %] subscription hold(s) placed for you
+Auto-Submitted: auto-generated
+
+[% FOR hold IN target %][%-
+  bibxml = helpers.xml_doc( hold.current_copy.call_number.record.marc );
+  title = "";
+  FOR part IN bibxml.findnodes(''//*[@tag="245"]/*[@code="a"]'');
+    title = title _ part.textContent;
+  END;
+  author = bibxml.findnodes(''//*[@tag="100"]/*[@code="a"]'').textContent;
+%][% hold.usr.first_given_name %]:[% title %] @ [% hold.pickup_lib.name %]
+[% END %]
+'
+);
+
+INSERT INTO action_trigger.environment (
+    event_def,
+    path
+) VALUES (
+    currval('action_trigger.event_definition_id_seq'),
+    'current_copy.call_number.record.simple_record'
+), (
+    currval('action_trigger.event_definition_id_seq'),
+    'usr'
+), (
+    currval('action_trigger.event_definition_id_seq'),
+    'pickup_lib.billing_address'
+);
+
+INSERT INTO action_trigger.event_params (event_def, param, value)
+    VALUES (currval('action_trigger.event_definition_id_seq'), 'check_sms_notify', 1);
+
+UPDATE
+    action_trigger.event_definition
+SET
+    context_usr_path = 'usr',
+    context_library_path = 'circ_lib',
+    context_bib_path = 'target_copy.call_number.record',
+    context_item_path = 'target_copy'
+WHERE
+    hook IN (
+        SELECT key FROM action_trigger.hook WHERE core_type = 'circ'
+    )
+;
+
+UPDATE
+    action_trigger.event_definition
+SET
+    context_usr_path = 'usr',
+    context_library_path = 'pickup_lib',
+    context_bib_path = 'bib_rec',
+    context_item_path = 'current_copy'
+WHERE
+    hook IN (
+        SELECT key FROM action_trigger.hook WHERE core_type = 'ahr'
+    )
+;
 
 INSERT INTO config.org_unit_setting_type
 (name, grp, label, description, datatype)
@@ -18903,6 +19348,13 @@ VALUES (
         'cwst', 'label'
     )
 ), (
+    'eg.grid.hopeless.wide_holds', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.hopeless.wide_holds',
+        'Grid Config: hopeless.wide_holds',
+        'cwst', 'label'
+    )
+), (
     'eg.grid.cat.holdings', 'gui', 'object',
     oils_i18n_gettext(
         'eg.grid.cat.holdings',
@@ -19483,6 +19935,20 @@ VALUES (
     'Grid Config: circ.patron.billhistory_xacts',
     'cwst', 'label'
   )
+),  (
+  'eg.grid.reporter.simple.reports', 'gui', 'object',
+  oils_i18n_gettext(
+    'eg.grid.reporter.simple.reports',
+    'Grid Config: eg.grid.reporter.simple.reports',
+    'cwst', 'label'
+  )
+), (
+  'eg.grid.reporter.simple.outputs', 'gui', 'object',
+  oils_i18n_gettext(
+    'eg.grid.reporter.simple.outputs',
+    'Grid Config: eg.grid.reporter.simple.outputs',
+    'cwst', 'label'
+  )
 );
 
 
@@ -19685,6 +20151,35 @@ VALUES (
     )
 );
 
+INSERT into config.org_unit_setting_type
+( name, grp, label, description, datatype, fm_class ) VALUES
+( 'opac.email_record.allow_without_login', 'opac',
+    oils_i18n_gettext('opac.email_record.allow_without_login',
+        'Allow record emailing without login',
+        'coust', 'label'),
+    oils_i18n_gettext('opac.email_record.allow_without_login',
+        'Instead of forcing a patron to log in in order to email the details of a record, just challenge them with a simple catpcha.',
+        'coust', 'description'),
+    'bool', null)
+;
+
+INSERT INTO action_trigger.event_def_group (id, owner, hook, name)
+    VALUES (1, 1, 'biblio.format.record_entry.print','Print Record(s)');
+
+INSERT INTO action_trigger.event_def_group_member (grp, name, event_def)
+    SELECT 1, 'Brief', id FROM action_trigger.event_definition WHERE hook = 'biblio.format.record_entry.print';
+
+INSERT INTO action_trigger.event_def_group_member (grp, name, holdings, event_def)
+    SELECT 1, 'Full', TRUE, id FROM action_trigger.event_definition WHERE hook = 'biblio.format.record_entry.print';
+
+INSERT INTO action_trigger.event_def_group (id, owner, hook, name)
+    VALUES (2,1,'biblio.format.record_entry.email','Email Record(s)');
+
+INSERT INTO action_trigger.event_def_group_member (grp, name, event_def)
+    SELECT 2, 'Brief', id FROM action_trigger.event_definition WHERE hook = 'biblio.format.record_entry.email';
+
+INSERT INTO action_trigger.event_def_group_member (grp, name, holdings, event_def)
+    SELECT 2, 'Full', TRUE, id FROM action_trigger.event_definition WHERE hook = 'biblio.format.record_entry.email';
 
 INSERT into config.org_unit_setting_type (name, label, description, datatype) 
 VALUES ( 
@@ -20025,25 +20520,6 @@ VALUES (
     )
 );
 
--- NOTE: This setting should be removed once the Angular catalog
--- becomes the default.
-INSERT into config.org_unit_setting_type 
-    (name, datatype, grp, label, description)
-VALUES ( 
-    'ui.staff.angular_catalog.enabled', 'bool', 'gui',
-    oils_i18n_gettext(
-        'ui.staff.angular_catalog.enabled',
-        'GUI: Enable Experimental Angular Staff Catalog',
-        'coust', 'label'
-    ),
-    oils_i18n_gettext(
-        'ui.staff.angular_catalog.enabled',
-        'Display an entry point in the browser client for the ' ||
-        'experimental Angular staff catalog.',
-        'coust', 'description'
-    )
-);
-
 INSERT INTO config.org_unit_setting_type
     (name, label, description, grp, datatype)
     VALUES (
@@ -20059,6 +20535,74 @@ INSERT INTO config.org_unit_setting_type
         'bool'
     );
 
+INSERT into config.org_unit_setting_type
+( name, grp, label, description, datatype, fm_class ) VALUES
+( 'circ.holds.calculated_age_proximity', 'circ',
+    oils_i18n_gettext('circ.holds.calculated_age_proximity',
+        'Use calculated proximity for age-protection check',
+        'coust', 'label'),
+    oils_i18n_gettext('circ.holds.calculated_age_proximity',
+        'When checking whether a copy is viable for a hold based on transit distance, use calculated proximity with adjustments rather than baseline Org Unit proximity.',
+        'coust', 'description'),
+    'bool', null);
+
+INSERT INTO config.org_unit_setting_type
+( name, grp, label, description, datatype, update_perm )
+VALUES
+('opac.login.shib_sso.enable',
+ 'opac',
+ oils_i18n_gettext('opac.login.shib_sso.enable', 'Enable Shibboleth SSO for the OPAC', 'coust', 'label'),
+ oils_i18n_gettext('opac.login.shib_sso.enable', 'Enable Shibboleth SSO for the OPAC', 'coust', 'description'),
+ 'bool', 627),
+('opac.login.shib_sso.entityId',
+ 'opac',
+ oils_i18n_gettext('opac.login.shib_sso.entityId', 'Shibboleth SSO Entity ID', 'coust', 'label'),
+ oils_i18n_gettext('opac.login.shib_sso.entityId', 'Which configured Entity ID to use for SSO when there is more than one available to Shibboleth', 'coust', 'description'),
+ 'string', 627),
+('opac.login.shib_sso.logout',
+ 'opac',
+ oils_i18n_gettext('opac.login.shib_sso.logout', 'Log out of the Shibboleth IdP', 'coust', 'label'),
+ oils_i18n_gettext('opac.login.shib_sso.logout', 'When logging out of Evergreen, also force a logout of the IdP behind Shibboleth', 'coust', 'description'),
+ 'bool', 627),
+('opac.login.shib_sso.allow_native',
+ 'opac',
+ oils_i18n_gettext('opac.login.shib_sso.allow_native', 'Allow both Shibboleth and native OPAC authentication', 'coust', 'label'),
+ oils_i18n_gettext('opac.login.shib_sso.allow_native', 'When Shibboleth SSO is enabled, also allow native Evergreen authentication', 'coust', 'description'),
+ 'bool', 627),
+('opac.login.shib_sso.evergreen_matchpoint',
+ 'opac',
+ oils_i18n_gettext('opac.login.shib_sso.evergreen_matchpoint', 'Evergreen SSO matchpoint', 'coust', 'label'),
+ oils_i18n_gettext('opac.login.shib_sso.evergreen_matchpoint',
+  'Evergreen-side field to match a patron against for Shibboleth SSO. Default is usrname.  Other reasonable values would be barcode or email.',
+  'coust', 'description'),
+ 'string', 627),
+('opac.login.shib_sso.shib_matchpoint',
+ 'opac',
+ oils_i18n_gettext('opac.login.shib_sso.shib_matchpoint', 'Shibboleth SSO matchpoint', 'coust', 'label'),
+ oils_i18n_gettext('opac.login.shib_sso.shib_matchpoint',
+  'Shibboleth-side field to match a patron against for Shibboleth SSO. Default is uid; use eppn for Active Directory', 'coust', 'description'),
+ 'string', 627)
+;
+
+INSERT INTO config.org_unit_setting_type
+    (name, label, description, grp, datatype)
+VALUES (
+    'holds.subscription.randomize',
+    oils_i18n_gettext(
+        'holds.subscription.randomize',
+        'Randomize group hold order',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'holds.subscription.randomize',
+        'When placing a batch group hold, randomize the order of the patrons receiving the holds so they are not always in the same order.',
+        'coust',
+        'description'
+    ),
+    'holds',
+    'bool'
+);
 
 INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
 VALUES (
@@ -20131,6 +20675,15 @@ VALUES (
     )
 );
 
+INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.print.template_context.booking_capture', 'gui', 'string',
+    oils_i18n_gettext(
+        'eg.print.template_context.booking_capture',
+        'Print Template Context: booking_capture',
+        'cwst', 'label'
+    )
+);
 
 INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
 VALUES (
@@ -20230,7 +20783,7 @@ $TEMPLATE$
 INSERT INTO config.print_template 
     (id, name, locale, active, owner, label, template) 
 VALUES (
-    2, 'holds_for_bib', 'en-US', FALSE,
+    2, 'holds_for_bib', 'en-US', TRUE,
     (SELECT id FROM actor.org_unit WHERE parent_ou IS NULL),
     oils_i18n_gettext(2, 'Holds for Bib Record', 'cpt', 'label'),
 $TEMPLATE$
@@ -20280,6 +20833,44 @@ $TEMPLATE$
 $TEMPLATE$
 );
 
+INSERT INTO config.print_template
+    (id, name, locale, active, owner, label, template)
+VALUES (
+    3, 'booking_capture', 'en-US', TRUE,
+    (SELECT id FROM actor.org_unit WHERE parent_ou IS NULL),
+    oils_i18n_gettext(3, 'Booking capture slip', 'cpt', 'label'),
+$TEMPLATE$
+[%-
+    USE date;
+    SET data = template_data;
+    # template_data is data returned from open-ils.booking.resources.capture_for_reservation.
+-%]
+<div>
+  [% IF data.transit;
+       dest_ou = helpers.get_org_unit(data.transit.dest);
+  %]
+  <div>This item need to be routed to <strong>[% dest_ou.shortname %]</strong></div>
+  [% ELSE %]
+  <div>This item need to be routed to <strong>RESERVATION SHELF:</strong></div>
+  [% END %]
+  <div>Barcode: [% data.reservation.current_resource.barcode %]</div>
+  <div>Title: [% data.reservation.current_resource.type.name %]</div>
+  <div>Note: [% data.reservation.note %]</div>
+  <br/>
+  <p><strong>Reserved for patron</strong> [% data.reservation.usr.family_name %], [% data.reservation.usr.first_given_name %] [% data.reservation.usr.second_given_name %]
+  <br/>Barcode: [% data.reservation.usr.card.barcode %]</p>
+  <p>Request time: [% date.format(helpers.format_date(data.reservation.request_time, client_timezone), '%x %r', locale) %]
+  <br/>Reserved from:
+    [% date.format(helpers.format_date(data.reservation.start_time, client_timezone), '%x %r', locale) %]
+    - [% date.format(helpers.format_date(data.reservation.end_time, client_timezone), '%x %r', locale) %]</p>
+  <p>Slip date: [% date.format(helpers.current_date(client_timezone), '%x %r', locale) %]<br/>
+  Printed by [% data.staff.family_name %], [% data.staff.first_given_name %] [% data.staff.second_given_name %]
+    at [% data.workstation %]</p>
+</div>
+<br/>
+
+$TEMPLATE$
+);
 
 -- Allow for 1k stock templates
 SELECT SETVAL('config.print_template_id_seq'::TEXT, 1000);
@@ -20328,7 +20919,19 @@ VALUES (
         'Grid Config: Booking Return Resource tab Returned Today grid',
         'cwst', 'label')
 ), (
-    'eg.booking.manage.selected_org_family', 'gui', 'object',
+    'eg.grid.booking.captured', 'gui', 'object',
+    oils_i18n_gettext(
+        'booking.manage',
+        'Grid Config: Booking Captured Reservations',
+        'cwst', 'label')
+), (
+    'eg.grid.booking.pull_list', 'gui', 'object',
+    oils_i18n_gettext(
+        'booking.pull_list',
+        'Grid Config: Booking Pull List',
+        'cwst', 'label')
+),(
+   'eg.booking.manage.selected_org_family', 'gui', 'object',
     oils_i18n_gettext(
         'booking.manage.selected_org_family',
         'Sticky setting for pickup ou family in Manage Reservations screen',
@@ -20381,6 +20984,19 @@ VALUES (
     )
 );
 
+INSERT INTO actor.org_unit_setting (org_unit, name, value)
+    SELECT 1, 'circ.course_materials_brief_record_bib_source', id
+    FROM config.bib_source
+    WHERE source='Course materials module';
+
+INSERT INTO asset.course_module_role (id, name, is_public) VALUES
+(1, oils_i18n_gettext(1, 'Instructor', 'acmr', 'name'), true),
+(2, oils_i18n_gettext(2, 'Teaching assistant', 'acmr', 'name'), true),
+(3, oils_i18n_gettext(3, 'Student', 'acmr', 'name'), false);
+SELECT SETVAL('asset.course_module_role_id_seq'::TEXT, 100);
+
+
+
 INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
 VALUES (
     'eg.catalog.results.count', 'gui', 'integer',
@@ -20414,4 +21030,1149 @@ VALUES (
     )
 );
 
+INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.orgselect.cat.catalog.wide_holds', 'gui', 'integer',
+    oils_i18n_gettext(
+        'eg.orgselect.cat.catalog.wide_holds',
+        'Default org unit for catalog holds org unit selector',
+        'cwst', 'label'
+    )
+), (
+    'eg.orgselect.patron.search', 'gui', 'integer',
+    oils_i18n_gettext(
+        'eg.orgselect.patron.search',
+        'Default org unit for patron search',
+        'cwst', 'label'
+    )
+), (
+    'eg.orgselect.hopeless.wide_holds', 'gui', 'integer',
+    oils_i18n_gettext(
+        'eg.orgselect.hopeless.wide_holds',
+        'Default org unit for hopeless holds interface',
+        'cwst', 'label'
+    )
+), (
+    'eg.grid.cat.authority.browse', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.grid.cat.authority.browse',
+    'Grid Config: eg.grid.cat.authority.browse',
+    'cwst', 'label')
+), (
+    'eg.grid.cat.authority.manage.bibs', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.grid.cat.authority.manage.bibs',
+    'Grid Config: eg.grid.cat.authority.manage.bibs',
+    'cwst', 'label')
+);
+
+INSERT INTO config.workstation_setting_type
+    (name, grp, datatype, label)
+VALUES (
+    'eg.acq.search.default.lineitems', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.acq.search.default.lineitems',
+    'Acquisitions Default Search: Lineitems',
+    'cwst', 'label')
+), (
+    'eg.acq.search.default.purchaseorders', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.acq.search.default.purchaseorders',
+    'Acquisitions Default Search: Purchase Orders',
+    'cwst', 'label')
+), (
+    'eg.acq.search.default.invoices', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.acq.search.default.invoices',
+    'Acquisitions Default Search: Invoices',
+    'cwst', 'label')
+), (
+    'eg.acq.search.default.selectionlists', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.acq.search.default.selectionlists',
+    'Acquisitions Default Search: Selection Lists',
+    'cwst', 'label')
+);
+
+INSERT INTO config.workstation_setting_type
+    (name, grp, datatype, label)
+VALUES (
+    'eg.acq.search.lineitems.run_immediately', 'gui', 'bool',
+    oils_i18n_gettext(
+    'eg.acq.search.lineitems.run_immediately',
+    'Acquisitions Search: Immediately Search Lineitems',
+    'cwst', 'label')
+), (
+    'eg.acq.search.purchaseorders.run_immediately', 'gui', 'bool',
+    oils_i18n_gettext(
+    'eg.acq.search.purchaseorders.run_immediately',
+    'Acquisitions Search: Immediately Search Purchase Orders',
+    'cwst', 'label')
+), (
+    'eg.acq.search.invoices.run_immediately', 'gui', 'bool',
+    oils_i18n_gettext(
+    'eg.acq.search.invoices.run_immediately',
+    'Acquisitions Search: Immediately Search Invoices',
+    'cwst', 'label')
+), (
+    'eg.acq.search.selectionlists.run_immediately', 'gui', 'bool',
+    oils_i18n_gettext(
+    'eg.acq.search.selectionlists.run_immediately',
+    'Acquisitions Search: Immediately Search Selection Lists',
+    'cwst', 'label')
+);
+
+INSERT INTO config.workstation_setting_type
+    (name, grp, datatype, label)
+VALUES (
+    'eg.grid.acq.search.lineitems', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.grid.acq.search.lineitems',
+    'Grid Config: acq.search.lineitems',
+    'cwst', 'label')
+), (
+    'eg.grid.acq.search.purchaseorders', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.grid.acq.search.purchaseorders',
+    'Grid Config: acq.search.purchaseorders',
+    'cwst', 'label')
+), (
+    'eg.grid.acq.search.selectionlists', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.grid.acq.search.selectionlists',
+    'Grid Config: acq.search.selectionlists',
+    'cwst', 'label')
+), (
+    'eg.grid.acq.search.invoices', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.grid.acq.search.invoices',
+    'Grid Config: acq.search.invoices',
+    'cwst', 'label')
+);
+
+INSERT INTO action_trigger.reactor (module, description) VALUES (
+    'CallHTTP', 'Push event information out to an external system via HTTP'
+);
+
+INSERT INTO config.workstation_setting_type
+    (name, grp, datatype, label)
+VALUES (
+    'eg.grid.acq.provider.addresses', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.grid.acq.provider.addresses',
+    'Grid Config: acq.provider.addresses',
+    'cwst', 'label')
+), (
+    'eg.grid.acq.provider.attributes', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.grid.acq.provider.attributes',
+    'Grid Config: acq.provider.attributes',
+    'cwst', 'label')
+), (
+    'eg.grid.acq.provider.contact.addresses', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.grid.acq.provider.contact.addresses',
+    'Grid Config: acq.provider.contact.addresses',
+    'cwst', 'label')
+), (
+    'eg.grid.acq.provider.contacts', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.grid.acq.provider.contacts',
+    'Grid Config: acq.provider.contacts',
+    'cwst', 'label')
+), (
+    'eg.grid.acq.provider.edi_accounts', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.grid.acq.provider.edi_accounts',
+    'Grid Config: acq.provider.edi_accounts',
+    'cwst', 'label')
+), (
+    'eg.grid.acq.provider.edi_messages', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.grid.acq.provider.edi_messages',
+    'Grid Config: acq.provider.edi_messages',
+    'cwst', 'label')
+), (
+    'eg.grid.acq.provider.holdings', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.grid.acq.provider.holdings',
+    'Grid Config: acq.provider.holdings',
+    'cwst', 'label')
+), (
+    'eg.grid.acq.provider.invoices', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.grid.acq.provider.invoices',
+    'Grid Config: acq.provider.invoices',
+    'cwst', 'label')
+), (
+    'eg.grid.acq.provider.purchaseorders', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.grid.acq.provider.purchaseorders',
+    'Grid Config: acq.provider.purchaseorders',
+    'cwst', 'label')
+), (
+    'eg.grid.acq.provider.search.results', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.grid.acq.provider.search.results',
+    'Grid Config: acq.provider.search.results',
+    'cwst', 'label')
+);
+
+INSERT into config.org_unit_setting_type
+    ( name, grp, label, description, datatype, update_perm )
+VALUES (
+    'opac.analytics.matomo_id', 'opac',
+    oils_i18n_gettext(
+    'opac.analytics.matomo_id',
+    'Matomo Site ID',
+    'coust', 'label'),
+    oils_i18n_gettext('opac.analytics.matomo_id',
+    'The Site ID for your Evergreen catalog. You can find the Site ID in the tracking code you got from Matomo.',
+    'coust', 'description'),
+    'string', 623
+), (
+    'opac.analytics.matomo_url', 'opac',
+    oils_i18n_gettext('opac.analytics.matomo_url',
+    'Matomo URL',
+    'coust', 'label'),
+    oils_i18n_gettext('opac.analytics.matomo_url',
+    'The URL for your the Matomo software. Be sure to include the trailing slash, e.g. https://my-evergreen.matomo.cloud/',
+    'coust', 'description'),
+    'string', 623
+);
+-- curbside pickup
+INSERT INTO config.org_unit_setting_type (name, label, grp, description, datatype)
+VALUES (
+    'circ.curbside',
+    oils_i18n_gettext('circ.curbside',
+        'Enable curbside pickup functionality at library.',
+        'coust', 'label'),
+    'circ',
+    oils_i18n_gettext('circ.curbside',
+        'When set to TRUE, enable staff and public interfaces to schedule curbside pickup of holds that become available for pickup.',
+        'coust', 'description'),
+    'bool'
+);
+
+INSERT INTO config.org_unit_setting_type (name, label, grp, description, datatype)
+VALUES (
+    'circ.curbside.granularity',
+    oils_i18n_gettext('circ.curbside.granularity',
+        'Time interval between curbside appointments',
+        'coust', 'label'),
+    'circ',
+    oils_i18n_gettext('circ.curbside.granularity',
+        'Time interval between curbside appointments',
+        'coust', 'description'),
+    'interval'
+);
+
+INSERT INTO config.org_unit_setting_type (name, label, grp, description, datatype)
+VALUES (
+    'circ.curbside.max_concurrent',
+    oils_i18n_gettext('circ.curbside.max_concurrent',
+        'Maximum number of patrons that may select a particular curbside pickup time',
+        'coust', 'label'),
+    'circ',
+    oils_i18n_gettext('circ.curbside.max_concurrent',
+        'Maximum number of patrons that may select a particular curbside pickup time',
+        'coust', 'description'),
+    'integer'
+);
+
+INSERT INTO config.org_unit_setting_type (name, label, grp, description, datatype)
+VALUES (
+    'circ.curbside.disable_patron_input',
+    oils_i18n_gettext('circ.curbside.disable_patron_input',
+        'Disable patron modification of curbside appointments in public catalog',
+        'coust', 'label'),
+    'circ',
+    oils_i18n_gettext('circ.curbside.disable_patron_input',
+        'When set to TRUE, patrons cannot use the My Account interface to select curbside pickup times',
+        'coust', 'description'),
+    'bool'
+);
+
+INSERT INTO actor.org_unit_setting (org_unit, name, value)
+    SELECT id, 'circ.curbside', 'false' FROM actor.org_unit WHERE parent_ou IS NULL
+        UNION
+    SELECT id, 'circ.curbside.max_concurrent', '10' FROM actor.org_unit WHERE parent_ou IS NULL
+        UNION
+    SELECT id, 'circ.curbside.granularity', '"15 minutes"' FROM actor.org_unit WHERE parent_ou IS NULL
+;
+
+INSERT INTO action_trigger.hook (key, core_type, description, passive)
+VALUES (
+    'hold.offer_curbside',
+    'ahr',
+    oils_i18n_gettext(
+        'hold.offer_curbside',
+        'Hook used to trigger the notification of an offer of curbside pickup',
+        'ath',
+        'description'
+    ),
+    FALSE
+);
+
+INSERT INTO action_trigger.hook (key, core_type, description, passive)
+VALUES (
+    'hold.confirm_curbside',
+    'acsp',
+    oils_i18n_gettext(
+        'hold.confirm_curbside',
+        'Hook used to trigger the notification of the creation or update of a curbside pickup appointment with an arrival URL',
+        'ath',
+        'description'
+    ),
+    FALSE
+);
+
+INSERT INTO action_trigger.reactor (module, description) VALUES (
+    'CurbsideSlot', 'Create a curbside pickup appointment slot when necessary'
+);
+
+INSERT INTO action_trigger.validator (module, description) VALUES (
+    'Curbside', 'Confirm that curbside pickup is enabled for the hold pickup library'
+);
+
+-- geosort
+
+INSERT INTO config.global_flag (name, value, enabled, label)
+VALUES (
+    'opac.use_geolocation',
+    NULL,
+    FALSE,
+    oils_i18n_gettext(
+        'opac.use_geolocation',
+        'Offer use of geographic location services in the public catalog',
+        'cgf', 'label'
+    )
+);
+
+INSERT INTO config.org_unit_setting_type (name, label, grp, description, datatype)
+VALUES (
+    'opac.holdings_sort_by_geographic_proximity',
+    oils_i18n_gettext('opac.holdings_sort_by_geographic_proximity',
+        'Enable Holdings Sort by Geographic Proximity',
+        'coust', 'label'),
+    'opac',
+    oils_i18n_gettext('opac.holdings_sort_by_geographic_proximity',
+        'When set to TRUE, will cause the record details page to display the controls for sorting holdings by geographic proximity. This also depends on the global flag opac.use_geolocation being enabled.',
+        'coust', 'description'),
+    'bool'
+);
+
+INSERT INTO config.org_unit_setting_type (name, label, grp, description, datatype)
+VALUES (
+    'opac.geographic_proximity_in_miles',
+    oils_i18n_gettext('opac.geographic_proximity_in_miles',
+        'Show Geographic Proximity in Miles',
+        'coust', 'label'),
+    'opac',
+    oils_i18n_gettext('opac.geographic_proximity_in_miles',
+        'When set to TRUE, will cause the record details page to show distances for geographic proximity in miles instead of kilometers.',
+        'coust', 'description'),
+    'bool'
+);
+
+INSERT INTO config.org_unit_setting_type (name, label, grp, description, datatype, fm_class)
+VALUES (
+    'opac.geographic_location_service_for_address',
+    oils_i18n_gettext('opac.geographic_location_service_for_address',
+        'Geographic Location Service to use for Addresses',
+        'coust', 'label'),
+    'opac',
+    oils_i18n_gettext('opac.geographic_location_service_for_address',
+        'Specifies which geographic location service to use for converting address input to geographic coordinates.',
+        'coust', 'description'),
+    'link', 'cgs'
+);
+
+INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
+    SELECT
+        pgt.id, perm.id, aout.depth, TRUE
+    FROM
+        permission.grp_tree pgt,
+        permission.perm_list perm,
+        actor.org_unit_type aout
+    WHERE
+        (pgt.name = 'Global Administrator' OR pgt.name = 'System Administrator') AND
+        aout.name = 'Consortium' AND
+        (perm.code = 'ADMIN_GEOLOCATION_SERVICES' OR perm.code = 'VIEW_GEOLOCATION_SERVICES');
+
+-- cover image uploads
+
+INSERT INTO config.global_flag (name, value, enabled, label)
+VALUES (
+    'opac.cover_upload_compression',
+    0,
+    TRUE,
+    oils_i18n_gettext(
+        'opac.cover_upload_compression',
+        'Cover image uploads are converted to PNG files with this compression, on a scale of 0 (no compression) to 9 (maximum compression), or -1 for the zlib default.',
+        'cgf', 'label'
+    )
+);
+
+INSERT INTO config.org_unit_setting_type (name, label, grp, description, datatype)
+VALUES (
+    'opac.cover_upload_max_file_size',
+    oils_i18n_gettext('opac.cover_upload_max_file_size',
+        'Maximum file size for uploaded cover image files (at time of upload, prior to rescaling).',
+        'coust', 'label'),
+    'opac',
+    oils_i18n_gettext('opac.cover_upload_max_file_size',
+        'The number of bytes to allow for a cover image upload.  If unset, defaults to 10737418240 (roughly 10GB).',
+        'coust', 'description'),
+    'integer'
+);
+
+------------------- Disabled example A/T defintions ------------------------------
+
+-- Create a "dummy" slot when applicable, and trigger the "offer curbside" events
+INSERT INTO action_trigger.event_definition (
+    active,
+    owner,
+    name,
+    hook,
+    validator,
+    reactor,
+    delay
+) VALUES (
+    'f',
+    1,
+    'Trigger curbside offer events and create a placeholder for the patron, where applicable',
+    'hold.available',
+    'Curbside',
+    'CurbsideSlot',
+    '00:30:00'
+);
+
+-- Email offer
+INSERT INTO action_trigger.event_definition (
+    active,
+    owner,
+    name,
+    hook,
+    validator,
+    reactor,
+    delay,
+    delay_field,
+    group_field,
+    template
+) VALUES (
+    'f',
+    1,
+    'Curbside offer Email notification, triggered by CurbsideSlot reactor on a definition attached to the hold.available hook',
+    'hold.offer_curbside',
+    'Curbside',
+    'SendEmail',
+    '00:00:00',
+    'shelf_time',
+    'usr',
+$$
+[%- USE date -%]
+[%- user = target.0.usr -%]
+To: [%- params.recipient_email || user.email %]
+From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
+Subject: Curbside Pickup
+Auto-Submitted: auto-generated
+
+[% target.0.pickup_lib.name %] is now offering curbside delivery
+service.  Please call [% target.0.pickup_lib.phone %] or visit the
+link below to schedule a pickup time.
+
+https://example.org/eg/opac/myopac/holds_curbside
+
+Stay safe! Wash your hands!
+$$);
+
+INSERT INTO action_trigger.environment (
+    event_def,
+    path
+) VALUES (
+    currval('action_trigger.event_definition_id_seq'),
+    'pickup_lib'
+), (
+    currval('action_trigger.event_definition_id_seq'),
+    'usr'
+);
+
+INSERT INTO action_trigger.event_params (event_def, param, value)
+    VALUES (currval('action_trigger.event_definition_id_seq'), 'check_email_notify', 1);
+
+-- SMS offer
+INSERT INTO action_trigger.event_definition (
+    active,
+    owner,
+    name,
+    hook,
+    validator,
+    reactor,
+    delay,
+    delay_field,
+    group_field,
+    template
+) VALUES (
+    false,
+    1,
+    'Curbside offer SMS notification, triggered by CurbsideSlot reactor on a definition attached to the hold.available hook',
+    'hold.offer_curbside',
+    'Curbside',
+    'SendSMS',
+    '00:00:00',
+    'shelf_time',
+    'sms_notify',
+    $$[%- USE date -%]
+[%- user = target.0.usr -%]
+From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
+To: [%- params.recipient_email || helpers.get_sms_gateway_email(target.0.sms_carrier,target.0.sms_notify) %]
+Subject: Curbside Pickup
+Auto-Submitted: auto-generated
+
+[% target.0.pickup_lib.name %] offers curbside pickup.
+Call [% target.0.pickup_lib.phone %] or visit https://example.org/eg/opac/myopac/holds_curbside
+$$
+);
+
+INSERT INTO action_trigger.environment (
+    event_def,
+    path
+) VALUES (
+    currval('action_trigger.event_definition_id_seq'),
+    'pickup_lib'
+), (
+    currval('action_trigger.event_definition_id_seq'),
+    'usr'
+);
+
+INSERT INTO action_trigger.event_params (event_def, param, value)
+    VALUES (currval('action_trigger.event_definition_id_seq'), 'check_sms_notify', 1);
+
+-- Email confirmation
+INSERT INTO action_trigger.event_definition (
+    active,
+    owner,
+    name,
+    hook,
+    validator,
+    reactor,
+    delay,
+    template
+) VALUES (
+    'f',
+    1,
+    'Curbside confirmation Email notification',
+    'hold.confirm_curbside',
+    'Curbside',
+    'SendEmail',
+    '00:00:00',
+$$
+[%- USE date -%]
+[%- user = target.patron -%]
+To: [%- params.recipient_email || user.email %]
+From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
+Subject: Curbside Pickup Confirmed
+Auto-Submitted: auto-generated
+
+This email is to confirm that you have scheduled a curbside item
+pickup at [% target.org.name %] for [% date.format(helpers.format_date(target.slot), '%a, %d %b %Y %T') %].
+
+You can cancel or change to your appointment, add vehicle description
+notes, and alert staff to your arrival by going to the link below.
+
+When you arrive, please call [% target.org.phone %] or visit the
+link below to let us know you are here.
+
+https://example.org/eg/opac/myopac/holds_curbside
+
+Stay safe! Wash your hands!
+$$);
+
+INSERT INTO action_trigger.environment (
+    event_def,
+    path
+) VALUES (
+    currval('action_trigger.event_definition_id_seq'),
+    'org'
+), (
+    currval('action_trigger.event_definition_id_seq'),
+    'patron'
+);
+
+-- We do /not/ add this by default, treating curbside request as implicit opt-in
+/*
+INSERT INTO action_trigger.event_params (event_def, param, value)
+    VALUES (currval('action_trigger.event_definition_id_seq'), 'check_email_notify', 1);
+*/
+
+-- SMS confirmation
+INSERT INTO action_trigger.event_definition (
+    active,
+    owner,
+    name,
+    hook,
+    validator,
+    reactor,
+    delay,
+    template
+) VALUES (
+    false,
+    1,
+    'Curbside confirmation SMS notification',
+    'hold.confirm_curbside',
+    'Curbside',
+    'SendSMS',
+    '00:00:00',
+    $$[%- USE date -%]
+[%- user = target.patron -%]
+From: [%- params.sender_email || default_sender %]
+Date: [%- date.format(date.now, '%a, %d %b %Y %T -0000', gmt => 1) %]
+To: [%- params.recipient_email || helpers.get_sms_gateway_email(helpers.get_user_setting(user.id, 'opac.default_sms_carrier'), helpers.get_user_setting(user.id, 'opac.default_sms_notify')) %]
+Subject: Curbside Pickup Confirmed
+Auto-Submitted: auto-generated
+
+Location: [% target.org.name %]
+Time: [% date.format(helpers.format_date(target.slot), '%a, %d %b %Y %T') %]
+Make changes at https://example.org/eg/opac/myopac/holds_curbside
+$$
+);
+
+INSERT INTO action_trigger.environment (
+    event_def,
+    path
+) VALUES (
+    currval('action_trigger.event_definition_id_seq'),
+    'org'
+), (
+    currval('action_trigger.event_definition_id_seq'),
+    'patron'
+);
+
+-- We do /not/ add this by default, treating curbside request as implicit opt-in
+/*
+INSERT INTO action_trigger.event_params (event_def, param, value)
+    VALUES (currval('action_trigger.event_definition_id_seq'), 'check_sms_notify', 1);
+*/
+
+INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.staffcat.exclude_electronic', 'gui', 'bool',
+    oils_i18n_gettext(
+        'eg.staffcat.exclude_electronic',
+        'Staff Catalog "Exclude Electronic Resources" Option',
+        'cwst', 'label'
+    )
+);
+
+INSERT INTO config.workstation_setting_type (name, grp, datatype, fm_class, label)
+VALUES (
+    'eg.orgselect.catalog.holdings', 'gui', 'link', 'aou',
+    oils_i18n_gettext(
+        'eg.orgselect.catalog.holdings',
+        'Default org unit for catalog holdings tab',
+        'cwst', 'label'
+    )
+);
+
+INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.catalog.search.form.open', 'gui', 'bool',
+    oils_i18n_gettext(
+        'eg.catalog.search.form.open',
+        'Catalog Search Form Visibility Sticky Setting',
+        'cwst', 'label'
+    )
+);
+
+INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.grid.catalog.record.copies', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.catalog.record.copies',
+        'Grid Config: eg.grid.catalog.record.copies',
+        'cwst', 'label'
+    )
+);
+INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.grid.catalog.record.notes', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.catalog.record.notes',
+        'Grid Config: eg.grid.catalog.record.notes',
+        'cwst', 'label'
+    )
+);
+
+INSERT INTO config.global_flag (name, value, enabled, label)
+VALUES (
+    'auth.block_expired_staff_login',
+    NULL,
+    FALSE,
+    oils_i18n_gettext(
+        'auth.block_expired_staff_login',
+        'Block the ability of expired user with the STAFF_LOGIN permission to log into Evergreen.',
+        'cgf', 'label'
+    )
+);
+
+INSERT INTO config.internal_flag (name, value, enabled) VALUES ('symspell.prefix_length', '6', TRUE);
+INSERT INTO config.internal_flag (name, value, enabled) VALUES ('symspell.max_edit_distance', '3', TRUE);
+
+INSERT into config.org_unit_setting_type
+( name, grp, label, description, datatype )
+VALUES
+( 'opac.did_you_mean.max_suggestions', 'opac',
+   oils_i18n_gettext(
+     'opac.did_you_mean.max_suggestions',
+     'Maximum number of spelling suggestions that may be offered',
+     'coust', 'label'),
+   oils_i18n_gettext(
+     'opac.did_you_mean.max_suggestions',
+     'If set to -1, provide "best" suggestion if mispelled; if set higher than 0, the maximum suggestions that can be provided; if set to 0, disable suggestions.',
+     'coust', 'description'),
+   'integer' );
+
+INSERT into config.org_unit_setting_type
+( name, grp, label, description, datatype )
+VALUES
+( 'opac.did_you_mean.low_result_threshold', 'opac',
+   oils_i18n_gettext(
+     'opac.did_you_mean.low_result_threshold',
+     'Maximum search result count at which spelling suggestions may be offered',
+     'coust', 'label'),
+   oils_i18n_gettext(
+     'opac.did_you_mean.low_result_threshold',
+     'If a search results in this number or fewer results, and there are correctable spelling mistakes, a suggested search may be provided.',
+     'coust', 'description'),
+   'integer' );
+
+INSERT into config.org_unit_setting_type
+( name, grp, label, description, datatype )
+VALUES
+( 'search.symspell.min_suggestion_use_threshold', 'opac',
+   oils_i18n_gettext(
+     'search.symspell.min_suggestion_use_threshold',
+     'Minimum required uses of a spelling suggestions that may be offered',
+     'coust', 'label'),
+   oils_i18n_gettext(
+     'search.symspell.min_suggestion_use_threshold',
+     'The number of bibliographic records (more or less) that a spelling suggestion must appear in to be considered before offering it to a user. Defaults to 1 (must appear in the bib data).',
+     'coust', 'description'),
+   'integer' );
+
+INSERT into config.org_unit_setting_type
+( name, grp, label, description, datatype )
+VALUES
+( 'search.symspell.soundex.weight', 'opac',
+   oils_i18n_gettext(
+     'search.symspell.soundex.weight',
+     'Soundex score weighting in OPAC spelling suggestions.',
+     'coust', 'label'),
+   oils_i18n_gettext(
+     'search.symspell.soundex.weight',
+     'Soundex, trgm, and keyboard distance similarity measures can be combined to form a secondary ordering parameter for spelling suggestions. This controls the relative weight of the scaled soundex component. Defaults to 0 for "off".',
+     'coust', 'description'),
+   'integer' );
+
+INSERT into config.org_unit_setting_type
+( name, grp, label, description, datatype )
+VALUES
+( 'search.symspell.pg_trgm.weight', 'opac',
+   oils_i18n_gettext(
+     'search.symspell.pg_trgm.weight',
+     'Pg_trgm score weighting in OPAC spelling suggestions.',
+     'coust', 'label'),
+   oils_i18n_gettext(
+     'search.symspell.pg_trgm.weight',
+     'Soundex, pg_trgm, and keyboard distance similarity measures can be combined to form a secondary ordering parameter for spelling suggestions. This controls the relative weight of the scaled pg_trgm component. Defaults to 0 for "off".',
+     'coust', 'description'),
+   'integer' );
+
+INSERT into config.org_unit_setting_type
+( name, grp, label, description, datatype )
+VALUES
+( 'search.symspell.keyboard_distance.weight', 'opac',
+   oils_i18n_gettext(
+     'search.symspell.keyboard_distance.weight',
+     'Keyboard distance score weighting in OPAC spelling suggestions.',
+     'coust', 'label'),
+   oils_i18n_gettext(
+     'search.symspell.keyboard_distance.weight',
+     'Soundex, trgm, and keyboard distance similarity measures can be combined to form a secondary ordering parameter for spelling suggestions. This controls the relative weight of the scaled keyboard distance component. Defaults to 0 for "off".',
+     'coust', 'description'),
+   'integer' );
+
+INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.staff.catalog.results.show_more', 'gui', 'bool',
+    oils_i18n_gettext(
+        'eg.staff.catalog.results.show_more',
+        'Show more details in Angular staff catalog',
+        'cwst', 'label'
+    )
+);
+
+INSERT INTO config.workstation_setting_type
+    (name, grp, datatype, label)
+VALUES (
+    'eg.grid.item.event_grid', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.grid.item.event_grid',
+    'Grid Config: item.event_grid',
+    'cwst', 'label')
+), (
+    'eg.grid.patron.event_grid', 'gui', 'object',
+    oils_i18n_gettext(
+    'eg.grid.patron.event_grid',
+    'Grid Config: patron.event_grid',
+    'cwst', 'label')
+);
+
+INSERT INTO config.org_unit_setting_type
+    (grp, name, datatype, label, description, update_perm, view_perm)
+VALUES (
+    'credit',
+    'credit.processor.stripe.currency', 'string',
+    oils_i18n_gettext(
+        'credit.processor.stripe.currency',
+        'Stripe ISO 4217 currency code',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'credit.processor.stripe.currency',
+        'Use an all lowercase version of a Stripe-supported ISO 4217 currency code.  Defaults to "usd"',
+        'coust',
+        'description'
+    ),
+    (SELECT id FROM permission.perm_list WHERE code = 'ADMIN_CREDIT_CARD_PROCESSING'),
+    (SELECT id FROM permission.perm_list WHERE code = 'VIEW_CREDIT_CARD_PROCESSING')
+);
+
+INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.grid.acq.fund.fund_debit', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.acq.fund.fund_debit',
+        'Grid Config: eg.grid.acq.fund.fund_debit',
+        'cwst', 'label'
+    )
+), (
+    'eg.grid.acq.fund.fund_transfer', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.acq.fund.fund_transfer',
+        'Grid Config: eg.grid.acq.fund.fund_transfer',
+        'cwst', 'label'
+    )
+), (
+    'eg.grid.acq.fund.fund_allocation', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.acq.fund.fund_allocation',
+        'Grid Config: eg.grid.acq.fund.fund_allocation',
+        'cwst', 'label'
+    )
+), (
+    'eg.grid.admin.acq.fund', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.admin.acq.fund',
+        'Grid Config: eg.grid.admin.acq.fund',
+        'cwst', 'label'
+    )
+), (
+    'eg.grid.admin.acq.funding_source', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.admin.acq.funding_source',
+        'Grid Config: eg.grid.admin.acq.funding_source',
+        'cwst', 'label'
+    )
+), (
+    'eg.grid.acq.funding_source.fund_allocation', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.acq.funding_source.fund_allocation',
+        'Grid Config: eg.grid.acq.funding_source.fund_allocation',
+        'cwst', 'label'
+    )
+), (
+    'eg.grid.acq.funding_source.credit', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.acq.funding_source.credit',
+        'Grid Config: eg.grid.acq.funding_source.credit',
+        'cwst', 'label'
+    )
+);
+
+INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.cat.volcopy.defaults', 'cat', 'object',
+    oils_i18n_gettext(
+        'eg.cat.volcopy.defaults',
+        'Holdings Editor Default Values and Visibility',
+        'cwst', 'label'
+    )
+);
+
+INSERT into config.org_unit_setting_type
+    (name, grp, label, description, datatype)
+    VALUES (
+        'circ.primary_item_value_field',
+        'circ',
+        oils_i18n_gettext(
+            'circ.primary_item_value_field',
+            'Use Item Price or Cost as Primary Item Value',
+            'coust',
+            'label'
+        ),
+        oils_i18n_gettext(
+            'circ.primary_item_value_field',
+            'Expects "price" or "cost" and defaults to price.  This refers to the corresponding field on the item record and gets used in such contexts as notices, max fine values when using item price caps (setting or fine rules), and long overdue, damaged, and lost billings.',
+            'coust',
+            'description'
+        ),
+        'string'
+    );
+
+INSERT into config.org_unit_setting_type
+    (name, grp, label, description, datatype)
+    VALUES (
+        'circ.secondary_item_value_field',
+        'circ',
+        oils_i18n_gettext(
+            'circ.secondary_item_value_field',
+            'Use Item Price or Cost as Backup Item Value',
+            'coust',
+            'label'
+        ),
+        oils_i18n_gettext(
+            'circ.secondary_item_value_field',
+            'Expects "price" or "cost", but defaults to neither.  This refers to the corresponding field on the item record and is used as a second-pass fall-through value when determining an item value.  If needed, Evergreen will still look at the "Default Item Price" setting as a final fallback.',
+            'coust',
+            'description'
+        ),
+        'string'
+    );
+
+INSERT INTO config.org_unit_setting_type
+( name, grp, label, description, datatype )
+VALUES
+( 'eg.staffcat.search_filters', 'gui',
+  oils_i18n_gettext(
+    'eg.staffcat.search_filters',
+    'Staff Catalog Search Filters',
+    'coust', 'label'),
+  oils_i18n_gettext(
+    'eg.staffcat.search_filters',
+    'Array of advanced search filters to display, e.g. ["item_lang","audience","lit_form"]',
+    'coust', 'description'),
+  'array' );
+
+-- NOTE: If the template ID requires changing, beware it appears in
+-- 3 places below.
+
+INSERT INTO config.print_template 
+    (id, name, locale, active, owner, label, template) 
+VALUES (
+    4, 'hold_pull_list', 'en-US', TRUE,
+    (SELECT id FROM actor.org_unit WHERE parent_ou IS NULL),
+    oils_i18n_gettext(4, 'Hold Pull List ', 'cpt', 'label'),
+    ''
+);
+
+UPDATE config.print_template SET template = 
+$TEMPLATE$
+[%-
+    USE date;
+    SET holds = template_data;
+    # template_data is an arry of wide_hold hashes.
+-%]
+<div>
+  <style>
+    #holds-pull-list-table td { 
+      padding: 5px; 
+      border: 1px solid rgba(0,0,0,.05);
+    }
+  </style>
+  <table id="holds-pull-list-table">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Title</th>
+        <th>Author</th>
+        <th>Shelf Location</th>
+        <th>Call Number</th>
+        <th>Barcode/Part</th>
+      </tr>
+    </thead>
+    <tbody>
+      [% FOR hold IN holds %]
+      <tr>
+        <td>[% hold.hold_type %]</td>
+        <td style="width: 30%">[% hold.title %]</td>
+        <td style="width: 25%">[% hold.author %]</td>
+        <td>[% hold.acpl_name %]</td>
+        <td>[% hold.cn_full_label %]</td>
+        <td>[% hold.cp_barcode %][% IF hold.p_label %]/[% hold.p_label %][% END %]</td>
+      </tr>
+      [% END %]
+    </tbody>
+  </table>
+</div>
+$TEMPLATE$ WHERE id = 4;
+
+INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.grid.circ.holds.pull_list', 'gui', 'object', 
+    oils_i18n_gettext(
+        'circ.holds.pull_list',
+        'Hold Pull List Grid Settings',
+        'cwst', 'label'
+    )
+), (
+    'circ.holds.pull_list.prefetch', 'gui', 'bool', 
+    oils_i18n_gettext(
+        'circ.holds.pull_list.prefetch',
+        'Hold Pull List Prefetch Preference',
+        'cwst', 'label'
+    )
+);
+
+INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.grid.admin.local.container.carousel_org_unit', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.admin.local.container.carousel_org_unit',
+        'Grid Config: eg.grid.admin.local.container.carousel_org_unit',
+        'cwst', 'label'
+    )
+), (
+    'eg.grid.admin.container.carousel', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.admin.container.carousel',
+        'Grid Config: eg.grid.admin.container.carousel',
+        'cwst', 'label'
+    )
+), (
+    'eg.grid.admin.server.config.carousel_type', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.admin.server.config.carousel_type',
+        'Grid Config: eg.grid.admin.server.config.carousel_type',
+        'cwst', 'label'
+    )
+);
+
+INSERT INTO config.org_unit_setting_type (
+    name, grp, label, description, datatype
+) VALUES (
+    'circ.staff_placed_holds_default_to_ws_ou',
+    'circ',
+    oils_i18n_gettext(
+        'circ.staff_placed_holds_default_to_ws_ou',
+        'Workstation OU is the default for staff-placed holds',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'circ.staff_placed_holds_default_to_ws_ou',
+        'For staff-placed holds, regardless of the patron preferred pickup location, the staff workstation OU is the default pickup location',
+        'coust',
+        'description'
+    ),
+    'bool'
+);
+
+INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.grid.admin.local.triggers.atevdef', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.admin.local.triggers.atevdef',
+        'Grid Config: eg.grid.admin.local.triggers.atevdef',
+        'cwst', 'label'
+    )
+), (
+    'eg.grid.admin.local.triggers.atenv', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.admin.local.triggers.atenv',
+        'Grid Config: eg.grid.admin.local.triggers.atenv',
+        'cwst', 'label'
+    )
+), (
+    'eg.grid.admin.local.triggers.atevparam', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.admin.local.triggers.atevparam',
+        'Grid Config: eg.grid.admin.local.triggers.atevparam',
+        'cwst', 'label'
+    )
+);
+
+INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.grid.cat.bucket.batch_hold.view', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.cat.bucket.batch_hold.view',
+        'Grid Config: eg.grid.cat.bucket.batch_hold.view',
+        'cwst', 'label'
+    )
+), (
+    'eg.grid.cat.bucket.batch_hold.pending', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.cat.bucket.batch_hold.pending',
+        'Grid Config: eg.grid.cat.bucket.batch_hold.pending',
+        'cwst', 'label'
+    )
+), (
+    'eg.grid.cat.bucket.batch_hold.events', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.cat.bucket.batch_hold.events',
+        'Grid Config: eg.grid.cat.bucket.batch_hold.events',
+        'cwst', 'label'
+    )
+), (
+    'eg.grid.cat.bucket.batch_hold.list', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.cat.bucket.batch_hold.list',
+        'Grid Config: eg.grid.cat.bucket.batch_hold.list',
+        'cwst', 'label'
+    )
+);
+
+INSERT INTO config.ui_staff_portal_page_entry_type (code, label)
+VALUES
+    ('link', oils_i18n_gettext('link', 'Link', 'cusppet', 'label')),
+    ('menuitem', oils_i18n_gettext('menuitem', 'Menu Item', 'cusppet', 'label')),
+    ('text', oils_i18n_gettext('text', 'Text and/or HTML', 'cusppet', 'label')),
+    ('header', oils_i18n_gettext('header', 'Header', 'cusppet', 'label')),
+    ('catalogsearch', oils_i18n_gettext('catalogsearch', 'Catalog Search Box', 'cusppet', 'label'));
+
+INSERT INTO config.ui_staff_portal_page_entry
+    (id, page_col, col_pos, entry_type, label, image_url, target_url, owner)
+VALUES
+    ( 1, 1, 0, 'header',        oils_i18n_gettext( 1, 'Circulation and Patrons', 'cusppe', 'label'), NULL, NULL, 1)
+,   ( 2, 1, 1, 'menuitem',      oils_i18n_gettext( 2, 'Check Out Items', 'cusppe', 'label'), '/images/portal/forward.png', '/eg/staff/circ/patron/bcsearch', 1)
+,   ( 3, 1, 2, 'menuitem',      oils_i18n_gettext( 3, 'Check In Items', 'cusppe', 'label'), '/images/portal/back.png', '/eg/staff/circ/checkin/index', 1)
+,   ( 4, 1, 3, 'menuitem',      oils_i18n_gettext( 4, 'Search For Patron By Name', 'cusppe', 'label'), '/images/portal/retreivepatron.png', '/eg/staff/circ/patron/search', 1)
+,   ( 5, 2, 0, 'header',        oils_i18n_gettext( 5, 'Item Search and Cataloging', 'cusppe', 'label'), NULL, NULL, 1)
+,   ( 6, 2, 1, 'catalogsearch', oils_i18n_gettext( 6, 'Search Catalog', 'cusppe', 'label'), NULL, NULL, 1)
+,   ( 7, 2, 2, 'menuitem',      oils_i18n_gettext( 7, 'Record Buckets', 'cusppe', 'label'), '/images/portal/bucket.png', '/eg/staff/cat/bucket/record/', 1)
+,   ( 8, 2, 3, 'menuitem',      oils_i18n_gettext( 8, 'Item Buckets', 'cusppe', 'label'), '/images/portal/bucket.png', '/eg/staff/cat/bucket/copy/', 1)
+,   ( 9, 3, 0, 'header',        oils_i18n_gettext( 9, 'Administration', 'cusppe', 'label'), NULL, NULL, 1)
+,   (10, 3, 1, 'link',          oils_i18n_gettext(10, 'Evergreen Documentation', 'cusppe', 'label'), '/images/portal/helpdesk.png', 'https://docs.evergreen-ils.org', 1)
+,   (11, 3, 2, 'menuitem',      oils_i18n_gettext(11, 'Workstation Administration', 'cusppe', 'label'), '/images/portal/helpdesk.png', '/eg/staff/admin/workstation/index', 1)
+,   (12, 3, 3, 'menuitem',      oils_i18n_gettext(12, 'Reports', 'cusppe', 'label'), '/images/portal/reports.png', '/eg/staff/reporter/legacy/main', 1)
+;
+
+SELECT setval('config.ui_staff_portal_page_entry_id_seq', 100);
+
+
+INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.grid.admin.config.ui_staff_portal_page_entry', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.admin.config.ui_staff_portal_page_entry',
+        'Grid Config: admin.config.ui_staff_portal_page_entry',
+        'cwst', 'label'
+    )
+);
 

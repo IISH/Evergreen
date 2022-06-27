@@ -18,12 +18,7 @@ my $desk_renewal_use_circ_lib;
 
 sub determine_booking_status {
     unless (defined $booking_status) {
-        my $router_name = OpenSRF::Utils::Config
-            ->current
-            ->bootstrap
-            ->router_name || 'router';
-
-        my $ses = create OpenSRF::AppSession($router_name);
+        my $ses = create OpenSRF::AppSession("router");
         $booking_status = grep {$_ eq "open-ils.booking"} @{
             $ses->request("opensrf.router.info.class.list")->gather(1)
         };
@@ -122,16 +117,6 @@ __PACKAGE__->register_method(
     method    => "run_method",
     api_name  => "open-ils.circ.renew.override",
     signature => q/@see open-ils.circ.renew/,
-);
-
-__PACKAGE__->register_method(
-    method    => "run_method",
-    api_name  => "open-ils.circ.renew.auto",
-    signature => q/@see open-ils.circ.renew/,
-    notes     => q/
-    The open-ils.circ.renew.auto API is deprecated.  Please use the
-    auto_renew => 1 option to open-ils.circ.renew, instead.
-    /
 );
 
 __PACKAGE__->register_method(
@@ -248,7 +233,6 @@ sub run_method {
     }
 
     $circulator->is_renewal(1) if $api =~ /renew/;
-    $circulator->auto_renewal(1) if $api =~ /renew.auto/;
     $circulator->is_checkin(1) if $api =~ /checkin/;
     $circulator->is_checkout(1) if $api =~ /checkout/;
     $circulator->override(1) if $api =~ /override/o;
@@ -423,7 +407,6 @@ my @AUTOLOAD_FIELDS = qw/
     backdate
     reservation
     do_inventory_update
-    latest_inventory
     copy
     copy_id
     copy_barcode
@@ -1024,12 +1007,18 @@ sub mk_env {
     
         $self->bail_on_events(OpenILS::Event->new('PATRON_CARD_INACTIVE'))
             unless $U->is_true($patron->card->active);
-    
-        my $expire = DateTime::Format::ISO8601->new->parse_datetime(
-            clean_ISO8601($patron->expire_date));
-    
-        $self->bail_on_events(OpenILS::Event->new('PATRON_ACCOUNT_EXPIRED'))
-            if( CORE::time > $expire->epoch ) ;
+
+        # Expired patrons cannot check out.  Renewals for expired
+        # patrons depend on a setting and will be checked in the
+        # do_renew subroutine.
+        if ($self->is_checkout) {
+            my $expire = DateTime::Format::ISO8601->new->parse_datetime(
+                clean_ISO8601($patron->expire_date));
+
+            if (CORE::time > $expire->epoch) {
+                $self->bail_on_events(OpenILS::Event->new('PATRON_ACCOUNT_EXPIRED'))
+            }
+        }
     }
 }
 
@@ -2726,19 +2715,32 @@ sub do_checkin {
         $self->dont_change_lost_zero($dont_change_lost_zero);
     }
 
-    my $latest_inventory = Fieldmapper::asset::latest_inventory->new;
-
-    if ($self->do_inventory_update) {
-        $latest_inventory->inventory_date('now');
-        $latest_inventory->inventory_workstation($self->editor->requestor->wsid);
-        $latest_inventory->copy($self->copy->id());
-    } else {
-        my $alci = $self->editor->search_asset_latest_inventory(
-            {copy => $self->copy->id}
+    # Check if the copy can float to here. We need this for inventory
+    # and to see if the copy needs to transit or stay here later.
+    my $can_float = 0;
+    if ($self->copy->floating) {
+        my $res = $self->editor->json_query(
+            {   from =>
+                [
+                    'evergreen.can_float',
+                    $self->copy->floating->id,
+                    $self->copy->circ_lib,
+                    $self->circ_lib
+                ]
+            }
         );
-        $latest_inventory = $alci->[0]
+        $can_float = $U->is_true($res->[0]->{'evergreen.can_float'}) if $res;
     }
-    $self->latest_inventory($latest_inventory);
+
+    # Do copy inventory if necessary.
+    if ($self->do_inventory_update && ($self->circ_lib == $self->copy->circ_lib || $can_float)) {
+        my $aci = Fieldmapper::asset::copy_inventory->new();
+        $aci->inventory_date('now');
+        $aci->inventory_workstation($self->editor->requestor->wsid);
+        $aci->copy($self->copy->id());
+        $self->editor->create_asset_copy_inventory($aci);
+        $self->checkin_changed(1);
+    }
 
     if( $self->checkin_check_holds_shelf() ) {
         $self->bail_on_events(OpenILS::Event->new('NO_CHANGE'));
@@ -2797,6 +2799,9 @@ sub do_checkin {
             # handle fines for this circ, including overdue gen if needed
             $self->handle_fines;
         }
+
+        # Void any item deposits if the library wants to
+        $self->check_circ_deposit(1);
 
         $self->checkin_handle_circ_finish;
         return if $self->bail_out;
@@ -2947,20 +2952,7 @@ sub do_checkin {
     
             } else {
                 # copy needs to transit "home", or stick here if it's a floating copy
-                my $can_float = 0;
-                if ($self->copy->floating && ($self->manual_float || !$U->is_true($self->copy->floating->manual)) && !$self->remote_hold) { # copy is potentially floating?
-                    my $res = $self->editor->json_query(
-                        {   from => [
-                                'evergreen.can_float',
-                                $self->copy->floating->id,
-                                $self->copy->circ_lib,
-                                $self->circ_lib
-                            ]
-                        }
-                    );
-                    $can_float = $U->is_true($res->[0]->{'evergreen.can_float'}) if $res; 
-                }
-                if ($can_float) { # Yep, floating, stick here
+                if ($can_float && ($self->manual_float || !$U->is_true($self->copy->floating->manual)) && !$self->remote_hold) { # Yep, floating, stick here
                     $self->checkin_changed(1);
                     $self->copy->circ_lib( $self->circ_lib );
                     $self->update_copy;
@@ -2974,22 +2966,11 @@ sub do_checkin {
             }
         }
     } else { # no-op checkin
-        if ($self->copy->floating) { # XXX floating items still stick where they are even with no-op checkin?
-            my $res = $self->editor->json_query(
-                {
-                    from => [
-                        'evergreen.can_float',
-                        $self->copy->floating->id,
-                        $self->copy->circ_lib,
-                        $self->circ_lib
-                    ]
-                }
-            );
-            if ($res && @$res && $U->is_true($res->[0]->{'evergreen.can_float'})) {
-                $self->checkin_changed(1);
-                $self->copy->circ_lib( $self->circ_lib );
-                $self->update_copy;
-            }
+        # XXX floating items still stick where they are even with no-op checkin?
+        if ($self->copy->floating && $can_float) {
+            $self->checkin_changed(1);
+            $self->copy->circ_lib( $self->circ_lib );
+            $self->update_copy;
         }
     }
 
@@ -3053,18 +3034,32 @@ sub finish_fines_and_voiding {
 }
 
 
-# if a deposit was payed for this item, push the event
+# if a deposit was paid for this item, push the event
+# if called with a truthy param perform the void, depending on settings
 sub check_circ_deposit {
     my $self = shift;
+    my $void = shift;
+
     return unless $self->circ;
+
     my $deposit = $self->editor->search_money_billing(
         {   btype => 5, 
             xact => $self->circ->id, 
             voided => 'f'
         }, {idlist => 1})->[0];
 
-    $self->push_events(OpenILS::Event->new(
-        'ITEM_DEPOSIT_PAID', payload => $deposit)) if $deposit;
+    return unless $deposit;
+
+    if ($void) {
+         my $void_on_checkin = $U->ou_ancestor_setting_value(
+             $self->circ_lib,OILS_SETTING_VOID_ITEM_DEPOSIT_ON_CHECKIN,$self->editor);
+         if ( $void_on_checkin ) {
+            my $evt = $CC->void_bills($self->editor,[$deposit], "DEPOSIT ITEM RETURNED");
+            return $evt if $evt;
+        }
+    } else { # if void is unset this is just a check, notify that there was a deposit billing
+        $self->push_events(OpenILS::Event->new('ITEM_DEPOSIT_PAID', payload => $deposit));
+    }
 }
 
 sub reshelve_copy {
@@ -4012,22 +4007,17 @@ sub checkin_flesh_events {
         );
     }
 
-    if ($self->latest_inventory) {
-        # flesh some workstation fields before returning
-        $self->latest_inventory->inventory_workstation(
-            $self->editor->retrieve_actor_workstation([$self->latest_inventory->inventory_workstation])
-        );
+    # Flesh the latest inventory.
+    # NB: This survives the unflesh_copy below. Let's keep it that way.
+    my $alci = $self->editor->search_asset_latest_inventory([
+        {copy=>$self->copy->id},
+        {flesh => 1,
+         flesh_fields => {
+             alci => ['inventory_workstation']
+         }}]);
+    if ($alci && $alci->[0]) {
+        $self->copy->latest_inventory($alci->[0]);
     }
-
-    if($self->latest_inventory && !$self->latest_inventory->id) {
-        my $alci = $self->editor->search_asset_latest_inventory(
-            {copy => $self->latest_inventory->copy}
-        );
-        if($alci->[0]) {
-            $self->latest_inventory->id($alci->[0]->id);
-        }
-    }
-    $self->copy->latest_inventory($self->latest_inventory);
 
     for my $evt (@{$self->events}) {
 
@@ -4042,8 +4032,6 @@ sub checkin_flesh_events {
         $payload->{patron}  = $self->patron;
         $payload->{reservation} = $self->reservation
             unless (not $self->reservation or $self->reservation->cancel_time);
-        $payload->{latest_inventory} = $self->latest_inventory;
-        if ($self->do_inventory_update) { $payload->{do_inventory_update} = 1; }
 
         $evt->{payload}     = $payload;
     }
@@ -4052,7 +4040,7 @@ sub checkin_flesh_events {
 sub log_me {
     my( $self, $msg ) = @_;
     my $bc = ($self->copy) ? $self->copy->barcode :
-        $self->barcode;
+        $self->copy_barcode;
     $bc ||= "";
     my $usr = ($self->patron) ? $self->patron->id : "";
     $logger->info("circulator: $msg requestor=".$self->editor->requestor->id.
@@ -4120,6 +4108,15 @@ sub do_renew {
             }
         }
         $self->circ_lib($circ->circ_lib) if($desk_renewal_use_circ_lib);
+    }
+
+    # Check if expired patron is allowed to renew, and bail if not.
+    my $expire = DateTime::Format::ISO8601->new->parse_datetime(clean_ISO8601($self->patron->expire_date));
+    if (CORE::time > $expire->epoch) {
+        my $allow_renewal = $U->ou_ancestor_setting_value($self->circ_lib, OILS_SETTING_ALLOW_RENEW_FOR_EXPIRED_PATRON);
+        unless ($U->is_true($allow_renewal)) {
+            return $self->bail_on_events(OpenILS::Event->new('PATRON_ACCOUNT_EXPIRED'));
+        }
     }
 
     # Run the fine generator against the old circ

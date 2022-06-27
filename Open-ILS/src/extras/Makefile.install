@@ -4,21 +4,21 @@
 #
 # Makefile to install prerequisites for OpenSRF and Evergreen
 #
-# Currently supports Debian (buster, stretch, jessie),
-# Ubuntu (16.04), Ubuntu (18.04).
+# Currently supports Debian (bullseye, buster, stretch),
+# Ubuntu (18.04), Ubuntu (20.04).
 #
 # Installs Perl prereqs, libdbi, libdbi-drivers, and libyaz
 #
 # usage:
+# 	make -f Makefile.install debian-bullseye
+# 	- or -
 # 	make -f Makefile.install debian-buster
 # 	- or -
 # 	make -f Makefile.install debian-stretch
 # 	- or -
-# 	make -f Makefile.install debian-jessie
-# 	- or -
-# 	make -f Makefile.install ubuntu-xenial
-# 	- or -
 # 	make -f Makefile.install ubuntu-bionic
+# 	- or -
+# 	make -f Makefile.install ubuntu-focal
 # 	- or -
 # 	make -f Makefile.install fedora
 #
@@ -40,7 +40,7 @@ export LIBDBI_HOST=http://open-ils.org/~denials/evergreen
 
 # some OSes require a newer version of NodeJS
 # NOTE: Using the LTS binaries for NodeJS
-export NODEJS_VERSION=v12.13.0
+export NODEJS_VERSION=v14.18.1
 export NODEJS_BINDIR=node-$(NODEJS_VERSION)-linux-x64
 export NODEJS_TARBIN=$(NODEJS_BINDIR).tar.xz
 export NODEJS_BINARY="https://nodejs.org/dist/$(NODEJS_VERSION)/$(NODEJS_TARBIN)"
@@ -64,73 +64,103 @@ DIR = $(dir $(lastword $(MAKEFILE_LIST)))/install
 
 all:
 	@echo "please specify an OS" && exit 0
+debian-bullseye:
+	@make -f $(DIR)/Makefile.debian-bullseye
 debian-buster:
 	@make -f $(DIR)/Makefile.debian-buster
 debian-stretch:
 	@make -f $(DIR)/Makefile.debian-stretch
-debian-jessie:
-	@make -f $(DIR)/Makefile.debian-jessie
 ubuntu-bionic:
 	@make -f $(DIR)/Makefile.ubuntu-bionic
-ubuntu-xenial:
-	@make -f $(DIR)/Makefile.ubuntu-xenial
+ubuntu-focal:
+	@make -f $(DIR)/Makefile.ubuntu-focal
 fedora:
 	@make -f $(DIR)/Makefile.fedora
 
-postgres-server-debian-buster:
-	@make -f $(DIR)/Makefile.debian-buster install_postgres_server
+postgres-server-debian-bullseye-10:
+	@make -f $(DIR)/Makefile.debian-bullseye install_postgres_server_10
+postgres-server-debian-bullseye-11:
+	@make -f $(DIR)/Makefile.debian-bullseye install_postgres_server_11
+postgres-server-debian-bullseye-12:
+	@make -f $(DIR)/Makefile.debian-bullseye install_postgres_server_12
+postgres-server-debian-bullseye-13:
+	@make -f $(DIR)/Makefile.debian-bullseye install_postgres_server_13
+postgres-server-debian-bullseye-14:
+	@make -f $(DIR)/Makefile.debian-bullseye install_postgres_server_14
 postgres-server-debian-buster-10:
 	@make -f $(DIR)/Makefile.debian-buster install_postgres_server_10
-postgres-server-debian-stretch:
-	@make -f $(DIR)/Makefile.debian-stretch install_postgres_server
+postgres-server-debian-buster-11:
+	@make -f $(DIR)/Makefile.debian-buster install_postgres_server_11
+postgres-server-debian-buster-12:
+	@make -f $(DIR)/Makefile.debian-buster install_postgres_server_12
+postgres-server-debian-buster-13:
+	@make -f $(DIR)/Makefile.debian-buster install_postgres_server_13
+postgres-server-debian-buster-14:
+	@make -f $(DIR)/Makefile.debian-buster install_postgres_server_14
 postgres-server-debian-stretch-10:
 	@make -f $(DIR)/Makefile.debian-stretch install_postgres_server_10
-postgres-server-debian-jessie:
-	@make -f $(DIR)/Makefile.debian-jessie install_postgres_server
-postgres-server-debian-jessie-10:
-	@make -f $(DIR)/Makefile.debian-jessie install_postgres_server_10
-postgres-server-ubuntu-bionic:
-	@make -f $(DIR)/Makefile.ubuntu-bionic install_postgres_server
+postgres-server-debian-stretch-11:
+	@make -f $(DIR)/Makefile.debian-stretch install_postgres_server_11
+postgres-server-debian-stretch-12:
+	@make -f $(DIR)/Makefile.debian-stretch install_postgres_server_12
+postgres-server-debian-stretch-13:
+	@make -f $(DIR)/Makefile.debian-stretch install_postgres_server_13
+postgres-server-debian-stretch-14:
+	@make -f $(DIR)/Makefile.debian-stretch install_postgres_server_14
 postgres-server-ubuntu-bionic-10:
 	@make -f $(DIR)/Makefile.ubuntu-bionic install_postgres_server_10
-postgres-server-ubuntu-xenial:
-	@make -f $(DIR)/Makefile.ubuntu-xenial install_postgres_server
-postgres-server-ubuntu-xenial-10:
-	@make -f $(DIR)/Makefile.ubuntu-xenial install_postgres_server_10
+postgres-server-ubuntu-bionic-11:
+	@make -f $(DIR)/Makefile.ubuntu-bionic install_postgres_server_11
+postgres-server-ubuntu-bionic-12:
+	@make -f $(DIR)/Makefile.ubuntu-bionic install_postgres_server_12
+postgres-server-ubuntu-bionic-13:
+	@make -f $(DIR)/Makefile.ubuntu-bionic install_postgres_server_13
+postgres-server-ubuntu-bionic-14:
+	@make -f $(DIR)/Makefile.ubuntu-bionic install_postgres_server_14
+postgres-server-ubuntu-focal-10:
+	@make -f $(DIR)/Makefile.ubuntu-focal install_postgres_server_10
+postgres-server-ubuntu-focal-11:
+	@make -f $(DIR)/Makefile.ubuntu-focal install_postgres_server_11
+postgres-server-ubuntu-focal-12:
+	@make -f $(DIR)/Makefile.ubuntu-focal install_postgres_server_12
+postgres-server-ubuntu-focal-13:
+	@make -f $(DIR)/Makefile.ubuntu-focal install_postgres_server_13
+postgres-server-ubuntu-focal-14:
+	@make -f $(DIR)/Makefile.ubuntu-focal install_postgres_server_14
 postgres-server-fedora:
 	@make -f $(DIR)/Makefile.fedora install_postgres_server
 
 ubuntu-bionic-developer:
 	@make -f $(DIR)/Makefile.ubuntu-bionic install_developer
-ubuntu-xenial-developer:
-	@make -f $(DIR)/Makefile.ubuntu-xenial install_developer
+ubuntu-focal-developer:
+	@make -f $(DIR)/Makefile.ubuntu-focal install_developer
+debian-bullseye-developer:
+	@make -f $(DIR)/Makefile.debian-bullseye install_developer
 debian-buster-developer:
 	@make -f $(DIR)/Makefile.debian-buster install_developer
 debian-stretch-developer:
 	@make -f $(DIR)/Makefile.debian-stretch install_developer
-debian-jessie-developer:
-	@make -f $(DIR)/Makefile.debian-jessie install_developer
 
 ubuntu-bionic-translator:
 	@make -f $(DIR)/Makefile.ubuntu-bionic install_translator
-ubuntu-xenial-translator:
-	@make -f $(DIR)/Makefile.ubuntu-xenial install_translator
+ubuntu-focal-translator:
+	@make -f $(DIR)/Makefile.ubuntu-focal install_translator
+debian-bullseye-translator:
+	@make -f $(DIR)/Makefile.debian-bullseye install_translator
 debian-buster-translator:
 	@make -f $(DIR)/Makefile.debian-buster install_translator
 debian-stretch-translator:
 	@make -f $(DIR)/Makefile.debian-stretch install_translator
-debian-jessie-translator:
-	@make -f $(DIR)/Makefile.debian-jessie install_translator
 
 ubuntu-bionic-packager:
 	@make -f $(DIR)/Makefile.ubuntu-bionic install_packager
-ubuntu-xenial-packager:
-	@make -f $(DIR)/Makefile.ubuntu-xenial install_packager
+ubuntu-focal-packager:
+	@make -f $(DIR)/Makefile.ubuntu-focal install_packager
+debian-bullseye-packager:
+	@make -f $(DIR)/Makefile.debian-bullseye install_packager
 debian-buster-packager:
 	@make -f $(DIR)/Makefile.debian-buster install_packager
 debian-stretch-packager:
 	@make -f $(DIR)/Makefile.debian-stretch install_packager
-debian-jessie-packager:
-	@make -f $(DIR)/Makefile.debian-jessie install_packager
 
 # vim:noet:sw=4:ts=4:

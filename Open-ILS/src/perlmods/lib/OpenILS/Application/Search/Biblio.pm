@@ -10,11 +10,10 @@ use OpenSRF::Utils::SettingsClient;
 use OpenILS::Utils::CStoreEditor q/:funcs/;
 use OpenSRF::Utils::Cache;
 use Encode;
+use Email::Send;
+use Email::Simple;
 
 use OpenSRF::Utils::Logger qw/:logger/;
-
-
-use OpenSRF::Utils::JSON;
 
 use Time::HiRes qw(time sleep);
 use OpenSRF::EX qw(:try);
@@ -139,7 +138,7 @@ sub record_id_to_mods_slim {
     my( $self, $client, $id ) = @_;
     return undef unless defined $id;
 
-    if(ref($id) and ref($id) == 'ARRAY') {
+    if(ref($id) and ref($id) eq 'ARRAY') {
         return _records_to_mods( @$id );
     }
     my $mods_list = _records_to_mods( $id );
@@ -830,7 +829,7 @@ __PACKAGE__->register_method(
 
 sub multiclass_query {
     # arghash only really supports limit/offset anymore
-    my($self, $conn, $arghash, $query, $docache) = @_;
+    my($self, $conn, $arghash, $query, $docache, $phys_loc) = @_;
 
     if ($query) {
         $query =~ s/\+/ /go;
@@ -842,7 +841,7 @@ sub multiclass_query {
     $logger->debug("initial search query => $query") if $query;
 
     (my $method = $self->api_name) =~ s/\.query/.staged/o;
-    return $self->method_lookup($method)->dispatch($arghash, $docache);
+    return $self->method_lookup($method)->dispatch($arghash, $docache, $phys_loc);
 
 }
 
@@ -1131,7 +1130,9 @@ __PACKAGE__->register_method(
 
 my $estimation_strategy;
 sub staged_search {
-    my($self, $conn, $search_hash, $docache) = @_;
+    my($self, $conn, $search_hash, $docache, $phys_loc) = @_;
+
+    $phys_loc ||= $U->get_org_tree->id;
 
     my $IAmMetabib = ($self->api_name =~ /metabib/) ? 1 : 0;
 
@@ -1146,7 +1147,7 @@ sub staged_search {
         return {count => 0} unless (
             $search_hash and 
             $search_hash->{searches} and 
-            scalar( keys %{$search_hash->{searches}} ));
+            int(scalar( keys %{$search_hash->{searches}} )));
     }
 
     my $search_duration;
@@ -1286,6 +1287,57 @@ sub staged_search {
         $cache->put_cache($key, $cache_data, $cache_timeout);
     }
 
+    my $setting_names = [ qw/
+             opac.did_you_mean.max_suggestions
+             opac.did_you_mean.low_result_threshold
+             search.symspell.min_suggestion_use_threshold
+             search.symspell.soundex.weight
+             search.symspell.pg_trgm.weight
+             search.symspell.keyboard_distance.weight/ ];
+    my %suggest_settings = $U->ou_ancestor_setting_batch_insecure(
+        $phys_loc, $setting_names
+    );
+
+    # Defaults...
+    $suggest_settings{$_} ||= {value=>undef} for @$setting_names;
+
+    # Pull this one off the front, it's not used for the function call
+    my $max_suggestions_setting = shift @$setting_names;
+    my $sugg_low_thresh_setting = shift @$setting_names;
+    $max_suggestions_setting = $suggest_settings{$max_suggestions_setting}{value} // -1;
+    my $suggest_low_threshold = $suggest_settings{$sugg_low_thresh_setting}{value} || 0;
+
+    if ($global_summary->{visible} <= $suggest_low_threshold and $max_suggestions_setting != 0) {
+        # For now, we're doing one-class/one-term suggestions only
+        my ($class, $term) = one_class_one_term($global_summary->{query_struct});
+        if ($class && $term) { # check for suggestions!
+            my $suggestion_verbosity = 4;
+            if ($max_suggestions_setting == -1) { # special value that means "only best suggestion, and not always"
+                $max_suggestions_setting = 1;
+                $suggestion_verbosity = 0;
+            }
+
+            my @settings_params = map { $suggest_settings{$_}{value} } @$setting_names;
+            my $suggs = new_editor()->json_query({
+                from  => [
+                    'search.symspell_lookup',
+                        $term, $class,
+                        $suggestion_verbosity,
+                        1, # case transfer
+                        @settings_params
+                ],
+                limit => $max_suggestions_setting
+            });
+            if (@$suggs and $$suggs[0]{suggestion} ne $term) {
+                $global_summary->{suggestions}{'one_class_one_term'} = {
+                    class       => $class,
+                    term        => $term,
+                    suggestions  => $suggs
+                };
+            }
+        }
+    }
+
     my @results = grep {defined $_} @$all_results[$user_offset..($user_offset + $user_limit - 1)];
 
     $conn->respond_complete(
@@ -1304,6 +1356,30 @@ sub staged_search {
     $logger->info("Completed canonicalized search is: $$global_summary{canonicalized_query}");
 
     return cache_facets($facet_key, $new_ids, $IAmMetabib, $ignore_facet_classes) if $docache;
+}
+
+sub one_class_one_term {
+    my $qstruct = shift;
+    my $node = $$qstruct{children};
+
+    my $class = undef;
+    my $term = undef;
+    while ($node) {
+        last if (
+            $$node{'|'}
+            or @{$$node{'&'}} != 1
+            or ($$node{'&'}[0]{fields} and @{$$node{'&'}[0]{fields}} > 0)
+        );
+
+        $class ||= $$node{'&'}[0]{class};
+        $term ||= $$node{'&'}[0]{content};
+
+        last if ($term);
+
+        $node = $$node{'&'}[0]{children};
+    }
+
+    return ($class, $term);
 }
 
 sub fetch_display_fields {
@@ -1836,12 +1912,84 @@ sub biblio_record_to_marc_html {
 }
 
 __PACKAGE__->register_method(
+    method    => "send_event_email_output",
+    api_name  => "open-ils.search.biblio.record.email.send_output",
+);
+sub send_event_email_output {
+    my($self, $client, $auth, $event_id, $capkey, $capanswer) = @_;
+    return undef unless $event_id;
+
+    my $captcha_pass = 0;
+    my $real_answer;
+    if ($capkey) {
+        $real_answer = $cache->get_cache(md5_hex($capkey));
+        $captcha_pass++ if ($real_answer eq $capanswer);
+    }
+
+    my $e = new_editor(authtoken => $auth);
+    return $e->die_event unless $captcha_pass || $e->checkauth;
+
+    my $event = $e->retrieve_action_trigger_event([$event_id,{flesh => 1, flesh_fields => { atev => ['template_output']}}]);
+    return undef unless ($event and $event->template_output);
+
+    my $smtp = OpenSRF::Utils::SettingsClient
+        ->new
+        ->config_value('email_notify', 'smtp_server');
+
+    my $sender = Email::Send->new({mailer => 'SMTP'});
+    $sender->mailer_args([Host => $smtp]);
+
+    my $stat;
+    my $err;
+
+    my $email = Email::Simple->new($event->template_output->data);
+
+    for my $hfield (qw/From To Subject Bcc Cc Reply-To Sender/) {
+        my @headers = $email->header($hfield);
+        $email->header_set($hfield => map { encode("MIME-Header", $_) } @headers) if ($headers[0]);
+    }
+
+    $email->header_set('MIME-Version' => '1.0');
+    $email->header_set('Content-Type' => "text/plain; charset=UTF-8");
+    $email->header_set('Content-Transfer-Encoding' => '8bit');
+
+    try {
+        $stat = $sender->send($email);
+    } catch Error with {
+        $err = $stat = shift;
+        $logger->error("send_event_email_output: Email failed with error: $err");
+    };
+
+    if( !$err and $stat and $stat->type eq 'success' ) {
+        $logger->info("send_event_email_output: successfully sent email");
+        return 1;
+    } else {
+        $logger->warn("send_event_email_output: unable to send email: ".Dumper($stat));
+        return 0;
+    }
+}
+
+__PACKAGE__->register_method(
+    method    => "format_biblio_record_entry",
+    api_name  => "open-ils.search.biblio.record.print.preview",
+);
+
+__PACKAGE__->register_method(
+    method    => "format_biblio_record_entry",
+    api_name  => "open-ils.search.biblio.record.email.preview",
+);
+
+__PACKAGE__->register_method(
     method    => "format_biblio_record_entry",
     api_name  => "open-ils.search.biblio.record.print",
     signature => {
         desc   => 'Returns a printable version of the specified bib record',
         params => [
             { desc => 'Biblio record entry ID or array of IDs', type => 'number' },
+            { desc => 'Context library for holdings, if applicable', type => 'number' },
+            { desc => 'Sort order, if applicable', type => 'string' },
+            { desc => 'Sort direction, if applicable', type => 'string' },
+            { desc => 'Definition Group Member id', type => 'number' },
         ],
         return => {
             desc => q/An action_trigger.event object or error event./,
@@ -1855,8 +2003,15 @@ __PACKAGE__->register_method(
     signature => {
         desc   => 'Emails an A/T templated version of the specified bib records to the authorized user',
         params => [
-            { desc => 'Authentication token',  type => 'string'},
+            { desc => 'Authentication token', type => 'string'},
             { desc => 'Biblio record entry ID or array of IDs', type => 'number' },
+            { desc => 'Context library for holdings, if applicable', type => 'number' },
+            { desc => 'Sort order, if applicable', type => 'string' },
+            { desc => 'Sort direction, if applicable', type => 'string' },
+            { desc => 'Definition Group Member id', type => 'number' },
+            { desc => 'Whether to bypass auth due to captcha', type => 'bool' },
+            { desc => 'Email address, if none for the user', type => 'string' },
+            { desc => 'Subject, if customized', type => 'string' },
         ],
         return => {
             desc => q/Undefined on success, otherwise an error event./,
@@ -1866,24 +2021,42 @@ __PACKAGE__->register_method(
 );
 
 sub format_biblio_record_entry {
-    my($self, $conn, $arg1, $arg2) = @_;
+    my ($self, $conn) = splice @_, 0, 2;
 
     my $for_print = ($self->api_name =~ /print/);
     my $for_email = ($self->api_name =~ /email/);
+    my $preview = ($self->api_name =~ /preview/);
 
-    my $e; my $auth; my $bib_id; my $context_org;
+    my ($auth, $captcha_pass, $email, $subject);
+    if ($for_email) {
+        $auth = shift @_;
+        ($captcha_pass, $email, $subject) = splice @_, -3, 3;
+    }
+    my ($bib_id, $holdings_context_org, $bib_sort, $sort_dir, $group_member) = @_;
+    $holdings_context_org ||= $U->get_org_tree->id;
+    $bib_sort ||= 'author';
+    $sort_dir ||= 'ascending';
+
+    my $e; my $event_context_org; my $type = 'brief';
 
     if ($for_print) {
-        $bib_id = $arg1;
-        $context_org = $arg2 || $U->get_org_tree->id;
+        $event_context_org = $holdings_context_org;
         $e = new_editor(xact => 1);
     } elsif ($for_email) {
-        $auth = $arg1;
-        $bib_id = $arg2;
         $e = new_editor(authtoken => $auth, xact => 1);
-        return $e->die_event unless $e->checkauth;
-        $context_org = $e->requestor->home_ou;
+        return $e->die_event unless $captcha_pass || $e->checkauth;
+        $event_context_org = $e->requestor ? $e->requestor->home_ou : $holdings_context_org;
+        $email ||= $e->requestor ? $e->requestor->email : '';
     }
+
+    if ($group_member) {
+        $group_member = $e->retrieve_action_trigger_event_def_group_member($group_member);
+        if ($group_member and $U->is_true($group_member->holdings)) {
+            $type = 'full';
+        }
+    }
+
+    $holdings_context_org = $e->retrieve_actor_org_unit($holdings_context_org);
 
     my $bib_ids;
     if (ref $bib_id ne 'ARRAY') {
@@ -1896,7 +2069,7 @@ sub format_biblio_record_entry {
     $bucket->btype('temp');
     $bucket->name('format_biblio_record_entry ' . $U->create_uuid_string);
     if ($for_email) {
-        $bucket->owner($e->requestor) 
+        $bucket->owner($e->requestor || 1) 
     } else {
         $bucket->owner(1);
     }
@@ -1914,13 +2087,26 @@ sub format_biblio_record_entry {
 
     $e->commit;
 
+    my $usr_data = {
+        type        => $type,
+        email       => $email,
+        subject     => $subject,
+        context_org => $holdings_context_org->shortname,
+        sort_by     => $bib_sort,
+        sort_dir    => $sort_dir,
+        preview     => $preview
+    };
+
     if ($for_print) {
 
-        return $U->fire_object_event(undef, 'biblio.format.record_entry.print', [ $bucket ], $context_org);
+        return $U->fire_object_event(undef, 'biblio.format.record_entry.print', [ $bucket ], $event_context_org, undef, [ $usr_data ]);
 
     } elsif ($for_email) {
 
-        $U->create_events_for_hook('biblio.format.record_entry.email', $bucket, $context_org, undef, undef, 1);
+        return $U->fire_object_event(undef, 'biblio.format.record_entry.email', [ $bucket ], $event_context_org, undef, [ $usr_data ])
+            if ($preview);
+
+        $U->create_events_for_hook('biblio.format.record_entry.email', $bucket, $event_context_org, undef, $usr_data, 1);
     }
 
     return undef;
@@ -2224,7 +2410,7 @@ sub biblio_search_isbn_batch {
             }
         }
     }
-    return { ids => \@recs, count => scalar(@recs) };
+    return { ids => \@recs, count => int(scalar(@recs)) };
 }
 
 foreach my $issn_method (qw/
@@ -2685,7 +2871,17 @@ sub bib_copies {
 
     my $resp;
     while ($resp = $req->recv) {
-        $client->respond($resp->content); 
+        my $copy = $resp->content;
+
+        if ($is_staff) {
+            # last_circ is an IDL query so it cannot be queried directly
+            # via JSON query.
+            $copy->{last_circ} = 
+                new_editor()->retrieve_reporter_last_circ_date($copy->{id})
+                ->last_circ;
+        }
+
+        $client->respond($copy);
     }
 
     return undef;
@@ -2701,8 +2897,9 @@ sub mk_copy_query {
     my $copy_offset = shift;
     my $pref_ou = shift;
     my $is_staff = shift;
+    my $base_query = shift;
 
-    my $query = $U->basic_opac_copy_query(
+    my $query = $base_query || $U->basic_opac_copy_query(
         $rec_id, undef, undef, $copy_limit, $copy_offset, $is_staff
     );
 
@@ -2726,6 +2923,16 @@ sub mk_copy_query {
                 }
             }
         }};
+
+        if ($pref_ou) {
+            # Make sure the pref OU is included in the results
+            my $in = $query->{from}->{acp}->[1]->{aou}->{filter}->{id}->{in};
+            delete $query->{from}->{acp}->[1]->{aou}->{filter}->{id};
+            $query->{from}->{acp}->[1]->{aou}->{filter}->{'-or'} = [
+                {id => {in => $in}},
+                {id => $pref_ou}
+            ];
+        }
     };
 
     # Unsure if we want these in the shared function, leaving here for now
@@ -2741,6 +2948,443 @@ sub mk_copy_query {
     );
 
     return $query;
+}
+
+__PACKAGE__->register_method(
+    method    => 'record_urls',
+    api_name  => 'open-ils.search.biblio.record.resource_urls.retrieve',
+    argc      => 1,
+    stream    => 1,
+    signature => {
+        desc   => q/Returns bib record 856 URL content./,
+        params => [
+            {desc => 'Context org unit ID', type => 'number'},
+            {desc => 'Record ID or Array of Record IDs', type => 'number or array'}
+        ],
+        return => {
+            desc => 'Stream of URL objects, one collection object per record',
+            type => 'object'
+        }
+    }
+);
+
+sub record_urls {
+    my ($self, $client, $org_id, $record_ids) = @_;
+
+    $record_ids = [$record_ids] unless ref $record_ids eq 'ARRAY';
+
+    my $e = new_editor();
+
+    for my $record_id (@$record_ids) {
+
+        my @urls;
+
+        # Start with scoped located URIs
+        my $uris = $e->json_query({
+            from => ['evergreen.located_uris_as_uris', $record_id, $org_id]});
+
+        for my $uri (@$uris) {
+            push(@urls, {
+                href => $uri->{href},
+                label => $uri->{label},
+                note => $uri->{use_restriction}
+            });
+        }
+
+        # Logic copied from TPAC misc_utils.tts
+        my $bib = $e->retrieve_biblio_record_entry($record_id)
+            or return $e->event;
+
+        my $marc_doc = $U->marc_xml_to_doc($bib->marc);
+
+        for my $node ($marc_doc->findnodes('//*[@tag="856" and @ind1="4"]')) {
+
+            # asset.uri's
+            next if $node->findnodes('./*[@code="9" or @code="w" or @code="n"]');
+
+            my $url = {};
+            my ($label) = $node->findnodes('./*[@code="y"]');
+            my ($notes) = $node->findnodes('./*[@code="z" or @code="3"]');
+
+            my $first = 1;
+            for my $href_node ($node->findnodes('./*[@code="u"]')) {
+                next unless $href_node;
+
+                # it's possible for multiple $u's to exist within 1 856 tag.
+                # in that case, honor the label/notes data for the first $u, but
+                # leave any subsequent $u's as unadorned href's.
+                # use href/link/note keys to be consistent with args.uri's
+
+                my $href = $href_node->textContent;
+                push(@urls, {
+                    href => $href,
+                    label => ($first && $label) ?  $label->textContent : $href,
+                    note => ($first && $notes) ? $notes->textContent : '',
+                    ind2 => $node->getAttribute('ind2')
+                });
+                $first = 0;
+            }
+        }
+
+        $client->respond({id => $record_id, urls => \@urls});
+    }
+
+    return undef;
+}
+
+__PACKAGE__->register_method(
+    method    => 'catalog_record_summary',
+    api_name  => 'open-ils.search.biblio.record.catalog_summary',
+    stream    => 1,
+    max_bundle_count => 1,
+    signature => {
+        desc   => 'Stream of record data suitable for catalog display',
+        params => [
+            {desc => 'Context org unit ID', type => 'number'},
+            {desc => 'Array of Record IDs', type => 'array'}
+        ],
+        return => { 
+            desc => q/
+                Stream of record summary objects including id, record,
+                hold_count, copy_counts, display (metabib display
+                fields), attributes (metabib record attrs), plus
+                metabib_id and metabib_records for the metabib variant.
+            /
+        }
+    }
+);
+__PACKAGE__->register_method(
+    method    => 'catalog_record_summary',
+    api_name  => 'open-ils.search.biblio.record.catalog_summary.staff',
+    stream    => 1,
+    max_bundle_count => 1,
+    signature => q/see open-ils.search.biblio.record.catalog_summary/
+);
+__PACKAGE__->register_method(
+    method    => 'catalog_record_summary',
+    api_name  => 'open-ils.search.biblio.metabib.catalog_summary',
+    stream    => 1,
+    max_bundle_count => 1,
+    signature => q/see open-ils.search.biblio.record.catalog_summary/
+);
+
+__PACKAGE__->register_method(
+    method    => 'catalog_record_summary',
+    api_name  => 'open-ils.search.biblio.metabib.catalog_summary.staff',
+    stream    => 1,
+    max_bundle_count => 1,
+    signature => q/see open-ils.search.biblio.record.catalog_summary/
+);
+
+
+sub catalog_record_summary {
+    my ($self, $client, $org_id, $record_ids, $options) = @_;
+    my $e = new_editor();
+    $options ||= {};
+    my $pref_ou = $options->{pref_ou};
+
+    my $is_meta = ($self->api_name =~ /metabib/);
+    my $is_staff = ($self->api_name =~ /staff/);
+
+    my $holds_method = $is_meta ? 
+        'open-ils.circ.mmr.holds.count' : 
+        'open-ils.circ.bre.holds.count';
+
+    my $copy_method = $is_meta ? 
+        'open-ils.search.biblio.metarecord.copy_count':
+        'open-ils.search.biblio.record.copy_count';
+
+    $copy_method .= '.staff' if $is_staff;
+
+    $copy_method = $self->method_lookup($copy_method); # local method
+
+    my $holdable_method = $is_meta ?
+        'open-ils.search.biblio.metarecord.has_holdable_copy':
+        'open-ils.search.biblio.record.has_holdable_copy';
+
+    $holdable_method = $self->method_lookup($holdable_method); # local method
+
+    for my $rec_id (@$record_ids) {
+
+        my $response = $is_meta ? 
+            get_one_metarecord_summary($self, $e, $org_id, $rec_id) :
+            get_one_record_summary($self, $e, $org_id, $rec_id);
+
+        ($response->{copy_counts}) = $copy_method->run($org_id, $rec_id);
+
+        $response->{first_call_number} = get_first_call_number(
+            $e, $rec_id, $org_id, $is_staff, $is_meta, $options);
+
+        if ($pref_ou) {
+
+            # If we already have the pref ou copy counts, avoid the extra fetch.
+            my ($match) = 
+                grep {$_->{org_unit} eq $pref_ou} @{$response->{copy_counts}};
+
+            if (!$match) {
+                my ($counts) = $copy_method->run($pref_ou, $rec_id);
+                ($match) = grep {$_->{org_unit} eq $pref_ou} @$counts;
+            }
+
+            $response->{pref_ou_copy_counts} = $match;
+        }
+
+        $response->{hold_count} = 
+            $U->simplereq('open-ils.circ', $holds_method, $rec_id);
+
+        if ($options->{flesh_copies}) {
+            $response->{copies} = get_representative_copies(
+                $e, $rec_id, $org_id, $is_staff, $is_meta, $options);
+        }
+
+        ($response->{has_holdable_copy}) = $holdable_method->run($rec_id);
+
+        $client->respond($response);
+    }
+
+    return undef;
+}
+
+# Returns a snapshot of copy information for a given record or metarecord,
+# sorted by pref org and search org.
+sub get_representative_copies {
+    my ($e, $rec_id, $org_id, $is_staff, $is_meta, $options) = @_;
+
+    my @rec_ids;
+    my $limit = $options->{copy_limit};
+    my $copy_depth = $options->{copy_depth};
+    my $copy_offset = $options->{copy_offset};
+    my $pref_ou = $options->{pref_ou};
+
+    my $org_tree = $U->get_org_tree;
+    if (!$org_id) { $org_id = $org_tree->id; }
+    my $org = $U->find_org($org_tree, $org_id);
+
+    return [] unless $org;
+
+    my $func = 'unapi.biblio_record_entry_feed';
+    my $includes = '{holdings_xml,acp,acnp,acns,circ}';
+    my $limits = "acn=>$limit,acp=>$limit";
+
+    if ($is_meta) {
+        $func = 'unapi.metabib_virtual_record_feed';
+        $includes = '{holdings_xml,acp,acnp,acns,circ,mmr.unapi}';
+        $limits .= ",bre=>$limit";
+    }
+
+    my $xml_query = $e->json_query({from => [
+        $func, '{'.$rec_id.'}', 'marcxml', 
+        $includes, $org->shortname, $copy_depth, $limits,
+        undef, undef,undef, undef, undef, 
+        undef, undef, undef, $pref_ou
+    ]})->[0];
+
+    my $xml = $xml_query->{$func};
+
+    my $doc = XML::LibXML->new->parse_string($xml);
+
+    my $copies = [];
+    for my $volume ($doc->documentElement->findnodes('//*[local-name()="volume"]')) {
+        my $label = $volume->getAttribute('label');
+        my $prefix = $volume->getElementsByTagName('call_number_prefix')->[0]->getAttribute('label');
+        my $suffix = $volume->getElementsByTagName('call_number_suffix')->[0]->getAttribute('label');
+
+        my $copies_node = $volume->findnodes('./*[local-name()="copies"]')->[0];
+
+        for my $copy ($copies_node->findnodes('./*[local-name()="copy"]')) {
+
+            my $status = $copy->getElementsByTagName('status')->[0]->textContent;
+            my $location = $copy->getElementsByTagName('location')->[0]->textContent;
+            my $circ_lib_sn = $copy->getElementsByTagName('circ_lib')->[0]->getAttribute('shortname');
+            my $due_date = '';
+
+            my $current_circ = $copy->findnodes('./*[local-name()="current_circulation"]')->[0];
+            if (my $circ = $current_circ->findnodes('./*[local-name()="circ"]')) {
+                $due_date = $circ->[0]->getAttribute('due_date');
+            }
+
+            push(@$copies, {
+                call_number_label => $label,
+                call_number_prefix_label => $prefix,
+                call_number_suffix_label => $suffix,
+                circ_lib_sn => $circ_lib_sn,
+                copy_status => $status,
+                copy_location => $location,
+                due_date => $due_date
+            });
+        }
+    }
+
+    return $copies;
+}
+
+sub get_first_call_number {
+    my ($e, $rec_id, $org_id, $is_staff, $is_meta, $options) = @_;
+
+    my $limit = $options->{copy_limit};
+    $options->{copy_limit} = 1;
+
+    my $copies = get_representative_copies(
+        $e, $rec_id, $org_id, $is_staff, $is_meta, $options);
+
+    $options->{copy_limit} = $limit;
+
+    return $copies->[0];
+}
+
+sub get_one_rec_urls {
+    my ($self, $e, $org_id, $bib_id) = @_;
+
+    my ($resp) = $self->method_lookup(
+        'open-ils.search.biblio.record.resource_urls.retrieve')
+        ->run($org_id, $bib_id);
+
+    return $resp->{urls};
+}
+
+# Start with a bib summary and augment the data with additional
+# metarecord content.
+sub get_one_metarecord_summary {
+    my ($self, $e, $org_id, $rec_id) = @_;
+
+    my $meta = $e->retrieve_metabib_metarecord($rec_id) or return {};
+    my $maps = $e->search_metabib_metarecord_source_map({metarecord => $rec_id});
+
+    my $bre_id = $meta->master_record; 
+
+    my $response = get_one_record_summary($self, $e, $org_id, $bre_id);
+    $response->{urls} = get_one_rec_urls($self, $e, $org_id, $bre_id);
+
+    $response->{metabib_id} = $rec_id;
+    $response->{metabib_records} = [map {$_->source} @$maps];
+
+    my @other_bibs = map {$_->source} grep {$_->source != $bre_id} @$maps;
+
+    # Augment the record attributes with those of all of the records
+    # linked to this metarecord.
+    if (@other_bibs) {
+        my $attrs = $e->search_metabib_record_attr_flat({id => \@other_bibs});
+
+        my $attributes = $response->{attributes};
+
+        for my $attr (@$attrs) {
+            $attributes->{$attr->attr} = [] unless $attributes->{$attr->attr};
+            push(@{$attributes->{$attr->attr}}, $attr->value) # avoid dupes
+                unless grep {$_ eq $attr->value} @{$attributes->{$attr->attr}};
+        }
+    }
+
+    return $response;
+}
+
+sub get_one_record_summary {
+    my ($self, $e, $org_id, $rec_id) = @_;
+
+    my $bre = $e->retrieve_biblio_record_entry([$rec_id, {
+        flesh => 1,
+        flesh_fields => {
+            bre => [qw/compressed_display_entries mattrs creator editor/]
+        }
+    }]) or return {};
+
+    # Compressed display fields are pachaged as JSON
+    my $display = {};
+    $display->{$_->name} = OpenSRF::Utils::JSON->JSON2perl($_->value)
+        foreach @{$bre->compressed_display_entries};
+
+    # Create an object of 'mraf' attributes.
+    # Any attribute can be multi so dedupe and array-ify all of them.
+    my $attributes = {};
+    for my $attr (@{$bre->mattrs}) {
+        $attributes->{$attr->attr} = {} unless $attributes->{$attr->attr};
+        $attributes->{$attr->attr}->{$attr->value} = 1; # avoid dupes
+    }
+    $attributes->{$_} = [keys %{$attributes->{$_}}] for keys %$attributes;
+
+    # clear bulk
+    $bre->clear_marc;
+    $bre->clear_mattrs;
+    $bre->clear_compressed_display_entries;
+
+    return {
+        id => $rec_id,
+        record => $bre,
+        display => $display,
+        attributes => $attributes,
+        urls => get_one_rec_urls($self, $e, $org_id, $rec_id)
+    };
+}
+
+__PACKAGE__->register_method(
+    method    => 'record_copy_counts_global',
+    api_name  => 'open-ils.search.biblio.record.copy_counts.global.staff',
+    signature => {
+        desc   => q/Returns a count of copies and call numbers for each org
+                    unit, including items attached to each org unit plus
+                    a sum of counts for all descendants./,
+        params => [
+            {desc => 'Record ID', type => 'number'}
+        ],
+        return => {
+            desc => 'Hash of org unit ID  => {copy: $count, call_number: $id}'
+        }
+    }
+);
+
+sub record_copy_counts_global {
+    my ($self, $client, $rec_id) = @_;
+
+    my $copies = new_editor()->json_query({
+        select => {
+            acp => [{column => 'id', alias => 'copy_id'}, 'circ_lib'],
+            acn => [{column => 'id', alias => 'cn_id'}, 'owning_lib']
+        },
+        from => {acn => {acp => {type => 'left'}}},
+        where => {
+            '+acp' => {
+                '-or' => [
+                    {deleted => 'f'},
+                    {id => undef} # left join
+                ]
+            },
+            '+acn' => {deleted => 'f', record => $rec_id}
+        }
+    });
+
+    my $hash = {};
+    my %seen_cn;
+
+    for my $copy (@$copies) {
+        my $org = $copy->{circ_lib} || $copy->{owning_lib};
+        $hash->{$org} = {copies => 0, call_numbers => 0} unless $hash->{$org};
+        $hash->{$org}->{copies}++ if $copy->{circ_lib};
+
+        if (!$seen_cn{$copy->{cn_id}}) {
+            $seen_cn{$copy->{cn_id}} = 1;
+            $hash->{$org}->{call_numbers}++;
+        }
+    }
+
+    my $sum;
+    $sum = sub {
+        my $node = shift;
+        my $h = $hash->{$node->id} || {copies => 0, call_numbers => 0};
+        delete $h->{cn_id};
+
+        for my $child (@{$node->children}) {
+            my $vals = $sum->($child);
+            $h->{copies} += $vals->{copies};
+            $h->{call_numbers} += $vals->{call_numbers};
+        }
+
+        $hash->{$node->id} = $h;
+
+        return $h;
+    };
+
+    $sum->($U->get_org_tree);
+
+    return $hash;
 }
 
 

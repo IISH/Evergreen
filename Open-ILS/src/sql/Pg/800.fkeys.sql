@@ -26,6 +26,8 @@ CREATE RULE protect_bib_rec_delete AS
             WHERE OLD.id = biblio.record_entry.id
     );
 
+CREATE RULE protect_bre_id_neg1 AS ON UPDATE TO biblio.record_entry WHERE OLD.id = -1 DO INSTEAD NOTHING;
+
 CREATE RULE protect_copy_location_delete AS
     ON DELETE TO asset.copy_location DO INSTEAD (
         UPDATE asset.copy_location SET deleted = TRUE WHERE OLD.id = asset.copy_location.id;
@@ -35,6 +37,8 @@ CREATE RULE protect_copy_location_delete AS
         DELETE FROM config.circ_limit_set_copy_loc_map WHERE copy_loc = OLD.id;
     );
     
+CREATE RULE protect_acl_id_1 AS ON UPDATE TO asset.copy_location WHERE OLD.id = 1 DO INSTEAD NOTHING;
+
 CREATE RULE protect_mono_part_delete AS
     ON DELETE TO biblio.monograph_part DO INSTEAD (
         UPDATE biblio.monograph_part
@@ -66,6 +70,7 @@ ALTER TABLE actor.org_unit_proximity_adjustment ADD CONSTRAINT actor_org_unit_pr
 ALTER TABLE actor.org_unit_proximity_adjustment ADD CONSTRAINT actor_org_unit_proximity_copy_location_fkey FOREIGN KEY (copy_location) REFERENCES asset.copy_location (id) DEFERRABLE INITIALLY DEFERRED;
 
 ALTER TABLE acq.provider ADD CONSTRAINT acq_provider_edi_default_fkey FOREIGN KEY (edi_default) REFERENCES acq.edi_account (id) DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE acq.provider ADD CONSTRAINT acq_provider_primary_contact_fkey FOREIGN KEY (primary_contact) REFERENCES acq.provider_contact (id) ON DELETE SET NULL ON UPDATE CASCADE DEFERRABLE INITIALLY DEFERRED;
 
 ALTER TABLE biblio.record_note ADD CONSTRAINT biblio_record_note_record_fkey FOREIGN KEY (record) REFERENCES biblio.record_entry (id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
 ALTER TABLE biblio.record_note ADD CONSTRAINT biblio_record_note_creator_fkey FOREIGN KEY (creator) REFERENCES actor.usr (id) DEFERRABLE INITIALLY DEFERRED;
@@ -169,7 +174,7 @@ BEGIN
 END;
 $f$ LANGUAGE PLPGSQL VOLATILE COST 50;
 
-CREATE OR REPLACE FUNCTION evergreen.asset_latest_inventory_copy_inh_fkey() RETURNS TRIGGER AS $f$
+CREATE OR REPLACE FUNCTION evergreen.asset_copy_inventory_copy_inh_fkey() RETURNS TRIGGER AS $f$
 BEGIN
         PERFORM 1 FROM asset.copy WHERE id = NEW.copy;
         IF NOT FOUND THEN
@@ -189,9 +194,9 @@ CREATE CONSTRAINT TRIGGER inherit_asset_copy_tag_copy_map_copy_fkey
         AFTER UPDATE OR INSERT ON asset.copy_tag_copy_map
         DEFERRABLE FOR EACH ROW EXECUTE PROCEDURE evergreen.asset_copy_tag_copy_map_copy_inh_fkey();
 
-CREATE CONSTRAINT TRIGGER inherit_asset_latest_inventory_copy_fkey
-        AFTER UPDATE OR INSERT ON asset.latest_inventory
-        DEFERRABLE FOR EACH ROW EXECUTE PROCEDURE evergreen.asset_latest_inventory_copy_inh_fkey();
+CREATE CONSTRAINT TRIGGER inherit_asset_copy_inventory_copy_fkey
+        AFTER UPDATE OR INSERT ON asset.copy_inventory
+        DEFERRABLE FOR EACH ROW EXECUTE PROCEDURE evergreen.asset_copy_inventory_copy_inh_fkey();
 
 ALTER TABLE asset.copy_note ADD CONSTRAINT asset_copy_note_creator_fkey FOREIGN KEY (creator) REFERENCES actor.usr (id) ON DELETE SET NULL DEFERRABLE INITIALLY DEFERRED;
 
@@ -260,5 +265,13 @@ ALTER TABLE config.copy_tag_type ADD CONSTRAINT copy_tag_type_owner_fkey FOREIGN
 
 ALTER TABLE config.print_template ADD CONSTRAINT cpt_owner_fkey 
     FOREIGN KEY (owner) REFERENCES  actor.org_unit(id) DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE config.geolocation_service ADD CONSTRAINT cgs_owner_fkey
+    FOREIGN KEY (owner) REFERENCES  actor.org_unit(id) DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE config.ui_staff_portal_page_entry ADD CONSTRAINT cusppe_entry_type_fkey
+    FOREIGN KEY (entry_type) REFERENCES  config.ui_staff_portal_page_entry_type(code) ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE config.ui_staff_portal_page_entry ADD CONSTRAINT cusppe_owner_fkey
+    FOREIGN KEY (owner) REFERENCES  actor.org_unit(id) ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
 
 COMMIT;

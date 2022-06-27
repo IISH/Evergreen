@@ -53,14 +53,13 @@ INSERT INTO asset.copy(id, circ_lib, creator, call_number, editor, copy_number, 
     (907777, 6, 1, 1000001, 1, 1, 1, 1, '3copycopycopy'),
     (908888, 4, 1, 1000002, 1, 1, 1, 1, '4copycopycopy');
 
-COMMIT;
 
 -----------------------------------
 -- Test asset.merge_record_assets() 
 -----------------------------------
 
 -- do merge
-SELECT is(asset.merge_record_assets(60000, 60001), 4, 'Record assets merged!');
+SELECT is(asset.merge_record_assets(60000, 60001), 3, 'Record assets merged!');
 
 -- check if copy 4's acn was updated
 SELECT is(
@@ -91,4 +90,4 @@ SELECT is(
 );
 
 SELECT * FROM finish();
-
+ROLLBACK;

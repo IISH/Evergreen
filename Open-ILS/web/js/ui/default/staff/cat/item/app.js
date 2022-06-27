@@ -52,8 +52,8 @@ angular.module('egItemStatus',
  * Parent scope for list and detail views
  */
 .controller('SearchCtrl', 
-       ['$scope','$q','$window','$location','$timeout','egCore','egNet','egGridDataProvider','egItem', 'egCirc',
-function($scope , $q , $window , $location , $timeout , egCore , egNet , egGridDataProvider , itemSvc , egCirc) {
+      ['$scope','$q','$window','$location','$timeout','egCore','egNet','egGridDataProvider','egItem', 'egCirc', 'ngToast',
+function($scope , $q , $window , $location , $timeout , egCore , egNet , egGridDataProvider , itemSvc , egCirc, ngToast) {
     $scope.args = {}; // search args
 
     // sub-scopes (search / detail-view) apply their version 
@@ -91,7 +91,7 @@ function($scope , $q , $window , $location , $timeout , egCore , egNet , egGridD
     }
 
     $scope.show_in_catalog = function() {
-        window.open('/eg/staff/cat/catalog/record/' + $scope.args.recordId + '/catalog', '_blank');
+        window.open('/eg2/staff/catalog/record/' + $scope.args.recordId, '_blank');
     }
 
     $scope.print_labels = function() {
@@ -156,12 +156,17 @@ function($scope , $q , $window , $location , $timeout , egCore , egNet , egGridD
     $scope.update_inventory = function() {
         itemSvc.updateInventory([$scope.args.copyId], null)
         .then(function(res) {
-            $timeout(function() { location.href = location.href; }, 1000);
+            if (res[0]) {
+                ngToast.create(egCore.strings.SUCCESS_UPDATE_INVENTORY_SINGLE);
+            } else {
+                ngToast.warning(egCore.strings.FAIL_UPDATE_INVENTORY_SINGLE);
+            }
+            $timeout(function() { location.href = location.href; }, 1500);
         });
     }
 
     $scope.show_triggered_events = function() {
-        $location.path('/cat/item/' + $scope.args.copyId + '/triggered_events');
+        window.open('/eg2/staff/circ/item/event-log/' + $scope.args.copyId, '_blank');
     }
 
     $scope.show_item_holds = function() {
@@ -169,7 +174,7 @@ function($scope , $q , $window , $location , $timeout , egCore , egNet , egGridD
     }
 
     $scope.show_record_holds = function() {
-        window.open('/eg/staff/cat/catalog/record/' + $scope.args.recordId + '/holds', '_blank');
+        window.open('/eg2/staff/catalog/record/' + $scope.args.recordId + '/holds', '_blank');
     }
 
     $scope.add_item_alerts = function() {
@@ -412,25 +417,51 @@ function($scope , $q , $window , $location , $timeout , egCore , egNet , egGridD
         }
     });
 
-    $scope.context.search = function(args) {
-        if (!args.barcode) return;
+    $scope.context.search = function(args, noGridRefresh) {
+        if (!args.barcode) return $q.when();
         $scope.context.itemNotFound = false;
-        itemSvc.fetch(args.barcode).then(function(res) {
-            if (res) {
-                copyGrid.refresh();
-                copyGrid.selectItems([res.index]);
-                $scope.args.barcode = '';
-            } else {
-                $scope.context.itemNotFound = true;
-                egCore.audio.play('warning.item_status.itemNotFound');
-            }
-            $scope.context.selectBarcode = true;
-        })
+
+        //check to see if there are multiple barcodes in CSV format
+        var barcodes = [];
+        //split on commas and clean up barcodes
+        angular.forEach(args.barcode.split(/,/), function(line) {
+            //remove all whitespace and commas
+            line = line.replace(/[\s,]+/g,'');
+
+            //Or remove leading/trailing whitespace
+            //line = line.replace(/(^[\s,]+|[\s,]+$/g,'');
+
+            if (!line) return;
+            barcodes.push(line);
+        });
+
+        if(barcodes.length > 1){
+            //convert to newline seperated list and send to barcodesFromFile processor
+            $scope.barcodesFromFile = barcodes.join('\n');
+            //console.log('Barcodes: ',barcodes);
+            return $q.when();
+
+        } else {
+            //Single Barcode
+            return itemSvc.fetch(args.barcode).then(function(res) {
+                if (res) {
+                    if (!noGridRefresh) {
+                        copyGrid.refresh();
+                    }
+                    copyGrid.selectItems([res.index]);
+                    $scope.args.barcode = '';
+                } else {
+                    $scope.context.itemNotFound = true;
+                    egCore.audio.play('warning.item_status.itemNotFound');
+                }
+                $scope.context.selectBarcode = true;
+            })
+        }
     }
 
-    var add_barcode_to_list = function (b) {
-        //console.log('listCtrl: add_barcode_to_list',b);
-        $scope.context.search({barcode:b});
+    var add_barcode_to_list = function (b, noGridRefresh) {
+        // console.log('listCtrl: add_barcode_to_list',b);
+        return $scope.context.search({barcode:b}, noGridRefresh);
     }
     itemSvc.add_barcode_to_list = add_barcode_to_list;
 
@@ -443,7 +474,7 @@ function($scope , $q , $window , $location , $timeout , egCore , egNet , egGridD
     $scope.context.show_triggered_events = function() {
         var item = copyGrid.selectedItems()[0];
         if (item) 
-            $location.path('/cat/item/' + item.id + '/triggered_events');
+            window.open('/eg2/staff/circ/item/event-log/' + item.id, '_blank');
     }
 
     function gatherSelectedRecordIds () {
@@ -535,8 +566,7 @@ function($scope , $q , $window , $location , $timeout , egCore , egNet , egGridD
     $scope.update_inventory = function() {
         var copy_list = gatherSelectedHoldingsIds();
         itemSvc.updateInventory(copy_list, $scope.gridControls.allItems()).then(function(res) {
-            if (res) {
-                $scope.gridControls.allItems(res);
+            if (res[0]) {
                 ngToast.create(egCore.strings.SUCCESS_UPDATE_INVENTORY);
             } else {
                 ngToast.warning(egCore.strings.FAIL_UPDATE_INVENTORY);
@@ -587,7 +617,7 @@ function($scope , $q , $window , $location , $timeout , egCore , egNet , egGridD
     $scope.selectedHoldingsItemStatusTgrEvt= function() {
         var item = copyGrid.selectedItems()[0];
         if (item)
-            $location.path('/cat/item/' + item.id + '/triggered_events');
+            window.open('/eg2/staff/circ/item/event-log/' + item.id, '_blank');
     }
 
     $scope.selectedHoldingsItemStatusHolds= function() {
@@ -609,7 +639,13 @@ function($scope , $q , $window , $location , $timeout , egCore , egNet , egGridD
     }
 
     $scope.selectedHoldingsMissing = function () {
-        itemSvc.selectedHoldingsMissing(copyGrid.selectedItems());
+        egProgressDialog.open();
+        itemSvc.selectedHoldingsMissing(copyGrid.selectedItems())
+        .then(function() { 
+            egProgressDialog.close();
+            console.debug('Marking missing complete, refreshing grid');
+            copyGrid.refresh();
+        });
     }
 
     $scope.checkin = function () {
@@ -656,7 +692,7 @@ function($scope , $q , $window , $location , $timeout , egCore , egNet , egGridD
 
     $scope.showBibHolds = function () {
         angular.forEach(gatherSelectedRecordIds(), function (r) {
-            var url = egCore.env.basePath + 'cat/catalog/record/' + r + '/holds';
+            var url = '/eg2/staff/catalog/record/' + r + '/holds';
             $timeout(function() { $window.open(url, '_blank') });
         });
     }
@@ -754,20 +790,20 @@ function($scope , $q , $window , $location , $timeout , egCore , egNet , egGridD
  * Detail view -- shows one copy
  */
 .controller('ViewCtrl', 
-       ['$scope','$q','$location','$routeParams','$timeout','$window','egCore','egItem','egBilling','egCirc',
-function($scope , $q , $location , $routeParams , $timeout , $window , egCore , itemSvc , egBilling , egCirc) {
+       ['$scope','$q','egGridDataProvider','$location','$routeParams','$timeout','$window','egCore','egItem','egBilling','egCirc',
+function($scope , $q , egGridDataProvider , $location , $routeParams , $timeout , $window , egCore , itemSvc , egBilling , egCirc) {
     var copyId = $routeParams.id;
     $scope.args.copyId = copyId;
     $scope.tab = $routeParams.tab || 'summary';
     $scope.context.page = 'detail';
     $scope.summaryRecord = null;
-
+    $scope.courseModulesOptIn = fetchCourseOptIn();
+    $scope.has_course_perms = fetchCoursePerms();
     $scope.edit = false;
     if ($scope.tab == 'edit') {
         $scope.tab = 'summary';
         $scope.edit = true;
     }
-
 
     // use the cached record info
     if (itemSvc.copy) {
@@ -975,6 +1011,27 @@ console.debug($scope.copy_alert_count);
         });
     }
 
+    // Check for Course Modules Opt-In to enable Course Info tab
+    function fetchCourseOptIn() {
+        return egCore.org.settings(
+            'circ.course_materials_opt_in'
+        ).then(function(set) {
+            $scope.courseModulesOptIn = set['circ.course_materials_opt_in'];
+
+            return $scope.courseModulesOptIn;
+        });
+    }
+
+    function fetchCoursePerms() {
+        return egCore.perm.hasPermAt('MANAGE RESERVES', true).then(function(orgIds) {
+            if(orgIds.indexOf(egCore.auth.user().ws_ou()) != -1){
+                $scope.has_course_perms = true;
+
+                return $scope.has_course_perms;
+            }
+        });
+    }
+
     $scope.addBilling = function(circ) {
         egBilling.showBillDialog({
             xact_id : circ.id(),
@@ -1031,7 +1088,8 @@ console.debug($scope.copy_alert_count);
                             'usr',
                             'workstation',
                             'checkin_workstation',
-                            'recurring_fine_rule'
+                            'recurring_fine_rule',
+                            'circ_staff'
                         ],
                         au : ['card']
                     },
@@ -1059,46 +1117,44 @@ console.debug($scope.copy_alert_count);
         $scope.total_circs = 0;
         $scope.total_circs_this_year = 0;
         $scope.total_circs_prev_year = 0;
+        $scope.circ_popover_placement = 'top';
         if (!copyId) return;
 
         egCore.pcrud.search('circbyyr', 
             {copy : copyId}, null, {atomic : true})
 
         .then(function(counts) {
-            $scope.circ_counts = counts;
+            var this_year = new Date().getFullYear();
+            var prev_year = this_year - 1;
 
-            angular.forEach(counts, function(count) {
-                $scope.total_circs += Number(count.count());
-            });
+            $scope.circ_counts = counts.reduce(function(circ_counts, circbyyr) {
+                var count = Number(circbyyr.count());
+                var year = circbyyr.year();
 
-            var this_year = counts.filter(function(c) {
-                return c.year() == new Date().getFullYear();
-            });
+                var index = circ_counts.findIndex(function(existing_count) {
+                    return existing_count.year === year;
+                });
 
-            $scope.total_circs_this_year = (function() {
-                total = 0;
-                if (this_year.length == 2) {
-                    total = (Number(this_year[0].count()) + Number(this_year[1].count()));
-                } else if (this_year.length == 1) {
-                    total = Number(this_year[0].count());
+                if (index === -1) {
+                    circ_counts.push({count: count, year: year});
+                } else {
+                    circ_counts[index].count += count;
                 }
-                return total;
-            })();
 
-            var prev_year = counts.filter(function(c) {
-                return c.year() == new Date().getFullYear() - 1;
-            });
-
-            $scope.total_circs_prev_year = (function() {
-                total = 0;
-                if (prev_year.length == 2) {
-                    total = (Number(prev_year[0].count()) + Number(prev_year[1].count()));
-                } else if (prev_year.length == 1) {
-                    total = Number(prev_year[0].count());
+                $scope.total_circs += count;
+                if (this_year === year) {
+                    $scope.total_circs_this_year += count;
                 }
-                return total;
-            })();
+                if (prev_year === year) {
+                    $scope.total_circs_prev_year += count;
+                }
 
+                return circ_counts;
+            }, []);
+
+            if ($scope.circ_counts.length > 15) {
+                $scope.circ_popover_placement = 'right';
+            }
         });
     }
 
@@ -1149,6 +1205,47 @@ console.debug($scope.copy_alert_count);
         })
     }
 
+    function loadCourseInfo() {
+        delete $scope.courses;
+        delete $scope.instructors;
+        delete $scope.course_ids;
+        delete $scope.instructors_exist;
+        if (!copyId) return;
+        $scope.course_ids = [];
+        $scope.courses = [];
+        $scope.instructors = {};
+
+        egCore.pcrud.search('acmcm', {
+            item: copyId
+        }, {
+            flesh: 3,
+            flesh_fields: {
+                acmcm: ['course']
+            }, order_by: {acmc : 'id desc'}
+        }).then(null, null, function(material) {
+            
+            $scope.courses.push(material.course());
+            egCore.net.request(
+                'open-ils.circ',
+                'open-ils.circ.course_users.retrieve',
+                material.course().id()
+            ).then(null, null, function(instructors) {
+                angular.forEach(instructors, function(instructor) {
+                    var patron_id = instructor.patron_id.toString();
+                    if (!$scope.instructors[patron_id]) {
+                        $scope.instructors[patron_id] = instructor;
+                        $scope.instructors_exist = true;
+                        $scope.instructors[patron_id]._linked_course = [];
+                    }
+                    $scope.instructors[patron_id]._linked_course.push({
+                        role: instructor.usr_role,
+                        course: material.course().name()
+                    });
+                });
+            });
+        });
+    }
+
 
     // we don't need all data on all tabs, so fetch what's needed when needed.
     function loadTabData() {
@@ -1169,6 +1266,10 @@ console.debug($scope.copy_alert_count);
             case 'holds':
                 loadHolds()
                 loadMostRecentTransit();
+                break;
+
+            case 'course':
+                loadCourseInfo();
                 break;
 
             case 'triggered_events':
@@ -1224,7 +1325,7 @@ console.debug($scope.copy_alert_count);
     }
 
     $scope.context.show_triggered_events = function() {
-        $location.path('/cat/item/' + copyId + '/triggered_events');
+        window.open('/eg2/staff/circ/item/event-log/' + copyId, '_blank');
     }
 
     loadCopy().then(loadTabData);

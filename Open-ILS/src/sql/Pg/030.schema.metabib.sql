@@ -40,7 +40,7 @@ CREATE TRIGGER metabib_identifier_field_entry_fti_trigger
 	BEFORE UPDATE OR INSERT ON metabib.identifier_field_entry
 	FOR EACH ROW EXECUTE PROCEDURE oils_tsearch2('identifier');
 
-CREATE INDEX metabib_identifier_field_entry_index_vector_idx ON metabib.identifier_field_entry USING GIST (index_vector);
+CREATE INDEX metabib_identifier_field_entry_index_vector_idx ON metabib.identifier_field_entry USING GIN (index_vector);
 CREATE INDEX metabib_identifier_field_entry_value_idx ON metabib.identifier_field_entry (SUBSTRING(value,1,1024)) WHERE index_vector = ''::TSVECTOR;
 CREATE INDEX metabib_identifier_field_entry_source_idx ON metabib.identifier_field_entry (source);
 
@@ -50,7 +50,7 @@ CREATE TABLE metabib.combined_identifier_field_entry (
 	index_vector	tsvector	NOT NULL
 );
 CREATE UNIQUE INDEX metabib_combined_identifier_field_entry_fakepk_idx ON metabib.combined_identifier_field_entry (record, COALESCE(metabib_field::TEXT,''));
-CREATE INDEX metabib_combined_identifier_field_entry_index_vector_idx ON metabib.combined_identifier_field_entry USING GIST (index_vector);
+CREATE INDEX metabib_combined_identifier_field_entry_index_vector_idx ON metabib.combined_identifier_field_entry USING GIN (index_vector);
 CREATE INDEX metabib_combined_identifier_field_source_idx ON metabib.combined_identifier_field_entry (metabib_field);
 
 CREATE TABLE metabib.title_field_entry (
@@ -64,7 +64,7 @@ CREATE TRIGGER metabib_title_field_entry_fti_trigger
 	BEFORE UPDATE OR INSERT ON metabib.title_field_entry
 	FOR EACH ROW EXECUTE PROCEDURE oils_tsearch2('title');
 
-CREATE INDEX metabib_title_field_entry_index_vector_idx ON metabib.title_field_entry USING GIST (index_vector);
+CREATE INDEX metabib_title_field_entry_index_vector_idx ON metabib.title_field_entry USING GIN (index_vector);
 CREATE INDEX metabib_title_field_entry_value_idx ON metabib.title_field_entry (SUBSTRING(value,1,1024)) WHERE index_vector = ''::TSVECTOR;
 CREATE INDEX metabib_title_field_entry_source_idx ON metabib.title_field_entry (source);
 
@@ -74,7 +74,7 @@ CREATE TABLE metabib.combined_title_field_entry (
 	index_vector	tsvector	NOT NULL
 );
 CREATE UNIQUE INDEX metabib_combined_title_field_entry_fakepk_idx ON metabib.combined_title_field_entry (record, COALESCE(metabib_field::TEXT,''));
-CREATE INDEX metabib_combined_title_field_entry_index_vector_idx ON metabib.combined_title_field_entry USING GIST (index_vector);
+CREATE INDEX metabib_combined_title_field_entry_index_vector_idx ON metabib.combined_title_field_entry USING GIN (index_vector);
 CREATE INDEX metabib_combined_title_field_source_idx ON metabib.combined_title_field_entry (metabib_field);
 
 CREATE TABLE metabib.author_field_entry (
@@ -88,7 +88,7 @@ CREATE TRIGGER metabib_author_field_entry_fti_trigger
 	BEFORE UPDATE OR INSERT ON metabib.author_field_entry
 	FOR EACH ROW EXECUTE PROCEDURE oils_tsearch2('author');
 
-CREATE INDEX metabib_author_field_entry_index_vector_idx ON metabib.author_field_entry USING GIST (index_vector);
+CREATE INDEX metabib_author_field_entry_index_vector_idx ON metabib.author_field_entry USING GIN (index_vector);
 CREATE INDEX metabib_author_field_entry_value_idx ON metabib.author_field_entry (SUBSTRING(value,1,1024)) WHERE index_vector = ''::TSVECTOR;
 CREATE INDEX metabib_author_field_entry_source_idx ON metabib.author_field_entry (source);
 
@@ -98,7 +98,7 @@ CREATE TABLE metabib.combined_author_field_entry (
 	index_vector	tsvector	NOT NULL
 );
 CREATE UNIQUE INDEX metabib_combined_author_field_entry_fakepk_idx ON metabib.combined_author_field_entry (record, COALESCE(metabib_field::TEXT,''));
-CREATE INDEX metabib_combined_author_field_entry_index_vector_idx ON metabib.combined_author_field_entry USING GIST (index_vector);
+CREATE INDEX metabib_combined_author_field_entry_index_vector_idx ON metabib.combined_author_field_entry USING GIN (index_vector);
 CREATE INDEX metabib_combined_author_field_source_idx ON metabib.combined_author_field_entry (metabib_field);
 
 CREATE TABLE metabib.subject_field_entry (
@@ -112,7 +112,7 @@ CREATE TRIGGER metabib_subject_field_entry_fti_trigger
 	BEFORE UPDATE OR INSERT ON metabib.subject_field_entry
 	FOR EACH ROW EXECUTE PROCEDURE oils_tsearch2('subject');
 
-CREATE INDEX metabib_subject_field_entry_index_vector_idx ON metabib.subject_field_entry USING GIST (index_vector);
+CREATE INDEX metabib_subject_field_entry_index_vector_idx ON metabib.subject_field_entry USING GIN (index_vector);
 CREATE INDEX metabib_subject_field_entry_value_idx ON metabib.subject_field_entry (SUBSTRING(value,1,1024)) WHERE index_vector = ''::TSVECTOR;
 CREATE INDEX metabib_subject_field_entry_source_idx ON metabib.subject_field_entry (source);
 
@@ -122,7 +122,7 @@ CREATE TABLE metabib.combined_subject_field_entry (
 	index_vector	tsvector	NOT NULL
 );
 CREATE UNIQUE INDEX metabib_combined_subject_field_entry_fakepk_idx ON metabib.combined_subject_field_entry (record, COALESCE(metabib_field::TEXT,''));
-CREATE INDEX metabib_combined_subject_field_entry_index_vector_idx ON metabib.combined_subject_field_entry USING GIST (index_vector);
+CREATE INDEX metabib_combined_subject_field_entry_index_vector_idx ON metabib.combined_subject_field_entry USING GIN (index_vector);
 CREATE INDEX metabib_combined_subject_field_source_idx ON metabib.combined_subject_field_entry (metabib_field);
 
 CREATE TABLE metabib.keyword_field_entry (
@@ -136,7 +136,7 @@ CREATE TRIGGER metabib_keyword_field_entry_fti_trigger
 	BEFORE UPDATE OR INSERT ON metabib.keyword_field_entry
 	FOR EACH ROW EXECUTE PROCEDURE oils_tsearch2('keyword');
 
-CREATE INDEX metabib_keyword_field_entry_index_vector_idx ON metabib.keyword_field_entry USING GIST (index_vector);
+CREATE INDEX metabib_keyword_field_entry_index_vector_idx ON metabib.keyword_field_entry USING GIN (index_vector);
 CREATE INDEX metabib_keyword_field_entry_value_idx ON metabib.keyword_field_entry (SUBSTRING(value,1,1024)) WHERE index_vector = ''::TSVECTOR;
 CREATE INDEX metabib_keyword_field_entry_source_idx ON metabib.keyword_field_entry (source);
 
@@ -146,7 +146,7 @@ CREATE TABLE metabib.combined_keyword_field_entry (
 	index_vector	tsvector	NOT NULL
 );
 CREATE UNIQUE INDEX metabib_combined_keyword_field_entry_fakepk_idx ON metabib.combined_keyword_field_entry (record, COALESCE(metabib_field::TEXT,''));
-CREATE INDEX metabib_combined_keyword_field_entry_index_vector_idx ON metabib.combined_keyword_field_entry USING GIST (index_vector);
+CREATE INDEX metabib_combined_keyword_field_entry_index_vector_idx ON metabib.combined_keyword_field_entry USING GIN (index_vector);
 CREATE INDEX metabib_combined_keyword_field_source_idx ON metabib.combined_keyword_field_entry (metabib_field);
 
 CREATE TABLE metabib.series_field_entry (
@@ -160,7 +160,7 @@ CREATE TRIGGER metabib_series_field_entry_fti_trigger
 	BEFORE UPDATE OR INSERT ON metabib.series_field_entry
 	FOR EACH ROW EXECUTE PROCEDURE oils_tsearch2('series');
 
-CREATE INDEX metabib_series_field_entry_index_vector_idx ON metabib.series_field_entry USING GIST (index_vector);
+CREATE INDEX metabib_series_field_entry_index_vector_idx ON metabib.series_field_entry USING GIN (index_vector);
 CREATE INDEX metabib_series_field_entry_value_idx ON metabib.series_field_entry (SUBSTRING(value,1,1024)) WHERE index_vector = ''::TSVECTOR;
 CREATE INDEX metabib_series_field_entry_source_idx ON metabib.series_field_entry (source);
 
@@ -170,7 +170,7 @@ CREATE TABLE metabib.combined_series_field_entry (
 	index_vector	tsvector	NOT NULL
 );
 CREATE UNIQUE INDEX metabib_combined_series_field_entry_fakepk_idx ON metabib.combined_series_field_entry (record, COALESCE(metabib_field::TEXT,''));
-CREATE INDEX metabib_combined_series_field_entry_index_vector_idx ON metabib.combined_series_field_entry USING GIST (index_vector);
+CREATE INDEX metabib_combined_series_field_entry_index_vector_idx ON metabib.combined_series_field_entry USING GIN (index_vector);
 CREATE INDEX metabib_combined_series_field_source_idx ON metabib.combined_series_field_entry (metabib_field);
 
 CREATE VIEW metabib.combined_all_field_entry AS
@@ -566,7 +566,7 @@ CREATE TABLE metabib.record_attr (
 	id		BIGINT	PRIMARY KEY REFERENCES biblio.record_entry (id) ON DELETE CASCADE,
 	attrs	HSTORE	NOT NULL DEFAULT ''::HSTORE
 );
-CREATE INDEX metabib_svf_attrs_idx ON metabib.record_attr USING GIST (attrs);
+CREATE INDEX metabib_svf_attrs_idx ON metabib.record_attr USING GIN (attrs);
 CREATE INDEX metabib_svf_date1_idx ON metabib.record_attr ((attrs->'date1'));
 CREATE INDEX metabib_svf_dates_idx ON metabib.record_attr ((attrs->'date1'),(attrs->'date2'));
 */
@@ -653,7 +653,7 @@ CREATE INDEX metabib_full_rec_value_idx ON metabib.real_full_rec (substring(valu
 /* Enable LIKE to use an index for database clusters with locales other than C or POSIX */
 CREATE INDEX metabib_full_rec_value_tpo_index ON metabib.real_full_rec (substring(value,1,1024) text_pattern_ops);
 CREATE INDEX metabib_full_rec_record_idx ON metabib.real_full_rec (record);
-CREATE INDEX metabib_full_rec_index_vector_idx ON metabib.real_full_rec USING GIST (index_vector);
+CREATE INDEX metabib_full_rec_index_vector_idx ON metabib.real_full_rec USING GIN (index_vector);
 CREATE INDEX metabib_full_rec_isxn_caseless_idx
     ON metabib.real_full_rec (LOWER(value))
     WHERE tag IN ('020', '022', '024');
@@ -739,7 +739,8 @@ CREATE TYPE metabib.field_entry_template AS (
     source              BIGINT,
     value               TEXT,
     authority           BIGINT,
-    sort_value          TEXT
+    sort_value          TEXT,
+    browse_nocase       BOOL
 );
 
 CREATE OR REPLACE FUNCTION biblio.extract_metabib_field_entry (
@@ -770,6 +771,7 @@ DECLARE
 BEGIN
 
     -- Start out with no field-use bools set
+    output_row.browse_nocase = FALSE;
     output_row.browse_field = FALSE;
     output_row.facet_field = FALSE;
     output_row.display_field = FALSE;
@@ -812,7 +814,7 @@ BEGIN
             CONTINUE WHEN xml_node !~ E'^\\s*<';
 
             -- XXX much of this should be moved into oils_xpath_string...
-            curr_text := ARRAY_TO_STRING(evergreen.array_remove_item_by_value(evergreen.array_remove_item_by_value(
+            curr_text := ARRAY_TO_STRING(array_remove(array_remove(
                 oils_xpath( '//text()', -- get the content of all the nodes within the main selected node
                     REGEXP_REPLACE( xml_node, E'\\s+', ' ', 'g' ) -- Translate adjacent whitespace to a single space
                 ), ' '), ''),  -- throw away morally empty (bankrupt?) strings
@@ -829,6 +831,7 @@ BEGIN
 
             -- autosuggest/metabib.browse_entry
             IF idx.browse_field THEN
+                output_row.browse_nocase = idx.browse_nocase;
 
                 IF idx.browse_xpath IS NOT NULL AND idx.browse_xpath <> '' THEN
                     browse_text := oils_xpath_string( idx.browse_xpath, xml_node, joiner, ARRAY[ARRAY[xfrm.prefix, xfrm.namespace_uri]] );
@@ -884,6 +887,7 @@ BEGIN
                     output_row.search_field = TRUE;
                 END IF;
                 RETURN NEXT output_row;
+                output_row.browse_nocase = FALSE;
                 output_row.browse_field = FALSE;
                 output_row.search_field = FALSE;
                 output_row.sort_value := NULL;
@@ -1120,8 +1124,14 @@ BEGIN
             CONTINUE WHEN ind_data.sort_value IS NULL;
 
             value_prepped := metabib.browse_normalize(ind_data.value, ind_data.field);
-            SELECT INTO mbe_row * FROM metabib.browse_entry
-                WHERE value = value_prepped AND sort_value = ind_data.sort_value;
+            IF ind_data.browse_nocase THEN
+                SELECT INTO mbe_row * FROM metabib.browse_entry
+                    WHERE evergreen.lowercase(value) = evergreen.lowercase(value_prepped) AND sort_value = ind_data.sort_value
+                    ORDER BY sort_value, value LIMIT 1; -- gotta pick something, I guess
+            ELSE
+                SELECT INTO mbe_row * FROM metabib.browse_entry
+                    WHERE value = value_prepped AND sort_value = ind_data.sort_value;
+            END IF;
 
             IF FOUND THEN
                 mbe_id := mbe_row.id;
@@ -1240,7 +1250,7 @@ BEGIN
     END IF;
 
     -- First, the count of tags
-    qual := ARRAY_UPPER(oils_xpath('*[local-name()="datafield"]', marc), 1);
+    qual := ARRAY_UPPER(oils_xpath('//*[local-name()="datafield"]', marc), 1);
 
     -- now go through a bunch of pain to get the record type
     IF best_type IS NOT NULL THEN
@@ -1400,15 +1410,13 @@ DECLARE
     uri_id          INT;
     uri_cn_id       INT;
     uri_map_id      INT;
-BEGIN
+    current_uri     INT;
+    current_map     INT;
+    uri_map_count   INT;
+    current_uri_map_list    INT[];
+    current_map_owner_list  INT[];
 
-    -- Clear any URI mappings and call numbers for this bib.
-    -- This leads to acn / auricnm inflation, but also enables
-    -- old acn/auricnm's to go away and for bibs to be deleted.
-    FOR uri_cn_id IN SELECT id FROM asset.call_number WHERE record = bib_id AND label = '##URI##' AND NOT deleted LOOP
-        DELETE FROM asset.uri_call_number_map WHERE call_number = uri_cn_id;
-        DELETE FROM asset.call_number WHERE id = uri_cn_id;
-    END LOOP;
+BEGIN
 
     uris := oils_xpath('//*[@tag="856" and (@ind1="4" or @ind1="1") and (@ind2="0" or @ind2="1")]',marcxml);
     IF ARRAY_UPPER(uris,1) > 0 THEN
@@ -1485,7 +1493,11 @@ BEGIN
                     SELECT id INTO uri_map_id FROM asset.uri_call_number_map WHERE call_number = uri_cn_id AND uri = uri_id;
                     IF NOT FOUND THEN
                         INSERT INTO asset.uri_call_number_map (call_number, uri) VALUES (uri_cn_id, uri_id);
+                        SELECT id INTO uri_map_id FROM asset.uri_call_number_map WHERE call_number = uri_cn_id AND uri = uri_id;
                     END IF;
+
+                    current_uri_map_list := current_uri_map_list || uri_map_id;
+                    current_map_owner_list := current_map_owner_list || uri_cn_id;
 
                 END LOOP;
 
@@ -1493,6 +1505,38 @@ BEGIN
 
         END LOOP;
     END IF;
+
+    -- Clear any orphaned URIs, URI mappings and call
+    -- numbers for this bib that weren't mapped above.
+    FOR current_map IN
+        SELECT  m.id
+          FROM  asset.uri_call_number_map m
+                LEFT JOIN asset.call_number cn ON (cn.id = m.call_number)
+          WHERE cn.record = bib_id
+                AND cn.label = '##URI##'
+                AND (NOT (m.id = ANY (current_uri_map_list))
+                     OR current_uri_map_list is NULL)
+    LOOP
+        SELECT uri INTO current_uri FROM asset.uri_call_number_map WHERE id = current_map;
+        DELETE FROM asset.uri_call_number_map WHERE id = current_map;
+
+        SELECT COUNT(*) INTO uri_map_count FROM asset.uri_call_number_map WHERE uri = current_uri;
+        IF uri_map_count = 0 THEN
+            DELETE FROM asset.uri WHERE id = current_uri;
+        END IF;
+    END LOOP;
+
+    UPDATE asset.call_number
+    SET deleted = TRUE, edit_date = now(), editor = editor_id
+    WHERE id IN (
+        SELECT  id
+          FROM  asset.call_number
+          WHERE record = bib_id
+                AND label = '##URI##'
+                AND NOT deleted
+                AND (NOT (id = ANY (current_map_owner_list))
+                     OR current_map_owner_list is NULL)
+    );
 
     RETURN;
 END;
@@ -1530,7 +1574,7 @@ BEGIN
             ELSE -- indeed there are. Update it with a null cache and recalcualated master record
                 UPDATE  metabib.metarecord
                   SET   mods = NULL,
-                        master_record = ( SELECT id FROM biblio.record_entry WHERE fingerprint = fp AND NOT deleted ORDER BY quality DESC LIMIT 1)
+                        master_record = (SELECT id FROM biblio.record_entry WHERE fingerprint = fp AND NOT deleted ORDER BY quality DESC, id ASC LIMIT 1)
                   WHERE id = old_mr;
             END IF;
         END LOOP;
@@ -1566,14 +1610,14 @@ BEGIN
             ELSE -- indeed there is. update it with a null cache and recalcualated master record
                 UPDATE  metabib.metarecord
                   SET   mods = NULL,
-                        master_record = ( SELECT id FROM biblio.record_entry WHERE fingerprint = fp AND NOT deleted ORDER BY quality DESC LIMIT 1)
+                        master_record = (SELECT id FROM biblio.record_entry WHERE fingerprint = fp AND NOT deleted ORDER BY quality DESC, id ASC LIMIT 1)
                   WHERE id = old_mr;
             END IF;
 
         ELSE -- there was one we already attached to, update its mods cache and master_record
             UPDATE  metabib.metarecord
               SET   mods = NULL,
-                    master_record = ( SELECT id FROM biblio.record_entry WHERE fingerprint = fp AND NOT deleted ORDER BY quality DESC LIMIT 1)
+                    master_record = (SELECT id FROM biblio.record_entry WHERE fingerprint = fp AND NOT deleted ORDER BY quality DESC, id ASC LIMIT 1)
               WHERE id = old_mr;
         END IF;
 

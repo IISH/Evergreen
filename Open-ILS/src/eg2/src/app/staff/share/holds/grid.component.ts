@@ -13,12 +13,15 @@ import {MarkDamagedDialogComponent
     } from '@eg/staff/share/holdings/mark-damaged-dialog.component';
 import {MarkMissingDialogComponent
     } from '@eg/staff/share/holdings/mark-missing-dialog.component';
+import {MarkDiscardDialogComponent
+    } from '@eg/staff/share/holdings/mark-discard-dialog.component';
 import {HoldRetargetDialogComponent
     } from '@eg/staff/share/holds/retarget-dialog.component';
 import {HoldTransferDialogComponent} from './transfer-dialog.component';
 import {HoldCancelDialogComponent} from './cancel-dialog.component';
 import {HoldManageDialogComponent} from './manage-dialog.component';
 import {PrintService} from '@eg/share/print/print.service';
+import {HoldingsService} from '@eg/staff/share/holdings/holdings.service';
 
 /** Holds grid with access to detail page and other actions */
 
@@ -32,6 +35,13 @@ export class HoldsGridComponent implements OnInit {
     @Input() initialPickupLib: number | IdlObject;
     @Input() hidePickupLibFilter: boolean;
 
+    // Setting a value here puts us into "pull list" mode.
+    @Input() pullListOrg: number;
+
+    // If true, only retrieve holds with a Hopeless Date
+    // and enable related Actions
+    @Input() hopeless: boolean;
+
     // Grid persist key
     @Input() persistKey: string;
 
@@ -42,17 +52,24 @@ export class HoldsGridComponent implements OnInit {
     // If set, all holds are fetched on grid load and sorting/paging all
     // happens in the client.  If false, sorting and paging occur on
     // the server.
-    enablePreFetch: boolean;
+    @Input() enablePreFetch: boolean;
 
     // How to sort when no sort parameters have been applied
     // via grid controls.  This uses the eg-grid sort format:
     // [{name: fname, dir: 'asc'}, {name: fname2, dir: 'desc'}]
     @Input() defaultSort: any[];
 
+    // To pass through to the underlying eg-grid
+    @Input() showFields: string;
+
+    // Display bib record summary along the top of the detail page.
+    @Input() showRecordSummary = false;
+
     mode: 'list' | 'detail' | 'manage' = 'list';
     initDone = false;
     holdsCount: number;
     pickupLib: IdlObject;
+    plCompLoaded = false;
     gridDataSource: GridDataSource;
     detailHold: any;
     editHolds: number[];
@@ -67,6 +84,8 @@ export class HoldsGridComponent implements OnInit {
         private markDamagedDialog: MarkDamagedDialogComponent;
     @ViewChild('markMissingDialog', { static: true })
         private markMissingDialog: MarkMissingDialogComponent;
+    @ViewChild('markDiscardDialog')
+        private markDiscardDialog: MarkDiscardDialogComponent;
     @ViewChild('retargetDialog', { static: true })
         private retargetDialog: HoldRetargetDialogComponent;
     @ViewChild('cancelDialog', { static: true })
@@ -111,14 +130,34 @@ export class HoldsGridComponent implements OnInit {
         }
     }
 
+
     cellTextGenerator: GridCellTextGenerator;
+
+    // Include holds marked Hopeless on or after this date.
+    _showHopelessAfter: Date;
+    @Input() set showHopelessAfter(show: Date) {
+        this._showHopelessAfter = show;
+        if (this.initDone) { // reload on update
+            this.holdsGrid.reload();
+        }
+    }
+
+    // Include holds marked Hopeless on or before this date.
+    _showHopelessBefore: Date;
+    @Input() set showHopelessBefore(show: Date) {
+        this._showHopelessBefore = show;
+        if (this.initDone) { // reload on update
+            this.holdsGrid.reload();
+        }
+    }
 
     constructor(
         private net: NetService,
         private org: OrgService,
         private store: ServerStoreService,
         private auth: AuthService,
-        private printer: PrintService
+        private printer: PrintService,
+        private holdings: HoldingsService
     ) {
         this.gridDataSource = new GridDataSource();
         this.enablePreFetch = null;
@@ -129,18 +168,37 @@ export class HoldsGridComponent implements OnInit {
         this.pickupLib = this.org.get(this.initialPickupLib);
 
         if (this.preFetchSetting) {
-
-                this.store.getItem(this.preFetchSetting).then(
-                    applied => this.enablePreFetch = Boolean(applied)
-                );
-
+            this.store.getItem(this.preFetchSetting).then(
+                applied => this.enablePreFetch = Boolean(applied)
+            );
         }
 
         if (!this.defaultSort) {
-            this.defaultSort = [{name: 'request_time', dir: 'asc'}];
+            if (this.pullListOrg) {
+
+                this.defaultSort = [
+                    {name: 'copy_location_order_position', dir: 'asc'},
+                    {name: 'acpl_name', dir: 'asc'},
+                    {name: 'ancp_label', dir: 'asc'}, // NOTE: API typo "ancp"
+                    {name: 'cn_label_sortkey', dir: 'asc'},
+                    {name: 'ancs_label', dir: 'asc'} // NOTE: API typo "ancs"
+                ];
+
+            } else {
+                this.defaultSort = [{name: 'request_time', dir: 'asc'}];
+            }
         }
 
         this.gridDataSource.getRows = (pager: Pager, sort: any[]) => {
+
+            if (!this.hidePickupLibFilter && !this.plCompLoaded) {
+                // When the pickup lib selector is active, avoid any
+                // data fetches until it has settled on a default value.
+                // Once the final value is applied, its onchange will
+                // fire and we'll be back here with plCompLoaded=true.
+                return of([]);
+            }
+
             sort = sort.length > 0 ? sort : this.defaultSort;
             return this.fetchHolds(pager, sort);
         };
@@ -149,7 +207,9 @@ export class HoldsGridComponent implements OnInit {
         this.cellTextGenerator = {
             title: row => row.title,
             cp_barcode: row => (row.cp_barcode == null) ? '' : row.cp_barcode,
-            patron_barcode: row => row.ucard_barcode
+            current_item: row => row.current_copy ? row.cp_barcode : '',
+            requested_item: row => this.isCopyHold(row) ? row.cp_barcode : '',
+            ucard_barcode: row => row.ucard_barcode
         };
     }
 
@@ -161,6 +221,11 @@ export class HoldsGridComponent implements OnInit {
 
     pickupLibChanged(org: IdlObject) {
         this.pickupLib = org;
+        this.holdsGrid.reload();
+    }
+
+    pullListOrgChanged(org: IdlObject) {
+        this.pullListOrg = org.id();
         this.holdsGrid.reload();
     }
 
@@ -178,13 +243,58 @@ export class HoldsGridComponent implements OnInit {
     }
 
     applyFilters(): any {
-        const filters: any = {
-            is_staff_request: true,
-            fulfillment_time: this._showFulfilledSince ?
-                this._showFulfilledSince.toISOString() : null,
-            cancel_time: this._showCanceledSince ?
-                this._showCanceledSince.toISOString() : null,
-        };
+
+        const filters: any = {};
+
+        if (this.pullListOrg) {
+            filters.cancel_time = null;
+            filters.capture_time = null;
+            filters.frozen = 'f';
+
+            // cp.* fields are set for copy-level holds even if they
+            // have no current_copy.  Make sure current_copy is set.
+            filters.current_copy = {'is not': null};
+
+            // There are aliases for these (cp_status, cp_circ_lib),
+            // but the API complains when I use them.
+            filters['cp.status'] = [0, 7];
+            filters['cp.circ_lib'] = this.pullListOrg;
+
+            return filters;
+        }
+
+        if (this._showFulfilledSince) {
+            filters.fulfillment_time = this._showFulfilledSince.toISOString();
+        } else {
+            filters.fulfillment_time = null;
+        }
+
+        if (this._showCanceledSince) {
+            filters.cancel_time = this._showCanceledSince.toISOString();
+        } else {
+            filters.cancel_time = null;
+        }
+
+        if (this.hopeless) {
+          filters['hopeless_holds'] = {
+            'start_date' : this._showHopelessAfter
+              ? (
+                  // FIXME -- consistency desired, string or object
+                  typeof this._showHopelessAfter === 'object'
+                  ? this._showHopelessAfter.toISOString()
+                  : this._showHopelessAfter
+                )
+              : '1970-01-01T00:00:00.000Z',
+            'end_date' : this._showHopelessBefore
+              ? (
+                  // FIXME -- consistency desired, string or object
+                  typeof this._showHopelessBefore === 'object'
+                  ? this._showHopelessBefore.toISOString()
+                  : this._showHopelessBefore
+                )
+              : (new Date()).toISOString()
+          };
+        }
 
         if (this.pickupLib) {
             filters.pickup_lib =
@@ -205,7 +315,7 @@ export class HoldsGridComponent implements OnInit {
     fetchHolds(pager: Pager, sort: any[]): Observable<any> {
 
         // We need at least one filter.
-        if (!this._recordId && !this.pickupLib && !this._userId) {
+        if (!this._recordId && !this.pickupLib && !this._userId && !this.pullListOrg) {
             return of([]);
         }
 
@@ -262,6 +372,26 @@ export class HoldsGridComponent implements OnInit {
         return observable;
     }
 
+    metaRecordHoldsSelected(rows: IdlObject[]) {
+        let found = false;
+        rows.forEach( row => {
+           if (row.hold_type === 'M') {
+             found = true;
+           }
+        });
+        return found;
+    }
+
+    nonTitleHoldsSelected(rows: IdlObject[]) {
+        let found = false;
+        rows.forEach( row => {
+           if (row.hold_type !== 'T') {
+             found = true;
+           }
+        });
+        return found;
+    }
+
     showDetails(rows: any[]) {
         this.showDetail(rows[0]);
     }
@@ -292,19 +422,50 @@ export class HoldsGridComponent implements OnInit {
 
 
     showRecentCircs(rows: any[]) {
-        if (rows.length) {
+        const copyIds = Array.from(new Set( rows.map(r => r.cp_id).filter( cp_id => Boolean(cp_id)) ));
+        copyIds.forEach( copyId => {
             const url =
-                '/eg/staff/cat/item/' + rows[0].cp_id + '/circ_list';
+                '/eg/staff/cat/item/' + copyId + '/circ_list';
             window.open(url, '_blank');
-        }
+        });
     }
 
     showPatron(rows: any[]) {
-        if (rows.length) {
+        const usrIds = Array.from(new Set( rows.map(r => r.usr_id).filter( usr_id => Boolean(usr_id)) ));
+        usrIds.forEach( usrId => {
             const url =
-                '/eg/staff/circ/patron/' + rows[0].usr_id + '/checkout';
+                '/eg/staff/circ/patron/' + usrId + '/checkout';
             window.open(url, '_blank');
-        }
+        });
+    }
+
+    showOrder(rows: any[]) {
+        // Doesn't work in Typescript currently without compiler option:
+        //   const bibIds = [...new Set( rows.map(r => r.record_id) )];
+        const bibIds = Array.from(
+          new Set( rows.filter(r => r.hold_type !== 'M').map(r => r.record_id) ));
+        bibIds.forEach( bibId => {
+          const url =
+              '/eg/staff/acq/legacy/lineitem/related/' + bibId + '?target=bib';
+          window.open(url, '_blank');
+        });
+    }
+
+    addVolume(rows: any[]) {
+        const bibIds = Array.from(
+          new Set( rows.filter(r => r.hold_type !== 'M').map(r => r.record_id) ));
+        bibIds.forEach( bibId => {
+          this.holdings.spawnAddHoldingsUi(bibId);
+        });
+    }
+
+    showTitle(rows: any[]) {
+        const bibIds = Array.from(new Set( rows.map(r => r.record_id) ));
+        bibIds.forEach( bibId => {
+          // const url = '/eg/staff/cat/catalog/record/' + bibId;
+          const url = '/eg2/staff/catalog/record/' + bibId;
+          window.open(url, '_blank');
+        });
     }
 
     showManageDialog(rows: any[]) {
@@ -322,7 +483,7 @@ export class HoldsGridComponent implements OnInit {
     }
 
     showTransferDialog(rows: any[]) {
-        const holdIds = rows.map(r => r.id).filter(id => Boolean(id));
+        const holdIds = rows.filter(r => r.hold_type === 'T').map(r => r.id).filter(id => Boolean(id));
         if (holdIds.length > 0) {
             this.transferDialog.holdIds = holdIds;
             this.transferDialog.open({}).subscribe(
@@ -376,6 +537,21 @@ export class HoldsGridComponent implements OnInit {
         }
     }
 
+    showMarkDiscardDialog(rows: any[]) {
+        const copyIds = rows.map(r => r.cp_id).filter(id => Boolean(id));
+        if (copyIds.length > 0) {
+            this.markDiscardDialog.copyIds = copyIds;
+            this.markDiscardDialog.open({}).subscribe(
+                rowsModified => {
+                    if (rowsModified) {
+                        this.holdsGrid.reload();
+                    }
+                }
+            );
+        }
+    }
+
+
     showRetargetDialog(rows: any[]) {
         const holdIds = rows.map(r => r.id).filter(id => Boolean(id));
         if (holdIds.length > 0) {
@@ -426,6 +602,10 @@ export class HoldsGridComponent implements OnInit {
                 });
             }
         });
+    }
+
+    isCopyHold(holdData: any): boolean {
+        return holdData.hold_type.match(/C|R|F/) !== null;
     }
 }
 

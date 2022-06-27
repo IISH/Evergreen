@@ -201,7 +201,6 @@ function($scope , $q , $routeParams , egCore , egUser , patronSvc ,
         $scope.checkouts.unshift(row_item);
         $scope.gridDataProvider.prepend();
 
-        egCore.hatch.setItem('circ.checkout.strict_barcode', $scope.strict_barcode);
         var options = {check_barcode : $scope.strict_barcode};
 
         egCirc.checkout(params, options).then(
@@ -305,6 +304,13 @@ function($scope , $q , $routeParams , egCore , egUser , patronSvc ,
         });
     };
 
+    $scope.onStrictBarcodeChange = function() {
+        egCore.hatch.setItem(
+            'circ.checkout.strict_barcode',
+            $scope.strict_barcode
+        );
+    };
+
     $scope.print_receipt = function() {
         var print_data = {circulations : []};
         var cusr = patronSvc.current;
@@ -342,7 +348,8 @@ function($scope , $q , $routeParams , egCore , egUser , patronSvc ,
             expire_date : cusr.expire_date(),
             alias : cusr.alias(),
             has_email : Boolean($scope.has_email_address()),
-            has_phone : Boolean(cusr.day_phone() || cusr.evening_phone() || cusr.other_phone())
+            has_phone : Boolean(cusr.day_phone() || cusr.evening_phone() || cusr.other_phone()),
+            juvenile : cusr.juvenile()
         };
 
         return egCore.print.print({

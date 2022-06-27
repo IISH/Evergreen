@@ -80,6 +80,8 @@ econst OILS_SETTING_LOST_PROCESSING_FEE => 'circ.lost_materials_processing_fee';
 econst OILS_SETTING_DEF_ITEM_PRICE => 'cat.default_item_price';
 econst OILS_SETTING_MIN_ITEM_PRICE => 'circ.min_item_price';
 econst OILS_SETTING_MAX_ITEM_PRICE => 'circ.max_item_price';
+econst OILS_SETTING_PRIMARY_ITEM_VALUE_FIELD => 'circ.primary_item_value_field';
+econst OILS_SETTING_SECONDARY_ITEM_VALUE_FIELD => 'circ.secondary_item_value_field';
 econst OILS_SETTING_ORG_BOUNCED_EMAIL => 'org.bounced_emails';
 econst OILS_SETTING_CHARGE_LOST_ON_ZERO => 'circ.charge_lost_on_zero';
 econst OILS_SETTING_VOID_OVERDUE_ON_LOST => 'circ.void_overdue_on_lost';
@@ -95,8 +97,10 @@ econst OILS_SETTING_VOID_LOST_PROCESS_FEE_ON_CHECKIN    => 'circ.void_lost_proc_
 econst OILS_SETTING_RESTORE_OVERDUE_ON_LOST_RETURN      => 'circ.restore_overdue_on_lost_return';
 econst OILS_SETTING_LOST_IMMEDIATELY_AVAILABLE          => 'circ.lost_immediately_available';
 econst OILS_SETTING_BLOCK_HOLD_FOR_EXPIRED_PATRON       => 'circ.holds.expired_patron_block';
+econst OILS_SETTING_ALLOW_RENEW_FOR_EXPIRED_PATRON      => 'circ.renew.expired_patron_allow';
 econst OILS_SETTING_GENERATE_OVERDUE_ON_LOST_RETURN     => 'circ.lost.generate_overdue_on_checkin';
 econst OILS_SETTING_MAX_DUPLICATE_HOLDS => 'circ.holds.max_duplicate_holds';
+econst OILS_SETTING_VOID_ITEM_DEPOSIT_ON_CHECKIN => 'circ.void_item_deposit';
 
 
 
@@ -129,6 +133,11 @@ econst OILS_PENALTY_INVALID_PATRON_ADDRESS => 29;
 
 econst OILS_BILLING_TYPE_NOTIFICATION_FEE => 9;
 
+
+# ---------------------------------------------------------------------
+# Non Evergreen-specific constants
+# ---------------------------------------------------------------------
+econst MARC_NAMESPACE => 'http://www.loc.gov/MARC21/slim';
 
 
 # ---------------------------------------------------------------------

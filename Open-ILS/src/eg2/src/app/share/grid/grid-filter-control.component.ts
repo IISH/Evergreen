@@ -1,4 +1,4 @@
-import {Component, Input, OnInit, QueryList, ViewChildren} from '@angular/core';
+import {Component, Input, OnInit, QueryList, ViewChild, ViewChildren} from '@angular/core';
 import {GridContext, GridColumn} from './grid';
 import {IdlObject} from '@eg/core/idl.service';
 import {ComboboxComponent} from '@eg/share/combobox/combobox.component';
@@ -6,6 +6,7 @@ import {DateSelectComponent} from '@eg/share/date-select/date-select.component';
 import {OrgSelectComponent} from '@eg/share/org-select/org-select.component';
 import {OrgService} from '@eg/core/org.service';
 import {NgbDropdown} from '@ng-bootstrap/ng-bootstrap';
+import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
 
 @Component({
   selector: 'eg-grid-filter-control',
@@ -19,15 +20,24 @@ export class GridFilterControlComponent implements OnInit {
 
 
     @ViewChildren(ComboboxComponent)   filterComboboxes: QueryList<ComboboxComponent>;
-    @ViewChildren(DateSelectComponent) dateSelects: QueryList<DateSelectComponent>;
     @ViewChildren(OrgSelectComponent)  orgSelects: QueryList<OrgSelectComponent>;
     @ViewChildren(NgbDropdown)         dropdowns: QueryList<NgbDropdown>;
+
+    @ViewChild('dateSelectOne') dateSelectOne: DateSelectComponent;
+    @ViewChild('dateSelectTwo') dateSelectTwo: DateSelectComponent;
+
+    // So we can use (ngModelChange) on the link combobox
+    linkFilterEntry: ComboboxEntry = null;
 
     constructor(
         private org: OrgService
     ) {}
 
-    ngOnInit() { }
+    ngOnInit() {
+        if (this.col.filterValue !== undefined) {
+           this.applyFilter(this.col);
+        }
+    }
 
     operatorChanged(col: GridColumn) {
         if (col.filterOperator === 'null' || col.filterOperator === 'not null') {
@@ -38,7 +48,9 @@ export class GridFilterControlComponent implements OnInit {
         }
     }
 
-    applyOrgFilter(org: IdlObject, col: GridColumn) {
+    applyOrgFilter(col: GridColumn) {
+        const org: IdlObject = (col.filterValue as unknown) as IdlObject;
+
         if (org == null) {
             this.clearFilter(col);
             return;
@@ -61,11 +73,12 @@ export class GridFilterControlComponent implements OnInit {
         this.context.dataSource.filters[col.name] = [ filt ];
         col.isFiltered = true;
         this.context.reload();
+
+        this.closeDropdown();
     }
 
-    applyLinkFilter($event, col: GridColumn) {
-        if ($event) {
-            col.filterValue = $event.id;
+    applyLinkFilter(col: GridColumn) {
+        if (col.filterValue) {
             this.applyFilter(col);
 
         } else {
@@ -81,7 +94,20 @@ export class GridFilterControlComponent implements OnInit {
         return new Date(
             Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
     }
-    applyDateFilter(dateStr: string, col: GridColumn, endDateStr: string) {
+
+    applyDateFilter(col: GridColumn) {
+        const dateStr = this.dateSelectOne.currentAsYmd();
+        const endDateStr =
+            this.dateSelectTwo ? this.dateSelectTwo.currentAsYmd() : null;
+
+        if (endDateStr && !dateStr) {
+            // User has applied a second date (e.g. between) but cleared
+            // the first date.  Avoid applying the filter until
+            // dateStr gets a value or endDateStr is cleared or the
+            // operator changes.
+            return;
+        }
+
         if (col.filterOperator === 'null' || col.filterOperator === 'not null') {
             this.applyFilter(col);
         } else {
@@ -164,6 +190,12 @@ export class GridFilterControlComponent implements OnInit {
                 date_filt['-or'].push(filt2_a);
                 filters.push(date_filt);
             } else if (col.filterOperator === 'between') {
+
+                if (!endDateStr) {
+                    // User has not applied the second date yet.
+                    return;
+                }
+
                 date1 = date;
                 date2 = this.localDateFromYmd(endDateStr);
 
@@ -193,12 +225,15 @@ export class GridFilterControlComponent implements OnInit {
             this.context.dataSource.filters[col.name] = filters;
             col.isFiltered = true;
             this.context.reload();
+            this.closeDropdown();
         }
     }
+
     clearDateFilter(col: GridColumn) {
         delete this.context.dataSource.filters[col.name];
         col.isFiltered = false;
         this.context.reload();
+        this.closeDropdown();
     }
     applyBooleanFilter(col: GridColumn) {
         if (!col.filterValue || col.filterValue === '') {
@@ -216,7 +251,28 @@ export class GridFilterControlComponent implements OnInit {
             col.isFiltered = true;
             this.context.reload();
         }
+
+        this.closeDropdown();
     }
+
+    applyFilterCommon(col: GridColumn) {
+
+        switch (col.datatype) {
+            case 'link':
+                col.filterValue =
+                    this.linkFilterEntry ? this.linkFilterEntry.id : null;
+                return this.applyLinkFilter(col);
+            case 'bool':
+                return this.applyBooleanFilter(col);
+            case 'timestamp':
+                return this.applyDateFilter(col);
+            case 'org_unit':
+                return this.applyOrgFilter(col);
+            default:
+                return this.applyFilter(col);
+        }
+    }
+
     applyFilter(col: GridColumn) {
         // fallback if the operator somehow was not set yet
         if (col.filterOperator === undefined) { col.filterOperator = '='; }
@@ -261,6 +317,7 @@ export class GridFilterControlComponent implements OnInit {
             }
         }
         this.context.reload();
+        this.closeDropdown();
     }
     clearFilter(col: GridColumn) {
         // clear filter values...
@@ -270,16 +327,20 @@ export class GridFilterControlComponent implements OnInit {
         col.isFiltered = false;
         this.reset();
         this.context.reload();
+        this.closeDropdown();
     }
 
     closeDropdown() {
-        this.dropdowns.forEach(drp => { drp.close(); });
+        // Timeout allows actions to occur before closing (some) dropdows
+        // clears the values (e.g. link selector)
+        setTimeout(() => this.dropdowns.forEach(drp => { drp.close(); }));
     }
 
     reset() {
         this.filterComboboxes.forEach(ctl => { ctl.applyEntryId(null); });
-        this.dateSelects.forEach(ctl => { ctl.reset(); });
         this.orgSelects.forEach(ctl => { ctl.reset(); });
+        if (this.dateSelectOne) { this.dateSelectOne.reset(); }
+        if (this.dateSelectTwo) { this.dateSelectTwo.reset(); }
     }
 }
 

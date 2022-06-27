@@ -21,6 +21,7 @@ angular.module('egCoreMod')
         stat_cats : [],
         stat_cat_entry_maps : {},   // cat.id to selected value
         virt_id : -1,               // virtual ID for new objects
+        locales : [],
         init_done : false           // have we loaded our initialization data?
     };
 
@@ -42,6 +43,7 @@ angular.module('egCoreMod')
                 service.get_perm_groups(),
                 service.get_perm_group_entries(),
                 service.get_ident_types(),
+                service.get_locales(),
                 service.get_org_settings(),
                 service.get_stat_cats(),
                 service.get_surveys(),
@@ -49,7 +51,6 @@ angular.module('egCoreMod')
             ];
             service.init_done = true;
         }
-
         return $q.all(common_data.concat(page_data));
     };
 
@@ -162,6 +163,15 @@ angular.module('egCoreMod')
             'open-ils.actor',
             'open-ils.actor.username.exists',
             egCore.auth.token(), usrname);
+    }
+
+    // compare string with email address of loaded user, return true if different
+    service.check_email_different = function(email) {
+        if (service.existing_patron) {
+            if (email != service.existing_patron.email()) {
+                return true;
+            }
+        }
     }
 
     //service.check_grp_app_perm = function(grp_id) {
@@ -358,6 +368,9 @@ angular.module('egCoreMod')
             'ui.patron.edit.au.ident_value.suggest',
             'ui.patron.edit.au.ident_value2.show',
             'ui.patron.edit.au.ident_value2.suggest',
+            'ui.patron.edit.au.photo_url.require',
+            'ui.patron.edit.au.photo_url.show',
+            'ui.patron.edit.au.photo_url.suggest',
             'ui.patron.edit.au.email.require',
             'ui.patron.edit.au.email.show',
             'ui.patron.edit.au.email.suggest',
@@ -390,8 +403,6 @@ angular.module('egCoreMod')
             'ui.patron.edit.au.claims_returned_count.suggest',
             'ui.patron.edit.au.claims_never_checked_out_count.show',
             'ui.patron.edit.au.claims_never_checked_out_count.suggest',
-            'ui.patron.edit.au.alert_message.show',
-            'ui.patron.edit.au.alert_message.suggest',
             'ui.patron.edit.aua.post_code.regex',
             'ui.patron.edit.aua.post_code.example',
             'ui.patron.edit.aua.county.require',
@@ -457,6 +468,19 @@ angular.module('egCoreMod')
                 egCore.env.absorbList(types, 'cit')
                 service.ident_types = types 
             });
+        }
+    };
+
+    service.get_locales = function() {
+        if (egCore.env.i18n_l) {
+            service.locales = egCore.env.i18n_l.list;
+            return $q.when();
+        } else {
+            return egCore.pcrud.retrieveAll('i18n_l', {}, {atomic : true})
+            .then(function(locales) {
+                egCore.env.absorbList(locales, 'i18n_l')
+                service.locales = locales
+	    });
         }
     };
 
@@ -656,6 +680,17 @@ angular.module('egCoreMod')
         });
     }
 
+    service.send_test_message = function(user_id, hook) {
+
+        return egCore.net.request(
+            'open-ils.actor',
+            'open-ils.actor.event.test_notification',
+            egCore.auth.token(), {hook: hook, target: user_id}
+        ).then(function(res) {
+            return res;
+        });
+    }
+
     service.dupe_patron_search = function(patron, type, value) {
         var search;
 
@@ -750,7 +785,6 @@ angular.module('egCoreMod')
         service.existing_patron = current;
 
         var patron = egCore.idl.toHash(current);
-
         patron.home_ou = egCore.org.get(patron.home_ou.id);
         patron.expire_date = new Date(Date.parse(patron.expire_date));
         patron.dob = service.parse_dob(patron.dob);
@@ -758,6 +792,7 @@ angular.module('egCoreMod')
         patron.net_access_level = current.net_access_level();
         patron.ident_type = current.ident_type();
         patron.ident_type2 = current.ident_type2();
+        patron.locale = current.locale();
         patron.groups = current.groups(); // pre-hash
 
         angular.forEach(
@@ -838,6 +873,7 @@ angular.module('egCoreMod')
             card : card,
             cards : [card],
             home_ou : egCore.org.get(egCore.auth.user().ws_ou()),
+            net_access_level : service.org_settings['ui.patron.default_inet_access_level'],
             stat_cat_entries : [],
             waiver_entries : [],
             groups : [],
@@ -885,6 +921,8 @@ angular.module('egCoreMod')
             user.ident_type = egCore.env.cit.map[user.ident_type];
         if (user.ident_type2)
             user.ident_type2 = egCore.env.cit.map[user.ident_type2];
+	if (user.locale) 
+	    user.locale = egCore.env.i18n_l.map[user.locale];
         user.dob = service.parse_dob(user.dob);
 
         // Clear the usrname if it looks like a UUID
@@ -993,6 +1031,8 @@ angular.module('egCoreMod')
                 new_addr.usr = user.id;
                 new_addr.isnew = true;
                 new_addr.valid = true;
+                new_addr.pending = new_addr.pending === 't';
+                new_addr.within_city_limits = new_addr.within_city_limits == 't';
                 user.addresses.push(new_addr);
                 return new_addr;
             }
@@ -1071,6 +1111,8 @@ angular.module('egCoreMod')
             patron.dob(patron.dob().toISOString().replace(/T.*/,''));
         if (patron.ident_type()) 
             patron.ident_type(patron.ident_type().id());
+        if (patron.locale())
+            patron.locale(patron.locale().code());
         if (patron.net_access_level())
             patron.net_access_level(patron.net_access_level().id());
 
@@ -1252,10 +1294,10 @@ angular.module('egCoreMod')
 .controller('PatronRegCtrl',
        ['$scope','$routeParams','$q','$uibModal','$window','egCore',
         'patronSvc','patronRegSvc','egUnloadPrompt','egAlertDialog',
-        'egWorkLog', '$timeout',
+        'egWorkLog', '$timeout', 'ngToast',
 function($scope , $routeParams , $q , $uibModal , $window , egCore ,
          patronSvc , patronRegSvc , egUnloadPrompt, egAlertDialog ,
-         egWorkLog, $timeout) {
+         egWorkLog, $timeout, ngToast) {
 
     $scope.page_data_loaded = false;
     $scope.hold_notify_type = { phone : null, email : null, sms : null };
@@ -1294,11 +1336,23 @@ function($scope , $routeParams , $q , $uibModal , $window , egCore ,
     function set_new_patron_defaults(prs) {
         if (!$scope.patron.passwd) {
             // passsword may originate from staged user.
-            $scope.generate_password();
+            if ($scope.patron.day_phone &&
+                $scope.org_settings['patron.password.use_phone']) {
+                $scope.patron.passwd = $scope.patron.day_phone.substr(-4);
+            } else {
+                $scope.generate_password();
+            }
         }
-        $scope.hold_notify_type.phone = true;
-        $scope.hold_notify_type.email = true;
-        $scope.hold_notify_type.sms = false;
+
+        var notify = 'phone:email'; // hard-coded default when opac.hold_notify has no reg_default
+        var notify_stype = $scope.user_setting_types['opac.hold_notify'];
+        if (notify_stype && notify_stype.reg_default() !== undefined && notify_stype.reg_default() !== null) {
+            console.log('using default opac.hold_notify');
+            notify = notify_stype.reg_default();
+        }
+        $scope.hold_notify_type.phone = Boolean(notify.match(/phone/));
+        $scope.hold_notify_type.email = Boolean(notify.match(/email/));
+        $scope.hold_notify_type.sms = Boolean(notify.match(/sms/));
 
         // staged users may be loaded w/ a profile.
         $scope.set_expire_date();
@@ -1351,10 +1405,13 @@ function($scope , $routeParams , $q , $uibModal , $window , egCore ,
         // in standalone mode, we have no patronSvc
         var prs = patronRegSvc;
         $scope.patron = patron;
+        $scope.base_email = patron.email;
+        $scope.base_default_sms = prs.user_settings['opac.default_sms_notify']
         $scope.field_doc = prs.field_doc;
         $scope.edit_profiles = prs.edit_profiles;
         $scope.edit_profile_entries = prs.edit_profile_entries;
         $scope.ident_types = prs.ident_types;
+        $scope.locales = prs.locales;
         $scope.net_access_levels = prs.net_access_levels;
         $scope.user_setting_types = prs.user_setting_types;
         $scope.opt_in_setting_types = prs.opt_in_setting_types;
@@ -1492,6 +1549,8 @@ function($scope , $routeParams , $q , $uibModal , $window , egCore ,
         'au.pref_family_name' : 2,
         'au.ident_type' : 3,
         'au.ident_type2' : 2,
+        'au.photo_url' : 2,
+        'au.locale' : 2,
         'au.home_ou' : 3,
         'au.profile' : 3,
         'au.expire_date' : 3,
@@ -1577,6 +1636,29 @@ function($scope , $routeParams , $q , $uibModal , $window , egCore ,
     // generates a random 4-digit password
     $scope.generate_password = function() {
         $scope.patron.passwd = Math.floor(Math.random()*9000) + 1000;
+    }
+
+    $scope.send_password_reset_link = function() {
+       if (!$scope.patron.email || $scope.patron.email == '') {
+            egAlertDialog.open(egCore.strings.REG_PASSWORD_RESET_REQUEST_NO_EMAIL);
+            return;
+        } else if (patronRegSvc.check_email_different($scope.patron.email)) {
+            egAlertDialog.open(egCore.strings.REG_PASSWORD_RESET_REQUEST_DIFFERENT_EMAIL);
+            return;
+        }
+        // we have an email address, fire the reset request
+        egCore.net.request(
+            'open-ils.actor',
+            'open-ils.actor.patron.password_reset.request',
+            'barcode', $scope.patron.card.barcode, $scope.patron.email
+        ).then(function(resp) {
+            if (resp == '1') { // request okay
+                ngToast.success(egCore.strings.REG_PASSWORD_RESET_REQUEST_SUCCESSFUL);
+            } else {
+                var evt = egCore.evt.parse(resp);
+                egAlertDialog.open(evt.desc);
+            }
+        });
     }
 
     $scope.set_expire_date = function() {
@@ -1897,12 +1979,19 @@ function($scope , $routeParams , $q , $uibModal , $window , egCore ,
 
     function extract_hold_notify() {
         var p = $scope.patron;
+
+        // get the user's opac.hold_notify setting
         var notify = $scope.user_settings['opac.hold_notify'];
 
+        // if it's not set, use the default opac.hold_notify value
         if (!notify && !(notify === '')) {
-            $scope.hold_notify_type.phone = true;
-            $scope.hold_notify_type.email = true;
-            return;
+            var notify_stype = $scope.user_setting_types['opac.hold_notify'];
+            if (notify_stype && notify_stype.reg_default() !== undefined && notify_stype.reg_default() !== null) {
+                notify = notify_stype.reg_default();
+            } else {
+                // no setting and no default: set phone and email to true
+                notify = 'phone:email';
+            }
         }
 
         $scope.hold_notify_type.phone = Boolean(notify.match(/phone/));
@@ -1940,6 +2029,28 @@ function($scope , $routeParams , $q , $uibModal , $window , egCore ,
     $scope.invalidate_field = function(field) {
         patronRegSvc.invalidate_field($scope.patron, field).then(function() {
             $scope.handle_field_changed($scope.patron, field);
+        });
+    }
+
+    $scope.send_test_email = function() {
+        patronRegSvc.send_test_message($scope.patron.id, 'au.email.test').then(function(res) {
+            if (res && res.template_output() && res.template_output().is_error() == 'f') {
+                 ngToast.success(egCore.strings.TEST_NOTIFY_SUCCESS);
+            } else {
+                ngToast.warning(egCore.strings.TEST_NOTIFY_FAIL);
+                if (res) console.log(res);
+            }
+        });
+    }
+
+    $scope.send_test_sms = function() {
+        patronRegSvc.send_test_message($scope.patron.id, 'au.sms_text.test').then(function(res) {
+            if (res && res.template_output() && res.template_output().is_error() == 'f') {
+                 ngToast.success(egCore.strings.TEST_NOTIFY_SUCCESS);
+            } else {
+                ngToast.warning(egCore.strings.TEST_NOTIFY_FAIL);
+                if (res) console.log(res);
+            }
         });
     }
 

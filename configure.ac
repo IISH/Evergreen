@@ -20,7 +20,7 @@
 
 export PATH=${PATH}:/usr/sbin
 AC_PREREQ(2.61)
-AC_INIT(Open-ILS, 3.5.1, open-ils-dev@list.georgialibraries.org)
+AC_INIT(Open-ILS, 3.9.0, open-ils-dev@list.georgialibraries.org)
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE
@@ -153,33 +153,6 @@ esac],
 AM_CONDITIONAL([BUILDILSCLIENT], [test x$openils_client = xtrue])
 
 
-# build evergreen java ?
-
-AC_ARG_ENABLE([java],
-[  --enable-java    enables installation of the Evergreen Java components ],
-[case "${enableval}" in
-    yes) evergreen_java=true ;;
-    no)  evergreen_java=false ;;
-  *) AC_MSG_ERROR([please choose another value for --enable-java (supported values are yes or no])
-esac],
-[evergreen_java=false])
-
-AM_CONDITIONAL([BUILDEGJAVA], [test x$evergreen_java = xtrue])
-
-
-# build the evergreen python modules?
-
-AC_ARG_ENABLE([python],
-[  --enable-python    enables installation of the Evergreen Python modules ],
-[case "${enableval}" in
-    yes) EG_PYTHON_INSTALL=true ;;
-    no)  EG_PYTHON_INSTALL=false ;;
-  *) AC_MSG_ERROR([please choose another value for --enable-python (supported values are yes or no)])
-esac],
-[EG_PYTHON_INSTALL=false])
-
-AM_CONDITIONAL([BUILDEGPYTHON], [test x$EG_PYTHON_INSTALL = xtrue])
-
 #-----------------------------------
 # Check for dependencies 
 #-----------------------------------
@@ -276,7 +249,7 @@ if test "x$openils_core" = "xtrue"; then
         AC_MSG_ERROR([*** cpan not found, aborting])
     fi
 
-    AC_CHECK_PROG([YAZ],yaz-config,yes,no)
+    PKG_CHECK_MODULES([YAZ],[yaz],[YAZ=yes],[YAZ=no])
     if test $YAZ = "no"; then
         AC_MSG_ERROR([*** yaz not found, aborting])
     fi
@@ -363,9 +336,7 @@ if test "x$openils_core" = "xtrue"; then
     AC_CONFIG_FILES([Open-ILS/examples/Makefile
              Open-ILS/src/c-apps/Makefile
              Open-ILS/src/c-apps/tests/Makefile
-             Open-ILS/src/extras/Makefile
-             Open-ILS/src/java/Makefile
-             Open-ILS/src/python/Makefile])
+             Open-ILS/src/extras/Makefile])
 fi
 
 if test "x$build_apachemods" = "xtrue"; then
@@ -437,16 +408,6 @@ AC_MSG_RESULT([Evergreen Staff Client:      yes])
     else
 AC_MSG_RESULT([Evergreen Staff Client:      no])
     fi
-    if test "$EG_PYTHON_INSTALL" = "true" ; then
-AC_MSG_RESULT([Evergreen Python Components: yes])
-    else
-AC_MSG_RESULT([Evergreen Python Components: no])
-    fi
-    if test "$evergreen_java" = "true" ; then
-AC_MSG_RESULT([Evergreen Java Components:   yes])
-    else
-AC_MSG_RESULT([Evergreen Java Components:   no])
-fi
 AC_MSG_RESULT([]) 
 AC_MSG_RESULT([-------- Installation Directories --------])
 AC_MSG_RESULT(Installation directory prefix:            ${prefix})

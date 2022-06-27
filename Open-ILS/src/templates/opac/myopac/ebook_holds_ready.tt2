@@ -15,12 +15,22 @@
         <div class="align">
             <a href='[% mkurl('holds', {}, ['limit','offset','available','sort','sort_type']) %]'>[% l("Items on Hold") %]</a>
         </div>
+        [% IF ctx.curbside_pickup_libs.size %]
+        <div class="align">
+            <a href='[% mkurl('holds_curbside',{},['limit','offset']) %]'>[% l("Curbside Pickup") %]</a>
+        </div>
+        [% END %]
         <div class="align">
             <a href='[% mkurl('ebook_holds', {}, ['limit','offset','available','sort','sort_type']) %]'>[% l("E-Items on Hold") %]</a>
         </div>
         <div class="align selected">
             <a href='#'>[% l("E-Items Ready for Checkout") %]</a>
         </div>
+        [% IF ctx.my_hold_subscriptions.size > 0 %]
+        <div class="align">
+            <a href='[% mkurl('hold_subscriptions', {}, ['limit','offset','available','sort','sort_type']) %]'>[% l("Hold Groups") %]</a>
+        </div>
+        [% END %]
         <div class="align">
             <a href='[% mkurl('hold_history', {}, ['limit','offset','available','sort','sort_type']) %]'>[% l("Holds History") %]</a>
         </div>

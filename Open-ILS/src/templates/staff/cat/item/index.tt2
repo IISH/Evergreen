@@ -36,6 +36,10 @@
       "[% l('Updated most recent inventory data for selected items.') %]";
     s.FAIL_UPDATE_INVENTORY =
       "[% l('Failed to update recent inventory data for selected items.')%]";
+    s.SUCCESS_UPDATE_INVENTORY_SINGLE =
+      "[% l('Updated most recent inventory data for this item.') %]";
+    s.FAIL_UPDATE_INVENTORY_SINGLE =
+      "[% l('Failed to update recent inventory data for this item.')%]";
     s.ITEM_SUCCESSFULLY_MODIFIED =
       "[% l('Item successfully modified') %]";
     s.ITEMS_SUCCESSFULLY_MODIFIED =
@@ -71,6 +75,7 @@
         aria-label="[% l('Scan Item') %]">
       <input class="btn btn-default" 
         type="submit" value="[% l('Submit') %]"/>
+      <eg-help-popover help-text="[% l('Single barcode or list of barcodes separated with commas.') %]">
     </div>
     <!-- give the upload container div some padding to prevent force the
         upload widget into the vertical middle of the row -->

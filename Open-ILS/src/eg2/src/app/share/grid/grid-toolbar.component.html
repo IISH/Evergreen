@@ -1,3 +1,5 @@
+<eg-grid-toolbar-actions-editor #toolbarActionsEditor [gridContext]="gridContext">
+</eg-grid-toolbar-actions-editor>
 
 <div class="eg-grid-toolbar mb-2">
 
@@ -8,7 +10,7 @@
       <!-- special case for remove filters button -->
       <button *ngIf="gridContext.isFilterable"
         class="btn btn-outline-dark mr-1" (click)="gridContext.removeFilters()"
-        [disabled]="!gridContext.filtersSet()" i18n>
+        [disabled]="!gridContext.filtersSet() || gridContext.dataSource.requestingData" i18n>
         Remove Filters
       </button>
       <button *ngFor="let btn of gridContext.toolbarButtons"
@@ -114,6 +116,12 @@
         <span class="material-icons">compare_arrows</span>
         <span class="ml-2" i18n>Manage Column Widths</span>
       </a>
+      <button class="dropdown-item label-with-material-icon"
+        [disabled]="gridContext.toolbarActions.length === 0"
+        (click)="toolbarActionsEditor.open().subscribe()">
+        <span class="material-icons">menu</span>
+        <span class="ml-2" i18n>Manage Actions Menu</span>
+      </button>
       <a class="dropdown-item label-with-material-icon"
         *ngIf="!disableSaveSettings"
         (click)="saveGridConfig()">
@@ -140,7 +148,8 @@
       <div class="dropdown-divider"></div>
 
       <a class="dropdown-item label-with-material-icon"
-        (click)="col.visible=!col.visible" *ngFor="let col of gridContext.columnSet.columns">
+        (click)="col.visible=!col.visible"
+        *ngFor="let col of gridContext.columnSet.sortForColPicker()">
         <span *ngIf="col.visible" class="badge badge-success">&#x2713;</span>
         <span *ngIf="!col.visible" class="badge badge-warning">&#x2717;</span>
         <span class="ml-2">{{col.label}}</span>

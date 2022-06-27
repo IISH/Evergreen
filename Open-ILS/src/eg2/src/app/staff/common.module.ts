@@ -15,8 +15,12 @@ import {BibSummaryComponent} from '@eg/staff/share/bib-summary/bib-summary.compo
 import {EgHelpPopoverComponent} from '@eg/share/eg-help-popover/eg-help-popover.component';
 import {DatetimeValidatorDirective} from '@eg/share/validators/datetime_validator.directive';
 import {MultiSelectComponent} from '@eg/share/multi-select/multi-select.component';
+import {TextMultiSelectComponent} from '@eg/share/text-multi-select/text-multi-select.component';
 import {NotBeforeMomentValidatorDirective} from '@eg/share/validators/not_before_moment_validator.directive';
 import {PatronBarcodeValidatorDirective} from '@eg/share/validators/patron_barcode_validator.directive';
+import {BroadcastService} from '@eg/share/util/broadcast.service';
+import {CourseService} from './share/course.service';
+import {FileExportService} from '@eg/share/util/file-export.service';
 
 /**
  * Imports the EG common modules and adds modules common to all staff UI's.
@@ -34,6 +38,7 @@ import {PatronBarcodeValidatorDirective} from '@eg/share/validators/patron_barco
     EgHelpPopoverComponent,
     DatetimeValidatorDirective,
     MultiSelectComponent,
+    TextMultiSelectComponent,
     NotBeforeMomentValidatorDirective,
     PatronBarcodeValidatorDirective,
   ],
@@ -58,18 +63,22 @@ import {PatronBarcodeValidatorDirective} from '@eg/share/validators/patron_barco
     EgHelpPopoverComponent,
     DatetimeValidatorDirective,
     MultiSelectComponent,
+    TextMultiSelectComponent,
     NotBeforeMomentValidatorDirective,
     PatronBarcodeValidatorDirective
   ]
 })
 
 export class StaffCommonModule {
-    static forRoot(): ModuleWithProviders {
+    static forRoot(): ModuleWithProviders<StaffCommonModule> {
         return {
             ngModule: StaffCommonModule,
             providers: [ // Export staff-wide services
                 AccessKeyService,
-                AudioService
+                AudioService,
+                BroadcastService,
+                CourseService,
+                FileExportService
             ]
         };
     }

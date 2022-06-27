@@ -7,6 +7,7 @@ use OpenILS::Utils::Fieldmapper;
 use OpenILS::Application::AppUtils;
 use Net::HTTP::NB;
 use IO::Select;
+use List::MoreUtils qw(uniq);
 my $U = 'OpenILS::Application::AppUtils';
 
 our $ac_types = ['toc',  'anotes', 'excerpt', 'summary', 'reviews'];
@@ -34,6 +35,8 @@ sub load_record {
     my $org_name = $ctx->{get_aou}->($org)->shortname;
     my $pref_ou = $self->_get_pref_lib();
     my $depth = $self->cgi->param('depth');
+    my $available = $self->cgi->param('available') || 'false';
+
     $depth = $ctx->{get_aou}->($org)->ou_type->depth 
         unless defined $depth; # can be 0
 
@@ -59,12 +62,32 @@ sub load_record {
         $self->timelog("load user lists and settings");
     }
 
+    # fetch geographic coordinates if user supplied an
+    # address
+    my $gl = $self->cgi->param('geographic-location');
+    my $coords;
+    if ($gl) {
+        my $geo = OpenSRF::AppSession->create("open-ils.geo");
+        $coords = $geo
+            ->request('open-ils.geo.retrieve_coordinates', $org, scalar $gl)
+            ->gather(1);
+        $geo->kill_me;
+    }
+    $ctx->{has_valid_coords} = 0;
+    if ($coords
+        && ref($coords)
+        && $$coords{latitude}
+        && $$coords{longitude}
+    ) {
+        $ctx->{has_valid_coords} = 1;
+    }
+
     # run copy retrieval in parallel to bib retrieval
     # XXX unapi
     my $cstore = OpenSRF::AppSession->create('open-ils.cstore');
     my $copy_rec = $cstore->request(
         'open-ils.cstore.json_query.atomic', 
-        $self->mk_copy_query($rec_id, $org, $copy_depth, $copy_limit, $copy_offset, $pref_ou)
+        $self->mk_copy_query($rec_id, $org, $copy_depth, $copy_limit, $copy_offset, $pref_ou, $coords)
     );
 
     if ($self->cgi->param('badges')) {
@@ -102,8 +125,31 @@ sub load_record {
 
     $ctx->{copies} = $copy_rec->gather(1);
 
+    $ctx->{course_module_opt_in} = 0;
+    if ($ctx->{get_org_setting}->($org, "circ.course_materials_opt_in")) {
+        $ctx->{course_module_opt_in} = 1;
+    }
+
+    $ctx->{ou_distances} = {};
+    if ($ctx->{has_valid_coords}) {
+        my $circ_libs = [ uniq map { $_->{circ_lib} } @{$ctx->{copies}} ];
+        my $foreign_copy_circ_libs = [ 
+            map { $_->target_copy()->circ_lib() }
+            map { @{ $_->foreign_copy_maps() } }
+            @{ $ctx->{foreign_copies} }
+        ];
+        push @{ $circ_libs }, @$foreign_copy_circ_libs; # some overlap is OK here
+        my $ou_distance_list = $U->simplereq(
+            'open-ils.geo',
+            'open-ils.geo.sort_orgs_by_distance_from_coordinate.include_distances',
+            [ $coords->{latitude}, $coords->{longitude} ],
+            $circ_libs
+        );
+        $ctx->{ou_distances} = { map { $_->[0] => $_->[1] } @$ou_distance_list };
+    }
+
     # Add public copy notes to each copy - and while we're in there, grab peer bib records
-    # and copy tags
+    # and copy tags. Oh and if we're working with course materials, those too.
     my %cached_bibs = ();
     foreach my $copy (@{$ctx->{copies}}) {
         $copy->{notes} = $U->simplereq(
@@ -111,6 +157,23 @@ sub load_record {
             'open-ils.circ.copy_note.retrieve.all',
             {itemid => $copy->{id}, pub => 1 }
         );
+        if ($ctx->{course_module_opt_in}) {
+            $copy->{course_materials} = $U->simplereq(
+                'open-ils.courses',
+                'open-ils.courses.course_materials.retrieve.atomic',
+                {item => $copy->{id}}
+            );
+            my %course_ids;
+            for my $material (@{$copy->{course_materials}}) {
+                $course_ids{$material->course} = 1;
+            }
+
+            $copy->{courses} = $U->simplereq(
+                'open-ils.courses',
+                'open-ils.courses.courses.retrieve',
+                keys %course_ids
+            );
+        }
         $self->timelog("past copy note retrieval call");
         my $meth = 'open-ils.circ.copy_tags.retrieve';
         $meth .= ".staff" if $ctx->{is_staff};
@@ -153,6 +216,7 @@ sub load_record {
     $self->timelog("past store copy retrieval call");
     $ctx->{copy_limit} = $copy_limit;
     $ctx->{copy_offset} = $copy_offset;
+    $ctx->{available} = $available;
 
     $ctx->{have_holdings_to_show} = 0;
     $ctx->{have_mfhd_to_show} = 0;
@@ -288,13 +352,31 @@ sub mk_copy_query {
     my $copy_limit = shift;
     my $copy_offset = shift;
     my $pref_ou = shift;
+    my $coords = shift;
+    my $staff = $self->ctx->{is_staff};
+    my $available = $self->cgi->param('available') || 'false';
 
     my $query = $U->basic_opac_copy_query(
-        $rec_id, undef, undef, $copy_limit, $copy_offset, $self->ctx->{is_staff}
+        $rec_id, undef, undef, $copy_limit, $copy_offset, $staff
     );
 
-    if($org != $self->ctx->{aou_tree}->()->id) { 
+    if($available eq 'true') {
+        $query->{where} = {
+            '+acp' => {
+                deleted => 'f',
+                ($staff ? () : (opac_visible => 't'))
+            },
+            '+ccs' => { is_available => 't'},
+            ($staff ? () : ( '+aou' => { opac_visible => 't' } ))
+        };
+    }
+
+    my $lasso_orgs = $self->search_lasso_orgs;
+
+    if($lasso_orgs || $org != $self->ctx->{aou_tree}->()->id) {
         # no need to add the org join filter if we're not actually filtering
+
+        my $filter_orgs = $lasso_orgs || $org;
         $query->{from}->{acp}->[1] = { aou => {
             fkey => 'circ_lib',
             field => 'id',
@@ -305,20 +387,29 @@ sub mk_copy_query {
                             column => 'id', 
                             transform => 'actor.org_unit_descendants',
                             result_field => 'id', 
-                            params => [$depth]
+                            ( $lasso_orgs ? () : (params => [$depth]) )
                         }]},
                         from => 'aou',
-                        where => {id => $org}
+                        where => {id => $filter_orgs}
                     }
                 }
             }
         }};
     };
 
+    my $ou_sort_param = [$org, $pref_ou ];
+    if ($coords
+        && ref($coords)
+        && $$coords{latitude}
+        && $$coords{longitude}
+    ) {
+        push(@$ou_sort_param, $$coords{latitude}, $$coords{longitude});
+    }
+
     # Unsure if we want these in the shared function, leaving here for now
     unshift(@{$query->{order_by}},
         { class => "aou", field => 'id',
-          transform => 'evergreen.rank_ou', params => [$org, $pref_ou]
+          transform => 'evergreen.rank_ou', params => $ou_sort_param
         }
     );
     push(@{$query->{order_by}},
@@ -507,13 +598,30 @@ sub get_hold_copy_summary {
     $search->kill_me;
 }
 
-sub load_print_record {
+sub load_print_or_email_preview {
     my $self = shift;
+    my $type = shift;
+    my $captcha_pass = shift;
 
-    my $rec_or_list_id = $self->ctx->{page_args}->[0]
+    my $ctx = $self->ctx;
+    my $e = new_editor(xact => 1);
+    my $old_event = $self->cgi->param('old_event');
+    if ($old_event) {
+        $old_event = $e->retrieve_action_trigger_event([
+            $old_event,
+            {flesh => 1, flesh_fields => { atev => ['template_output'] }}
+        ]);
+        $e->delete_action_trigger_event($old_event) if ($old_event);
+        $e->delete_action_trigger_event_output($old_event->template_output) if ($old_event && $old_event->template_output);
+        $e->commit;
+    }
+
+    my $rec_or_list_id = $ctx->{page_args}->[0]
         or return Apache2::Const::HTTP_BAD_REQUEST;
 
-    my $is_list = $self->cgi->param('is_list');
+    $ctx->{bre_id} = $rec_or_list_id;
+
+    my $is_list = $ctx->{is_list} = $self->cgi->param('is_list');
     my $list;
     if ($is_list) {
 
@@ -533,12 +641,88 @@ sub load_print_record {
         };
     } else {
         $list = $rec_or_list_id;
-        $self->{ctx}->{bre_id} = $rec_or_list_id;
+        $ctx->{bre_id} = $rec_or_list_id;
     }
 
-    $self->{ctx}->{printable_record} = $U->simplereq(
-        'open-ils.search',
-        'open-ils.search.biblio.record.print', $list);
+    $ctx->{sortable} = (ref($list) && @$list > 1);
+
+    my $group = $type eq 'print' ? 1 : 2;
+
+    $ctx->{formats} = $self->editor->search_action_trigger_event_def_group_member([{grp => $group},{order_by => { atevdefgm => 'name'}}]);
+    $ctx->{format} = $self->cgi->param('format') || $ctx->{formats}[0]->id;
+    if ($type eq 'email') {
+        $ctx->{email} = $self->cgi->param('email') || ($ctx->{user} ? $ctx->{user}->email : '');
+        $ctx->{subject} = $self->cgi->param('subject');
+    }
+
+    my $context_org = $self->cgi->param('context_org');
+    if ($context_org) {
+        $context_org = $self->ctx->{get_aou}->($context_org);
+    }
+
+    if (!$context_org) {
+        $context_org = $self->ctx->{get_aou}->($self->_get_search_lib()) ||
+            $self->ctx->{aou_tree}->();
+    }
+
+    $ctx->{context_org} = $context_org->id;
+
+    my ($incoming_sort,$sort_dir) = $self->_get_bookbag_sort_params('sort');
+    $sort_dir = $self->cgi->param('sort_dir') if $self->cgi->param('sort_dir');
+    if (!$incoming_sort) {
+        ($incoming_sort,$sort_dir) = $self->_get_bookbag_sort_params('anonsort');
+    }
+    if (!$incoming_sort) {
+        $incoming_sort = 'author';
+    }
+
+    $incoming_sort =~ s/sort.*$//;
+
+    $incoming_sort = 'author'
+        unless (grep {$_ eq $incoming_sort} qw/title author pubdate/);
+
+    $ctx->{sort} = $incoming_sort;
+    $ctx->{sort_dir} = $sort_dir;
+
+    my $method = "open-ils.search.biblio.record.$type.preview";
+    my @args = (
+        $list,
+        $ctx->{context_org},
+        $ctx->{sort},
+        $ctx->{sort_dir},
+        $ctx->{format},
+        $captcha_pass,
+        $ctx->{email},
+        $ctx->{subject}
+    );
+
+    unshift(@args, $ctx->{authtoken}) if ($type eq 'email');
+
+    $ctx->{preview_record} = $U->simplereq(
+        'open-ils.search', $method, @args);
+
+    $ctx->{'redirect_to'} = $self->cgi->param('redirect_to') || $self->cgi->referer;
+
+    return Apache2::Const::OK;
+}
+
+sub load_print_record {
+    my $self = shift;
+
+    my $event_id = $self->ctx->{page_args}->[0]
+        or return Apache2::Const::HTTP_BAD_REQUEST;
+
+    my $event = $self->editor->retrieve_action_trigger_event([
+        $event_id,
+        {flesh => 1, flesh_fields => { atev => ['template_output'] }}
+    ]);
+
+    return Apache2::Const::HTTP_BAD_REQUEST
+        unless ($event and $event->template_output and $event->template_output->data);
+
+    $self->ctx->{bre_id} = $self->cgi->param('bre_id');
+    $self->ctx->{is_list} = $self->cgi->param('is_list');
+    $self->ctx->{print_data} = $event->template_output->data;
 
     if ($self->cgi->param('clear_cart')) {
         $self->clear_anon_cache;
@@ -550,37 +734,40 @@ sub load_print_record {
 
 sub load_email_record {
     my $self = shift;
+    my $captcha_pass = shift;
 
-    my $rec_or_list_id = $self->ctx->{page_args}->[0]
+    my $event_id = $self->ctx->{page_args}->[0]
         or return Apache2::Const::HTTP_BAD_REQUEST;
 
-    my $is_list = $self->cgi->param('is_list');
-    my $list;
-    if ($is_list) {
+    my $e = new_editor(xact => 1, authtoken => $self->ctx->{authtoken});
+    return Apache2::Const::HTTP_BAD_REQUEST
+        unless $captcha_pass || $e->checkauth;
 
-        $list = $U->simplereq(
-            'open-ils.actor',
-            'open-ils.actor.anon_cache.get_value',
-            $rec_or_list_id, (ref $self)->CART_CACHE_MYLIST);
+    my $event = $e->retrieve_action_trigger_event([
+        $event_id,
+        {flesh => 1, flesh_fields => { atev => ['template_output'] }}
+    ]);
 
-        if(!$list) {
-            $list = [];
-        }
+    return Apache2::Const::HTTP_BAD_REQUEST
+        unless ($event and $event->template_output and $event->template_output->data);
 
-        {   # sanitize
-            no warnings qw/numeric/;
-            $list = [map { int $_ } @$list];
-            $list = [grep { $_ > 0} @$list];
-        };
-    } else {
-        $list = $rec_or_list_id;
-        $self->{ctx}->{bre_id} = $rec_or_list_id;
-    }
+    $self->ctx->{email} = $self->cgi->param('email');
+    $self->ctx->{subject} = $self->cgi->param('subject');
+    $self->ctx->{bre_id} = $self->cgi->param('bre_id');
+    $self->ctx->{is_list} = $self->cgi->param('is_list');
+    $self->ctx->{print_data} = $event->template_output->data;
 
     $U->simplereq(
         'open-ils.search',
-        'open-ils.search.biblio.record.email', 
-        $self->ctx->{authtoken}, $list);
+        'open-ils.search.biblio.record.email.send_output',
+        $self->ctx->{authtoken}, $event_id,
+        $self->ctx->{cap}->{key}, $self->ctx->{cap_answer});
+
+    # Move the output to async so it can't be used in a resend attack
+    $event->async_output($event->template_output->id);
+    $event->clear_template_output;
+    $e->update_action_trigger_event($event);
+    $e->commit;
 
     if ($self->cgi->param('clear_cart')) {
         $self->clear_anon_cache;

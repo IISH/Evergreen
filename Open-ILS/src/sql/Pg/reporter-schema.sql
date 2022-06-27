@@ -28,11 +28,12 @@ CREATE TABLE reporter.template_folder (
 	create_time	TIMESTAMP WITH TIME ZONE	NOT NULL DEFAULT NOW(),
 	name		TEXT				NOT NULL,
 	shared		BOOL				NOT NULL DEFAULT FALSE,
+	simple_reporter	BOOL		NOT NULL DEFAULT FALSE,
 	share_with	INT				REFERENCES actor.org_unit (id) DEFERRABLE INITIALLY DEFERRED
 );
 CREATE INDEX rpt_tmpl_fldr_owner_idx ON reporter.template_folder (owner);
 CREATE UNIQUE INDEX rpt_template_folder_once_parent_idx ON reporter.template_folder (name,parent);
-CREATE UNIQUE INDEX rpt_template_folder_once_idx ON reporter.template_folder (name,owner) WHERE parent IS NULL;
+CREATE UNIQUE INDEX rpt_template_folder_once_idx ON reporter.template_folder (name,owner,simple_reporter) WHERE parent IS NULL;
 
 CREATE TABLE reporter.report_folder (
 	id		SERIAL				PRIMARY KEY,
@@ -41,11 +42,12 @@ CREATE TABLE reporter.report_folder (
 	create_time	TIMESTAMP WITH TIME ZONE	NOT NULL DEFAULT NOW(),
 	name		TEXT				NOT NULL,
 	shared		BOOL				NOT NULL DEFAULT FALSE,
+    simple_reporter	BOOL		NOT NULL DEFAULT FALSE,
 	share_with	INT				REFERENCES actor.org_unit (id) DEFERRABLE INITIALLY DEFERRED
 );
 CREATE INDEX rpt_rpt_fldr_owner_idx ON reporter.report_folder (owner);
 CREATE UNIQUE INDEX rpt_report_folder_once_parent_idx ON reporter.report_folder (name,parent);
-CREATE UNIQUE INDEX rpt_report_folder_once_idx ON reporter.report_folder (name,owner) WHERE parent IS NULL;
+CREATE UNIQUE INDEX rpt_report_folder_once_idx ON reporter.report_folder (name,owner,simple_reporter) WHERE parent IS NULL;
 
 CREATE TABLE reporter.output_folder (
 	id		SERIAL				PRIMARY KEY,
@@ -54,11 +56,12 @@ CREATE TABLE reporter.output_folder (
 	create_time	TIMESTAMP WITH TIME ZONE	NOT NULL DEFAULT NOW(),
 	name		TEXT				NOT NULL,
 	shared		BOOL				NOT NULL DEFAULT FALSE,
+	simple_reporter	BOOL				NOT NULL DEFAULT FALSE,
 	share_with	INT				REFERENCES actor.org_unit (id) DEFERRABLE INITIALLY DEFERRED
 );
 CREATE INDEX rpt_output_fldr_owner_idx ON reporter.output_folder (owner);
 CREATE UNIQUE INDEX rpt_output_folder_once_parent_idx ON reporter.output_folder (name,parent);
-CREATE UNIQUE INDEX rpt_output_folder_once_idx ON reporter.output_folder (name,owner) WHERE parent IS NULL;
+CREATE UNIQUE INDEX rpt_output_folder_once_idx ON reporter.output_folder (name,owner,simple_reporter) WHERE parent IS NULL;
 
 
 CREATE TABLE reporter.template (
@@ -110,6 +113,7 @@ CREATE TABLE reporter.schedule (
 );
 CREATE INDEX rpt_sched_runner_idx ON reporter.schedule (runner);
 CREATE INDEX rpt_sched_folder_idx ON reporter.schedule (folder);
+CREATE UNIQUE INDEX rpt_sched_recurrence_once_idx ON reporter.schedule (report,folder,runner,run_time,COALESCE(email,''));
 
 CREATE OR REPLACE VIEW reporter.simple_record AS
 SELECT	r.id,
@@ -231,17 +235,62 @@ CREATE OR REPLACE FUNCTION reporter.refresh_materialized_simple_record () RETURN
     SELECT reporter.enable_materialized_simple_record_trigger();
 $$ LANGUAGE SQL;
 
+CREATE OR REPLACE VIEW reporter.asset_call_number_dewey AS
+  SELECT id AS call_number,
+    call_number_dewey(label) AS dewey,
+    CASE WHEN call_number_dewey(label) ~ '^[0-9]+\.?[0-9]*$'::text
+      THEN btrim(to_char(10::double precision * floor(call_number_dewey(label)::double precision / 10::double precision), '000'::text))
+      ELSE NULL::text
+    END AS dewey_block_tens,
+    CASE WHEN call_number_dewey(label) ~ '^[0-9]+\.?[0-9]*$'::text
+      THEN btrim(to_char(100::double precision * floor(call_number_dewey(label)::double precision / 100::double precision), '000'::text))
+      ELSE NULL::text
+    END AS dewey_block_hundreds,
+    CASE WHEN call_number_dewey(label) ~ '^[0-9]+\.?[0-9]*$'::text
+      THEN (btrim(to_char(10::double precision * floor(call_number_dewey(label)::double precision / 10::double precision), '000'::text)) || '-'::text)
+      || btrim(to_char(10::double precision * floor(call_number_dewey(label)::double precision / 10::double precision) + 9::double precision, '000'::text))
+      ELSE NULL::text
+    END AS dewey_range_tens,
+    CASE WHEN call_number_dewey(label) ~ '^[0-9]+\.?[0-9]*$'::text
+      THEN (btrim(to_char(100::double precision * floor(call_number_dewey(label)::double precision / 100::double precision), '000'::text)) || '-'::text)
+      || btrim(to_char(100::double precision * floor(call_number_dewey(label)::double precision / 100::double precision) + 99::double precision, '000'::text))
+      ELSE NULL::text
+    END AS dewey_range_hundreds
+  FROM asset.call_number
+  WHERE call_number_dewey(label) ~ '^[0-9]'::text;
+
 CREATE OR REPLACE VIEW reporter.demographic AS
-SELECT	u.id,
-	u.dob,
-	CASE
-		WHEN u.dob IS NULL
-			THEN 'Adult'
-		WHEN AGE(u.dob) > '18 years'::INTERVAL
-			THEN 'Adult'
-		ELSE 'Juvenile'
-	END AS general_division
-  FROM	actor.usr u;
+SELECT  u.id,
+    u.dob,
+    CASE
+        WHEN u.dob IS NULL
+            THEN 'Adult'
+        WHEN AGE(u.dob) > '18 years'::INTERVAL
+            THEN 'Adult'
+        ELSE 'Juvenile'
+    END AS general_division,
+    CASE
+        WHEN u.dob IS NULL
+            THEN 'No Date of Birth Entered'::text
+        WHEN age(u.dob::timestamp with time zone) >= '0 years'::interval and age(u.dob::timestamp with time zone) < '6 years'::interval
+            THEN 'Child 0-5 Years Old'::text
+        WHEN age(u.dob::timestamp with time zone) >= '6 years'::interval and age(u.dob::timestamp with time zone) < '13 years'::interval
+            THEN 'Child 6-12 Years Old'::text
+        WHEN age(u.dob::timestamp with time zone) >= '13 years'::interval and age(u.dob::timestamp with time zone) < '18 years'::interval
+            THEN 'Teen 13-17 Years Old'::text
+        WHEN age(u.dob::timestamp with time zone) >= '18 years'::interval and age(u.dob::timestamp with time zone) < '26 years'::interval
+            THEN 'Adult 18-25 Years Old'::text
+        WHEN age(u.dob::timestamp with time zone) >= '26 years'::interval and age(u.dob::timestamp with time zone) < '50 years'::interval
+            THEN 'Adult 26-49 Years Old'::text
+        WHEN age(u.dob::timestamp with time zone) >= '50 years'::interval and age(u.dob::timestamp with time zone) < '60 years'::interval
+            THEN 'Adult 50-59 Years Old'::text
+        WHEN age(u.dob::timestamp with time zone) >= '60 years'::interval and age(u.dob::timestamp with time zone) < '70  years'::interval
+            THEN 'Adult 60-69 Years Old'::text
+        WHEN age(u.dob::timestamp with time zone) >= '70 years'::interval
+            THEN 'Adult 70+'::text
+        ELSE NULL::text
+    END AS age_division
+    FROM actor.usr u;
 
 CREATE OR REPLACE VIEW reporter.circ_type AS
 SELECT	id,
@@ -372,6 +421,33 @@ CREATE OR REPLACE VIEW reporter.currently_running AS
    JOIN actor.usr u ON s.runner = u.id
    JOIN actor.card c ON c.id = u.card
   WHERE s.start_time IS NOT NULL AND s.complete_time IS NULL;
+
+CREATE OR REPLACE VIEW reporter.completed_reports AS
+  SELECT s.id AS run,
+         r.id AS report,
+         t.id AS template,
+         t.owner AS template_owner,
+         r.owner AS report_owner,
+         s.runner AS runner,
+         t.folder AS template_folder,
+         r.folder AS report_folder,
+         s.folder AS output_folder,
+         r.name AS report_name,
+         t.name AS template_name,
+         s.start_time,
+         s.run_time,
+         s.complete_time,
+         s.error_code,
+         s.error_text
+  FROM reporter.schedule s
+    JOIN reporter.report r ON r.id = s.report
+    JOIN reporter.template t ON t.id = r.template
+  WHERE s.complete_time IS NOT NULL;
+
+CREATE OR REPLACE FUNCTION reporter.intersect_user_perm_ou(context_ou BIGINT, staff_id BIGINT, perm_code TEXT)
+RETURNS BOOLEAN AS $$
+  SELECT CASE WHEN context_ou IN (SELECT * FROM permission.usr_has_perm_at_all(staff_id::INT, perm_code)) THEN TRUE ELSE FALSE END;
+$$ LANGUAGE SQL;
 
 COMMIT;
 

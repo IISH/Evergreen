@@ -200,7 +200,7 @@ function(egCore , egOrg , egCirc , $uibModal , $q , $timeout , $window , ngToast
         if (copy_list.length == 0) return;
         return egCore.net.request(
             'open-ils.circ',
-            'open-ils.circ.circulation.update_latest_inventory',
+            'open-ils.circ.circulation.update_copy_inventory',
             egCore.auth.token(), {copy_list: copy_list}
         ).then(function(res) {
             if (res) {
@@ -212,14 +212,16 @@ function(egCore , egOrg , egCirc , $uibModal , $q , $timeout , $window , ngToast
                                 {alci: ['inventory_workstation']}
                             }).then(function(alci) {
                                 //update existing grid rows
-                                item["latest_inventory.inventory_date"] = alci.inventory_date();
-                                item["latest_inventory.inventory_workstation.name"] =
-                                    alci.inventory_workstation().name();
+                                if (alci) {
+                                    item["latest_inventory.inventory_date"] = alci.inventory_date();
+                                    item["latest_inventory.inventory_workstation.name"] =
+                                        alci.inventory_workstation().name();
+                                }
                             });
                         }
                     });
                 });
-                return all_items || res;
+                return res;
             }
         });
     }
@@ -249,23 +251,22 @@ function(egCore , egOrg , egCirc , $uibModal , $q , $timeout , $window , ngToast
                 ).then(function(buckets) { $scope.allBuckets = buckets; });
 
                 $scope.add_to_bucket = function() {
-                    var promises = [];
+                    var promise = $q.when();
                     angular.forEach(list, function (entry) {
                         var item = bucket_type == 'copy' ? new egCore.idl.ccbi() : new egCore.idl.cbrebi();
                         item.bucket($scope.bucket_id);
                         if (bucket_type == 'copy') item.target_copy(entry);
                         if (bucket_type == 'biblio') item.target_biblio_record_entry(entry);
-                        promises.push(
-                            egCore.net.request(
+                        promise = promise.then(function() {
+                            return egCore.net.request(
                                 'open-ils.actor',
                                 'open-ils.actor.container.item.create',
                                 egCore.auth.token(), bucket_type, item
-                            )
-                        );
-
-                        return $q.all(promises).then(function() {
-                            $uibModalInstance.close();
+                            );
                         });
+                    });
+                    promise.then(function() {
+                        $uibModalInstance.close();
                     });
                 }
 
@@ -614,11 +615,19 @@ function(egCore , egOrg , egCirc , $uibModal , $q , $timeout , $window , ngToast
     }
 
     service.checkin = function (items) {
-        angular.forEach(items, function (cp) {
-            egCirc.checkin({copy_barcode:cp.barcode}).then(
-                function() { service.add_barcode_to_list(cp.barcode) }
-            );
-        });
+        // Recursive function that creates a promise for each item. Once the dialog 
+        // window for a given item is closed the next promise is started and a
+        // new dialog is opened. 
+        // This keeps multiple popups from hitting the screen at once.
+        (function checkinLoop(i) {
+            if (i < items.length) new Promise((resolve, reject) => {
+                egCirc.checkin({copy_barcode: items[i].barcode})
+                .then(function() {
+                    service.add_barcode_to_list(items[i].barcode);
+                    resolve();
+                })
+            }).then(checkinLoop.bind(null, i+1));
+        })(0);
     }
 
     service.renew = function (items) {
@@ -656,8 +665,16 @@ function(egCore , egOrg , egCirc , $uibModal , $q , $timeout , $window , ngToast
     }
 
     service.selectedHoldingsMissing = function (items) {
-        egCirc.mark_missing(items.map(function(el){return {id : el.id, barcode : el.barcode};})).then(function(){
-            angular.forEach(items, function(cp){service.add_barcode_to_list(cp.barcode)});
+        return egCirc.mark_missing(
+            items.map(function(el){return {id : el.id, barcode : el.barcode};})
+        ).then(function(){
+            var promise = $q.when();
+            angular.forEach(items, function(cp){
+                promise = promise.then(function() {
+                    return service.add_barcode_to_list(cp.barcode, true);
+                });
+            });
+            return promise;
         });
     }
 
@@ -802,17 +819,27 @@ function(egCore , egOrg , egCirc , $uibModal , $q , $timeout , $window , ngToast
                                     return;
                                 }
 
-                                $scope.copyId = copy.id();
-                                copy.barcode($scope.barcode2);
+                                egCore.pcrud.search('acp',
+                                    {deleted : 'f', barcode : $scope.barcode2})
+                                .then(function(newBarcodeCopy) {
 
-                                egCore.pcrud.update(copy).then(function(stat) {
-                                    $scope.updateOK = stat;
-                                    $scope.focusBarcode = true;
-                                    if (stat) service.add_barcode_to_list(copy.barcode());
+                                    if (newBarcodeCopy) {
+                                        $scope.duplicateBarcode = true;
+                                        return;
+                                    }
+
+                                    $scope.copyId = copy.id();
+                                    copy.barcode($scope.barcode2);
+
+                                    egCore.pcrud.update(copy).then(function(stat) {
+                                        $scope.updateOK = stat;
+                                        $scope.focusBarcode = true;
+                                        if (stat) service.add_barcode_to_list(copy.barcode());
+                                        $uibModalInstance.close();
+                                    });
                                 });
 
                             });
-                            $uibModalInstance.close();
                         }
 
                         $scope.cancel = function($event) {
@@ -959,7 +986,7 @@ function(egCore , egOrg , egCirc , $uibModal , $q , $timeout , $window , ngToast
             if (payload.slip) {
                 // wait for completion, since it may spawn a confirm dialog
                 promise = egCore.print.print({
-                    context : 'default',
+                    context : 'receipt',
                     content_type : 'text/html',
                     content : payload.slip.template_output().data()
                 });
@@ -998,7 +1025,7 @@ function(egCore , egOrg , egCirc , $uibModal , $q , $timeout , $window , ngToast
 
     service.show_in_catalog = function(copy_list){
         angular.forEach(copy_list, function(copy){
-            window.open('/eg/staff/cat/catalog/record/'+copy['call_number.record.id']+'/catalog', '_blank')
+            window.open('/eg2/staff/catalog/record/'+copy['call_number.record.id'], '_blank')
         });
     }
 

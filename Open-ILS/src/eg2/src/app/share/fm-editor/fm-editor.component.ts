@@ -1,10 +1,12 @@
 import {Component, OnInit, Input, ViewChild,
     Output, EventEmitter, TemplateRef} from '@angular/core';
+import {NgForm} from '@angular/forms';
 import {IdlService, IdlObject} from '@eg/core/idl.service';
 import {Observable} from 'rxjs';
 import {map} from 'rxjs/operators';
 import {AuthService} from '@eg/core/auth.service';
 import {PcrudService} from '@eg/core/pcrud.service';
+import {OrgService} from '@eg/core/org.service';
 import {DialogComponent} from '@eg/share/dialog/dialog.component';
 import {ToastService} from '@eg/share/toast/toast.service';
 import {StringComponent} from '@eg/share/string/string.component';
@@ -14,6 +16,8 @@ import {FormatService} from '@eg/core/format.service';
 import {TranslateComponent} from '@eg/share/translate/translate.component';
 import {FmRecordEditorActionComponent} from './fm-editor-action.component';
 import {ConfirmDialogComponent} from '@eg/share/dialog/confirm.component';
+import {Directive, HostBinding} from '@angular/core';
+import {AbstractControl, NG_VALIDATORS, ValidationErrors, Validator, Validators} from '@angular/forms';
 
 interface CustomFieldTemplate {
     template: TemplateRef<any>;
@@ -54,6 +58,10 @@ export interface FmFieldOptions {
     // so the user can click or type to find values.
     preloadLinkedValues?: boolean;
 
+    // Additional search conditions to include when constructing
+    // the query for a linked field's combobox
+    linkedSearchConditions?: {[field: string]: string};
+
     // Directly override the required state of the field.
     // This only has an affect if the value is true.
     isRequired?: boolean;
@@ -75,6 +83,13 @@ export interface FmFieldOptions {
     // Render the field using this custom template instead of chosing
     // from the default set of form inputs.
     customTemplate?: CustomFieldTemplate;
+
+    // help text to display via a popover
+    helpText?: StringComponent;
+
+    // minimum and maximum permitted values for int fields
+    min?: number;
+    max?: number;
 }
 
 @Component({
@@ -139,6 +154,9 @@ export class FmRecordEditorComponent
     // for displayMode === 'inline'
     @Input() hideBanner: boolean;
 
+    // do not close dialog on error saving record
+    @Input() remainOpenOnError: false;
+
     // Emit the modified object when the save action completes.
     @Output() recordSaved = new EventEmitter<IdlObject>();
 
@@ -155,6 +173,7 @@ export class FmRecordEditorComponent
     @ViewChild('successStr', { static: true }) successStr: StringComponent;
     @ViewChild('failStr', { static: true }) failStr: StringComponent;
     @ViewChild('confirmDel', { static: true }) confirmDel: ConfirmDialogComponent;
+    @ViewChild('fmEditForm', { static: false}) fmEditForm: NgForm;
 
     // IDL info for the the selected IDL class
     idlDef: any;
@@ -238,6 +257,7 @@ export class FmRecordEditorComponent
       private auth: AuthService,
       private toast: ToastService,
       private format: FormatService,
+      private org: OrgService,
       private pcrud: PcrudService) {
       super(modal);
     }
@@ -288,6 +308,10 @@ export class FmRecordEditorComponent
 
     isDialog(): boolean {
         return this.displayMode === 'dialog';
+    }
+
+    isDirty(): boolean {
+        return this.fmEditForm ? this.fmEditForm.dirty : false;
     }
 
     // DEPRECATED: This is a duplicate of this.record = abc;
@@ -419,8 +443,37 @@ export class FmRecordEditorComponent
             || this.idl.getClassSelector(class_) || idField;
 
         return list.map(item => {
-            return {id: item[idField](), label: item[selector]()};
+            if (item !== undefined) {
+                return {id: item[idField](), label: this.getFmRecordLabel(field, selector, item)};
+            }
         });
+    }
+
+    private getFmRecordLabel(field: any, selector: string, fm: IdlObject): string {
+        // for now, need to keep in sync with getFmRecordLabel in combobox
+        // alternatively, have fm-edit not wire-up the combobox's data source for it
+        switch (field.class) {
+            case 'acmc':
+                return fm.course_number() + ': ' + fm.name();
+                break;
+            case 'acqf':
+                return fm.code() + ' (' + fm.year() + ')'
+                       + ' (' + this.getOrgShortname(fm.org()) + ')';
+                break;
+            case 'acpl':
+                return fm.name() + ' (' + this.getOrgShortname(fm.owning_lib()) + ')';
+                break;
+            default:
+                // no equivalent of idlIncludeLibraryInLabel yet
+                return fm[selector]();
+        }
+    }
+    getOrgShortname(ou: any) {
+        if (typeof ou === 'object') {
+            return ou.shortname();
+        } else {
+            return this.org.get(ou).shortname();
+        }
     }
 
     private getFieldList(): Promise<any> {
@@ -433,26 +486,8 @@ export class FmRecordEditorComponent
             fields.map(field => this.constructOneField(field))
 
         ).then(() => {
-
-            if (!this.fieldOrder) {
-                this.fields = fields.sort((a, b) => a.label < b.label ? -1 : 1);
-                return;
-            }
-
-            let newList = [];
-            const ordered = this.fieldOrder.split(/,/);
-
-            ordered.forEach(name => {
-                const f1 = fields.filter(f2 => f2.name === name)[0];
-                if (f1) { newList.push(f1); }
-            });
-
-            // Sort remaining fields by label
-            const remainder = fields.filter(f => !ordered.includes(f.name));
-            remainder.sort((a, b) => a.label < b.label ? -1 : 1);
-            newList = newList.concat(remainder);
-
-            this.fields = newList;
+            const order = this.fieldOrder ? this.fieldOrder.split(/,/) : [];
+            this.fields = this.idl.sortIdlFields(fields, order);
         });
     }
 
@@ -529,6 +564,18 @@ export class FmRecordEditorComponent
             field.context = fieldOptions.customTemplate.context;
         }
 
+        if (fieldOptions.helpText) {
+            field.helpText = fieldOptions.helpText;
+            field.helpText.current().then(help => field.helpTextValue = help);
+        }
+
+        if (fieldOptions.min) {
+            field.min = Number(fieldOptions.min);
+        }
+        if (fieldOptions.max) {
+            field.max = Number(fieldOptions.max);
+        }
+
         return promise || Promise.resolve();
     }
 
@@ -554,7 +601,35 @@ export class FmRecordEditorComponent
         }
 
         if (fieldOptions.preloadLinkedValues || !selector) {
-            return this.pcrud.retrieveAll(field.class, {}, {atomic : true})
+            const search = {};
+            const orderBy = {order_by: {}};
+            if (selector) {
+                orderBy.order_by[field.class] = selector;
+            }
+            const idField = this.idl.classes[field.class].pkey || 'id';
+            search[idField] = {'!=' : null};
+            if (fieldOptions.linkedSearchConditions) {
+                const conditions = {};
+                Object.keys(fieldOptions.linkedSearchConditions).forEach(key => {
+                    conditions[key] = fieldOptions.linkedSearchConditions[key];
+                });
+                // ensure that the current value, if present, is included
+                // in case it doesn't otherwise meet the conditions
+                const linkedValue = this.record[field.name]();
+                if (linkedValue !== null && linkedValue !== undefined) {
+                    search['-or'] = [];
+                    const retrieveRec = {};
+                    retrieveRec[idField] = linkedValue;
+                    search['-or'].push(retrieveRec);
+                    search['-or'].push(conditions);
+                } else {
+                    // just tack on the conditions
+                    Object.keys(conditions).forEach(key => {
+                        search[key] = conditions[key];
+                    });
+                }
+            }
+            return this.pcrud.search(field.class, search, orderBy, {atomic : true})
             .toPromise().then(list => {
                 field.linkedValues =
                     this.flattenLinkedValues(field, list);
@@ -570,6 +645,11 @@ export class FmRecordEditorComponent
             const idField = this.idl.classes[field.class].pkey || 'id';
 
             search[selector] = {'ilike': `%${term}%`};
+            if (fieldOptions.linkedSearchConditions) {
+                Object.keys(fieldOptions.linkedSearchConditions).forEach(key => {
+                    search[key] = fieldOptions.linkedSearchConditions[key];
+                });
+            }
             orderBy.order_by[field.class] = selector;
 
             return this.pcrud.search(field.class, search, orderBy)
@@ -615,13 +695,16 @@ export class FmRecordEditorComponent
         this.pcrud[this.mode]([recToSave]).toPromise().then(
             result => {
                 this.recordSaved.emit(result);
+                if (this.fmEditForm) {
+                    this.fmEditForm.form.markAsPristine();
+                }
                 this.successStr.current().then(msg => this.toast.success(msg));
                 if (this.isDialog()) { this.record = undefined; this.close(result); }
             },
             error => {
                 this.recordError.emit(error);
                 this.failStr.current().then(msg => this.toast.warning(msg));
-                if (this.isDialog()) { this.error(error); }
+                if (this.isDialog() && !this.remainOpenOnError) { this.error(error); }
             }
         );
     }
@@ -639,7 +722,7 @@ export class FmRecordEditorComponent
                 error => {
                     this.recordError.emit(error);
                     this.failStr.current().then(msg => this.toast.warning(msg));
-                    if (this.isDialog()) { this.error(error); }
+                    if (this.isDialog() && !this.remainOpenOnError) { this.error(error); }
                 }
             );
         });
@@ -725,3 +808,32 @@ export class FmRecordEditorComponent
     }
 }
 
+// https://stackoverflow.com/a/57812865
+@Directive({
+    selector: 'input[type=number][egMin][formControlName],input[type=number][egMin][formControl],input[type=number][egMin][ngModel]',
+    providers: [{ provide: NG_VALIDATORS, useExisting: MinValidatorDirective, multi: true }]
+})
+export class MinValidatorDirective implements Validator {
+    @HostBinding('attr.egMin') @Input() egMin: number;
+
+    constructor() { }
+
+    validate(control: AbstractControl): ValidationErrors | null {
+        const validator = Validators.min(this.egMin);
+        return validator(control);
+    }
+}
+@Directive({
+    selector: 'input[type=number][egMax][formControlName],input[type=number][egMax][formControl],input[type=number][egMax][ngModel]',
+    providers: [{ provide: NG_VALIDATORS, useExisting: MaxValidatorDirective, multi: true }]
+})
+export class MaxValidatorDirective implements Validator {
+    @HostBinding('attr.egMax') @Input() egMax: number;
+
+    constructor() { }
+
+    validate(control: AbstractControl): ValidationErrors | null {
+        const validator = Validators.max(this.egMax);
+        return validator(control);
+    }
+}

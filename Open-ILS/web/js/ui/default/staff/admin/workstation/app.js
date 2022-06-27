@@ -412,7 +412,6 @@ function($scope , $q , egCore , ngToast) {
         master_account : 'f',
         claims_returned_count : '0',
         claims_never_checked_out_count : '0',
-        alert_message : 'Coat is in the lost-and-found behind the circ desk',
         ident_type: {name: function() {return 'Drivers License'}},
         ident_value: '11332445',
         ident_type2: {name: function() {return 'Other'}},
@@ -588,7 +587,8 @@ function($scope , $q , egCore , ngToast) {
                 },
                 copy : seed_copy,
                 title : seed_record.title,
-                author : seed_record.author
+                author : seed_record.author,
+                call_number : seed_copy.call_number
             }
         ],
 
@@ -614,6 +614,7 @@ function($scope , $q , egCore , ngToast) {
         change_given : 0,
         payment_type : 'cash_payment',
         payment_note : 'Here is a payment note',
+        approval_code : 'CH1234567',
         note : {
             create_date : new Date().toISOString(), 
             title : 'Test Note Title',
@@ -1020,8 +1021,6 @@ function($scope , egCore , ngToast) {
     var hatch = egCore.hatch;  // convenience
 
     $scope.hatch_available = hatch.hatchAvailable;
-    $scope.hatch_settings = hatch.useSettings();
-    $scope.hatch_offline  = hatch.useOffline();
 
     hatch.usePrinting().then(function(answer) {
         $scope.hatch_printing = answer;
@@ -1033,35 +1032,6 @@ function($scope , egCore , ngToast) {
         if (typeof newval != 'boolean') return;
         hatch.setItem('eg.hatch.enable.printing', newval);
     });
-
-    $scope.$watch('hatch_settings', function(newval) {
-        if (typeof newval != 'boolean') return;
-        hatch.setLocalItem('eg.hatch.enable.settings', newval);
-    });
-
-    $scope.$watch('hatch_offline', function(newval) {
-        if (typeof newval != 'boolean') return;
-        hatch.setLocalItem('eg.hatch.enable.offline', newval);
-    });
-
-    $scope.copy_to_hatch = function() {
-        hatch.copySettingsToHatch().then(
-            function() {
-                ngToast.create(egCore.strings.HATCH_SETTINGS_MIGRATION_SUCCESS)},
-            function() {
-                ngToast.warning(egCore.strings.HATCH_SETTINGS_MIGRATION_FAILURE)}
-        );
-    }
-
-    $scope.copy_to_local = function() {
-        hatch.copySettingsToLocal().then(
-            function() {
-                ngToast.create(egCore.strings.HATCH_SETTINGS_MIGRATION_SUCCESS)},
-            function() {
-                ngToast.warning(egCore.strings.HATCH_SETTINGS_MIGRATION_FAILURE)}
-        );
-    }
-
 }])
 
 /*

@@ -1,0 +1,1611 @@
+= Evergreen 3.6 Release Notes =
+:toc:
+:numbered:
+
+== Evergreen 3.6.5 ==
+
+This release contains bug fixes improving on Evergreen 3.6.4.
+
+=== Upgrade notes ===
+
+The fix for https://bugs.launchpad.net/evergreen/_bug/1450519[Launchpad bug 1450519] modifies the `fm_IDL.xml` file.  To ensure that everything is up-to-date, existing Evergreen sites should run `autogen.sh` after restarting OpenSRF services and before restarting Apache.
+
+In reference to the fix for https://bugs.launchpad.net/evergreen/+bug/1944765[Launchpad bug 1944765], existing Evergreen systems on Debian and Ubuntu should do the following to ensure that mod_headers is active:
+
+----
+sudo a2enmod headers
+sudo systemctl restart apache2
+----
+
+=== Bug Fixes ===
+
+==== Acquisitions ====
+
+* Fixes column header in Line Item Search (https://bugs.launchpad.net/evergreen/+bug/1906826[LP1906826])
+
+==== Administration ====
+
+* Adds automated tests for ISBN-13 starting with 979 (https://bugs.launchpad.net/evergreen/+bug/1857060[LP1857060])
+* Adds circ.collections.exempt user setting to seed data (https://bugs.launchpad.net/evergreen/+bug/1937299[LP1937299])
+* Restricts access to library setting history for unauthorized users (https://bugs.launchpad.net/evergreen/+bug/1450519[LP1450519])
+* Fixes filter errors on secondary admin pages (https://bugs.launchpad.net/evergreen/+bug/1919483[LP1919483])
+* Fixes an issue with the Default Net Access Level Library Setting (https://bugs.launchpad.net/evergreen/+bug/1802682[LP1802682])
+* Fixes an issue with Action Triggers that have a repeat delay (https://bugs.launchpad.net/evergreen/+bug/1823983[LP1823983])
+* Fixes an issue with the Action Trigger ApplyPatronPenalty reactor (https://bugs.launchpad.net/evergreen/+bug/1859502[LP1859502])
+* Enables Apache module mod_headers by default (https://bugs.launchpad.net/evergreen/+bug/1944765[LP1944765])
+* Fixes typo in three Library Settings descriptions https://bugs.launchpad.net/evergreen/+bug/1826759[LP1826759])
+
+
+==== Architecture ====
+
+* Fixes datatype issues that can cause unexpected behavior (https://bugs.launchpad.net/evergreen/+bug/1923076[LP1923076])
+* Fixes an issue running "npm install" for the Angular JS web client (https://bugs.launchpad.net/evergreen/+bug/1937875[LP1937875])
+* Fixes typo in pingest.pl help command (https://bugs.launchpad.net/evergreen/+bug/1924562[LP1924562])
+
+==== Booking ====
+
+* Adds new Booking permissions to appropriate Permission Groups (https://bugs.launchpad.net/evergreen/+bug/1910891[LP1910891])
+* Fixes an issue where Booking Resource Type box was not populating (https://bugs.launchpad.net/evergreen/+bug/1916949[LP1916949])
+
+==== Catalog ==== 
+
+* Adds "Show more details" button & workstation setting for the Staff Catalog (https://bugs.launchpad.net/evergreen/+bug/1908722[LP1908722])
+* Adds call number display Staff Catalog search results (https://bugs.launchpad.net/evergreen/+bug/1910808[LP1910808])
+* Restores preferred library holdings count in search results (https://bugs.launchpad.net/evergreen/+bug/1913807[LP1913807])
+* Adds jump to details on one hit support to the Staff Catalog (https://bugs.launchpad.net/evergreen/+bug/1912852[LP1912852])
+* Adds a Patron View button to the Staff Catalog (https://bugs.launchpad.net/evergreen/+bug/1910452[LP1910452])
+* Fixes display of Age Hold Protection in the Staff Catalog (https://bugs.launchpad.net/evergreen/+bug/1908614[LP1908614])
+* Adds OPAC visible to Holdings View in the Staff Catalog (https://bugs.launchpad.net/evergreen/+bug/1917338[LP1917338])
+* Fixes 'copy queue to bucket' function in Staff Catalog (https://bugs.launchpad.net/evergreen/+bug/1928275[LP1929275])
+* Fixes an issue where the holds page would refresh before a batch holds cancel was complete (https://bugs.launchpad.net/evergreen/+bug/1911023[LP1911023])
+* Fixes an issue where 'submit' or 'enter' was required for a patron barcode on the Staff Catalog holds form (https://bugs.launchpad.net/evergreen/+bug/1903358[LP1903358])
+
+==== Cataloging ====
+
+* Adds a workstation setting to allow users to save grid preferences for the angular catalog item table (https://bugs.launchpad.net/evergreen/+bug/1907296[LP1907296])
+* Adds SRCE fixed field to Angular MARC Editor (https://bugs.launchpad.net/evergreen/+bug/1718782[LP1718782])
+* Fixes the Delete Queue link on the Queue Details Page in MARC Batch Import/Export (https://bugs.launchpad.net/evergreen/+bug/1934184[LP1934184])
+* Fixes a text error in the Load Shared Bucket modals (https://bugs.launchpad.net/evergreen/+bug/1929839[LP1929839])
+* Fixes an issue that allows precat merges (https://bugs.launchpad.net/evergreen/+bug/827356[LP827356])
+* Fixes an issue where adding items to bucket causes too many simultaneous requests (https://bugs.launchpad.net/evergreen/+bug/1932051[LP1932051])
+* Fixes a TCN/ID mismatch in the z39.50 interface (https://bugs.launchpad.net/evergreen/+bug/1786971[LP1786971])
+* Fixes an issue where import operations could fail (https://bugs.launchpad.net/evergreen/+bug/1941764[LP1941764])
+* Fixes an issue where authority records with long subfields would not load (https://bugs.launchpad.net/evergreen/+bug/1922567[LP1922567])
+
+
+==== Circulation ====
+
+* Fixes excess pcrud calls in barcode lookup (https://bugs.launchpad.net/evergreen/+bug/1929136[LP1929136])
+* Fixes an issue where batch checkin from Item Status caused rapid-fire popups (https://bugs.launchpad.net/evergreen/+bug/1742553[LP1742553])
+* Fixes an issue where self-check audio alerts were failing (https://bugs.launchpad.net/evergreen/+bug/1815968[LP1815968])
+* Fixes an issue where removing patrons from buckets caused too many simultaneous requests (https://bugs.launchpad.net/evergreen/+bug/1932358[LP1932358])
+* Adds missing patron data to Holds for Patron print template (https://bugs.launchpad.net/evergreen/+bug/1926971[LP1926971])
+* Fixes incorrect hints for fields in the Checkout print template (https://bugs.launchpad.net/evergreen/+bug/1901028[LP1901028])
+* Fixes hold failures due to SMS notification selection errors (https://bugs.launchpad.net/evergreen/+bug/1933381[LP1933381])
+* Fixes a timezone issue with staff scheduled Curbside appointments (https://bugs.launchpad.net/evergreen/+bug/1917396[LP1917396])
+* Fixes an issue where the Missing Pieces slip was sent to the Default printer instead of the Receipt printer (https://bugs.launchpad.net/evergreen/+bug/1938450[LP1938450])
+* Fixes sorting of SMS Carriers when editing an existing hold (https://bugs.launchpad.net/evergreen/+bug/1809157[LP1809157])
+* Fixes messages in the patron Offline Block List (https://bugs.launchpad.net/evergreen/+bug/1752356[LP1752356])
+* Fixes an issue where cloned patron addresses were set to Pending (https://bugs.launchpad.net/evergreen/+bug/1821804[LP1821804])
+* Fixes an issue with retargeting when a hold's pickup library is changed (https://bugs.launchpad.net/evergreen/+bug/1866667[LP1866667])
+* Fixes an issue that allowed Hold Activation Dates in the past in the Staff Catalog (https://bugs.launchpad.net/evergreen/+bug/1903357[LP1903357])
+* Fixes patron name display to use preferred name in the Staff Catalog Place Hold screen (https://bugs.launchpad.net/evergreen/+bug/1924621[LP1924621])
+* Fixes display of legacy circulations in circ summary (https://bugs.launchpad.net/evergreen/+bug/1942920[LP1942920])
+
+==== Client ====
+
+* Restores the Circulation History by Year information in Item Status (https://bugs.launchpad.net/evergreen/+bug/1743611[LP1743611]) 
+* Fixes a display issue with formerly precataloged items (https://bugs.launchpad.net/evergreen/+bug/1904754[LP1904754])
+* Fixes an issue that allowed logins by expired accounts (https://bugs.launchpad.net/evergreen/+bug/1844121[LP1844121])
+* Adds missing workstation types for Carousels (https://bugs.launchpad.net/evergreen/+bug/1920253[LP1920253])
+* Adds caching for workstation & user settings values (https://bugs.launchpad.net/evergreen/+bug/1938729[LP1939729])
+
+==== Course Materials ====
+
+* Fixes an issue where a blank course section number impacted OPAC display (https://bugs.launchpad.net/evergreen/+bug/1913221[LP1913221])
+* Adds an Org Unit selector to the Course List (https://bugs.launchpad.net/evergreen/+bug/1905068[LP1905068])
+* Adds circulation modifier to OPAC Course Details page (https://bugs.launchpad.net/evergreen/+bug/1935693[LP1935693])
+* Fixes the owning library default when adding a new course (https://bugs.launchpad.net/evergreen/+bug/1917809[LP1917809])
+* Fixes an issue that allowed unreasonable Course-Term mappings (https://bugs.launchpad.net/evergreen/+bug/1906058[LP1906058])
+
+==== Documentation ====
+
+* Updates the Glossary & Apache Rewrite Tricks docs to define 'TLD' (https://bugs.launchpad.net/evergreen/+bug/1837753[LP1837753])
+* Updates Address Alert docs for web client (https://bugs.launchpad.net/evergreen/+bug/1776977[LP1776977])
+
+
+==== OPAC ====
+
+* Fixes alignment issue on mobile devices (https://bugs.launchpad.net/evergreen/+bug/1928005[LP1928005])
+* Adds Curbside Appointments to Bootstrap OPAC (https://bugs.launchpad.net/evergreen/+bug/1895737[LP1895737])
+* Fixes alignment issue with available and holds copy counts in the Bootstrap OPAC (https://bugs.launchpad.net/evergreen/+bug/1933125[LP1933125])
+* Makes the Bootstrap OPAC self registration form more responsive (https://bugs.launchpad.net/evergreen/+bug/1920273[LP1920273])
+* Adds missing title and descripton for Shared Lists in the Bootstrap OPAC (https://bugs.launchpad.net/evergreen/+bug/1909584[LP1909584])
+* Fixes tabbing & focus in Bootstrap OPAC login form (https://bugs.launchpad.net/evergreen/+bug/1909144[LP1909144])
+* Replaces javascript onfocus/onblur with HTML5 placeholder in KPAC (https://bugs.launchpad.net/evergreen/+bug/1834258[LP1834258])
+* Fixes an issue where the Login box was not translateable (https://bugs.launchpad.net/evergreen/+bug/1919497[LP1919497])
+
+==== SIP ====
+
+* Exports PERL5LIB in oils_ctl.sh to account for a change in Perl 5.26.0. This change affects Ubuntu 18.04 (Bionic Beaver) and Debian 10 (Buster) and any future releases. (https://bugs.launchpad.net/evergreen/+bug/1899974[LP1899974])
+
+=== Acknowledgements ===
+
+We would like to thank the following individuals who contributed code,
+testing and documentation patches to the 3.6.5 point release of Evergreen:
+
+* Adam Bowling
+* Jason Boyer
+* Dan Briem
+* Christine Burns
+* Eva Cerninakova
+* Galen Charlton
+* Garry Collum
+* Dawn Dale
+* Jeff Davis
+* Bill Erickson
+* Jason Etheridge
+* Ruth Frasur
+* Rogan Hamby
+* Elaine Hardy
+* Shula Link
+* Tiffany Little
+* Mary Llewellyn
+* Terran McCanna
+* Gina Monti
+* Christine Morgan
+* Michele Morgan
+* Andrea Buntz Neiman
+* Jennifer Pringle
+* Mike Risher
+* Erica Rohlfs
+* Mike Rylander
+* Chris Sharp
+* Jane Sandberg
+* Jason Stephenson
+* Josh Stompro
+* Jennifer Weston
+* Beth Willis
+* Jessica Woolford
+
+== Evergreen  3.6.4 ==
+
+This release contains bug fixes improving on Evergreen 3.6.3.
+
+=== Upgrade notes ===
+
+The addition of the Angular Staff Catalog surfaced a double-encoding issue
+with redirects in certain Apache versions. This caused searches for multiple
+words to have %20 in place of spaces, almost certainly resulting in 0 results.
+
+In order to apply this fix, change the Angular redirects in eg_vhost.conf from
+
+ RewriteRule ^/eg2/(.*) https://%{HTTP_HOST}/eg2/en-US/$1 [R=307,L]
+
+to
+
+ RewriteRule ^/eg2/(.*) https://%{HTTP_HOST}/eg2/en-US/$1 [NE,R=307,L]
+
+
+=== Bug Fixes ===
+
+==== Acquisitions ====
+
+* Acq PO Search cancel reason column shows description (https://bugs.launchpad.net/bugs/1906825[Bug 1906825])
+* Date columns in Acq Search now also show time (https://bugs.launchpad.net/bugs/1912097[Bug 1912097])
+
+==== Administration ====
+
+* Fixes an issue with editing carousels (https://bugs.launchpad.net/bugs/1879769[Bug 1879769])
+* Carousel admin grid now has a link to edit the relevant bucket (https://bugs.launchpad.net/bugs/1901893[Bug 1901893])
+* The Active Column in SMS Carrier administration now displays properly (https://bugs.launchpad.net/bugs/1873539[Bug 1873539])
+* Fixes upgrade script for Enhanced Print/Email (https://bugs.launchpad.net/bugs/1905091[Bug 1905091])
+* Cleans up numerous Perl warnings in logs (https://bugs.launchpad.net/bugs/1895660[Bug 1895660])
+
+
+==== Catalog ====
+
+* Fixes an issue displaying highlighting in traditional and bootstrap catalogue (https://bugs.launchpad.net/bugs/1923225[Bug 1923225])
+* Fixes an issue displaying works with the word "hidden" in the title (https://bugs.launchpad.net/bugs/1930933[Bug 1930933])
+* Bootstrap OPAC: Simple Selector for Lang now works in Advanced Search (https://bugs.launchpad.net/bugs/1920042[Bug 1920042])
+* Bootstrap OPAC: My account summary now displays ebook references according to config file (https://bugs.launchpad.net/bugs/1910288[Bug 1910288])
+* Bootstrap OPAC: Item tags no longer display as separate copies on an x-small screen (https://bugs.launchpad.net/bugs/1916936[Bug 1916936])
+* Fixes nesting issues on the Bootstrap OPAC Record Detail Page (https://bugs.launchpad.net/bugs/1901710[Bug 1901710])
+* Opac SMS and Carrier Fields display according to OU Setting when Editing a Hold (https://bugs.launchpad.net/bugs/1902302[Bug 1902302])
+* Better controls for collapsing and expanding the staff catalog search form (https://bugs.launchpad.net/bugs/1913338[Bug 1913338])
+
+==== Cataloging ====
+
+* Angular Catalog: "Edit" link no longer ignores UPDATE_COPY perm (https://bugs.launchpad.net/bugs/1920815[Bug 1920815])
+* Angular catalog: fixes an issue with metarecord search (https://bugs.launchpad.net/bugs/1930088[Bug 1930088])
+* Angular staff catalog now displays e-resource links (https://bugs.launchpad.net/bugs/1881607[Bug 1881607])
+* Record bucket Batch Edit now navigates to the Angular batch editor (https://bugs.launchpad.net/bugs/1926310[Bug 1926310])
+* Angular Catalog: Shelving locations assigned to the top level OU now display in list (https://bugs.launchpad.net/bugs/1927527[Bug 1927527])
+* Add to Carousel added back to the Other Actions menu in the Bib Record (https://bugs.launchpad.net/bugs/1922120[Bug 1922120])
+* Makes terminology more consistent in Angular Catalog (https://bugs.launchpad.net/bugs/1925725[Bug 1925725])
+
+
+==== Circulation ====
+
+* Preferred Name is now the prominent display name (https://bugs.launchpad.net/bugs/1924185[Bug 1924185])
+* Unchanged workstation settings are no longer re-applied on every checkin (https://bugs.launchpad.net/bugs/1918362[Bug 1918362])
+* Adds accessible field labels in patron search and edit (https://bugs.launchpad.net/bugs/1615800[Bug 1615800])
+* Fixes an issue with the embedded "Place a hold" catalog in the checkout interface (https://bugs.launchpad.net/bugs/1887876[Bug 1887876])
+* Angular Catalog: Hold status in View Holds is now saved (https://bugs.launchpad.net/bugs/1917495[Bug 1917495])
+* Angular Staff Catalog: Hold Pickup Library no longer sometimes empty (https://bugs.launchpad.net/bugs/1917944[Bug 1917944])
+* Fixes an issue with the Angular catalog view holds sort by patron barcode (https://bugs.launchpad.net/bugs/1928684[Bug 1928684])
+* Staff catalog hold detail page now supports hold notes/notifications (https://bugs.launchpad.net/bugs/1910145[Bug 1910145])
+
+==== Client ====
+
+* Angular grid column field picker has a better sort order (https://bugs.launchpad.net/bugs/1891699[Bug 1891699])
+* Angular grids now support shift-click multi-row selection (https://bugs.launchpad.net/bugs/1911238[Bug 1911238])
+* Fixes an issue with multi-word queries in the splash page catalog search (https://bugs.launchpad.net/bugs/1892435[Bug 1892435])
+
+==== Database ====
+
+* Evergreen now uses the builtin array_remove() function rather than its own custom version (https://bugs.launchpad.net/bugs/1778955[Bug 1778955])
+* Adds seed data for the eg.orgselect.hopeless.wide_holds setting (https://bugs.launchpad.net/bugs/1895738[Bug 1895738])
+
+
+==== Documentation ====
+
+* Adds documentation on how to contribute Documentation (https://bugs.launchpad.net/bugs/1927534[Bug 1927534])
+* Adds IDL acronym to the glossary (https://bugs.launchpad.net/bugs/1857917[Bug 1857917])
+* Adds documentation on how to use the browser client efficiently (https://bugs.launchpad.net/bugs/1250528[Bug 1250528] and https://bugs.launchpad.net/bugs/1751146[Bug 1751146])
+
+
+
+
+=== Acknowledgements ===
+
+We would like to thank the following individuals who contributed code,
+testing and documentation patches to the 3.6.4 point release of Evergreen:
+
+* Jason Boyer
+* Dan Briem
+* Galen Charlton
+* Garry Collum
+* Jeff Davis
+* Bill Erickson
+* Jason Etheridge
+* Blake Graham Henderson
+* Rogan Hamby
+* Elaine Hardy
+* Kyle Huckins
+* Tiffany Little
+* Mary Llewellyn
+* Terran McCanna
+* Gina Monti
+* Michele Morgan
+* Andrea Buntz Neiman
+* Mike Risher
+* Mike Rylander
+* Jane Sandberg
+* Chris Sharp
+* Chrisy Schroth
+* Jason Stephenson
+* Stephen Wills
+
+== Evergreen  3.6.3 ==
+
+This release contains bug fixes improving on Evergreen 3.6.2,
+including a security bug fix.
+
+=== Bug Fixes ===
+
+==== Security ====
+
+* Fixes an XSS bug in MARC fields that are rendered as HTML (https://bugs.launchpad.net/bugs/1902965[Bug 1902965])
+
+
+==== Administration ====
+
+* Angular admin pages "Library" scope (https://bugs.launchpad.net/bugs/1873322[Bug 1873322])
+* No Access to Composite Attribute Entry Definitions from MARC Coded Value Maps (https://bugs.launchpad.net/bugs/1843969[Bug 1843969])
+* Use consistent terminology in Local Admin Interfaces (https://bugs.launchpad.net/bugs/1871510[Bug 1871510])
+
+
+==== Circulation ====
+
+* In house use: it would be nice if the item barcode column linked to item status (https://bugs.launchpad.net/bugs/1859513[Bug 1859513])
+
+==== Client ====
+
+* Angular grids: interval columns are not filterable (https://bugs.launchpad.net/bugs/1848579[Bug 1848579])
+* Angular Staff Client Hamburger Menu no longer clipped off screen (https://bugs.launchpad.net/bugs/1915323[Bug 1915323])
+
+==== Course materials ====
+
+* Display course name when editing reserve item (https://bugs.launchpad.net/bugs/1907977[Bug 1907977])
+* "Instructor" search/browse option does not always display in OPAC (https://bugs.launchpad.net/bugs/1907979[Bug 1907979])
+
+==== OPAC ====
+
+* Bootstrap OPAC: add support for Stripe v3 (Elements) (https://bugs.launchpad.net/bugs/1895679[Bug 1895679])
+* Bootstrap OPAC: Pagination on copy table now works (https://bugs.launchpad.net/bugs/1916085[Bug 1916085])
+* Terms Governing Use and Reproduction Note Displays Twice in Record Details (https://bugs.launchpad.net/bugs/1917804[Bug 1917804])
+* Email now displays when editing hold prefs in OPAC (https://bugs.launchpad.net/bugs/1908616[Bug 1908616])
+* Bootstrap OPAC:  Call number on search results page (https://bugs.launchpad.net/bugs/1916904[Bug 1916904])
+
+==== Performance ====
+
+* Search indexes now use GIN by default (https://bugs.launchpad.net/bugs/1703658[Bug 1703658])
+* Record bucket 'Add To Bucket' actions should be batched or serialized. (https://bugs.launchpad.net/bugs/1913458[Bug 1913458])
+
+==== Staff catalog ====
+
+* Angular Catalog: Part column no longer missing from Item table (https://bugs.launchpad.net/bugs/1899405[Bug 1899405])
+* Publication information in angular search results now displays from tag 260 or 264 (https://bugs.launchpad.net/bugs/1896840[Bug 1896840])
+* Angular catalog can now sort browse result record lists (https://bugs.launchpad.net/bugs/1908444[Bug 1908444])
+* No Pagination Navigation at the Bottom of a Catalog Search (https://bugs.launchpad.net/bugs/1912380[Bug 1912380])
+
+=== Upgrade Notes ===
+
+A partial reingest is required to extract the new publisher data for display.
+This query may be long-running.
+
+[source,sql]
+--------------------------------------------------------------------------
+WITH affected_bibs AS (
+    SELECT DISTINCT(bre.id) AS id
+    FROM biblio.record_entry bre
+    JOIN metabib.real_full_rec mrfr
+    ON (mrfr.record = bre.id AND mrfr.tag = '264')
+    WHERE NOT bre.deleted
+)
+SELECT metabib.reingest_metabib_field_entries(id, TRUE, FALSE, TRUE, TRUE)
+FROM affected_bibs;
+--------------------------------------------------------------------------
+
+
+
+=== Acknowledgements ===
+
+We would like to thank the following individuals who contributed code,
+testing and documentation patches to the 3.6.3 point release of Evergreen:
+
+
+* Jason Boyer
+* Dan Briem
+* Galen Charlton
+* Garry Collum
+* Jeff Davis
+* Bill Erickson
+* Tiffany Little
+* Terran McCanna
+* Michele Morgan
+* Jennifer Pringle
+* Mike Risher
+* Jane Sandberg
+* Chris Sharp
+* Jason Stephenson
+* Beth Willis
+
+== Evergreen 3.6.2 ==
+
+
+This release contains bug fixes improving on Evergreen 3.6.1,
+including a security bug fix.
+
+=== Bug Fixes ===
+
+==== Security ====
+
+* Fix an issue where `open-ils.pcrud` backends could crash with
+a segmentation fault under certain conditions that could be invoked
+by an external attacker, thus leading to a potential denial
+of service attack.
+
+==== Staff Interface ====
+* Expert Search in the staff interface now respects the search library.
+(https://bugs.launchpad.net/evergreen/+bug/1468132[Bug 1468132])
+* The Items Out page is now less prone to cause `open-ils.actor` backend
+exhaustion. It now also displays a progress bar while loading.
+(https://bugs.launchpad.net/evergreen/+bug/1913811[Bug 1913811])
+* Grids in the staff interface no longer require that a row
+be selected in order to activate a grid action that doesn't
+logically require that at least one row be selected.
+(https://bugs.launchpad.net/evergreen/+bug/1670457[Bug 1670457])
+* The display of total amounted billed, owed, and paid on the patron
+Bills page now reflects just open bills with a non-zero balance, fixing
+an issue where the totals could include paid billings for transactions
+that are still open.
+(https://bugs.launchpad.net/evergreen/+bug/1772955[Bug 1772955])
+* The pending patron interface now respects the library setting whether
+to set the patron's initial password to the last four digits of their
+phone number.
+(https://bugs.launchpad.net/evergreen/+bug/1887852[Bug 1887852])
+* Several interfaces, including Mark Missing, adding patrons to a bucket
+from a search, and applying a default item status now use batch
+API calls for better efficiency.
+(https://bugs.launchpad.net/evergreen/+bug/1896285[Bug 1896285])
+* Fix an issue where the holdings editor would not close its window
+when the Save & Exit button was clicked.
+(https://bugs.launchpad.net/evergreen/+bug/1913219[Bug 1913219])
+* Fix an issue where a double barcode scan could create a precat
+item without giving the staff member the chance to review the
+form before submitting it.
+(https://bugs.launchpad.net/evergreen/+bug/1778522[Bug 1778522])
+* Fix an issue preventing the staff interface from being used
+on various Android and iOS devices.
+(https://bugs.launchpad.net/evergreen/+bug/1901760[Bug 1901760])
+* Fix an issue where the report editor could supply the wrong
+kind of input for an aggregate filter.
+(https://bugs.launchpad.net/evergreen/+bug/1858114[Bug 1858114])
+* The staff interfaces now warns if the user attempts to delete
+a bib record that has active holds on it.
+(https://bugs.launchpad.net/evergreen/+bug/1398107[Bug 1398107])
+* Expired staff accounts can no longer log into the staff interface
+(https://bugs.launchpad.net/evergreen/+bug/1474029[Bug 1474029])
+* Most Angular administration pages now include grid filters
+(https://bugs.launchpad.net/evergreen/+bug/1846042[Bug 1846042])
+* The grid header in most Angular admin interfaces is now sticky
+(https://bugs.launchpad.net/evergreen/+bug/1855457[Bug 1855457])
+* The Angular staff catalog now supports more easily placing multiple
+holds on the same target
+(https://bugs.launchpad.net/evergreen/+bug/1889128[Bug 1889128])
+* The Angular staff catalog now respects the 'Not a Pickup Library'
+setting
+(https://bugs.launchpad.net/evergreen/+bug/1908743[Bug 1908743])
+* Fix an issue where the staff catalog hold request form was not
+registering a change of pickup library.
+(https://bugs.launchpad.net/evergreen/+bug/1911031[Bug 1911031])
+* In some cases, an upgraded database would fail to honor a request
+to delete an item tag. This is now fixed.
+(https://bugs.launchpad.net/evergreen/+bug/1786100[Bug 1786100])
+* The order of fields in various staff interface record editing
+forms has been improved.
+(https://bugs.launchpad.net/evergreen/+bug/1857351[Bug 1857351])
+* Fix an issue where the Angular MARC editor would sometimes fail
+to display fields.
+(https://bugs.launchpad.net/evergreen/+bug/1907115[Bug 1907115])
+* Fix the retrieve last bib record feature in the Angular staff
+catalog
+(https://bugs.launchpad.net/evergreen/+bug/1907286[Bug 1907286])
+* Improve the placement of the 'Add Materials' button in the Course
+Material interface
+(https://bugs.launchpad.net/evergreen/+bug/1907923[Bug 1907923])
+* Catalog links in the line item manager now link to the Angular
+staff catalog
+(https://bugs.launchpad.net/evergreen/+bug/1908420[Bug 1908420])
+* Fix an issue where MARC Batch Edit's Go button could be disabled
+during a CSV file upload.
+(https://bugs.launchpad.net/evergreen/+bug/1910409[Bug 1910409])
+* Improve the labeling of publication date sort option in the
+Angular staff catalog
+(https://bugs.launchpad.net/evergreen/+bug/1908724[Bug 1908724])
+* Fix sorting of the surveys administration grid.
+(https://bugs.launchpad.net/evergreen/+bug/1908763[Bug 1908763])
+* Saving a record created via 'Create New MARC Record' now directs
+the user to the Angular staff catalog.
+(https://bugs.launchpad.net/evergreen/+bug/1914630[Bug 1914630])
+* Fix a couple typos.
+
+==== Public Catalog ====
+
+* Fix an issue where titles could run together when viewing a
+carousel with a mobile browser.
+(https://bugs.launchpad.net/evergreen/+bug/1868147[Bug 1868147])
+* The order that items in a carousel display in is now more
+predictable. For example, for 'Top Circulated Items' carousels,
+the order is from most circulated to least circulated.
+(https://bugs.launchpad.net/evergreen/+bug/1866406[Bug 1866406])
+* Carousels no longer display deleted items.
+(https://bugs.launchpad.net/evergreen/+bug/1836254[Bug 1836254])
+* CGI parameters in the public catalog are now consistently forced
+to be separated by ampersands rather than semicolons.
+(https://bugs.launchpad.net/evergreen/+bug/1687545[Bug 1687545]) and
+(https://bugs.launchpad.net/evergreen/+bug/1914116[Bug 1914116])
+
+==== Public Catalog (Bootstrap theme) ====
+
+* The Bootstrap public catalog now allows patrons to update
+hold notification preferences.
+(https://bugs.launchpad.net/evergreen/+bug/1902265[Bug 1902265])
+* Fix an issue where email and phone number notification information
+was not saved when placing a hold.
+(https://bugs.launchpad.net/evergreen/+bug/1903424[Bug 1903424])
+* Suspending a hold at the time of placement now works in the Bootstrap
+public catalog.
+(https://bugs.launchpad.net/evergreen/+bug/1903594[Bug 1903594])
+* Add the Type filter to the Bootstrap public catalog's Advanced
+Search page
+(https://bugs.launchpad.net/evergreen/+bug/1908298[Bug 1908298])
+* The Bootstrap public catalog now includes the record emailing
+and printing enhancements added in 3.6.0.
+(https://bugs.launchpad.net/evergreen/+bug/1895676[Bug 1895676])
+* The Bootstrap public catalog is now implements course
+materials search and display.
+(https://bugs.launchpad.net/evergreen/+bug/1895678[Bug 1895678])
+* Carousels in the Bootstrap public catalog now link to their titles.
+(https://bugs.launchpad.net/evergreen/+bug/1908113[Bug 1908113])
+* Fix an issue with saving list notes in the Bootstrap public catalog.
+(https://bugs.launchpad.net/evergreen/+bug/1908766[Bug 1908766])
+* The My Account circulation history display now includes the
+title and author of loans of precat items.
+(https://bugs.launchpad.net/evergreen/+bug/1910138[Bug 1910138])
+* Fix an issue with adding a basket to an existing list.
+(https://bugs.launchpad.net/evergreen/+bug/1907866[Bug 1907866])
+
+==== Administration ====
+
+* The EDI Webrick installer now works on Ubuntu 18.04
+(https://bugs.launchpad.net/evergreen/+bug/1901900[Bug 1901900])
+
+=== Acknowledgements ===
+
+We would like to thank the following individuals who contributed code,
+testing and documentation patches to the 3.6.1 point release of Evergreen:
+
+* John Amundson
+* Zavier Banks
+* Jason Boyer
+* Dan Briem
+* Galen Charlton
+* Garry Collum
+* Jeff Davis
+* Bill Erickson
+* Ruth Frasur
+* Blake Graham-Henderson
+* Rogan Hamby
+* Elaine Hardy
+* Angela Kilsdonk
+* Tiffany Little
+* Terran McCanna
+* Michele Morgan
+* Jane Sandberg
+* Mike Risher
+* Mike Rylander
+* Chris Sharp
+* Jason Stephenson
+
+== Evergreen 3.6.1 ==
+
+This release contains bug fixes improving on Evergreen 3.6.0.
+
+=== Bug Fixes ===
+
+==== Administration ====
+
+* Improves description of an org unit setting
+(https://bugs.launchpad.net/evergreen/+bug/1325704[Bug 1325704])
+
+==== Cataloging ====
+
+* Fixes the journal title search in the Angular Staff Catalog
+(https://bugs.launchpad.net/evergreen/+bug/1901038[Bug 1901038])
+
+==== Circulation ====
+
+* The Register Patron form can now set default password according to a patron's
+phone number when the org setting "Patron: password from phone #" is TRUE
+(https://bugs.launchpad.net/evergreen/+bug/1900184[Bug 1900184])
+* Fixes an issue with the hold targeter
+(https://bugs.launchpad.net/evergreen/+bug/1508208[Bug 1508208])
+* Fixes an issue that prevents items from circulating when OpenSRF is installed
+with non-default router names
+(https://bugs.launchpad.net/evergreen/+bug/1904220[Bug 1904220])
+
+
+==== Client ====
+
+* Fixes an issue that caused a blank screen to appear
+(https://bugs.launchpad.net/evergreen/+bug/1855737[Bug 1855737])
+
+
+=== Acknowledgements ===
+
+We would like to thank the following individuals who contributed code,
+testing and documentation patches to the 3.6.1 point release of Evergreen:
+
+* Jason Boyer
+* Dan Briem
+* Galen Charlton
+* Garry Collum
+* Bill Erickson
+* Jason Etheridge
+* Katie Greenleaf Martin
+* Terran McCanna
+* Mike Rylander
+* Jane Sandberg
+* Chris Sharp
+* Remington Steed
+
+
+== Evergreen 3.6.0 ==
+
+=== Upgrade notes ===
+
+This release adds a new OpenSRF service called `open-ils.courses`.
+While strictly speaking this is an optional service and could be
+omitted if you are not planning on using the new Course Materials
+module, it is recommended that the service be run in case future
+work bakes in an assumption that it will always be present.
+
+This release also a new OpenSRF service, `open-ils.curbside`, which
+must be enabled and registered with the public router for the
+Curbside Pickup feature to function.
+
+This release also includes a new experimental public catalog skin
+based on the Bootstrap framework. Instructions for turning it on
+can be found below.
+
+This release adds a new Perl module dependency, `Config::General`.
+
+This release adds two new rows to action_trigger.event_definition,
+two into action_trigger.hook, and six into action_trigger.environment.
+
+=== New Features ===
+
+==== Acquisitions ====
+
+===== Angular Acquisitions Search =====
+
+The acquisitions search interfaces are now written in Angular
+and provide a new centralized place for searching Line Items,
+Purchase Orders, Invoices, and Selection Lists in the Acquisitions
+module of Evergreen. The Acquisitions Search interface can be accessed
+under Acquisitions -> General Search.
+
+The search interface has four tabs for line item search, purchase order
+search, invoices search, and selection list search.  Each tab
+offers a search form allowing the user to select one or more
+fields to search on. Each search tab stores a separate default search
+that the user can update; for example, a user could have their
+line item search default to showing all on-order line items from
+a particular provider.
+
+The grid that displays search results in each tab is filterable.
+
+The line items and PO search interfaces allow the user to navigate to
+linked POs, invoices, and so forth, but offers no direct actions. The
+invoices search tab includes a 'Print Selected Invoices' action,
+while the selection lists search tab offers actions to create,
+clone, delete, and merge selection lists.
+
+The Angular search page contains a link to the legacy Dojo search
+interface if needed. The Dojo interface will be removed in a future
+release of Evergreen.
+
+The Angular search interface offers various usability improvements
+over the Dojo interface, including:
+
+* only the search operators that are relevant for a given field
+  are displayed.
+* search fields that are associated with controlled vocabularies
+  will display drop-downs on the search form.
+* results are sortable.
+* the line item and PO state fields have been relabeled to "Status".
+* greater than and less than are now available as search operators.
+* publication date searches are more flexible.
+
+As part of this feature, the stock permissions for the Acquisitions
+and Acquisitions Administrator profiles have been expanded. In
+particular, the Acquisitions Administrator profile can now be
+more readily used to perform normal acquisitions work in addition
+to configuring the acquisitions module.
+
+===== Angular Providers Interface =====
+
+The interfaces for searching for and managing Acquisitions provider
+records have been rewritten in Angular. This rewrite includes the
+following significant changes:
+
+* The provider search interface is now available directly from the
+  Acquisitions menu, supplementing its longstanding availability from
+  the Acquisitions Administration page.
+* The search interface is modeled after the patron interface, including
+  a search form that can be hidden or displayed, a provider summary box,
+  and a multi-tabbed interface for managing the provider itself.
+* The grid displaying search results is filterable and sortable.
+* The provider display tabs are
+** Details, allowing the user to view, and if permitted, edit the base provider record.
+** Addresses
+** Contacts
+** Attribute Definitions
+** Holdings Definitions
+** EDI
+** Invoices, providing an interface for viewing the invoices associated with the provider.
+** POs, providing an interface for viewing the purchase orders associated with the provider.
+* The new interface makes it possible to edit contact addresses.
+* The base provider record now has an optional primary contact field.
+  Selecting a contact as the primary one is managed on the Contacts
+  tab.  The primary contact, if set, is displayed on the provider
+  summary box.
+
+Interfaces that used to link to the Dojo provider interface now link
+to the Angular one instead.
+
+==== Administration ====
+
+
+===== Changes to Autorenewal Action/Trigger Failure Reasons =====
+
+Previously the "reason" field in the userdata for an Autorenewal
+event would contain both the failure code and the description for
+the failure event as a single string such as
+"MAX_RENEWALS_REACHED : Circulation has no more renewals remaining."
+
+Now the "reason" field will only contain the description of the issue
+(Circulation has ...) while a new "textcode" field will contain the
+event code (MAX_RENEWALS_REACHED) if administrators still want to
+display it in template outputs.
+
+
+===== EZProxy authentication =====
+
+Evergreen can now provide CGI authentication for EZProxy.
+To enable this, you will need to:
+
+. Add a new User Activity Type to Evergreen for EZProxy CGI authentications.
+. Add a new Remote Authentication Profile to Evergreen. You will probably want
+to use `EZProxyCGI` as the name.
+. Edit the `<Location /api/ezproxy>` stanza in Evergreen's eg_vhost configuration
+file. In particular, you will need to allow access to from your EZProxy server,
+fill in the base uri of your EZProxy server, and add a secret to the
+_OILSRemoteAuthEZProxySecret_ variable.
+. Restart Apache.
+. Edit the EZProxy user.txt file.  You will likely want to add a stanza such
+as the following:
+
+.Sample user.txt stanza
+----
+::CGI=http://your-evergreen-catalog.com/api/ezproxy?url=^R
+::Ticket
+MD5 <same secret as in eg_vhost config>
+Expired; Deny expiredticket.htm
+/Ticket
+----
+
+When this feature is enabled, users will see an Evergreen-based login screen.
+You may customize the look and feel of this login screen by editing the relevant
+template toolkit files.
+
+===== Matomo Support =====
+
+Support for the open source web analytics platform Matomo is now
+native to Evergreen. Support is on an org unit level so different
+libraries can have separate or no analytics. Once you setup
+a Matomo service you will need the URL and site ID. Typically
+Matomo will give you a block of javascript you can insert into
+web sites. One line will look like :
+
+`var u="http://mylibrary.lib/matomo/";`
+
+The full URL in the double quotes will be your URL.  Another line
+will look like:
+
+`_paq.push(['setSiteId', '1']);`
+
+In this case the number 1 will be your site ID.
+
+These are set by the Library Settings opac.analytics.matomo_url and
+opac.analytics.matomo_id respectively.  A new permission,
+MATOMO_UPDATE_SETTINGS, controls access to these.
+
+===== "PatronAPI" authentication =====
+
+Evergreen now supports the III "PatronAPI" scheme for authenticating
+patrons and supplying some information about them.
+
+To enable this, you will need to:
+
+. Add a new User Activity Type to Evergreen for PatronAPI authentications.
+. Add a new Remote Authentication Profile to Evergreen. You will probably want
+to use `PatronAPI` as the name.
+. Edit the `<Location /api/patronapi>` stanza in Evergreen's eg_vhost configuration
+file. In particular, you will need to allow access to it from the server(s)
+wanting to make PatronAPI requests, determine whether to enable the PatronAPI
+"dump" feature, and specify whether users can be identified by username
+or barcode.
+. Restart Apache.
+. Update the PatronAPI client to use https://your.evergreen.server/api/patronapi
+  as its base URL.
+
+Example PatronAPI URLs look something like this:
+
+.PatronAPI URLs
+----
+# test a patron's PIN:
+https://evergreen.example.org/api/patronapi/USERNAME/PASSWORD/pintest
+
+# dump some information about the patron. Note that this
+# does _not_ require the the patron's password be supplied.
+https://evergreen.example.org/api/patronapi/USERNAME/dump
+----
+
+The responses for the `pintest` and `dump` actions are specified by
+Template Toolkit templates under (e.g.) `/openils/var/templates/remoteauth`.
+
+
+===== Preloaded Audio Icon and Search Format =====
+
+A new search and icon format called Preloaded Audio now exists
+that overlaps with the eAudio format.  If you want to exclude
+the Preloaded Audio format from overlapping with eAudio
+you can use the following SQL:
+
+----
+UPDATE config.composite_attr_entry_definition SET definition = '{"0":{"_attr":"item_type","_val":"i"},"1":[{"_attr":"item_form","_val":"o"},{"_attr":"item_form","_val":"s"}]}'
+    WHERE coded_value IN (SELECT id FROM config.coded_value_map WHERE code = 'eaudio');
+----
+
+It is also recommended that you reingest your bibliographic records
+to updated the fixed field indexes. You can accomplish this by running
+the following query in your database:
+
+----
+SELECT metabib.reingest_record_attributes(source)
+FROM metabib.record_attr_vector_list WHERE
+(SELECT id FROM config.coded_value_map WHERE ctype = 'item_form' AND code = 'q') = ANY(vlist)
+AND (SELECT id FROM config.coded_value_map WHERE ctype = 'item_type' AND code = 'i') = ANY(vlist);
+----
+
+
+
+
+
+==== API ====
+
+
+
+===== Override Label for draw_field_label Patron Edit Fields =====
+
+Evergreen developers may now specify a label for fields in
+the patron registration/patron edit form (generated by
+the draw_field_label macro). By default,
+draw_field_label uses the label of supplied IDL field class.
+Now a developer may supply an additional third parameter,
+label_override, which overrides the default IDL-based label.
+This would typically be done in the course of customizing
+the web staff client template `circ/patron/t_edit.tt2`.
+
+
+
+
+==== Architecture ====
+
+
+
+
+===== New Action/Trigger reactor for 3rd party signaling =====
+
+This new Action/Trigger reactor module allows an Evergreen administrator to
+create event definitions that use HTTP (or HTTPS) to contact external services
+and let them know that something has happened in Evergreen.
+
+For instance, a discovery layer can be informed when a bib record is updated
+or when a user's barcode changes.
+
+====== Reactor Template Syntax ======
+
+The new reactor module uses a template to define its behavior.  While the
+template is processed by Template Toolkit, as with any A/T templates, its
+output format is new to Evergreen.
+
+The template should output data that can be parsed by the Config::General Perl
+module.  See: https://metacpan.org/pod/Config::General
+
+Top level settings should include the HTTP *method* and the *url*.
+
+A block called *Headers* can be used to supply arbitrary HTTP headers.
+
+A block called *Parameters* can be used to append CGI parameters to the URL,
+most useful for GET form submission.  Repeated parameters are allowed.  If
+this block is used, the URL should /not/ contain any parameters, use one or
+the other.
+
+A HEREDOC called *content* can be used with POST or PUT to send an arbitrary block
+of content to the remote server.
+
+If the requested URL requires Basic or Digest authentication, the template can
+include top level configuration parameters to supply a *user*, *password*, *realm*,
+and hostname:port *location*.
+
+A default user agent string of "EvergreenReactor/1.0" is used when sending requests.
+This can be overridden using the top level *agent* setting.
+
+Here is an example template that could be used by a definition attached to the
+*bib.edit* hook:
+
+[source,conf]
+----
+method   post # Valid values are post, get, put, delete, head
+url      https://example.com/api/incoming-update
+agent    MySpecialAgent/0.1
+
+user     updater
+password uPd4t3StufF
+realm    "Secret area"
+location example.com:443
+
+<Headers>
+  Accept-Language en
+</Headers>
+
+<Parameters>
+  type bib
+  id   [% target.id %]
+</Parameters>
+
+content <<MARC
+[% target.marc %]
+MARC
+----
+
+
+
+
+
+===== Documentation Now Uses the Antora Toolchain =====
+
+The core Evergreen documentation under the `docs/` subdirectory
+has been changed to use Antora, a documentation site generator
+for AsciiDoc. The result of this change is the ability to generate
+documentation for the `docs.evergreen-ils.org` website that is
+searchable, easier to maintain, and readily installable on a
+local Evergreen site if desired.
+
+For instructions on how to build the documentation, consult
+the file `README.adoc` under the `docs` directory.
+
+
+
+
+==== Cataloging ====
+
+
+
+===== Manage Authorities Angular Port =====
+
+The Cataloging -> Manage Authorities interface has been ported to Angular.
+
+New functionality includes displaying additional authority data, like create
+and edit dates, etc.  It's also possible to view the list of linked bib
+records.
+
+
+
+
+===== MARC Batch Edit UI Angular Port =====
+
+The MARC Batch Edit interface has been ported to Angular.
+
+
+
+
+===== Preloaded Audio Icon and Search Format =====
+
+A new search and icon format called Preloaded Audio now exists
+using the following atttributes: itemtype i, item form q.  This
+overlaps with the eAudio format.  If you want to exclude
+preloaded audio from eAudio there is a script in the Administration
+notes to exclude it.
+
+
+
+
+===== Item Status Allows Pasting a List of Barcodes in csv Format =====
+
+The item status input box will now accept a string of barcodes, separated with commas, as well as a single barcode.
+
+
+===== Fix For "Blank" (Empty String) TCN Source =====
+
+Previously, it was possible for sparsely-populated MARC records to be
+saved with a TCN Source of '' (the "empty string"), which caused the
+901 $b subfield to be void of data, causing errors when exporting
+MARC records to such third-party programs as Zotero.
+
+A site that has been running without this patch for a long time might want to
+check how many bib records they have with an empty tcn_source:
+
+----
+SELECT COUNT(*) FROM biblio.record_entry WHERE deleted IS FALSE AND tcn_source = '';
+----
+
+Sites can fix the problem by issuing UPDATE statements to set the 901$b to a value
+like 'AUTOGEN' or 'Unknown'. They should probably do it per-record, however, to
+avoid locking the table in a huge commit.
+
+
+==== Circulation ====
+
+
+
+===== Booking Capture is now in Angular =====
+
+
+The interface to capture resources for booking
+reservations has been re-implemented in Angular.
+Other booking screens, such as Pick Up and
+Manage Reservations, now include an option to
+re-print capture slips.
+
+System administrators can now edit the template
+for booking capture slips in Administration ->
+Server administration -> Print templates.
+
+
+
+
+
+===== New Fields for AutorenewNotify Event Template =====
+
+
+Two new fields, `auto_renewal_remaining`, and `total_renewal_remaining` have
+been added to the AutorenewNotify action/trigger event code.  They will
+report the number of autorenewals and regular renewals, respectively,
+remaining on the new circulation if renewed, or on the old circulation
+if not renewed.  This is provided as a convenience to avoid possibly
+inaccurate math in the template.  You may access them in the template via
+the `udata`:
+
+----
+Automatic Renewals Remaining: [% udata.auto_renewal_remaining %]
+Total Renewals Remaining: [% udata.total_renewal_remaining %]
+----
+
+
+
+
+
+===== Course Materials Module =====
+
+This version of Evergreen includes an optional course materials module.
+Like course reserves modules in other library software, this module
+makes reserves collections more discoverable and easier to manage.
+The module also provides similar functionality for library electronic
+resources and open educational resources, whether they have been
+cataloged or not.
+
+To enable the course materials module, go to Administration ->
+Local Administration -> Library Settings Editor. Find the setting
+called "Opt Org Unit into the Course Materials Module".  Set it to
+True for the org units that want to use the module.
+
+To use the course materials module effectively, staff will need a
+new permission called _MANAGE_RESERVES_.  By default, circulation
+administrators will receive this permission.
+
+Staff members with the _MANAGE_RESERVES_ permission can create
+courses, attach materials to them, attach users to them, and
+archive them when they are no longer needed.
+
+When associating physical materials from the catalog to a
+course, staff members can choose temporary item attributes.
+These attributes will last until the course is archived or
+the item is detached from the course, whichever happens
+first.
+
+Staff can also choose to associate electronic resources from
+the catalog (which must have a transcendent bib source or
+a located URI).  They can also create a brief bib record
+to attach to the course from within the course materials
+module.
+
+Staff members can attach users to the course.  These users
+can have either a public role (e.g. instructor) or private
+roles (e.g. student).  The public roles will be displayed
+in the OPAC.
+
+
+If the module is enabled, the OPAC will include a course search
+and a course browse option.
+
+
+Libraries may also want to use this module to manage their
+displays.  Each display can be treated as a course, and staff
+can attach the items they wish to display to the course along
+with the temporary attributes (e.g. a shelving location called
+"On display").  When the display is over, staff members can
+archive the course.
+
+
+
+
+===== Hopeless Holds Interface =====
+
+A new interface under Local Administration has been added called
+Hopeless Holds.  Using a new Hopeless Date field on hold requests,
+this interface gives staff a way to resolve issues with hold
+requests that may have become unfulfillable or "hopeless".
+
+The Hopeless Date is set for a given request by the hold targeter
+whenever the potential items list for the hold is empty, or when
+all potential items have a copy status that has been designated
+as Hopeless Prone (a new boolean field on Item Statuses).
+
+
+
+
+
+===== In-house use now records workstations =====
+
+Evergreen now records the workstation along with each
+in-house use.  Staff can now run reports on which
+workstation created which in-house use.
+
+
+
+
+===== Option to Make Effective Date of Checkin Sticky =====
+
+Adds a checkbox to the Checkin screen that will make the backdate effective until logout.
+
+
+
+
+===== Purge User Preferred Names =====
+
+The new, user preferred name fields are now set to NULL in the
+database when a user account is purged via the staff client or using
+the actor.usr_delete function in the database.
+
+To clear the preferred name fields from records that have already been
+purged, run the following SQL update:
+
+[source,sql]
+----
+UPDATE actor.usr
+SET pref_prefix = NULL,
+    pref_first_given_name = NULL,
+    pref_second_given_name = NULL,
+    pref_family_name = NULL,
+    pref_suffix = NULL,
+    name_keywords = NULL
+WHERE usrname ~ ('^' || id || '-PURGED')
+AND NOT active
+AND deleted
+AND (
+  pref_prefix IS NOT NULL OR
+  pref_first_given_name IS NOT NULL OR
+  pref_second_given_name IS NOT NULL OR
+  pref_family_name IS NOT NULL OR
+  pref_suffix IS NOT NULL OR
+  name_keywords IS NOT NULL
+);
+----
+
+
+
+
+===== Test Notification Method =====
+
+Patrons and staff may request a test notification for a patron's default email address or SMS
+number via the Patron Registration interface in the staff client or the OPAC preferences interface. The OPAC_LOGIN permissions are required to
+request a notification. When a notification is sent, it will be sent to either the user's default email or default SMS number, depending on what was requested.
+
+====== Upgrade Notes ======
+
+This feature adds two new rows to action_trigger.event_definition, two into
+action_trigger.hook, and six into action_trigger.environment.
+
+
+
+===== Curbside Pickup =====
+
+The Curbside Pickup feature in Evergreen provides an interface to help
+facilitate contact-free pickup of library materials.  It provides a dedicated
+interface in the staff client for library staff to track and manage curbside
+pickup appointments and materials through the various stages of the process.
+Staff can also schedule pickup appointments on behalf of patrons.  This feature
+also allows patrons to schedule their own curbside pickup appointments in their
+OPAC account, as well as inform the library when they have arrived and are
+waiting for their materials.  
+
+This is an extension of the existing holds functionality in Evergreen.  A hold
+must be placed for an item to be eligible for curbside pickup.  After an item
+has been captured for a hold and is available for pickup from the holds shelf,
+a curbside pickup appointment can be scheduled to allow the materials to be
+obtained in a contact-free transaction.
+
+It can accommodate several different workflows depending on how the library
+decides to implement curbside pickup services.  It can help library staff track and
+checkout batches of items to be picked up curbside and help facilitate
+communication between library staff and patrons.  It does not prescribe nor require a
+specific workflow for curbside pickup.
+
+It can be used alongside regular (i.e. inside the library) hold pickup.  Curbside pickup
+can be an option offered patrons in addition to regular pickup or it can
+be the primary pickup option depending on the library’s current service plan.
+
+It assumes the library will have a staff member assigned to managing curbside
+pickup throughout the day.
+
+====== Library Settings ======
+
+This feature adds the following library settings:
+
+ * `circ.curbside`: whether to enable curbside appointments for
+   picking up available hold requests. This defaults to off.
+    
+ * `circ.curbside.granularity`: interval between appointment slots. This
+   defaults to 15 minutes.
+ 
+ * `circ.curbside.max_concurrent`: how many appointments to permit per
+   time slot.  This defaults to 10.
+
+ * `circ.curbside.disable_patron_input`: if turned on, display scheduled
+    and pending appointments in My Account in the public catalog but
+    do not give the patron the ability to change them from My Account.
+    This defaults to false, i.e., allowing patrons to modify appointments
+    from My Account.
+
+====== Notifications And Action Triggers ======
+
+There are several new patron notice options related to curbside pickup.
+
+When a patron’s holds are marked as ready for pickup in Evergreen, an email or
+text/SMS notification can be sent to let them know that curbside pickup is an
+option at their library.  This notice can be used to promote this service and
+the default message will prompt patrons to log in to their OPAC account to
+schedule an appointment or call the library to schedule an appointment.
+Notice message is customizable.  The Trigger Event Definitions for this notice
+are called:
+
+ * Curbside offer Email notification, triggered by CurbsideSlot reactor on a
+   definition attached to the hold available hook.
+ * Curbside offer SMS notification, triggered by CurbsideSlot reactor on a
+   definition attached to the hold available hook.
+
+If a patron has scheduled a curbside pickup appointment, an email or text/SMS
+notification can be sent to confirm the appointment.  It will also prompt them
+to log into their account or call the library when they have arrived for their
+pickup appointment.  The Trigger Event Definitions for this notice are called:
+
+ * Curbside confirmation Email notification.
+ * Curbside confirmation SMS notification.
+
+Patrons can receive an email with a list of the items they checked out.  To
+receive this notice patrons must have an email address associated with their
+account and the option for “Email checkout receipts by default?” must be
+selected in their account.  This is an existing notice in Evergreen that ties
+in to the curbside pickup workflow.
+
+There is another action trigger called “Trigger curbside offer events and
+create a placeholder for the patron, where applicable”.  This action trigger
+does not send a notice to patrons or staff.  It is a silent action behind the
+scenes that initiates the curbside offer email or SMS notification described
+above.  
+
+====== Upgrade Notes ======
+
+This feature adds a new OpenSRF service, `open-ils.curbside`, which must be
+enabled and registered with the public router for the feature to function.
+
+This feature adds no new staff permissions.
+
+
+
+===== Allow Use of Adjusted Proximity for Age-protection =====
+
+Introduces a new library setting to consult adjusted proximity for age-protected items at hold placement time.
+
+
+
+
+==== Client ====
+
+
+
+===== New Angular Staff Catalog Default =====
+
+The experimental Angular staff catalog has been promoted to operate as the
+default catalog in the browser staff client.  It will be used for all
+catalog entry points, except for the menu entries for the traditional
+catalog and any links within the traditional catalog.
+
+====== Menu Changes ======
+
+* Search -> 'Search The Catalog' now searches to new catalog.
+* Cataloging -> 'Search The Catalog' now searches to new catalog.
+* Cataloging -> 'Search The Catalog (Traditional)' searches the traditional
+  TPAC-style catalog.
+* Staff client splash page -> 'Search the catalog' inline form uses the
+  new catalog.
+
+
+
+
+
+===== Basket To Bucket Action Now Allows Adding To Shared Buckets =====
+
+The Angular staff catalog's 'Add Basket to Bucket' action now
+gives the user the option of adding the contents of the basket
+to a shared bucket.
+
+
+===== Angular catalog recall/force/part holds =====
+
+The Angular staff catalog now has entry points for placing Recall,
+Force, and Part-level holds.
+
+For any item-level hold type, the user now has the option to cycle
+between Item, Recall, and Force hold types.  The selected type affects
+the full batch of holds.
+
+For title-level holds, the user now has the option to select a part
+as the hold target for each record in the list.  Part selection is
+optional.
+
+
+==== OPAC ====
+
+
+===== New Bootstrap-based OPAC =====
+
+
+This release includes a new experimental OPAC with a cleaner, more modern design.
+
+To enable the new OPAC design, open the `/etc/apache2/eg_vhost.conf` file.
+
+Find the following line:
+
+----
+PerlAddVar OILSWebTemplatePath "/openils/var/templates"
+----
+
+Add the following line directly below it:
+
+----
+PerlAddVar OILSWebTemplatePath "/openils/var/templates-bootstrap"
+----
+
+Be sure that, if you have any local customizations, that they are referenced below
+this line.  This way, your customizations will still appear in the new OPAC design
+(although they may need to be adjusted to better fit the new style).
+
+You can also turn on the new OPAC for some virtual hosts only, by adding it to the
+appropriate virtual host entry.  Be sure to reference the OILSWebTemplatePath for
+the `templates-bootstrap` directory before referencing any local customizations
+used by that virtual host.
+
+To emphasize, the new OPAC skin is considered experimental for 3.6.x. There
+are some discrepancies between its functionality and the functionality
+present in the original "TPAC" skin. The Evergreen community aims to
+resolve those discrepancies and make the Bootstrap skin become the default
+OPAC for the Spring 2021 release (though the original TPAC skin will still
+be available). Using the Bootstrap skin in production for 3.6 is at your own risk.
+
+
+
+
+===== Enhanced Public Catalog Printing and Email =====
+
+Evergreen now provides additional functionality for printing and emailing
+bibliographic record and holdings information from the catalog, including
+from an individual record or from a list or basket.
+
+After selecting Print or Email, the user will be presented with a preview of
+the printout or email, respectively.  From the preview users can chose to view
+Brief or Full record information (Full includes holdings information) and how
+records should be sorted (Author, Title, Publication Date).  Holdings
+information can also be limited to a certain library.
+
+Users can be required to log in to their OPAC account to send an email, or this
+feature can be configured to allow sending an email without signing in to the
+public catalog. If the option to allow emailing without signing in is enabled
+(by turning on the new 'Allow record emailing without login' library setting),
+user will be asked to solve an arithmetic CAPTCHA in order to send the email.
+
+====== Administration ======
+
+Two new interfaces have been added to Local Administration: Event Definition
+Groups and Event Definition Group Members.  The Event Definition Groups defines
+the various groups for Action Trigger Event Definitions -- currently Print
+Record(s) or Email Record(s).  The Event Definition Group Members defines the
+options within each group -- currently Brief or Full record information.
+
+These two interfaces expose the infrastructure behind the new print and
+email functionality and library staff will not need to make any changes to
+these interfaces to use the existing print and email options.  The stock print
+and email Action Trigger Event Definitions can be cloned and modified to
+provide additional bibliographic format options.  After creating the custom
+Event Definition, add it to the appropriate Event Definition Group (Print
+Record or Email Record) and the new format will be available in the catalog.
+
+
+
+
+
+===== Credit card payments using Stripe now on version 3 (Elements) =====
+
+When Stripe payments are enabled, the public catalog will now
+use version 3 of the Stripe client library, as well as its
+Elements API for building the credit card form.  For
+technical reasons, this more easily lends a site to PCI
+compliance.
+
+On the staff side, the credit card option is disabled for
+Stripe, as that has not been implemented and in the past
+would just give an error.
+
+
+
+
+===== Improve Access to Library Info in OPAC =====
+
+Adds the library's address, email, phone, and website link to the myopac patron account preferences page.
+
+
+
+
+==== Reports ====
+
+
+
+===== Combined Aged and Active Circulations Source Naming =====
+
+A recent improvement to aid web client data retrieval
+speed resulted in a new reports source that was named
+nearly identically to a long-existing one, and both
+were appearing in the "Core Sources" section of reports.
+The newer source has been renamed for clarity and removed
+from the core sources to prevent confusion:
+
+ * "Combined Aged and Active Circulations" is now named "Combined Aged and Active Circulations (Slim Version)"
+   and is removed from the Core Sources.
+ * "Combined Aged and Active Circulations", which contains more linkages to other data sources, remains in the
+   Core Sources list.
+
+
+
+
+===== Reports Subtotals =====
+
+Reports now allow group subtotals and grand totals.  By checking the
+new "Calculate grouping subtotals" checkbox under "Output Options",
+a new unlabeled row or column is created with the subtotals for each
+grouping and an unlabeled grand total row or column.
+
+This takes advantage of PostreSQL's built-in ROLLUP feature.  See the
+PostgreSQL documentation for details:
+
+https://www.postgresql.org/docs/9.6/queries-table-expressions.html#QUERIES-GROUPING-SETS
+
+An example of a report that could use this new feature is
+one based on the Circulation source with the following fields:
+
+ * Circulation -> Checkout / Renewal Library -> Short (Policy) Name (Raw Data)
+ * Circulation -> Checkout Date/Time (Year)
+ * Circulation -> Shelving Location -> Name (Raw Data)
+ * Circulation -> Circ ID (Count Distinct)
+
+Turning on the "Calculate grouping subtotals" checkbox would make
+the report show subtotals for each combination of
+short name, checkout year, and shelving location name.
+
+
+
+
+==== SIP ====
+
+
+
+===== Allow Username in Patron ID =====
+
+Evergreen now accepts a patron's username in the SIP2 Patron ID field
+(AA) in addition to the barcode.  This modification is useful for
+vendors, such as Overdrive, who can accept a user's username.
+Additionally, it is easier for a patron to find and remember their
+username over their barcode.
+
+The new feature determines if the value in the Patron ID field is a
+barcode or username by comparing the field value against the
+`opac.barcode_regex` setting for the organizational unit of the logged
+in SIP2 account as configured in the oils_sip.xml file.  This is
+similar to what the OPAC does when a patron logs in.
+
+This feature requires activation.  To activate, uncomment (or add) the
+following line in the oils_sip.xml configuration file and change the
+value from 'false' to 'true'.
+
+[source,xml]
+----
+<option name='support_patron_username_login' value='true' />
+----
+
+
+
+=== Acknowledgments ===
+
+The Evergreen project would like to acknowledge the following
+organizations that commissioned developments in this release of
+Evergreen:
+
+* C/W MARS
+* Equinox Open Library Initiative
+* Evergreen Community Development Initiative
+* Georgia Public Library Service
+* Indiana State Library
+* Linn-Benton Community College
+* MassLNC
+* NOBLE
+* PaILS
+* Treasure Valley Community College
+
+We would also like to thank the following individuals who contributed
+code, translations, documentation, patches, and tests to this release of
+Evergreen:
+
+* John Amundson
+* Nelson Appell
+* Zavier Banks
+* a. bellenir
+* Felicia Beaudry
+* Jason Boyer
+* Dan Briem
+* Chris Burton
+* Steven Callender
+* Lisa Carlucci
+* Galen Charlton
+* Garry Collum
+* Dawn Dale
+* Jeff Davis
+* Diane Disbro
+* Bill Erickson
+* Jason Etheridge
+* Lynn Floyd
+* Ruth Frasur
+* Blake Graham-Henderson
+* Rogan Hamby
+* Elaine Hardy
+* Kyle Huckins
+* Angela Kilsdonk
+* Owen Leonard
+* Troy Leonard
+* Shula Link
+* Tiffany Little
+* Mary Llewellyn
+* Terran McCanna
+* Gina Monti
+* Christine Morgan
+* Michele Morgan
+* Andrea Buntz Neiman
+* Jennifer Pringle
+* Mike Risher
+* Mike Rylander
+* Jane Sandberg
+* Dan Scott
+* Chris Sharp
+* Remington Steed
+* Jason Stephenson
+* Josh Stompro
+* Dan Wells
+* Jennifer Weston
+* Beth Willis
+* John Yorio
+
+We also thank the following organizations whose employees contributed
+patches:
+
+* Ann Arbor District Library
+* BC Libraries Cooperative
+* Bibliomation
+* Calvin College
+* Catalyte
+* C/W MARS
+* Equinox Open Library Initiative
+* Georgia Public Library Service
+* Grand Rapids Public Library
+* Greater Clark Hills Regional Library System
+* Indiana State Library
+* Kenton County Public Library
+* King County Library System
+* Laurentian University
+* Linn-Benton Community College
+* MOBIUS
+* Niagara Falls Public Library
+* NOBLE
+* Scenic Regional Library
+* Sigio
+* Washington County (MO) Public Library
+* Westchester Library System
+* Zivot Design
+
+We regret any omissions.  If a contributor has been inadvertently
+missed, please open a bug at http://bugs.launchpad.net/evergreen/
+with a correction.
+

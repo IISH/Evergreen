@@ -1,0 +1,716 @@
+= Circulation - Patron Record = 
+:toc:
+
+[[searching_patrons]] 
+== Searching Patrons ==
+
+indexterm:[patrons, searching for]
+
+To search for a patron, select _Search -> Search for Patrons_ from the menu bar.
+
+The Patron Search screen will display. It will contain options to search on the 
+following fields:
+
+* Last Name 
+* First Name 
+* Middle Name 
+
+image::media/circulation_patron_records-1a_web_client.png[circulation_patron_records 1a]
+
+
+Next to the _Clear Form_ button there is a button with an arrow pointing down that will display the following additional search fields:
+   
+* Barcode 
+* Alias 
+* Username
+* Email 
+* Identification
+* database ID
+* Phone
+* Street 1 
+* Street 2 
+* City 
+* State 
+* Postal Code
+* Profile Group
+* Home Library 
+* DOB (date of birth) year
+* DOB month
+* DOB day
+
+To include patrons marked ``inactive'', click on the _Include Inactive?_ checkbox.
+
+
+image::media/circulation_patron_records-1b_web_client.png[circulation_patron_records 1b]
+
+.Tips for searching 
+[TIP] 
+=================== 
+* Search one field or combine fields for more precise results.  
+* Truncate search terms for more search results.
+* Search ignores punctuation such as diacritics, apostrophes, hyphens and commas.
+* Searching by Date of Birth: Year searches are "contains" searches. E.g. year
+  "15" matches 2015, 1915, 1599, etc. For exact matches use the full 4-digit
+  year. Day and month values are exact matches. E.g. month "1" (or "01") matches
+  January, "12" matches December.
+===================
+
+Once you have located the desired patron, click on the entry row for this patron in
+the results screen.  A summary for this patron will display on the left hand side.  
+
+image::media/circulation_patron_records-2_web_client.png[circulation_patron_records 2]
+
+The _Patron Search_ button on the upper right may be used to resume searching for patrons.
+
+== Retrieve Recent Patrons ==
+
+indexterm:[patrons, retrieving recent]
+
+=== Setting up Retrieve Recent Patrons ===
+
+* This feature must be configured in the _Library Settings Editor_
+(_Administration -> Local Administration -> Library Settings Editor_). The
+library setting is called "Number of Retrievable Recent Patrons" and is located
+in the Circulation settings group.
+** A value of zero (0) means no recent patrons can be retrieved.
+** A value greater than 1 means staff will be able to retrieve multiple recent
+patrons via a new _Circulation -> Retrieve Recent Patrons_ menu entry.
+** The default value is 1 for backwards compatibility. (The _Circulation ->
+Retrieve Last Patron_ menu entry will be available.)
+
+=== Retrieving Recent Patrons ===
+* Once the library setting has been configured to a number greater than 1, the
+option Retrieve Recent Patrons will appear below the Retrieve Last patron
+option in the Circulation drop-down from the Menu Bar (_Circulation ->
+Retrieve Recent Patrons_).
+
+* When selected, a grid will appear listing patrons accessed by that workstation
+in the current session. The length of the list will be limited by the value
+configured in the _Library Settings Editor_. If no patrons have been accessed,
+the grid will display "No Items To Display."
+
+
+== Registering New Patrons == 
+
+indexterm:[patrons, registering]
+
+To register a new patron, select _Circulation -> Register Patron_ from the menu bar. The Patron
+Registration form will display. 
+
+image::media/circulation_patron_records-4.JPG[Patron registration form]
+
+Mandatory fields display in yellow.
+
+image::media/circulation_patron_records-5.JPG[circulation_patron_records 5]
+
+The _Show: Required Fields_ and _Show: Suggested Fields_ links may be used to limit
+the options on this page.
+
+image::media/circulation_patron_records-6.JPG[circulation_patron_records 6]
+
+When finished entering the necessary information, select _Save_ to save the new
+patron record or _Save & Clone_ to register a patron with the same address.
+When _Save & Clone_ is selected, the address information is copied into the
+resulting patron registration screen.  It is linked to the original patron.
+Address information may only be edited through the original record.
+
+image::media/circulation_patron_records-8.JPG[circulation_patron_records 8]
+
+[TIP]
+============================================================================
+* Requested fields may be configured in the _Library Settings Editor_
+(_Administration -> Local Administration -> Library Settings Editor_).
+* Statistical categories may be created for information tracked by your library 
+that is not in the default patron record.
+* These may be configured in the _Statistical Categories Editor_
+(_Administration -> Local Administration -> Statistical Categories Editor_).
+* Staff accounts may also function as patron accounts.
+* You must select a _Main (Profile) Permission Group_ before the _Update Expire
+Date_ button will work, since the permission group determines the expiration date.
+============================================================================
+
+=== Photo URL field ===
+
+As of 3.8, a staff user with the `UPDATE_USER_PHOTO_URL` permission can add or edit a URL that will pull in a patron photo image from an external server. Only https links are supported in this field.
+
+Location of Photo URL field in the Patron Editor:
+
+image::media/patron_photo_url.png[Patron URL field]
+
+Enter the URL in that field and click **Save** at the top of the Patron Editor. The image indicated by the URL will display in the Patron Sidebar:
+
+image::media/patron_photo_sidebar.png[Patron Photo in Sidebar]
+
+=== Email field ===
+
+indexterm:[patrons,email addresses]
+indexterm:[email]
+
+It's possible for administrators to set up the email field to allow or disallow
+multiple email addresses for a single patron (usually separated by a comma).
+If you'd like to make changes to whether multiple email addresses
+are allowed here or not, ask your system administrator to change the
+`ui.patron.edit.au.email.regex` library setting.
+
+
+== Patron Self-Registration ==
+*Abstract*
+
+Patron Self-Registration allows patrons to initiate registration for a library account through the OPAC.  Patrons can fill out a web-based form with basic information that will be stored as a “pending patron” in Evergreen.  Library staff can review pending patrons in the staff-client and use the pre-loaded account information to create a full patron account.  Pending patron accounts that are not approved within a configurable amount of time will be automatically deleted.  
+
+*Patron Self-Registration*
+
+. In the OPAC, click on the link to *Request Library Card*
+
+. Fill out the self-registration form to request a library card, and click *Submit Registration*.
+
+. Patrons will see a confirmation message: “Registration successful!  Please see library staff to complete your registration.”
+
+image::media/patron_self_registration2.jpg[Patron Self-Registration form]
+
+*Managing Pending Patrons*
+
+. In the staff client select *Circulation* -> *Pending Patrons*.
+
+. Select the patron you would like to review.  In this screen you have the option to *Load* the pending patron information to create a permanent library account.
+
+. To create a permanent library account for the patron, click on the patron’s row, click on the *Load Patron* button at the top of the screen.  This will load the patron self-registration information into the main *Patron Registration* form. 
+
+. Fill in the necessary patron information for your library, and click *Save* to create the permanent patron account.
+
+
+[[updating_patron_information]] 
+== Updating Patron Information ==
+
+indexterm:[patrons, updating]
+
+Retrieve the patron record as described in the section
+<<searching_patrons,Searching Patrons>>.
+
+Click on _Edit_ from the options that display at the top of the patron record. 
+
+image::media/circulation_patron_records-9_web_client.png[Patron edit with summary display]
+
+Edit information as required.  When finished, select _Save_.  
+
+After selecting _Save_, the page will refresh.  The edited information will be
+reflected in the patron summary pane.
+
+[TIP]
+=======
+* To quickly renew an expired patron, click the _Update Expire Date_ button.
+You will need a _Main (Profile) Permission Group_ selected for this to work,
+since the permission group determines the expiration date.
+=======
+
+[[update_hold_notifications]]
+=== Update Hold Notifications ===
+
+indexterm:[patrons, holds, notifications]
+
+The public catalog and staff client have the ability to update existing holds if a patron or a staff member changes certain notification preferences or contact information.  Evergreen will detect these changes and prompt the staff user or patron user and ask if they want to update existing holds with the new contact information and/or notification preferences.
+
+NOTE: Email notices are sent at the time of hold capture, the system will not prompt a user when a change to the email address is made - the user will only be prompted if email notifications are turned off or turned on, or if an email address is invalidated by a staff user.
+
+[[update_hold_notifications_staffclient]]
+==== Staff Client ====
+
+In the web staff client, the staff user should retrieve a patron and select the *Edit* tab.
+
+If the staff user makes any changes to the any of the following fields, when the staff user clicks *Save*, Evergreen will check if the patron has current unfulfilled holds.
+
+* Daytime Phone
+* Evening Phone
+* Other Phone
+* Default Phone Number
+* Default Hold Pickup Location
+* any of the Holds Notices checkboxes 
+
+If unfulfilled holds are detected, the staff user will be prompted via a modal to update these holds with the new or updated contact information, or to remove contact information from the holds.
+
+Select the desired holds to update by checking the box next to each different notification grouping and clicking *Update Holds*. The selected holds will be updated. If the user does not wish to update holds, click *Do Not Update Holds*.
+
+image::media/update_holds.png[Update Hold Notifications]
+
+The Update Holds process will also be triggered if a phone number or email address is invalidated. Once the staff user clicks *Save* after invalidating a phone number or email address, Evergreen will check for unfulfilled holds and prompt for removing a notification method if necessary.
+
+As part of this work, certain form validation constraints were added to the web client Patron Editor interface. These include the following:
+
+* If the staff user sets the Holds Notices checkbox to true for Email Notify, Evergreen will enforce entry of a patron Email Address, if Email Address is blank.
+* If the staff user sets the Holds Notices checkbox to true for Phone Notify, Evergreen * will enforce entry of a Default Phone Number, if Default Phone Number is blank.
+* If the staff user sets the Holds Notices checkbox to true for SMS Notify, Evergreen will enforce entry of a Default SMS/Text Number, if the Default SMS/Text Number field is blank. * Additionally, even if the Holds Notices checkbox is false, if a staff user enters a number in the Default SMS/Text Number field, Evergreen will enforce a selection from the Default SMS Carrier dropdown.
+
+[[update_hold_notifications_opac]]
+==== Public Catalog ====
+
+From the Public Catalog MyAccount interface, the patron user should navigate to the _Account Preferences_ tab and then to the _Notification Preferences_ tab. 
+
+If the patron user makes any changes to any of the notification fields, when the patron user clicks *Save* Evergreen will check if the patron has current unfulfilled holds. 
+
+If unfulfilled holds are detected, the patron user will be prompted via an interstitial page to update these holds with the new or updated contact information.
+
+Select the desired holds to update by checking the box next to the each notification grouping and click *Update*. The selected holds will be updated. If the user does not wish to update holds, click *Continue without updating*.
+
+image::media/opac_update_holds.png[Update Hold Notifications in the public catalog]
+
+This work also added a _Notify Method_ column to the _Current Items on Hold_ table, found under the _Holds_ tab, that will show the patron user which notification methods are active, along with which numbers will be used for Phone or SMS notification. 
+
+image::media/notify_methods.png[Show notification methods in the public catalog]
+
+Additionally, patron users can now edit hold notification preferences on individual holds by using the _Edit_ function found in the _Current Items on Hold_ table.
+
+image::media/update_individual_hold.png[Update individual hold in the public catalog]
+== Renewing Library Cards ==
+
+indexterm:[library cards, renewing]
+
+Expired patron accounts when initially retrieved – an alert
+stating that the ``Patron account is EXPIRED.''
+
+image::media/circulation_patron_records-11_web_client.png[circulation_patron_records 11]
+
+Open the patron record in edit mode as described in the section
+<<updating_patron_information,Updating Patron Information>>.
+
+Navigate to the information field labeled _Privilege Expiration Date_.  Enter a
+new date in this box.  Or click the calendar icon, and a calendar widget
+will display to help you easily navigate to the desired date.
+
+image::media/circulation_patron_records-12.JPG[circulation_patron_records 12]
+
+Select the date using the calendar widget or key the date in manually.  Click
+the _Save_ button.  The screen will refresh and the ``expired'' alerts on the
+account will be removed. 
+
+
+== Lost Library Cards ==
+
+indexterm:[library cards, replacing]
+
+Retrieve the patron record as described in the section
+<<searching_patrons,Searching Patrons>>. 
+
+Open the patron record in edit mode as described in the section
+<<updating_patron_information,Updating Patron Information>>.
+ 
+Next to the _Barcode_ field, select the _Replace Barcode_ button.
+
+image::media/circulation_patron_records_13.JPG[circulation_patron_records 13]
+
+This will clear the barcode field.  Enter a new barcode and _Save_ the record.
+The screen will refresh and the new barcode will display in the patron summary
+pane.  
+
+If a patron’s barcode is mistakenly replaced, the old barcode may be reinstated.
+Retrieve the patron record as described in the section
+<<searching_patrons,Searching Patrons>>. Open the patron record in
+edit mode as described in the section <<updating_patron_information,Updating Patron Information>>.
+
+Select the _See All_ button next to the _Replace Barcode_ button.  This will
+display the current and past barcodes associated with this account. 
+
+image::media/circulation_patron_records_14.JPG[circulation_patron_records 14]
+
+Check the box(es) for all barcodes that should be active for the patron.  An
+active barcode may be used for circulation transactions.  A patron may have
+more than one active barcode.  Only one barcode may be designated
+primary. The primary barcode displays in the patron’s summary
+information in the _Library Card_ field. 
+
+Once you have modified the patron barcode(s), _Save_ the patron record.  If you
+modified the ``primary'' barcode, the new primary barcode will display in the
+patron summary screen. 
+
+== Resetting Patron's Password ==
+
+indexterm:[patrons, passwords]
+
+A patron’s password may be reset from the OPAC or through the staff client.  To
+reset the password from the staff client, retrieve the patron record as
+described in the section <<searching_patrons,Searching Patrons>>. 
+
+Open the patron record in edit mode as described in the section
+<<updating_patron_information,Updating Patron Information>>.
+
+Select the _Generate Password_ button next to the _Password_ field.
+
+image::media/circulation_patron_records_15.JPG[circulation_patron_records 15]
+
+NOTE: The existing password is not displayed in patron records for security
+reasons.
+
+A new number will populate the _Password_ text box.
+Make note of the new password and _Save_ the patron record.  The screen will
+refresh and the new password will be suppressed from view.   
+
+
+== Barring a Patron ==
+
+indexterm:[patrons, barring]
+
+A patron may be barred from circulation activities.  To bar a patron, retrieve
+the patron record as described in the section
+<<searching_patrons,Searching Patrons>>. 
+
+Open the patron record in edit mode as described in the section 
+<<updating_patron_information,Updating Patron Information>>.
+
+Check the box for _Barred_ in the patron account. 
+
+image::media/circulation_patron_records-16.JPG[circulation_patron_records 16]
+
+_Save_ the user.  The screen will refresh.  
+
+NOTE: Barring a patron from one library bars that patron from all consortium
+member libraries. 
+
+To unbar a patron, uncheck the Barred checkbox.
+
+
+== Barred vs. Blocked ==
+
+indexterm:[patrons, barring]
+
+*Barred*: Stops patrons from using their library cards; alerts the staff that
+the patron is banned/barred from the library. The check-out functionality is
+disabled for barred patrons (NO option to override – the checkout window is
+unusable and the bar must be removed from the account before the patron is able
+to checkout items).  These patrons may still log in to the OPAC to view their
+accounts.
+
+indexterm:[patrons, blocking]
+
+*Blocked*: Often, these are system-generated blocks on patron accounts.  
+
+Some examples:
+
+* Patron exceeds fine threshold 
+* Patron exceeds max checked out item threshold
+
+A notice appears when a staff person tries to checkout an item to blocked
+patrons, but staff may be given permissions to override blocks.
+
+
+== Consolidated Patron Notes, Alerts, Blocks, and Messages ==
+[[staff_generated_messages]]
+indexterm:[patrons, messages, notes, blocks, alerts]
+
+Evergreen provides a variety of options for adding notifications to patron accounts. Notes, Alerts, Blocks, and Messages can all be applied to a patron account and managed in the Notes tab that is present in every account. It is also possible to add a custom Standing Penalty to a patron's account in the Notes tab.
+
+The visibility and functionality of each option varies and can depend on the configuration of the Standing Penalty type.
+
+=== Managing Notes, Alerts, and Blocks ===
+[[managing_patron_notes]]
+
+As with other patron functions, Notes, Alerts, and Blocks are controlled by the existing `UPDATE_USER` and `VIEW_USER` permissions. A staff member who has permissions to view or edit a user will be able to view and edit
+notes for that user.
+
+In the _Notes_ tab of a patron account, the top portion of the screen displays active notes, alerts, and blocks while the bottom portion of the screen will display those that have been archived. The archived notes, alerts, and blocks from the last year display by default. The calendar pickers can be used to view older archived notes, alerts, or blocks.
+
+image::media/notes_tab_full.png[Notes Tab]
+
+New notes, alerts, and blocks can be added by clicking the *Create Note* button. This process and the functionality of each type of notification are further detailed in this documentation. Library staff can Edit, Remove, and Archive notes, alerts, and blocks by selecting them from the list and then going to the Actions menu (you can also right-click on a selection to view the Actions menu).
+
+* _Edit Note_ - allows staff to modify the original note, alert, or block
+** Patron visible notes, alerts, and blocks that have been read by the patron cannot be edited by staff.
+** When a note, alert, or block is edited, the note will retain the original context org unit instead of the current workstation library.
+* _Remove Note_ - will permanently delete the note, alert, or block. There will not be a record of it on the patron account once it has been removed.
+** Patron visible notes, alerts, and blocks that have been read by the patron cannot be deleted by staff.
+* _Archive Note_ - will move the note, alert, or block to the Archived Notes section of the screen.
+** Archiving a block will remove the block from the patron account.
+** Once archived, notes, alerts, and blocks cannot be deleted from the _Notes_ tab. Archived patron visible notes will continue to display in the patron's OPAC account unless they are deleted from the _Other -> Message Center_ interface.
+
+image::media/actions_menu.png[Notes Actions Menu]
+
+=== Notes ===
+[[patron_notes]]
+
+Notes can be added to patron accounts. Notes can be visible in the patron OPAC account or they can be visible only to library staff.
+
+==== Note Display ====
+
+When a note is present on a patron account, staff will see a counter on the tab ribbon that indicates how many un-archived notes, alerts, and blocks are on the account that are visible at the workstation at which the staff member is logged in. To view the note, click on the _Notes_ tab.
+
+image::media/notes_counter.png[Notes Counter]
+
+The Notes tab contains a list of all of the notes, alerts, and blocks present on a patron’s account. The top portion of the screen displays active notes, alerts, and blocks, while the bottom portion of the screen will display those that have been archived within the past year (by default). Notes only appear in the _Notes_ tab, whereas Alerts and Messages can appear elsewhere.
+
+==== Create a Note ====
+
+To create a new Note:
+
+. Go to the _Notes_ tab in the patron account and click *Create Note*.
+. A modal will appear where you can create a new Note. Required fields are highlighted in yellow.
+. Select _Note_ at the top of the screen.
+. Check the box next to _Patron Visible_ for a note that will display in the patron’s OPAC account. Leave it unchecked to create a note that is staff visible only.
+. The _Depth_ drop down menu controls the visibility of the note. Values correspond to OPAC labels, and by default they are This Branch, Local Library System, and Everywhere.
+.. By default, the Location will be set to the library the staff member’s workstation is registered to. The note will be visible to the workstation library, as well as all Org Units that are ancestors and descendants in the Org Unit hierarchy.
+. Enter a title or subject for the note in the _Title…_ field. The title field is required.
+. Enter the main content of the note in the _Note Text…_ field.
+. Enter your initials if your library requires initials when creating notes on patron accounts.
+. Click *OK* to create the note.
+
+image::media/note_modal.png[Note Modal]
+
+==== Messages and Message Center ====
+[[patron_messages]]
+
+When a patron visible Note is created on an account, Evergreen automatically creates a Message that then displays in the patron’s OPAC account. The original Note can be viewed in the Notes tab. The Message can be viewed in the staff interface under _Other -> Message Center_.
+
+The Message Center provides an interface for staff to view all patron visible notes that have been added to a patron account. Staff can double click on a message to view the full title and content of the message, as well as the date and time the message was created and the date and time that the message was read. Staff can also see if a patron has deleted the message from their OPAC account in the _Deleted?_ column.
+
+NOTE: Deleting a message from this interface will remove it from the patron's view. If the message is linked to a note in the Notes tab, the note will continue to appear in the Notes tab.
+
+NOTE: Deleting a patron visible note from the Notes tab will also remove the message from the patron's OPAC account. If the message is linked to a note in the Notes tab, the note will continue to appear in the Notes tab.
+
+==== Viewing Messages in the OPAC ====
+
+Patrons will see a tab for Messages in their OPAC account, as well as a notification of Unread Messages in the account summary.
+
+Unread messages display in bold font. Click on the subject of the message to view the full message.
+
+image::media/myaccount_boopac.png[Messages in My Account]
+
+=== Alerts ===
+[[patron_alerts]]
+
+Alerts can be applied to patron accounts to notify library staff when the patron account is retrieved. Alerts can be visible in the patron OPAC account or they can be visible only to library staff. For versions 3.7 and prior, Alert Messages are only visible to staff and are created and edited from the Patron Edit interface.
+
+==== Alerts Display ====
+
+When an alert is present on a patron account, a Stop sign and the alert text is displayed when the patron account is viewed. The alert title also displays in the patron account summary on the left hand side of the screen and there is an indicator in the patron summary that indicates how many un-archived notes, alerts, and blocks are on the account that are visible at the workstation at which the staff member is logged in. Alerts can also be displayed by going to _Other -> Display Alerts_.
+
+image::media/stopsign_alert.png[Alert Display]
+
+==== Create an Alert ====
+
+To create a new Alert:
+
+. Go to the _Notes_ tab in the patron account and click *Create Note*.
+. A modal will appear where you can create a new Alert. Required fields are highlighted in yellow.
+. Select _Alert_ at the top of the screen.
+. The _Depth_ drop down menu controls the visibility of the note. Values correspond to OPAC labels, and by default they are This Branch, Local Library System, and Everywhere.
+.. By default, the Location will be set to the library the staff member’s workstation is registered to. The note will be visible to the workstation library, as well as all Org Units that are ancestors and descendants in the Org Unit hierarchy.
+. Enter a title or subject for the alert in the _Title…_ field. The Title field is required.
+. Enter the main content of the alert te in the _Note Text…_ field.
+. Enter your initials if your library requires initials when creating alerts on patron accounts.
+. Click *OK* to create the alert.
+
+image::media/alert_note.png[Alert Modal]
+
+=== Blocks ===
+[[patron_blocks]]
+
+Blocks can be manually added to a patron account to take away certain library privileges from the patron for as long as the block remains on the account. The following privileges can be blocked on patron accounts as determined by configuration in the _Standing Penalties_ interface in the _Local Administration_ menu.
+
+* CIRC - Users cannot check out items
+* HOLD - Users cannot place holds on items
+* RENEW - Users cannot renew items
+* CAPTURE - This penalty prevents a user’s holds from being captured. If the HOLD penalty has not been applied to a user’s account, then the patron can place a hold, but the targeted item will not appear on a pull list and will not be captured for a hold if it is checked in.
+*  FULFILL - This penalty prevents a user from checking out an item that is on hold. If the HOLD and CAPTURE penalties have not been applied to a user’s account, then the user can place a hold on an item, and the itemcan be captured for a hold. However, when he tries to check out the item, the circulator will see a pop up box with the name of the penalty type, FULFILL. The circulator must correct the problem with the account or must override the penalty to check out the item.
+
+==== Block Display ====
+
+When a block is present on a patron account, a Stop sign and the block text is displayed when the patron account is viewed. The block title also displays in the patron account summary on the left hand side of the screen and there is an indicator in the patron summary that indicates how many un-archived notes, alerts, and blocks are on the account that are visible at the workstation at which the staff member is logged in. Blocks can also be displayed by going to _Other -> Display Alerts_.
+
+image::media/stopsign_block.png[Block Display]
+
+==== Create a Block ====
+
+To create a new Block:
+
+. Go to the _Notes_ tab in the patron account and click *Create Note*.
+. A modal will appear where you can create a new Block. Required fields are highlighted in yellow.
+. Select _Block_ at the top of the screen.
+..  The default Block is a block on CIRC, HOLD, RENEW
+..  Other Penalty Types can be selected from the drop down menu. These Penalty Types are configured in _Local Administration -> Standing Penalties_.
+. The _Depth_ drop down menu controls the visibility of the note. Values correspond to OPAC labels, and by default they are This Branch, Local Library System, and Everywhere.
+.. By default, the Location will be set to the library the staff member’s workstation is registered to. The note will be visible to the workstation library, as well as all Org Units that are ancestors and descendants in the Org Unit hierarchy.
+. Enter a title or subject for the alert in the _Title…_ field. The Title field is required.
+. Enter the main content of the block in the _Note…_ field.
+. Enter your initials if your library requires initials when creating blocks on patron accounts.
+.  Click *OK* to create the block.
+
+image::media/block.png[Block Modal]
+
+=== Administration for Patron Notes, Alerts, Blocks, and Messages ===
+[[patron_notes_admin]]
+
+==== Library Settings ====
+
+Library Settings are found under _Administration -> Local Administration -> Library Settings Editor_. There is one new Library Setting related to patron notes in Evergreen:
+
+* GUI: Require staff initials for entry/edit of patron standing penalties and notes
+
+[NOTE]
+==========
+This Library Setting replaces two previous settings:
+
+* Require staff initials for entry/edit of standing penalties and messages
+* Require staff initials for entry/edit of patron notes
+========== 
+
+Values from these deprecated settings will be migrated to the new setting via the upgrade script.
+
+If a value was set for “Require staff initials for entry/edit of standing penalties and messages”, that value will be the new value for the new Library Setting.
+
+If there was no value set for “Require staff initials for entry/edit of standing penalties and messages”, but there was a value for “Require staff initials for entry/edit of patron notes”, then the value from the
+legacy “patron notes” setting will be the value for the new Library
+Setting.
+
+If two different values are set for the legacy settings, the value from
+the legacy “standing penalties and messages” setting will become the
+value for the new Library Setting and the “patron notes” value will be
+recorded in a text file as part of the upgrade script.
+
+
+== User Buckets ==
+
+User Buckets allow staff to batch delete and make batch modifications to user accounts in Evergreen. Batch modifications can be made to selected fields in the patron account:
+
+* Home Library
+* Profile Group
+* Network Access Level
+* Barred flag
+* Active flag
+* Juvenile flag
+* Privilege Expiration Date
+* Statistical Categories
+
+Batch modifications and deletions can be rolled back or reversed, with the exception of batch changes to statistical categories.  Batch changes made in User Buckets will not activate any Action/Trigger event definitions that would normally be activated when editing an individual account.
+
+User accounts can be added to User Buckets by scanning individual user barcodes or by uploading a file of user barcodes directly in the User Bucket interface.  They can also be added to a User Bucket from the Patron Search screen.  Batch changes and batch edit sets are tied to the User Bucket itself, not to the login of the bucket owner.
+
+=== Create a User Bucket ===
+
+*To add users to a bucket via the Patron Search screen:*
+
+. Go to *Search->Search for Patrons*.
+. Enter your search and select the users you want to add to the user bucket by checking the box next to each user row.  You can also hold down the CTRL or SHIFT on your keyboard and select multiple users.
+. Click *Add to Bucket* and select an existing bucket from the drop down menu or click *New Bucket* to create a new user bucket.
+.. If creating a new user bucket, a dialog box called _Create Bucket_ will appear where you can enter a bucket _Name_ and _Description_ and indicate if the bucket is _Staff Shareable?_.  Click *Create Bucket*.
+. After adding users to a bucket, an update will appear at the bottom-right hand corner of the screen that says _"Successfully added # users to bucket [Name]"_.
+
+image::media/userbucket1.PNG[]
+
+image::media/userbucket2.PNG[]
+
+*To add users to a bucket by scanning user barcodes in the User Bucket interface:*
+
+. Go to *Circulation->User Buckets* and select the *Pending Users* tab at the top of the screen.
+. Click on *Buckets* and select an existing bucket from the drop down menu or click *New Bucket* to create a new user bucket.
+.. If creating a new user bucket, a dialog box called _Create Bucket_ will appear where you can enter a bucket _Name_ and _Description_ and indicate if the bucket is _Staff Shareable?_.  Click *Create Bucket*.
+.. After selecting or creating a bucket, the Name, Description, number of items, and creation date of the bucket will appear above the _Scan Card_ field.
+. Scan in the barcodes of the users that you want to add to the selected bucket into the _Scan Card_ field.  Each user account will be added to the Pending Users tab.  Hit ENTER on your keyboard after manually typing in a barcode to add it to the list of Pending Users.
+. Select the user accounts that you want to add to the bucket by checking the box next to each user row or by using the CTRL or SHIFT key on your keyboard to select multiple users.
+. Go to *Actions->Add To Bucket* or right-click on a selected user account to view the _Actions_ menu and select *Add To Bucket*.  The user accounts will move to the Bucket View tab and are now in the selected User Bucket.
+
+image::media/userbucket3.PNG[]
+
+*To add users to a bucket by uploading a file of user barcodes:*
+
+. Go to *Circulation->User Buckets* and select the *Pending Users* tab at the top of the screen.
+. Click on *Buckets* and select an existing bucket from the drop down menu or click *New Bucket* to create a new user bucket.
+.. If creating a new user bucket, a dialog box called _Create Bucket_ will appear where you can enter a bucket _Name_ and _Description_ and indicate if the bucket is _Staff Shareable?_.  Click *Create Bucket*.
+.. After selecting or creating a bucket, the Name, Description, number of items, and creation date of the bucket will appear above the Scan Card field.
+. In the Pending Users tab, click *Choose File* and select the file of barcodes to be uploaded.
+.. The file that is uploaded must be a .txt file that contains a single barcode per row.
+. The user accounts will automatically appear in the list of Pending Users.
+. Select the user accounts that you want to add to the bucket by checking the box next to each user row or by using the CTRL or SHIFT key on your keyboard to select multiple users.
+. Go to *Actions->Add To Bucket* or right-click on a selected user account to view the _Actions_ menu and select *Add To Bucket*.  The user accounts will move to the Bucket View tab and are now in the selected User Bucket.
+
+=== Batch Edit All Users ===
+
+To batch edit all users in a user bucket:
+
+. Go to *Circulation->User Buckets* and select the *Bucket View* tab.
+. Click *Buckets* and select the bucket you want to modify from the list of existing buckets.
+.. After selecting a bucket, the Name, Description, number of items, and creation date of the bucket will appear at the top of the screen.
+. Verify the list of users in the bucket and click *Batch edit all users*. A dialog box called _Update all users_ will appear where you can select the batch modifications to be made to the user accounts.
+. Assign a _Name for edit set_.  This name will allow staff to identify the batch edit for future verification or rollbacks.
+. Set the values that you want to modify.  The following fields can be modified in batch:
+
+* Home Library
+* Profile Group
+* Network Access Level
+* Barred flag
+* Active flag
+* Juvenile flag
+* Privilege Expiration Date
+
+. Click *Apply Changes*.  The modification(s) will be applied in batch.
+
+image::media/userbucket4.PNG[]
+
+=== Batch Modify Statistical Categories ===
+
+To batch modify statistical categories for all users in a bucket:
+
+. Go to *Circulation->User Buckets* and select the *Bucket View* tab.
+. Click *Buckets* and select the bucket you want to modify from the list of existing buckets.
+.. After selecting a bucket, the Name, Description, number of items, and creation date of the bucket will appear at the top of the screen.
+. Verify the list of users in the bucket and click *Batch modify statistical categories*. A dialog box called _Update statistical categories_ will appear where you can select the batch modifications to be made to the user accounts.  The existing patron statistical categories will be listed and staff can choose:
+.. To leave the stat cat value unchanged in the patron accounts.
+.. To select a new stat cat value for the patron accounts.
+.. Check the box next to Remove to delete the current stat cat value from the patron accounts.
+. Click *Apply Changes*.  The stat cat modification(s) will be applied in batch.
+
+image::media/userbucket12.PNG[]
+
+=== Batch Delete Users ===
+
+To batch delete users in a bucket:
+. Go to *Circulation->User Buckets* and select the *Bucket View* tab.
+. Click on *Buckets* and select the bucket you want to modify from the list of existing buckets.
+.. After selecting a bucket, the Name, Description, number of items, and creation date of the bucket will appear at the top of the screen.
+. Verify the list of users in the bucket and click *Delete all users*. A dialog box called _Delete all users_ will appear.
+. Assign a _Name for delete set_.  This name will allow staff to identify the batch deletion for future verification or rollbacks.
+. Click *Apply Changes*.  All users in the bucket will be marked as deleted.
+
+NOTE: Batch deleting patrons from a user bucket does not use the Purge User functionality, but instead marks the users as deleted.
+
+image::media/userbucket7.PNG[]
+
+=== View Batch Changes ===
+
+. The batch changes that have been made to User Buckets can be viewed by going to *Circulation->User Buckets* and selecting the *Bucket View* tab.
+. Click *Buckets* to select an existing bucket.
+. Click *View batch changes*.  A dialog box will appear that lists the _Name_, date _Completed_, and date _Rolled back_ of any batch changes made to the bucket.  There is also an option to _Delete_ a batch change.  This will remove this batch change from the list of actions that can be rolled back.  It will not delete or reverse the batch change.
+. Click *OK* to close the dialog box.
+
+image::media/userbucket8.PNG[]
+
+=== Roll Back Batch Changes ===
+
+. Batch Changes and Batch Deletions can be rolled back or reversed by going to *Circulation->User Buckets* and selecting the *Bucket View* tab.
+. Click *Buckets* to select an existing bucket.
+. Click *Roll back batch edit*.  A dialog box will appear that contains a drop down menu that lists all batch edits that can be rolled back.  Select the batch edit to roll back and click *Roll Back Changes*.  The batch change will be reversed and the roll back is recorded under _View batch changes_.
+
+NOTE: Batch statistical category changes cannot be rolled back.
+
+image::media/userbucket10.png[]
+
+image::media/userbucket9.PNG[]
+
+=== Sharing Buckets ===
+If a User Bucket has been made Staff Shareable, it can be retrieved via bucket ID by another staff account.  The ID for each bucket can be found at the end of the URL for the bucket.  For example, in the screenshot below, the bucket ID is 32.
+
+image::media/userbucket11.PNG[]
+
+A shared bucket can be retrieved by going to *Circulation->User Buckets* and selecting the *Bucket View* tab.  Next, click *Buckets* and select *Shared Bucket*.  A dialog box called _Load Shared Bucket by Bucket ID_ will appear.  Enter the ID of the bucket you wish to retrieve and click *Load Bucket*.  The shared bucket will load in the Bucket View tab.
+
+=== Permissions ===
+
+All permissions must be granted at the organizational unit that the workstation is registered to or higher and are checked against the users' Home Library at when a batch modification or deletion is executed.
+
+Permissions for Batch Edits:
+
+* To batch edit a user bucket, staff accounts must have the VIEW_USER, UPDATE_USER, and CONTAINER_BATCH_UPDATE permissions for all users in the bucket.
+* To make a batch changes to Profile Group, staff accounts must have the appropriate group application permissions for the profile groups.
+* To make batch changes to the Home Library, staff accounts must have the UPDATE_USER permission at both the old and new Home Library.
+* To make batch changes to the Barred Flag, staff accounts must have the appropriate BAR_PATRON or UNBAR_PATRON permission.
+
+Permissions for Batch Deletion:
+
+* To batch delete users in a user bucket, staff accounts must have the UPDATE_USER and DELETE_USER permissions for all users in the bucket.
+

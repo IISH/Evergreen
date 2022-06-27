@@ -3,6 +3,370 @@ Evergreen 3.5 Release Notes
 :toc:
 :numbered:
 
+== Evergreen  3.5.5 ==
+
+This release contains bug fixes improving on Evergreen 3.5.4.
+
+=== Bug Fixes ===
+
+==== Catalog ====
+
+* Fixes an issue displaying highlighting in traditional and bootstrap catalogue (https://bugs.launchpad.net/bugs/1923225[Bug 1923225])
+* Fixes an issue displaying works with the word "hidden" in the title (https://bugs.launchpad.net/bugs/1930933[Bug 1930933])
+
+
+==== Circulation ====
+
+* Preferred Name is now the prominent display name (https://bugs.launchpad.net/bugs/1924185[Bug 1924185])
+* Unchanged workstation settings are no longer re-applied on every checkin (https://bugs.launchpad.net/bugs/1918362[Bug 1918362])
+
+=== Acknowledgements ===
+
+We would like to thank the following individuals who contributed code,
+testing and documentation patches to the 3.5.5 point release of Evergreen:
+
+
+* Galen Charlton
+* Jeff Davis
+* Michele Morgan
+* Jane Sandberg
+* Jason Stephenson
+
+== Evergreen  3.5.4 ==
+
+This release contains bug fixes improving on Evergreen 3.5.3, including
+a security bug fix.
+
+=== Bug Fixes ===
+
+Security
+^^^^^^^^
+
+* Fixes an XSS bug in MARC fields that are rendered as HTML (https://bugs.launchpad.net/bugs/1902965[Bug 1902965])
+
+Administration
+^^^^^^^^^^^^^^
+
+* Angular admin pages now scope to the appropriate library (https://bugs.launchpad.net/bugs/1873322[Bug 1873322])
+
+Client
+^^^^^^
+
+* Angular Staff Client Hamburger Menu is no longer clipped off screen (https://bugs.launchpad.net/bugs/1915323[Bug 1915323])
+
+OPAC
+^^^^
+
+* Terms Governing Use and Reproduction Note Displays Twice in Record Details (https://bugs.launchpad.net/bugs/1917804[Bug 1917804])
+
+Staff catalog
+^^^^^^^^^^^^^
+
+* Angular Catalog: Part column missing from Item table (https://bugs.launchpad.net/bugs/1899405[Bug 1899405])
+* Publication information in angular search results does not display from tag 264 (https://bugs.launchpad.net/bugs/1896840[Bug 1896840])
+
+Performance
+^^^^^^^^^^^
+
+* Search indexes use GIN by default (https://bugs.launchpad.net/bugs/1703658[Bug 1703658])
+
+=== Upgrade notes ===
+
+A partial reingest is required to extract the new publisher data for display.
+This query may be long-running.
+
+[source,sql]
+--------------------------------------------------------------------------
+WITH affected_bibs AS (
+    SELECT DISTINCT(bre.id) AS id
+    FROM biblio.record_entry bre
+    JOIN metabib.real_full_rec mrfr
+    ON (mrfr.record = bre.id AND mrfr.tag = '264')
+    WHERE NOT bre.deleted
+)
+SELECT metabib.reingest_metabib_field_entries(id, TRUE, FALSE, TRUE, TRUE)
+FROM affected_bibs;
+--------------------------------------------------------------------------
+
+
+
+=== Acknowledgements ===
+
+We would like to thank the following individuals who contributed code,
+testing and documentation patches to the 3.5.4 point release of Evergreen:
+
+
+* Jason Boyer
+* Dan Briem
+* Garry Collum
+* Jeff Davis
+* Bill Erickson
+* Galen Charlton
+* Michele Morgan
+* Jane Sandberg
+* Jason Stephenson
+
+Evergreen 3.5.3
+---------------
+
+This release contains bug fixes improving on Evergreen 3.5.2,
+including a security bug fix.
+
+Bug Fixes
+~~~~~~~~~
+
+Security
+^^^^^^^^
+
+* Fix an issue where `open-ils.pcrud` backends could crash with
+a segmentation fault under certain conditions that could be invoked
+by an external attacker, thus leading to a potential denial
+of service attack.
+
+Staff Interface
+^^^^^^^^^^^^^^^
+* Expert Search in the staff interface now respects the search library.
+(https://bugs.launchpad.net/evergreen/+bug/1468132[Bug 1468132])
+* The Items Out page is now less prone to cause `open-ils.actor` backend
+exhaustion. It now also displays a progress bar while loading.
+(https://bugs.launchpad.net/evergreen/+bug/1913811[Bug 1913811])
+* Grids in the staff interface no longer require that a row
+be selected in order to activate a grid action that doesn't
+logically require that at least one row be selected.
+(https://bugs.launchpad.net/evergreen/+bug/1670457[Bug 1670457])
+* The display of total amounted billed, owed, and paid on the patron
+Bills page now reflects just open bills with a non-zero balance, fixing
+an issue where the totals could include paid billings for transactions
+that are still open.
+(https://bugs.launchpad.net/evergreen/+bug/1772955[Bug 1772955])
+* The pending patron interface now respects the library setting whether
+to set the patron's initial password to the last four digits of their
+phone number.
+(https://bugs.launchpad.net/evergreen/+bug/1887852[Bug 1887852])
+* Several interfaces, including Mark Missing, adding patrons to a bucket
+from a search, and applying a default item status now use batch
+API calls for better efficiency.
+(https://bugs.launchpad.net/evergreen/+bug/1896285[Bug 1896285])
+* Fix an issue where the holdings editor would not close its window
+when the Save & Exit button was clicked.
+(https://bugs.launchpad.net/evergreen/+bug/1913219[Bug 1913219])
+* Fix an issue where a double barcode scan could create a precat
+item without giving the staff member the chance to review the
+form before submitting it.
+(https://bugs.launchpad.net/evergreen/+bug/1778522[Bug 1778522])
+* Fix an issue preventing the staff interface from being used
+on various Android and iOS devices.
+(https://bugs.launchpad.net/evergreen/+bug/1901760[Bug 1901760])
+* Fix an issue where the report editor could supply the wrong
+kind of input for an aggregate filter.
+(https://bugs.launchpad.net/evergreen/+bug/1858114[Bug 1858114])
+
+Public Catalog
+^^^^^^^^^^^^^^
+
+* Fix an issue where titles could run together when viewing a
+carousel with a mobile browser.
+(https://bugs.launchpad.net/evergreen/+bug/1868147[Bug 1868147])
+* The order that items in a carousel display in is now more
+predictable. For example, for 'Top Circulated Items' carousels,
+the order is from most circulated to least circulated.
+(https://bugs.launchpad.net/evergreen/+bug/1866406[Bug 1866406])
+* Carousels no longer display deleted items.
+(https://bugs.launchpad.net/evergreen/+bug/1836254[Bug 1836254])
+* CGI parameters in the public catalog are now consistently forced
+to be separated by ampersands rather than semicolons.
+(https://bugs.launchpad.net/evergreen/+bug/1687545[Bug 1687545]) and
+(https://bugs.launchpad.net/evergreen/+bug/1914116[Bug 1914116])
+
+Administration
+^^^^^^^^^^^^^^
+
+* The EDI Webrick installer now works on Ubuntu 18.04
+(https://bugs.launchpad.net/evergreen/+bug/1901900[Bug 1901900])
+
+Acknowledgements
+~~~~~~~~~~~~~~~~
+We would like to thank the following individuals who contributed code,
+testing and documentation patches to the 3.5.3 point release of Evergreen:
+
+* John Amundson
+* Zavier Banks
+* Jason Boyer
+* Dan Briem
+* Galen Charlton
+* Garry Collum
+* Jeff Davis
+* Bill Erickson
+* Ruth Frasur
+* Blake Graham-Henderson
+* Angela Kilsdonk
+* Terran McCanna
+* Michele Morgan
+* Jane Sandberg
+* Mike Rylander
+* Chris Sharp
+* Jason Stephenson
+
+Evergreen 3.5.2
+---------------
+
+This release contains bug fixes improving on Evergreen 3.5.1.
+
+Bug Fixes
+~~~~~~~~~
+
+Accessibility
+^^^^^^^^^^^^^
+
+* Help popovers in the AngularJS staff client can now be opened using keyboard navigation
+(https://bugs.launchpad.net/evergreen/+bug/1801947[Bug 1801947])
+* Keyboard navigation improvement to the Register/Edit Patron screen
+(https://bugs.launchpad.net/evergreen/+bug/1840329[Bug 1840329])
+* Decorative icons in the navbar are now aria-hidden
+(https://bugs.launchpad.net/evergreen/+bug/1795720[Bug 1795720])
+* The staff login page now contains an apporopriate heading
+(https://bugs.launchpad.net/evergreen/+bug/1839365[Bug 1839365])
+
+Acquisitions
+^^^^^^^^^^^^
+
+* Improve wording in acquisitions line item actions menu
+(https://bugs.launchpad.net/evergreen/+bug/1418694[Bug 1418694])
+
+Administration
+^^^^^^^^^^^^^^
+
+* Permission Group Interface refreshes after making permission changes
+(https://bugs.launchpad.net/evergreen/+bug/1891355[Bug 1891355])
+* Permissions for creating/modifying booking reservations can now be
+scoped by org unit
+(https://bugs.launchpad.net/evergreen/+bug/1835127[Bug 1835127])
+* Fixes issues with sharing settings in the reporter
+(https://bugs.launchpad.net/evergreen/+bug/1851413[Bug 1851413])
+* It is now possible to report on non-cataloged circulations
+separately from non-cataloged in-house uses
+(https://bugs.launchpad.net/evergreen/+bug/1788260[Bug 1788260])
+* Prevents duplicated report outputs
+(https://bugs.launchpad.net/evergreen/+bug/1893463[Bug 1893463])
+* Fixes a UI issue in the reporter
+(https://bugs.launchpad.net/evergreen/+bug/1207744[Bug 1207744])
+* Improves description of an org unit setting
+(https://bugs.launchpad.net/evergreen/+bug/1325704[Bug 1325704])
+
+Cataloging
+^^^^^^^^^^
+
+* Catalogers can now batch edit call numbers from item buckets
+(https://bugs.launchpad.net/evergreen/+bug/1747664[Bug 1747664])
+* The item editor now displays all circulation modifiers when batch updating
+(https://bugs.launchpad.net/evergreen/+bug/1844732[Bug 1844732])
+* When merging bibliographic records, the deleted record is now also marked as
+inactive (https://bugs.launchpad.net/evergreen/+bug/1771386[Bug 1771386])
+* The staff catalog now includes a UPC search option
+(https://bugs.launchpad.net/evergreen/+bug/1885764[Bug 1885764])
+* Catalogers can now choose "AND" or "OR" as the root node of a record match set
+(https://bugs.launchpad.net/evergreen/+bug/1839562[Bug 1839562])
+* The Replace Item Barcode screen now displays an error message when trying to
+replace a barcode with a barcode already in use (Bugs
+https://bugs.launchpad.net/evergreen/+bug/1362743[1362743]
+and https://bugs.launchpad.net/evergreen/+bug/1890498[1890498])
+* The Angular Catalog's Holding View grid now includes more columns
+(https://bugs.launchpad.net/evergreen/+bug/1892077[Bug 1892077])
+* The Angular Catalog's Holding View grid context menu no longer includes horizontal scroll bars
+(https://bugs.launchpad.net/evergreen/+bug/1890849[Bug 1890849])
+* Fixes an issue that caused the Holdings View grid to not display all necessary holdings
+(https://bugs.launchpad.net/evergreen/+bug/1845047[Bug 1845047])
+* Fixes an issue with the Staff Catalog call number browse
+(https://bugs.launchpad.net/evergreen/+bug/1889685[Bug 1889685])
+* Fixes an issue with exporting MARC records via a CSV file
+(https://bugs.launchpad.net/evergreen/+bug/1850825[Bug 1850825])
+* Fixes an issue with the queue type selector in the Inspect Queue screen
+(https://bugs.launchpad.net/evergreen/+bug/1890351[Bug 1890351])
+* Display a helpful message when a staff catalog barcode search doesn't match
+any barcodes (https://bugs.launchpad.net/evergreen/+bug/1896083[Bug 1896083])
+* Filters in the angular staff catalog now differentiate between OPAC visible
+and OPAC invisible values
+(https://bugs.launchpad.net/evergreen/+bug/1872867[Bug 1872867])
+
+
+
+Circulation
+^^^^^^^^^^
+
+* The Patron Edit form now reflects the opac.hold_notify user setting, if set
+(https://bugs.launchpad.net/evergreen/+bug/1879993[Bug 1879993])
+* The Register Patron form can now set default password according to a patron's
+phone number when the org setting "Patron: password from phone #" is TRUE
+(https://bugs.launchpad.net/evergreen/+bug/1900184[Bug 1900184])
+* The Patron self-registration form now persists a patron's selected home library,
+even if they refresh the form in their browser
+(https://bugs.launchpad.net/evergreen/+bug/1361270[Bug 1361270])
+* Offline circulation interface now lists organizational units in the correct order
+(https://bugs.launchpad.net/evergreen/+bug/1724019[Bug 1724019])
+* Several improvements to placing holds in the Angular staff catalog
+(https://bugs.launchpad.net/evergreen/+bug/1851882[Bug 1851882])
+* The org unit selector in the staff catalog holds tab is now sticky
+(https://bugs.launchpad.net/evergreen/+bug/1889113[Bug 1889113])
+* Fixes an issue that resulted in displaying duplicate holds in the catalog's View
+Holds tab (https://bugs.launchpad.net/evergreen/+bug/1865564[Bug 1865564])
+* Fixes an issue in which cataloged resources sometimes do not appear in the
+Booking Pull List (https://bugs.launchpad.net/evergreen/+bug/1882828[Bug 1882828])
+* The Booking Pull List grid now allows users to save their grid settings
+(https://bugs.launchpad.net/evergreen/+bug/1882825[Bug 1882825])
+* Fixes an issue with the hold targeter
+(https://bugs.launchpad.net/evergreen/+bug/1508208[Bug 1508208])
+* Fixes an issue that prevents items from circulating when OpenSRF is installed
+with non-default router names
+(https://bugs.launchpad.net/evergreen/+bug/1904220[Bug 1904220])
+
+Client
+^^^^^^
+
+* Fixes an issue with keyboard shortcuts in the Angular Staff Client
+(https://bugs.launchpad.net/evergreen/+bug/1883126[Bug 1883126])
+* Fixes an issue that caused a blank screen to appear
+(https://bugs.launchpad.net/evergreen/+bug/1855737[Bug 1855737])
+
+
+Public Catalog
+^^^^^^^^^^^^^^
+
+* Fixes an issue which prevented Zotero from gathering metadata from the
+public catalog (https://bugs.launchpad.net/evergreen/+bug/1776954[Bug 1776954])
+
+Acknowledgements
+~~~~~~~~~~~~~~~~
+We would like to thank the following individuals who contributed code,
+testing and documentation patches to the 3.5.2 point release of Evergreen:
+
+* Jason Boyer
+* Dan Briem
+* Galen Charlton
+* Garry Collum
+* Jeff Davis
+* Bill Erickson
+* Jason Etheridge
+* Ruth Frasur
+* Rogan Hamby
+* Elaine Hardy
+* Shula Link
+* Tiffany Little
+* Mary Llewellyn
+* Terran McCanna
+* Christine Morgan
+* Michele Morgan
+* Jennifer Pringle
+* Mike Risher
+* Mike Rylander
+* Jane Sandberg
+* Dan Scott
+* Chris Sharp
+* Remington Steed
+* Jason Stephenson
+* Jennifer Weston
+* Beth Willis
+
+
 Evergreen 3.5.1
 ---------------
 
@@ -52,11 +416,11 @@ Circulation
 * Fixes an issue that caused patron stat cat information to persist between patrons in the Patron Edit screen
 (https://bugs.launchpad.net/evergreen/+bug/1844365[Bug 1844365])
 * The Pending User Buckets now allow more than 100 users (https://bugs.launchpad.net/evergreen/+bug/1754387[Bug 1754387])
-* Fixes an issue that caused lang patron names to obscure important parts of circulation screens
+* Fixes an issue that caused long patron names to obscure important parts of circulation screens
 (https://bugs.launchpad.net/evergreen/+bug/1805860[Bug 1805860])
 * Prevents an incorrect "Input is out of range" validation error in the date pickers of the check out and renewal
 screens (https://bugs.launchpad.net/evergreen/+bug/1864056[Bug 1864056])
-* Long overdue and lost and paid items now count toward patron limits (https://bugs.launchpad.net/evergreen/+bug/1864056[Bug 1864056])
+* Long overdue and lost and paid items now count toward patron limits (https://bugs.launchpad.net/evergreen/+bug/1747542[Bug 1747542])
 * The holds shelf list now includes columns for "User Alias" and "User Alias or Display Name" (https://bugs.launchpad.net/evergreen/+bug/1712854[Bug 1712854])
 * In the messages tab of a patron's account, you can now change the date range of displayed archived penalties
 (https://bugs.launchpad.net/evergreen/+bug/1775940[Bug 1775940])
