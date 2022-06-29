@@ -3127,3 +3127,4 @@ COMMIT;
 -- Update auditor tables to catch changes to source tables.
 --   Can be removed/skipped if there were no schema changes.
 SELECT auditor.update_auditors();
+
