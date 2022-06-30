@@ -156,7 +156,7 @@ FOR entry IN attrs.graphic_titles;
         END;
 -%]
 <div class="graphic880"[% diratt %]>
-    [% alt.value | html %]
+    [% accordion(alt.value) %]
 </div>
 [%-
     END;
@@ -179,7 +179,7 @@ FOR entry IN attrs.graphic_authors;
         END;
 -%]
 <div class="graphic880"[% diratt %]>
-    [% alt.value | html %]
+    [% accordion(alt.value) %]
 </div>
 [%-
     END;
@@ -236,7 +236,8 @@ END;
                                                                 <td valign="top">
                                                                     <strong>[% l('Publisher:') %]</strong>
                                                                 </td>
-                                                                <td>[% attrs.pubplace | html; %] [% attrs.publisher | html; %] [% attrs.pubdate | html; %]
+                                                                <td>[% pub_string = attrs.pubplace _ attrs.publisher _ attrs.pubdate;
+                                                                        accordion(pub_string, 'publisher'); %]</td>
 [%-
 FOR entry IN attrs.graphic_pubinfos;
     FOR alt IN entry.graphic;
@@ -246,7 +247,7 @@ FOR entry IN attrs.graphic_pubinfos;
         END;
 -%]
 <div class="graphic880"[% diratt %]>
-    [% alt.value | html %]
+    [% accordion(alt.value) %]
 </div>
 [%-
     END;
@@ -259,21 +260,24 @@ END;
                                                                 <td valign="top">
                                                                     <strong>[% l('Producer:') %]</strong>
                                                                 </td>
-                                                                <td>[% attrs.prodplace | html; %] [% attrs.producer | html; %] [% attrs.proddate | html; %]</td>
+                                                                <td>[% prod_string = attrs.prodplace _ attrs.producer _ attrs.proddate;
+                                                                 accordion(prod_string, 'producer'); %]</td>
                                                             </tr>
                                                         [% ELSIF attrs.distributor %]
                                                             <tr name="results_pub_tr">
                                                                 <td valign="top">
                                                                     <strong>[% l('Distributor:') %]</strong>
                                                                 </td>
-                                                                <td>[% attrs.distplace | html; %] [% attrs.distributor | html; %] [% attrs.distdate | html; %]</td>
+                                                                <td>[% dist_string = attrs.distplace _ attrs.distributor _ attrs.distdate;
+                                                                  accordion(dist_string, 'distributor'); %]</td>
                                                             </tr>
                                                         [% ELSIF attrs.manufacturer %]
                                                             <tr name="results_pub_tr">
                                                                 <td valign="top">
                                                                     <strong>[% l('Manufacturer:') %]</strong>
                                                                 </td>
-                                                                <td>[% attrs.manplace | html; %] [% attrs.manufacturer | html; %] [% attrs.mandate | html; %]</td>
+                                                                <td>[% man_string = attrs.manplace _ attrs.manufacturer _ attrs.mandate;
+                                                                  accordion(man_string, 'manufacturer'); %]</td>
                                                             </tr>
                                                         [% END %]
                                                         [% IF attrs.isbns.size > 0 %]
@@ -320,7 +324,7 @@ END;
                                                                 <td valign="top">
                                                                     <strong>[% l('Edition:') %]</strong>
                                                                 </td>
-                                                                <td>[% attrs.edition | html %]
+                                                                <td>[% accordion(attrs.edition, 'edition'); %]
 [%-
 FOR entry IN attrs.graphic_editions;
     FOR alt IN entry.graphic;
@@ -330,7 +334,7 @@ FOR entry IN attrs.graphic_editions;
         END;
 -%]
 <div class="graphic880"[% diratt %]>
-    [% alt.value | html %]
+    [% accordion(alt.value) %]
 </div>
 [%-
     END;
@@ -345,7 +349,7 @@ END;
                                                                     <strong>[% l('Phys. Desc.:') %]</strong>
                                                                 </td>
                                                                 <td>
-                                                                    [% args.phys_desc | html %]
+                                                                    [% accordion(args.phys_desc, 'phys_desc'); %]
                                                                 </td>
                                                             </tr>
                                                         [% END %]
@@ -354,7 +358,7 @@ END;
                                                                 <td valign='top'>
                                                                     <strong>[% l('Electronic resource') %]</strong>
                                                                 </td>
-                                                                <td><a href="[% uri.href %]" class="uri_link" target="_blank" rel="noopener">[% uri.link | html %]</a>[% ' - ' _ uri.note | html IF uri.note %]</td>
+                                                                <td><a href="[% uri.href | html %]" class="uri_link" target="_blank" rel="noopener">[% uri.link | html %]</a>[% ' - ' _ uri.note | html IF uri.note %]</td>
                                                             </tr>
                                                             [% END %]
                                                          [% END %]
@@ -411,6 +415,17 @@ END;
                                                     [% UNLESS rec.mmr_id;
                                                             PROCESS "opac/parts/result/copy_counts.tt2";
                                                         END; %]
+                                                    [%- IF ctx.get_org_setting(ctx.physical_loc || ctx.search_ou, 'circ.course_materials_opt_in') == 1 %]
+                                                        [%- courseStrings = [] %]
+                                                        [% FOREACH course IN rec.courses %]
+                                                            [% courseString = course.name _ ' (' _ course.course_number _ ')' %]
+                                                            [% courseStrings.push(courseString); %]
+                                                        [% END %]
+                                                        [% IF courseStrings.size > 0 %]
+                                                            <span><strong>[% l('Associated Courses: ') %]</strong></span>
+                                                            <span>[% courseStrings.join(', ') %]</span>
+                                                        [% END %]
+                                                    [% END %]
                                                     [% IF rec.user_circulated %]
                                                     <div class="result_item_circulated">
                                                         <img src="[% ctx.media_prefix %]/images/green_check.png[% ctx.cache_key %]" alt="[% l('Checked Out Before') %]"/>
@@ -494,14 +509,14 @@ END;
                                                             <a href="[% addhref %]" id="mylist_add_[% rec.id %]"
                                                                 data-recid="[% rec.id %]" data-action="add"
                                                                 class="mylist_action [% IF ctx.mylist.grep('^' _ rec.id _ '$').size %]hidden[% END %]"
-                                                                title="[% l("Add [_1] to basket", attrs.title) %]" rel="nofollow" vocab="">
+                                                                title="[% l("Add [_1] to basket", attrs.title) | html %]" rel="nofollow" vocab="">
                                                                 <img src="[% ctx.media_prefix %]/images/add-to-cart.png[% ctx.cache_key %]" alt="" />
                                                                 [% l("Add to basket") %]
                                                             </a>
                                                             <a href="[% delhref %]" id="mylist_delete_[% rec.id %]"
                                                                 data-recid="[% rec.id %]" data-action="delete"
                                                                 class="mylist_action [% IF !ctx.mylist.grep('^' _ rec.id _ '$').size %]hidden[% END %]"
-                                                                title="[% l("Remove [_1] from basket", attrs.title) %]" rel="nofollow" vocab="">
+                                                                title="[% l("Remove [_1] from basket", attrs.title) | html %]" rel="nofollow" vocab="">
                                                                 <img src="[% ctx.media_prefix %]/images/add-to-cart.png[% ctx.cache_key %]" alt="" />
                                                                 [% l("Remove from basket") %]
                                                             </a>
