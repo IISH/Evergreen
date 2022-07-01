@@ -442,7 +442,8 @@ sub oai_list_retrieve {
     my $deleted_record  = shift || 'yes';
 
     my $query = {};
-    $query->{'tcn'}       = ($max_count eq 1) ? $tcn : {'>=' => $tcn} ;
+    my $rec_id = int($tcn);
+    $query->{'rec_id'}       = ($max_count eq 1) ? $rec_id : {'>=' => $rec_id} ;
     $query->{'set_spec'}  = $set                     if ( $set ); # unsupported
     $query->{'deleted'}   = 'f'                      unless ( $deleted_record eq 'yes' );
     $query->{'datestamp'} = {'>=', $from}            if ( $from && !$until ) ;
