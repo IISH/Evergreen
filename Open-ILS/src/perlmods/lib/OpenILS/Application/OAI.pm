@@ -161,7 +161,7 @@ sub oai_biblio_retrieve {
 
     my $self = shift;
     my $client = shift;
-    my $tcn = shift;
+    my $rec_id = shift;
     my $metadataPrefix = shift;
 
     #  holdings hold an array of call numbers, which hold an array of copies
@@ -173,7 +173,7 @@ sub oai_biblio_retrieve {
     # Retrieve the bibliographic record and it's copies
     my $tree = $_storage->request(
         "open-ils.cstore.direct.biblio.record_entry.retrieve",
-        $tcn,
+        int($rec_id),
         { flesh     => 5,
           flesh_fields  => {
                     bre => [qw/marc edit_date call_numbers/],
@@ -190,7 +190,7 @@ sub oai_biblio_retrieve {
     my %serials;
     if ( substr($marc->leader, 7, 1) eq 's' ) { # serial
         my $_search = OpenSRF::AppSession->create( 'open-ils.search' );
-        my $_serials = $_search->request('open-ils.search.serial.record.bib.retrieve', $tcn, 1, 0)->gather(1);
+        my $_serials = $_search->request('open-ils.search.serial.record.bib.retrieve', int($rec_id), 1, 0)->gather(1);
         my $order = 0 ;
         for my $sre (@$_serials) {
             if ( $sre->location ) {
@@ -269,7 +269,7 @@ sub oai_biblio_retrieve {
         $marc->delete_field($_) for ($marc->field('001'));
         if (!$marc->field('001')) {
             $marc->insert_fields_ordered(
-                MARC::Field->new( '001', $tcn )
+                MARC::Field->new( '001', $rec_id )
             );
         }
 
@@ -349,7 +349,7 @@ __PACKAGE__->register_method(
         params   =>
         [
             {
-                name => 'tcn',
+                name => 'rec_id',
                 desc => 'An OpenILS biblio::record_entry id.',
                 type => 'number'
             },
@@ -372,13 +372,13 @@ sub oai_authority_retrieve {
 
     my $self = shift;
     my $client = shift;
-    my $tcn = shift;
+    my $rec_id = shift;
     my $metadataPrefix = shift;
 
     my $_storage = OpenSRF::AppSession->create( 'open-ils.cstore' );
 
     # Retrieve the authority record
-    my $record = $_storage->request('open-ils.cstore.direct.authority.record_entry.retrieve', $tcn)->gather(1);
+    my $record = $_storage->request('open-ils.cstore.direct.authority.record_entry.retrieve', int($rec_id) )->gather(1);
     my $o = Fieldmapper::authority::record_entry->new($record) ;
     my $marc = MARC::Record->new_from_xml( $o->marc, 'UTF8', 'XML');
 
@@ -386,7 +386,7 @@ sub oai_authority_retrieve {
     $marc->delete_field($_) for ($marc->field('001'));
     if (!$marc->field('001')) {
         $marc->insert_fields_ordered(
-            MARC::Field->new( '001', $tcn )
+            MARC::Field->new( '001', $rec_id )
         );
     }
 
@@ -409,7 +409,7 @@ __PACKAGE__->register_method(
         params   =>
         [
             {
-                name => 'tcn',
+                name => 'rec_id',
                 desc => 'An OpenILS authority::record_entry id.',
                 type => 'number'
             },
@@ -433,7 +433,7 @@ sub oai_list_retrieve {
     my $self            = shift;
     my $client          = shift;
     my $record_class    = shift || 'biblio';
-    my $tcn             = shift || 0;
+    my $rec_id          = shift || 0;
     my $from            = shift;
     my $until           = shift;
     my $set             = shift ;
@@ -442,8 +442,7 @@ sub oai_list_retrieve {
     my $deleted_record  = shift || 'yes';
 
     my $query = {};
-    my $rec_id = int($tcn);
-    $query->{'rec_id'}       = ($max_count eq 1) ? $rec_id : {'>=' => $rec_id} ;
+    $query->{'rec_id'}       = ($max_count eq 1) ? $rec_id : {'>=' => int($rec_id)} ;
     $query->{'set_spec'}  = $set                     if ( $set ); # unsupported
     $query->{'deleted'}   = 'f'                      unless ( $deleted_record eq 'yes' );
     $query->{'datestamp'} = {'>=', $from}            if ( $from && !$until ) ;
@@ -474,8 +473,8 @@ __PACKAGE__->register_method(
                 desc => '\'biblio\' for bibliographic records or \'authority\' for authority records',
                 type => 'string'
             },            {
-                name => 'tcn',
-                desc => 'An optional tcn number used as a cursor.',
+                name => 'rec_id',
+                desc => 'An optional rec_id number used as a cursor.',
                 type => 'number'
             },
             {

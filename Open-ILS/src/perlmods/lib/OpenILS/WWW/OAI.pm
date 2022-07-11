@@ -284,7 +284,7 @@ sub getRecord {
         my $tcn = $1 ;
 
         # Do we have a record ?
-        my $record = $oai->request('open-ils.oai.list.retrieve', $record_class, $tcn, undef, undef, undef, $metadataPrefix, 1, $deleted_record)->gather(1) ;
+        my $record = $oai->request('open-ils.oai.list.retrieve', $record_class, $rec_id, undef, undef, undef, $metadataPrefix, 1, $deleted_record)->gather(1) ;
         if (@$record) {
             $response = HTTP::OAI::GetRecord->new();
             my $o = "Fieldmapper::oai::$record_class"->new(@$record[0]);
@@ -318,7 +318,7 @@ sub listIdentifiers {
         for my $record (@$r) {
             my $o = "Fieldmapper::oai::$record_class"->new($record) ;
             if ( $cursor++ == $max_count ) {
-                my $token = new HTTP::OAI::ResumptionToken( resumptionToken => encode_base64(join( '$', $metadataPrefix, $from, $until, $oai_sets->{$set}->{setSpec}, $o->tcn ), '' ) ) ;
+                my $token = new HTTP::OAI::ResumptionToken( resumptionToken => encode_base64(join( '$', $metadataPrefix, $from, $until, $oai_sets->{$set}->{setSpec}, $o->rec_id ), '' ) ) ;
                 $token->cursor($offset);
                 $response->resumptionToken($token) ;
             } else {
@@ -347,7 +347,7 @@ sub listRecords {
         for my $record (@$r) {
             my $o = "Fieldmapper::oai::$record_class"->new($record) ;
             if ( $cursor++ == $max_count ) {
-                my $token = new HTTP::OAI::ResumptionToken( resumptionToken => encode_base64(join( '$', $metadataPrefix, $from, $until, $oai_sets->{$set}->{setSpec}, $o->tcn ), '' ) ) ;
+                my $token = new HTTP::OAI::ResumptionToken( resumptionToken => encode_base64(join( '$', $metadataPrefix, $from, $until, $oai_sets->{$set}->{setSpec}, $o->rec_id ), '' ) ) ;
                 $token->cursor($offset);
                 $response->resumptionToken($token) ;
             } else {
@@ -378,7 +378,7 @@ sub _header {
     }
 
     return new HTTP::OAI::Header(
-            identifier  => $scheme . $delimiter . $repository_identifier . $delimiter . $o->tcn,
+            identifier  => $scheme . $delimiter . $repository_identifier . $delimiter . $o->rec_id,
             datestamp   => substr($o->datestamp, 0, 19) . 'Z',
             status      => $status,
             setSpec     => \@set_spec
@@ -395,7 +395,7 @@ sub _record {
 
     if ( $o->deleted eq 'f' ) {
         my $md = new HTTP::OAI::Metadata() ;
-        my $xml = $oai->request('open-ils.oai.' . $record_class . '.retrieve', $o->tcn, $metadataPrefix)->gather(1) ;
+        my $xml = $oai->request('open-ils.oai.' . $record_class . '.retrieve', $o->rec_id, $metadataPrefix)->gather(1) ;
         $md->dom( $parser->parse_string('<metadata>' . $xml . '</metadata>') ); # Not sure why I need to add the metadata element,
         $record->metadata( $md );                                               # because I expect ->metadata() would provide the wrapper for it.
     }
