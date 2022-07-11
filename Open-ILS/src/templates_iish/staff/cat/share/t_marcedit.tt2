@@ -178,22 +178,23 @@
         </div>
       </div>
       <div>
+
       <div class="marcrecord">
         <div>
           <eg-marc-edit-leader record="record" on-keydown="onKeydown"/>
         </div>
         <div>
-          <eg-marc-edit-controlfield 
-            ng-repeat="field in controlfields" 
+          <eg-marc-edit-controlfield
+            ng-repeat="field in controlfields"
             field="field" on-keydown="onKeydown"
             id="r{{field.record.subfield('901','c')[1]}}f{{field.position}}"
             context-functions="context_functions"
           />
         </div>
         <div>
-          <eg-marc-edit-datafield 
-            ng-repeat="field in datafields" 
-            field="field" on-keydown="onKeydown" 
+          <eg-marc-edit-datafield
+            ng-repeat="field in datafields"
+            field="field" on-keydown="onKeydown"
             id="r{{field.record.subfield('901','c')[1]}}f{{field.position}}"
             context-functions="context_functions"
           />
@@ -201,4 +202,27 @@
       </div>
     </div>
   </div>
+  <table class="symbolTable">
+      <tr>
+          <th>West-European</th>
+          <td>AÀàÁáÄäÂâÃãÅåEÈèÉéËëÊêIÌìÍíÏïÎîOÒòÓóÖöÔôÕõØøUÙùÚúÜüÛûCÇçNÑñ</td>
+      </tr>
+      <tr>
+          <th>Turkish</th>
+          <td>AÂâGĞğIİıOÖöUÜüCÇçSŞş</td>
+      </tr>
+      <tr>
+          <th>Cyrillic</th>
+          <td>AĂăIÏïĪīCČčSŠšZŽž</td>
+      </tr>
+      <tr>
+          <th>Slavic</th>
+          <td>AÁáĄąEÉéĔĕĘęIÍíOÓóðUŮůYÝýLŁłCĆćČčDÐNŃńRŘřSŚśZŽžŹźŻż</td>
+      </tr>
+      <tr>
+          <th>Hungarian</th>
+          <td>AÁáEÉéIÍíOÓóÖöŐőUÚúÜüŰű</td>
+      </tr>
+  </table>
+
 </div>
