@@ -265,7 +265,10 @@ sub _resetItemFields {
     if ($acmcm->original_location) {
         $acp->location($acmcm->original_location);
     }
-    $e->update_asset_copy($acmcm);
+    if ($acmcm->original_circ_lib) {
+        $acp->circ_lib($acmcm->original_circ_lib);
+    }
+    $e->update_asset_copy($acp);
     if ($acmcm->original_callnumber) {
         my $existing_acn = $e->retrieve_asset_call_number($acp->call_number);
         my $orig_acn = $e->retrieve_asset_call_number($acmcm->original_callnumber);
@@ -273,7 +276,7 @@ sub _resetItemFields {
         # and other appropriate specifications
         my $dest_acn = $cat_sess->request('open-ils.cat.call_number.find_or_create',
             $authtoken, $orig_acn->label,
-            $existing_acn->record, $course_lib,
+            $existing_acn->record, $orig_acn->owning_lib,
             $existing_acn->prefix, $existing_acn->suffix,
             $existing_acn->label_class)->gather(1);
         my $acn_id = $dest_acn->{acn_id};

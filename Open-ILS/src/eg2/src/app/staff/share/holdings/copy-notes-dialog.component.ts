@@ -16,6 +16,11 @@ import {NgbModal, NgbModalOptions} from '@ng-bootstrap/ng-bootstrap';
  * Dialog for managing copy notes.
  */
 
+export interface CopyNotesChanges {
+    newNotes: IdlObject[];
+    delNotes: IdlObject[];
+}
+
 @Component({
   selector: 'eg-copy-notes-dialog',
   templateUrl: 'copy-notes-dialog.component.html'
@@ -67,10 +72,11 @@ export class CopyNotesDialogComponent
 
     /**
      */
-    open(args: NgbModalOptions): Observable<IdlObject[]> {
+    open(args: NgbModalOptions): Observable<CopyNotesChanges> {
         this.copy = null;
         this.copies = [];
         this.newNotes = [];
+        this.delNotes = [];
 
         if (this.copyIds.length === 0 && !this.inPlaceCreateMode) {
             return throwError('copy ID required');
@@ -78,8 +84,8 @@ export class CopyNotesDialogComponent
 
         // In manage mode, we can only manage a single copy.
         // But in create mode, we can add notes to multiple copies.
-
-        if (this.copyIds.length === 1) {
+        // We can only manage copies that already exist in the database.
+        if (this.copyIds.length === 1 && this.copyIds[0] > 0) {
             this.mode = 'manage';
         } else {
             this.mode = 'create';
@@ -93,6 +99,11 @@ export class CopyNotesDialogComponent
     }
 
     getCopies(): Promise<any> {
+
+        // Avoid fetch if we're only adding notes to isnew copies.
+        const ids = this.copyIds.filter(id => id > 0);
+        if (ids.length === 0) { return Promise.resolve(); }
+
         return this.pcrud.search('acp', {id: this.copyIds},
             {flesh: 1, flesh_fields: {acp: ['notes']}},
             {atomic: true}
@@ -141,7 +152,7 @@ export class CopyNotesDialogComponent
     applyChanges() {
 
         if (this.inPlaceCreateMode) {
-            this.close(this.newNotes);
+            this.close({ newNotes: this.newNotes, delNotes: this.delNotes });
             return;
         }
 
@@ -162,7 +173,7 @@ export class CopyNotesDialogComponent
             }
         }).then(_ => {
             this.successMsg.current().then(msg => this.toast.success(msg));
-            this.close(this.newNotes.length > 0 || this.delNotes.length > 0);
+            this.close({ newNotes: this.newNotes, delNotes: this.delNotes });
         });
     }
 }

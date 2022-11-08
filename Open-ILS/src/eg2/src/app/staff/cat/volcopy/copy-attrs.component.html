@@ -11,6 +11,9 @@
 <eg-string #mintConditionYes i18n-text text="Good"></eg-string>
 <eg-string #mintConditionNo i18n-text text="Damaged"></eg-string>
 
+<eg-string #savedHoldingsTemplates i18n-text text="Saved holdings template(s)"></eg-string>
+<eg-string #deletedHoldingsTemplate i18n-text text="Deleted holdings template"></eg-string>
+
 <!-- We ask this question a lot.  Here's a handy template -->
 <ng-template #yesNoSelect let-field="field">
   <eg-combobox domId="{{field}}-input" 
@@ -151,7 +154,7 @@
     <div *ngIf="displayAttr('location')">
       <ng-template #locationTemplate>
         <eg-item-location-select (valueChange)="values['location'] = $event"
-          [contextOrgIds]="affectedOrgIds()"
+          [contextOrgIds]="copyLocationOrgs()"
           domId='location-input' [required]="true" permFilter="UPDATE_COPY">
         </eg-item-location-select>
       </ng-template>
@@ -470,6 +473,7 @@
         </ng-template>
         <eg-batch-item-attr label="{{cat.name()}} ({{orgSn(cat.owner())}})" i18n-label
           name="stat_cat_{{cat.id()}}" editInputDomId="stat-cat-input-{{cat.id()}}"
+          [valueRequired]="cat.required() == 't'"
           [editTemplate]="statCatTemplate"
           [labelCounts]="statCatCounts(cat.id())"
           (valueCleared)="statCatChanged(cat.id(), true)"

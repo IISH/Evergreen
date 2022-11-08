@@ -1,5 +1,5 @@
-import {Observable} from 'rxjs';
-import {tap} from 'rxjs/operators';
+import { Observable, merge, throwError } from 'rxjs';
+import { tap, switchMap } from 'rxjs/operators';
 import {Injectable} from '@angular/core';
 import {AuthService} from '@eg/core/auth.service';
 import {EventService} from '@eg/core/event.service';
@@ -86,6 +86,19 @@ export class CourseService {
         });
     }
 
+    getTermMaps(term_ids) {
+        const flesher = {flesh: 2, flesh_fields: {
+            'acmtcm': ['course']}};
+
+        if (!term_ids) {
+            return this.pcrud.retrieveAll('acmtcm',
+                flesher);
+        } else {
+            return this.pcrud.search('acmtcm', {term: term_ids},
+                flesher);
+        }
+    }
+
     fetchCoursesForRecord(recordId) {
         const courseIds = new Set<number>();
         return this.pcrud.search(
@@ -127,6 +140,10 @@ export class CourseService {
         if (args.isModifyingCallNumber) {
             material.original_callnumber(item.call_number());
         }
+        if (args.isModifyingLibrary && args.tempLibrary && this.org.canHaveVolumes(args.tempLibrary)) {
+            material.original_circ_lib(item.circ_lib());
+            item.circ_lib(args.tempLibrary);
+        }
         const response = {
             item: item,
             material: this.pcrud.create(material).toPromise()
@@ -144,6 +161,8 @@ export class CourseService {
     }
 
     disassociateMaterials(courses) {
+        const deleteRequest$ = [];
+
         return new Promise((resolve, reject) => {
             const course_ids = [];
             const course_library_hash = {};
@@ -151,21 +170,34 @@ export class CourseService {
                 course_ids.push(course.id());
                 course_library_hash[course.id()] = course.owning_lib();
             });
+
             this.pcrud.search('acmcm', {course: course_ids}).subscribe(material => {
-                material.isdeleted(true);
-                this.resetItemFields(material, course_library_hash[material.course()]);
-                this.pcrud.autoApply(material).subscribe(() => {
-                }, err => {
-                    reject(err);
-                }, () => {
-                    resolve(material);
-                });
+                deleteRequest$.push(this.net.request(
+                  'open-ils.courses', 'open-ils.courses.detach_material',
+                  this.auth.token(), material.id()));
             }, err => {
                 reject(err);
             }, () => {
-                resolve(courses);
+                merge(...deleteRequest$).subscribe(val => {
+                    console.log(val);
+                }, err => {
+                    reject(err);
+                }, () => {
+                    resolve(courses);
+                });
             });
         });
+    }
+
+    detachMaterials(materials) {
+        const deleteRequest$ = [];
+        materials.forEach(material => {
+            deleteRequest$.push(this.net.request(
+                'open-ils.courses', 'open-ils.courses.detach_material',
+                this.auth.token(), material.id()));
+        });
+
+        return deleteRequest$;
     }
 
     disassociateUsers(user) {
@@ -193,67 +225,29 @@ export class CourseService {
         });
     }
 
-    resetItemFields(material, course_lib) {
-        this.pcrud.retrieve('acp', material.item(),
-            {flesh: 3, flesh_fields: {acp: ['call_number']}}).subscribe(copy => {
-            if (material.original_status()) {
-                copy.status(material.original_status());
-            }
-            if (copy.circ_modifier() !== material.original_circ_modifier()) {
-                copy.circ_modifier(material.original_circ_modifier());
-            }
-            if (material.original_location()) {
-                copy.location(material.original_location());
-            }
-            if (material.original_callnumber()) {
-                this.pcrud.retrieve('acn', material.original_callnumber()).subscribe(cn => {
-                    this.updateItem(copy, course_lib, cn.label(), true);
-                });
-            } else {
-                this.updateItem(copy, course_lib, copy.call_number().label(), false);
-            }
-        });
-    }
 
+    updateItem(item: IdlObject, courseLib: IdlObject, callNumber: string, updatingVolume: boolean) {
+        const cn = item.call_number();
 
-    updateItem(item: IdlObject, courseLib, callNumber, updatingVolume) {
-        return new Promise((resolve, reject) => {
-            this.pcrud.update(item).subscribe(() => {
-                if (updatingVolume) {
-                    const cn = item.call_number();
-                    const callNumberLibrary = this.org.canHaveVolumes(courseLib) ? courseLib.id() : cn.owning_lib();
-                    return this.net.request(
-                        'open-ils.cat', 'open-ils.cat.call_number.find_or_create',
-                        this.auth.token(), callNumber, cn.record(),
-                        callNumberLibrary, cn.prefix(), cn.suffix(),
-                        cn.label_class()
-                    ).subscribe(res => {
-                        const event = this.evt.parse(res);
-                        if (event) { return; }
-                        return this.net.request(
-                            'open-ils.cat', 'open-ils.cat.transfer_copies_to_volume',
-                            this.auth.token(), res.acn_id, [item.id()]
-                        ).subscribe(transfered_res => {
-                            console.debug('Copy transferred to volume with code ' + transfered_res);
-                        }, err => {
-                            reject(err);
-                        }, () => {
-                            resolve(item);
-                        });
-                    }, err => {
-                        reject(err);
-                    }, () => {
-                        resolve(item);
-                    });
-                } else {
-                    this.pcrud.update(item).subscribe(() => {
-                        resolve(item);
-                    }, () => {
-                        reject(item);
-                    });
-                }
-            });
-        });
+        const itemObservable = this.pcrud.update(item);
+        const callNumberObservable = this.net.request(
+            'open-ils.cat', 'open-ils.cat.call_number.find_or_create',
+            this.auth.token(), callNumber, cn.record(),
+            cn.owning_lib(), cn.prefix(), cn.suffix(),
+            cn.label_class()
+        ).pipe(switchMap(res => {
+            const event = this.evt.parse(res);
+            if (event) { return throwError(event); }
+            // Not using open-ils.cat.transfer_copies_to_volume,
+            // because we don't necessarily want acp.circ_lib and
+            // acn.owning_lib to match in this scenario
+            item.call_number(res.acn_id)
+            return this.pcrud.update(item);
+        }));
+
+        return updatingVolume ? itemObservable.pipe(switchMap(() => callNumberObservable)).toPromise() :
+            itemObservable.toPromise();
+
     }
 
 }

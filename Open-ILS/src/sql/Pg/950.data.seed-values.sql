@@ -618,8 +618,6 @@ INSERT INTO config.z3950_attr (id, source, name, label, code, format)
 INSERT INTO config.z3950_attr (id, source, name, label, code, format)
 	VALUES (8, 'loc', 'pubdate', oils_i18n_gettext(8, 'Publication Date', 'cza', 'label'), 31, 1);
 INSERT INTO config.z3950_attr (id, source, name, label, code, format)
-	VALUES (9, 'loc', 'item_type', oils_i18n_gettext(9, 'Item Type', 'cza', 'label'), 1001, 1);
-INSERT INTO config.z3950_attr (id, source, name, label, code, format)
 	VALUES (19, 'loc', 'upc', oils_i18n_gettext(19, 'UPC', 'cza', 'label'), 1007, 1);
 
 UPDATE config.z3950_attr SET truncation = 1 WHERE source = 'loc';
@@ -3313,6 +3311,15 @@ INSERT into config.org_unit_setting_type
         'coust', 'description'),
     'currency', null)
 
+,( 'cat.require_call_number_labels', 'cat',
+    oils_i18n_gettext('cat.require_call_number_labels',
+        'Require call number labels in Copy Editor',
+        'coust', 'label'),
+    oils_i18n_gettext('cat.require_call_number_labels',
+        'Define whether Copy Editor requires Call Number labels',
+        'coust', 'description'),
+    'bool', null)
+
 ,( 'circ.min_item_price', 'finance',
     oils_i18n_gettext('circ.min_item_price',
         'Minimum Item Price',
@@ -5807,6 +5814,7 @@ INSERT INTO actor.org_unit_setting (org_unit, name, value) VALUES (
     ,(1, 'cat.label.font.size', 10)
     ,(1, 'cat.label.font.weight', '"normal"')
     ,(1, 'circ.grace.extend', 'true')
+    ,(1, 'cat.require_call_number_labels', 'true')
 ;
 
 --220.schema.rating.sql (Default badge for popularity ranking)
@@ -22176,3 +22184,12 @@ VALUES (
     )
 );
 
+INSERT into config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.orgselect.show_combined_names', 'gui', 'bool',
+    oils_i18n_gettext(
+        'eg.orgselect.show_combined_names',
+        'Library Selector Show Combined Names',
+        'cwst', 'label'
+    )
+);

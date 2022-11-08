@@ -25,6 +25,7 @@ import {ComboboxComponent, ComboboxEntry} from '@eg/share/combobox/combobox.comp
 import {BatchItemAttrComponent, BatchChangeSelection
     } from '@eg/staff/share/holdings/batch-item-attr.component';
 import {FileExportService} from '@eg/share/util/file-export.service';
+import {ToastService} from '@eg/share/toast/toast.service';
 
 @Component({
   selector: 'eg-copy-attrs',
@@ -71,6 +72,11 @@ export class CopyAttrsComponent implements OnInit, AfterViewInit {
     @ViewChild('mintConditionNo', {static: false})
         mintConditionNo: StringComponent;
 
+    @ViewChild('savedHoldingsTemplates', {static: false})
+        savedHoldingsTemplates: StringComponent;
+    @ViewChild('deletedHoldingsTemplate', {static: false})
+        deletedHoldingsTemplate: StringComponent;
+
     @ViewChild('copyAlertsDialog', {static: false})
         private copyAlertsDialog: CopyAlertsDialogComponent;
 
@@ -102,6 +108,7 @@ export class CopyAttrsComponent implements OnInit, AfterViewInit {
         private format: FormatService,
         private store: StoreService,
         private fileExport: FileExportService,
+        private toast: ToastService,
         public  volcopy: VolCopyService
     ) { }
 
@@ -217,7 +224,9 @@ export class CopyAttrsComponent implements OnInit, AfterViewInit {
 
             case 'editor':
             case 'creator':
-                return value.usrname();
+                // VIEW_USER permission may be too narrow.  If so,
+                // just display the user ID instead of the username.
+                return typeof value === 'object' ? value.usrname() : value;
 
             case 'circ_lib':
                 return this.org.get(value).shortname();
@@ -414,16 +423,26 @@ export class CopyAttrsComponent implements OnInit, AfterViewInit {
 
             copy.ischanged(true);
         });
+
+        this.emitSaveChange();
     }
 
     openCopyAlerts() {
         this.copyAlertsDialog.inPlaceCreateMode = true;
         this.copyAlertsDialog.copyIds = this.context.copyList().map(c => c.id());
 
-        this.copyAlertsDialog.open({size: 'lg'}).subscribe(
-            newAlert => {
-                if (newAlert) {
-                    this.context.copyList().forEach(copy => {
+        this.copyAlertsDialog.open({size: 'lg'}).subscribe(changes => {
+            if (!changes) { return; }
+
+            if ((!changes.newAlerts || changes.newAlerts.length === 0) &&
+                (!changes.changedAlerts || changes.changedAlerts.length === 0)
+               ) {
+                return;
+            }
+
+            if (changes.newAlerts) {
+                this.context.copyList().forEach(copy => {
+                    changes.newAlerts.forEach(newAlert => {
                         const a = this.idl.clone(newAlert);
                         a.isnew(true);
                         a.copy(copy.id());
@@ -431,23 +450,40 @@ export class CopyAttrsComponent implements OnInit, AfterViewInit {
                         copy.copy_alerts().push(a);
                         copy.ischanged(true);
                     });
-                }
+                });
             }
-        );
+            if (changes.changedAlerts && this.context.copyList().length === 1) {
+                const copy = this.context.copyList()[0];
+                changes.changedAlerts.forEach(alert => {
+                    const existing = copy.copy_alerts().filter(a => a.id() === alert.id())[0];
+                    if (existing) {
+                        existing.ischanged(true);
+                        existing.alert_type(alert.alert_type());
+                        existing.temp(alert.temp());
+                        existing.ack_time(alert.ack_time());
+                        existing.ack_staff(alert.ack_staff());
+                        copy.ischanged(true);
+                    }
+                });
+            }
+        });
     }
 
     openCopyTags() {
         this.copyTagsDialog.inPlaceCreateMode = true;
         this.copyTagsDialog.copyIds = this.context.copyList().map(c => c.id());
 
-        this.copyTagsDialog.open({size: 'lg'}).subscribe(newTags => {
-            if (!newTags || newTags.length === 0) { return; }
+        this.copyTagsDialog.open({size: 'lg'}).subscribe(changes => {
+            if ((!changes.newTags || changes.newTags.length === 0) &&
+                (!changes.deletedMaps || changes.deletedMaps.length === 0)) {
+                return;
+            }
 
-            newTags.forEach(tag => {
+            changes.newTags.forEach(tag => {
                 this.context.copyList().forEach(copy => {
 
                     if (copy.tags().filter(
-                        m => m.tag().id() === tag.id()).length > 0) {
+                        m => m.tag() === tag.id()).length > 0) {
                         return; // map already exists
                     }
 
@@ -460,6 +496,17 @@ export class CopyAttrsComponent implements OnInit, AfterViewInit {
                     copy.ischanged(true);
                 });
             });
+
+            if (this.context.copyList().length === 1) {
+                const copy = this.context.copyList()[0];
+                changes.deletedMaps.forEach(tag => {
+                    const existing = copy.tags().filter(t => t.id() === tag.id())[0];
+                    if (existing) {
+                        existing.isdeleted(true);
+                        copy.ischanged(true);
+                    }
+                });
+            }
         });
     }
 
@@ -467,11 +514,16 @@ export class CopyAttrsComponent implements OnInit, AfterViewInit {
         this.copyNotesDialog.inPlaceCreateMode = true;
         this.copyNotesDialog.copyIds = this.context.copyList().map(c => c.id());
 
-        this.copyNotesDialog.open({size: 'lg'}).subscribe(newNotes => {
-            if (!newNotes || newNotes.length === 0) { return; }
+        this.copyNotesDialog.open({size: 'lg'}).subscribe(changes => {
+            if (!changes) { return; }
 
-            console.log(newNotes);
-            newNotes.forEach(note => {
+            if ((!changes.newNotes || changes.newNotes.length === 0) &&
+                (!changes.delNotes || changes.delNotes.length === 0)
+               ) {
+                return;
+            }
+
+            changes.newNotes.forEach(note => {
                 this.context.copyList().forEach(copy => {
                     const n = this.idl.clone(note);
                     n.owning_copy(copy.id());
@@ -479,6 +531,16 @@ export class CopyAttrsComponent implements OnInit, AfterViewInit {
                     copy.ischanged(true);
                 });
             });
+            if (this.context.copyList().length === 1) {
+                const copy = this.context.copyList()[0];
+                changes.delNotes.forEach(note => {
+                    const existing = copy.notes().filter(n => n.id() === note.id())[0];
+                    if (existing) {
+                        existing.isdeleted(true);
+                        copy.ischanged(true);
+                    }
+                });
+            }
         });
     }
 
@@ -497,9 +559,38 @@ export class CopyAttrsComponent implements OnInit, AfterViewInit {
 
             if (field === 'statcats') {
                 Object.keys(value).forEach(catId => {
-                    this.statCatValues[+catId] = value[+catId];
-                    this.statCatChanged(+catId);
+                    if (value[+catId] !== null) {
+                        this.statCatValues[+catId] = value[+catId];
+                        this.statCatChanged(+catId);
+                    }
                 });
+                return;
+            }
+
+            // Copy alerts are stored as hashes of the bits we need.
+            // Templates can be used to create alerts, but not edit them.
+            if (field === 'copy_alerts' && Array.isArray(value)) {
+                value.forEach(a => {
+                    this.context.copyList().forEach(copy => {
+                        const newAlert = this.idl.create('aca');
+                        newAlert.isnew(true);
+                        newAlert.copy(copy.id());
+                        newAlert.alert_type(a.alert_type);
+                        newAlert.temp(a.temp);
+                        newAlert.note(a.note);
+                        newAlert.create_staff(this.auth.user().id());
+                        newAlert.create_time('now');
+
+                        if (Array.isArray(copy.copy_alerts())) {
+                            copy.copy_alerts().push(newAlert);
+                        } else {
+                            copy.copy_alerts([newAlert]);
+                        }
+
+                        copy.ischanged(true);
+                    });
+                });
+
                 return;
             }
 
@@ -567,7 +658,15 @@ export class CopyAttrsComponent implements OnInit, AfterViewInit {
         });
 
         this.volcopy.templates[name] = template;
-        this.volcopy.saveTemplates();
+        this.volcopy.saveTemplates().then(x => {
+            this.savedHoldingsTemplates.current().then(str => this.toast.success(str));
+            if (entry.freetext) {
+                // once a new template has been added, make it
+                // display like any other in the comobox
+                this.copyTemplateCbox.selected =
+                    this.volcopy.templateNames.filter(_ => _.label === name)[0];
+            }
+        });
     }
 
     exportTemplate($event) {
@@ -611,7 +710,9 @@ export class CopyAttrsComponent implements OnInit, AfterViewInit {
         const entry: ComboboxEntry = this.copyTemplateCbox.selected;
         if (!entry) { return; }
         delete this.volcopy.templates[entry.id];
-        this.volcopy.saveTemplates();
+        this.volcopy.saveTemplates().then(
+            x => this.deletedHoldingsTemplate.current().then(str => this.toast.success(str))
+        );
         this.copyTemplateCbox.selected = null;
     }
 
@@ -659,9 +760,16 @@ export class CopyAttrsComponent implements OnInit, AfterViewInit {
         this.batchAttrs.filter(attr => attr.editing).forEach(attr => attr.save());
     }
 
-    affectedOrgIds(): number[] {
+    copyLocationOrgs(): number[] {
         if (!this.context) { return []; }
-        return this.context.orgNodes().map(n => n.target.id());
+
+        // Make sure every org unit represented by the edit batch
+        // is represented.
+        const ids = this.context.orgNodes().map(n => n.target.id());
+
+        // Make sure all locations within the "full path" of our
+        // workstation org unit are included.
+        return ids.concat(this.org.fullPath(this.auth.user().ws_ou()));
     }
 }
 

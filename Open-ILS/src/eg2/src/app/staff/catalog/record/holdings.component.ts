@@ -527,7 +527,7 @@ export class HoldingsMaintenanceComponent implements OnInit {
 
     // Grab call numbers, copies, and related data.
     fetchHoldings(pager: Pager): Observable<any> {
-        if (!this.recordId) { return of([]); }
+        if (!this.recordId || this.recordId === -1) { return of([]); }
 
         return new Observable<any>(observer => {
 
@@ -703,6 +703,11 @@ export class HoldingsMaintenanceComponent implements OnInit {
             copy._monograph_parts =
                 copy.parts().map(p => p.label()).join(',');
         }
+
+        // Ignore alerts that have already been ACK'ed
+        // Over a long enough time, this list could grow large, so
+        // consider fetching non-ack'ed copy alerts separately.
+        copy.copy_alerts(copy.copy_alerts().filter(a => !a.ack_time()));
 
         if (stat === 1 /* checked out */ || stat === 16 /* long overdue */) {
             // Avoid looking up circs on items that are not checked out.
@@ -935,15 +940,15 @@ export class HoldingsMaintenanceComponent implements OnInit {
         }
     }
 
-    openItemAlerts(rows: HoldingsEntry[], mode: string) {
+    openItemAlerts(rows: HoldingsEntry[]) {
         const copyIds = this.selectedCopyIds(rows);
         if (copyIds.length === 0) { return; }
 
         this.copyAlertsDialog.copyIds = copyIds;
-        this.copyAlertsDialog.mode = mode;
         this.copyAlertsDialog.open({size: 'lg'}).subscribe(
-            modified => {
-                if (modified) {
+            changes => {
+                if (!changes) { return; }
+                if (changes.newAlerts.length > 0 || changes.changedAlerts.length > 0) {
                     this.hardRefresh();
                 }
             }
@@ -956,8 +961,8 @@ export class HoldingsMaintenanceComponent implements OnInit {
 
         this.copyTagsDialog.copyIds = copyIds;
         this.copyTagsDialog.open({size: 'lg'}).subscribe(
-            modified => {
-                if (modified) {
+            changes => {
+                if (changes.newTags.length > 0 || changes.deletedMaps.length > 0) {
                     this.hardRefresh();
                 }
             }
@@ -970,8 +975,9 @@ export class HoldingsMaintenanceComponent implements OnInit {
 
         this.copyNotesDialog.copyIds = copyIds;
         this.copyNotesDialog.open({size: 'lg'}).subscribe(
-            modified => {
-                if (modified) {
+            changes => {
+                if (!changes) { return; }
+                if (changes.newNotes.length > 0 || changes.delNotes.length > 0) {
                     this.hardRefresh();
                 }
             }

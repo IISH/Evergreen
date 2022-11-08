@@ -201,6 +201,11 @@ only screen and (max-width: 650px)  {
     .bucketTable td:nth-of-type(2):before { content: "Title"; display: flex; text-align:left; }
     .bucketTable td:nth-of-type(3):before { content: "Author"; display: flex; text-align:left; }
     .bucketTable td:nth-of-type(4):before { content: "Call Number"; display: flex; text-align:left; }
+    .reservationsTable td:nth-of-type(1):before { content: "Resource type"; display: flex; }
+    .reservationsTable td:nth-of-type(2):before { content: "Start time"; display: flex; }
+    .reservationsTable td:nth-of-type(3):before { content: "End time"; display: flex; }
+    .reservationsTable td:nth-of-type(4):before { content: "Pickup location"; display: flex; }
+    .reservationsTable td:nth-of-type(5):before { content: "Status"; display: flex; }
 
     /*Media Style Additions*/
     .fullRow{
@@ -929,6 +934,11 @@ div#rdetail_actions_div {
     [%- END %]
 }
 
+div#rdetail_copy_counts {
+    margin-top; 1em;
+}
+
+/*
 span#rdetail_copy_counts {
     display: inline-block;
     vertical-align: top;
@@ -942,6 +952,7 @@ span#rdetail_copy_counts {
     padding-right: 1em;
     [%- END %]
 }
+*/
 
 span#rdetail_hold_counts {
     display: inline-block;
@@ -2407,12 +2418,19 @@ a.opac-button-header:hover, #dash_wrapper a.opac-button:hover {
     width: 100%;
 }
 
-#rdetail_record_details {
+.rdetail_record_details {
     clear: both;
     margin-top: 1em;
 }
 
-.rdetail_content {
+h2.rdetail_record_details, #rdetail_copy_counts h2, h2.rdetail_contents,
+h2.rdetail_related_subjects, h2.rdetail_related_series,
+h2.rdetail_other_formats, h2.rdetail_uris {
+    font-size: [% css_fonts.size_biggest %];
+    font-weight: bold;
+}
+
+.rdetail_content, .rdetail_subject {
     [% IF rtl == 't' -%]
     margin-right: 1.5em;
     padding-right: 1.5em;
@@ -2526,6 +2544,7 @@ h2.bookbag-name { margin-bottom: 0em; padding-bottom: 0em; }
     font-style: italic;
     max-width: 40em;
 }
+/*
 .bbag-edit-desc-label {
     [% IF rtl == 't' -%]
     float:right;
@@ -2554,6 +2573,8 @@ h2.bookbag-name { margin-bottom: 0em; padding-bottom: 0em; }
     float: left;
     [% END -%]
 }
+*/
+
 .bbag-action {
     [% IF rtl == 't' -%]
     margin-right: 15px;
@@ -3213,6 +3234,7 @@ a.preflib_change {
         margin-bottom:5px;
         padding:5px;
     }
+/*
     #bbag-edit-name {
         [% IF rtl == 't' -%]
         float: right;
@@ -3225,6 +3247,7 @@ a.preflib_change {
         width: 220px;
         margin-top:5px;
     }
+*/
     .bbag-content {
         padding:5px;
         border:1px solid [% css_colors.accent_light %];
@@ -3855,6 +3878,15 @@ label[for*=expert_]
 .carousel-entry {
     max-width: 150px;
 }
+
+/* Truncate titles within carousel to 4 lines */
+.carousel-entry div.titleText {
+    display: -webkit-box;
+	-webkit-line-clamp: 4;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
 .carousel-entry-image {
     width: 100%;
     height: auto;

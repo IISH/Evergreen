@@ -17,6 +17,11 @@ import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
  * Dialog for managing copy alerts.
  */
 
+export interface CopyAlertsChanges {
+    newAlerts: IdlObject[];
+    changedAlerts: IdlObject[];
+}
+
 @Component({
   selector: 'eg-copy-alerts-dialog',
   templateUrl: 'copy-alerts-dialog.component.html'
@@ -42,6 +47,8 @@ export class CopyAlertsDialogComponent
 
     alertTypes: ComboboxEntry[];
     newAlert: IdlObject;
+    newAlerts: IdlObject[];
+    autoId = -1;
     changesMade: boolean;
 
     @ViewChild('successMsg', { static: true }) private successMsg: StringComponent;
@@ -67,10 +74,11 @@ export class CopyAlertsDialogComponent
      * Dialog promise resolves with true/false indicating whether
      * the mark-damanged action occured or was dismissed.
      */
-    open(args: NgbModalOptions): Observable<boolean> {
+    open(args: NgbModalOptions): Observable<CopyAlertsChanges> {
         this.copy = null;
         this.copies = [];
         this.newAlert = this.idl.create('aca');
+        this.newAlerts = [];
         this.newAlert.create_staff(this.auth.user().id());
 
         if (this.copyIds.length === 0 && !this.inPlaceCreateMode) {
@@ -79,7 +87,8 @@ export class CopyAlertsDialogComponent
 
         // In manage mode, we can only manage a single copy.
         // But in create mode, we can add alerts to multiple copies.
-        if (this.copyIds.length === 1) {
+        // We can only manage copies that already exist in the database.
+        if (this.copyIds.length === 1 && this.copyIds[0] > 0) {
             this.mode = 'manage';
         } else {
             this.mode = 'create';
@@ -109,6 +118,11 @@ export class CopyAlertsDialogComponent
     }
 
     getCopies(): Promise<any> {
+
+        // Avoid fetch if we're only adding notes to isnew copies.
+        const ids = this.copyIds.filter(id => id > 0);
+        if (ids.length === 0) { return Promise.resolve(); }
+
         return this.pcrud.search('acp', {id: this.copyIds}, {}, {atomic: true})
         .toPromise().then(copies => {
             this.copies = copies;
@@ -136,48 +150,68 @@ export class CopyAlertsDialogComponent
         });
     }
 
+    getAlertTypeLabel(alert: IdlObject): string {
+        const alertType = this.alertTypes.filter(t => t.id === alert.alert_type());
+        return alertType[0].label;
+    }
+
+    removeAlert(alert: IdlObject) {
+        // the only type of alerts we can remove are pending ones that
+        // we have created during the lifetime of this modal; alerts
+        // that already exist can only be cleared
+        this.newAlerts = this.newAlerts.filter(t => t.id() !== alert.id());
+    }
+
     // Add the in-progress new note to all copies.
     addNew() {
         if (!this.newAlert.alert_type()) { return; }
 
-        if (this.inPlaceCreateMode) {
-            this.close(this.newAlert);
-            return;
-        }
+        this.newAlert.id(this.autoId--);
+        this.newAlert.isnew(true);
+        this.newAlerts.push(this.newAlert);
 
-        const alerts: IdlObject[] = [];
-        this.copies.forEach(c => {
-            const a = this.idl.clone(this.newAlert);
-            a.copy(c.id());
-            alerts.push(a);
-        });
+        this.newAlert = this.idl.create('aca');
 
-        this.pcrud.create(alerts).toPromise().then(
-            newAlert => {
-                this.successMsg.current().then(msg => this.toast.success(msg));
-                this.changesMade = true;
-                if (this.mode === 'create') {
-                    // In create mode, we assume the user wants to create
-                    // a single alert and be done with it.
-                    this.close(this.changesMade);
-                } else {
-                    // Otherwise, add the alert to the copy
-                    this.copy.copy_alerts().push(newAlert);
-                }
-            },
-            err => {
-                this.errorMsg.current().then(msg => this.toast.danger(msg));
-            }
-        );
     }
 
     applyChanges() {
-        const alerts = this.copy.copy_alerts().filter(a => a.ischanged());
-        if (alerts.length === 0) { return; }
-        this.pcrud.update(alerts).toPromise().then(
-            ok => this.successMsg.current().then(msg => this.toast.success(msg)),
+
+        const changedAlerts = this.copy ?
+            this.copy.copy_alerts().filter(a => a.ischanged()) :
+            [];
+
+        changedAlerts.forEach(alrt => {
+            if (alrt.ack_time() === 'now') {
+                alrt.ack_staff(this.auth.user().id());
+            }
+        });
+
+        if (this.inPlaceCreateMode) {
+            this.close({ newAlerts: this.newAlerts, changedAlerts: changedAlerts });
+            return;
+        }
+
+        const alerts = [];
+        this.newAlerts.forEach(alert => {
+            this.copies.forEach(c => {
+                const a = this.idl.clone(alert);
+                a.isnew(true);
+                a.id(null);
+                a.copy(c.id());
+                alerts.push(a);
+            });
+        });
+        if (this.mode === 'manage') {
+            changedAlerts.forEach(alert => {
+                alerts.push(alert);
+            });
+        }
+        this.pcrud.autoApply(alerts).toPromise().then(
+            ok => {
+                this.successMsg.current().then(msg => this.toast.success(msg));
+                this.close({ newAlerts: this.newAlerts, changedAlerts: changedAlerts });
+            },
             err => this.errorMsg.current().then(msg => this.toast.danger(msg))
         );
     }
 }
-

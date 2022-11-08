@@ -1168,6 +1168,10 @@ BEGIN
 
     IF NOT b_skip_search THEN
         PERFORM metabib.update_combined_index_vectors(bib_id);
+        PERFORM * FROM config.internal_flag WHERE name = 'ingest.disable_symspell_reification' AND enabled;
+        IF NOT FOUND THEN
+            PERFORM search.symspell_dictionary_reify();
+        END IF;
     END IF;
 
     RETURN;

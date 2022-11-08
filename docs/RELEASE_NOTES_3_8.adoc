@@ -3,6 +3,306 @@
 :numbered:
 :toclevels: 3
 
+== Evergreen 3.8.2 ==
+
+This release contains bug fixes improving on Evergreen 3.8.1.
+
+=== Upgrade notes ===
+
+* https://bugs.launchpad.net/evergreen/+bug/1980409[Bug 18980409] introduces a new library setting - "Require call number labels in Copy Editor"
+* https://bugs.launchpad.net/evergreen/+bug/1771636[Bug 1771636] introduces a workstation setting to show full library name in addition to library shortname 
+
+=== Bug Fixes ===
+
+==== Administration ====
+
+* Fixes a memory leak when performing fleshed Fieldmapper search (https://bugs.launchpad.net/evergreen/+bug/1974195[Bug 1974195])
+* No Holdings View Loaded For the Pre-cat Bib (https://bugs.launchpad.net/evergreen/+bug/1976557[Bug 1976557])
+* Permission Groups editor now indicates when a permission overrides a parent permission (https://bugs.launchpad.net/evergreen/+bug/1891375[Bug 1891375]) 
+* Adds sorting and filtering to the Circ Limit Sets interface (https://bugs.launchpad.net/evergreen/+bug/1945385[Bug 1945385])
+* Blocks deletion of Shelving Locations that have items attached (https://bugs.launchpad.net/evergreen/+bug/1910546[Bug 1910546])
+
+==== Catalog ==== 
+* Adds independent Org Unit Admin Scrolling for separate navigation of org unit tree and configuration form (https://bugs.launchpad.net/evergreen/+bug/1884950[Bug 1884950])
+
+==== Cataloging ====
+
+* Reduce parallel requests initiated by AngularJS holdings editor (https://bugs.launchpad.net/evergreen/+bug/1930617[Bug 1930617])
+* Angular editor is now used when accessed from item status and item buckets (https://bugs.launchpad.net/evergreen/+bug/1956619[Bug 1956619])
+* Holdings editor now enforcing required stat cats (https://bugs.launchpad.net/evergreen/+bug/1965448[Bug 1965448]) 
+* Fixes an issue where creating new copy alerts / notes and item tags failed for brand
+new copies (https://bugs.launchpad.net/evergreen/+bug/1959716[Bug 1959716])
+* Fixes several bugs that prevent item notes from being correctly deleted by the Angular item attributes editor (https://bugs.launchpad.net/evergreen/+bug/1955065[Bug 1955065])
+* Fixes a regression that required a call number label in order to save an item. A new library setting determines whether call number labels are required or not. (https://bugs.launchpad.net/evergreen/+bug/1980409[Bug 18980409])
+* Fixes issues preventing creation of item alerts / notes and management of existing copies in the copy editor (https://bugs.launchpad.net/evergreen/+bug/1959716[Bug 1959716])
+* Fixes several bugs that prevented item tags from being correctly deleted by the Angular item attributes editor (https://bugs.launchpad.net/evergreen/+bug/1981095[Bug 1981095])
+* Fixes an issue where item alerts contained within copy templates failed to apply when using the new Angular holdings editor. (https://bugs.launchpad.net/evergreen/+bug/1956790[Bug 1956790])
+* Improves the saving of holdings templates in the Angular holdings editor. (https://bugs.launchpad.net/evergreen/+bug/1957179[Bug 1957179])
+* Fixes an issue where shelving locations for ancestor org units weren’t included in the shelving location drop down menu in the holdings editor. (https://bugs.launchpad.net/evergreen/+bug/1976002[Bug 1976002])
+* Adds the full organizational unit path to the Copy Location Selector (https://bugs.launchpad.net/evergreen/+bug/1956627[Bug 1955627])
+* Fixes an issue where item alert types did not display in the Angular item attributes editor (https://bugs.launchpad.net/evergreen/+bug/1978889[Bug 1978889])
+* Fixes an issue where creating item alerts would fail in the Angular item attributes editor (https://bugs.launchpad.net/evergreen/+bug/1956986[Bug 1956986])
+
+==== Circulation ====
+
+* Fixes an issue where item alerts prevented hold capture when Hold Capture Delay Verification was used (https://bugs.launchpad.net/evergreen/+bug/1735221[Bug 1735221]) 
+* Performance fix to add request serialization to Edit Due Date in Items Out tab (https://bugs.launchpad.net/evergreen/+bug/1932203[Bug 1932203])
+* Fixes Holds Pull List to show Library Shortnames instead of Library IDs in Requesting Library and Selecting Library columns (https://bugs.launchpad.net/evergreen/+bug/1978839[Bug 1978839])
+* On the Holds Shelf the “User Display Name” and “User Alias or Display Name” fields will now use the preferred name if present. (https://bugs.launchpad.net/evergreen/+bug/1838553[Bug 1838553])
+* Adds manual refresh for patron penalties (https://bugs.launchpad.net/evergreen/+bug/1823225[Bug 1823225])
+* Adds a missing patron-visibility flag to messages created for the patron message center by notification action triggers (https://bugs.launchpad.net/evergreen/+bug/1958573[Bug 1958573])
+* Fixes a typo on the Holds Details screen of View Holds (https://bugs.launchpad.net/evergreen/+bug/1979099[Bug 1979099])
+* Fixes issues with printing from Angular.  The option to print landscape is restored and the size of the text is no longer scaled down. This affected printing of the Holds Pull List. (https://bugs.launchpad.net/evergreen/+bug/1986725[Bug 1986725])
+* Changes the patron print bills page label from select "items" to select "copies" (https://bugs.launchpad.net/evergreen/+bug/1980692[Bug 1980692])
+
+==== Client ====
+
+* Fixes an issue where Angular comboboxes would attempt to fetch all rows from a linked table (https://bugs.launchpad.net/evergreen/+bug/1851884[Bug 1851884])
+* Adds a workstation setting to show full library name in addition to library shortname (https://bugs.launchpad.net/evergreen/+bug/1771636[Bug 1771636])
+* Fixes an issue where the shelving location selector didn’t work in several interfaces including adding course materials, circulation limit sets, and distribution formulas in acquisitions. (https://bugs.launchpad.net/evergreen/+bug/1980887[Bug 1980887])
+
+==== Course Materials ====
+
+* Adds a user visible warning when deleting a Term linked to Courses (https://bugs.launchpad.net/evergreen/+bug/1942647[Bug 1942647])
+* Fixes an issue where the carriage return activated the Add Materials and Add User buttons (https://bugs.launchpad.net/evergreen/+bug/1930896[Bug 1930896])
+* Fixes a display issue where the updated call number is not reflected in the grid when adding materials to courses. (https://bugs.launchpad.net/evergreen/+bug/1907974[Bug 1907974])
+* Fixes issues with the Course Details page display of an archived course. (https://bugs.launchpad.net/evergreen/+bug/1939994[Bug 1939994])
+
+==== Documentation ====
+
+* Updates to the Holds Management page documentation
+* Updates to Authorities documentation
+* Adds Group Penalty Threshold documentation
+* Updates to Carousels documentation (https://bugs.launchpad.net/evergreen/+bug/1901895[Bug 1901895])
+* Updates to My Accounts section to reflect changes in Bootstrap
+
+==== OPAC ====
+
+* Fixes formatting in Current Holds Group table in MyAccount (Bootstrap OPAC) (https://bugs.launchpad.net/evergreen/+bug/1950345[Bug 1950345])
+* Fixes formatting in Holds Groups Table in MyAccount (TPAC) (https://bugs.launchpad.net/evergreen/+bug/1950514[Bug 1950514])
+* If DOB is marked required, blocks self-registration form from submitting with a blank DOB (https://bugs.launchpad.net/evergreen/+bug/1950166[Bug 1950166])
+* Fixes an issue where DOB field would auto populate with the current date (https://bugs.launchpad.net/evergreen/+bug/1951642[Bug 1951642])
+* Fixes an issue where payments made in the OPAC via Stripe were not credited in Evergreen for circulation bills as well as making minor display tweaks to Bootstrap. (https://bugs.launchpad.net/evergreen/+bug/1981628[Bug 1981628])
+* Adds a missing patron-visibility flag to messages created for the patron message center by notification action triggers (https://bugs.launchpad.net/evergreen/+bug/1958573[Bug 1958573])
+* Fixes an issue in Bootstrap where the headers in advanced search couldn’t be translated. (https://bugs.launchpad.net/evergreen/+bug/1991395[Bug 1991395])
+* Fixes an issue in Bootstrap where list titles and descriptions couldn’t be edited. (https://bugs.launchpad.net/evergreen/+bug/1909583[Bug 1909583])
+* Other Formats and Editions now displays more prominently in Bootstrap. (https://bugs.launchpad.net/evergreen/+bug/1903767[Bug 1903767])
+* Restores the ability to update existing holds if a patron changes certain notification preferences or contact information. Evergreen will detect these changes and ask ther patron if they want to update existing holds with the new contact information and/or notification preferences. (https://bugs.launchpad.net/evergreen/+bug/1902272[Bug 1902272])
+* Adds the 'add basket to bucket' functionality in Bootstrap OPAC (https://bugs.launchpad.net/evergreen/+bug/1898775[Bug 1898775])
+* Fixes an issue with SSO Shibboleth logout and re-login. (https://bugs.launchpad.net/evergreen/+bug/1989209[Bug 1989209])
+
+
+=== Acknowledgements ===
+
+We would like to thank the following individuals who contributed code,
+testing, and documentation to the 3.8.2 point release of Evergreen:
+
+* John Amundson
+* Jason Boyer
+* Dan Briem
+* Eva Cerninakova 
+* Galen Charlton
+* Garry Collum
+* Dawn Dale
+* Jeff Davis
+* Ryan Eby
+* Jason Etheridge
+* Bill Erickson
+* Elaine Hardy
+* Kyle Huckins
+* Stephanie Leary
+* Tiffany Little
+* Mary Llewellyn
+* Terran McCanna
+* Gina Monti
+* Christine Morgan 
+* Michele Morgan
+* Andrea Buntz Neiman
+* New Developers Working Group
+* Jennifer Pringle
+* Mike Rylander
+* Jane Sandberg 
+* Chris Sharp
+* Jason Stephenson
+* Jennifer Weston
+* Beth Willis
+* Carol Witt
+
+
+== Evergreen 3.8.1 ==
+
+This release contains bug fixes improving on Evergreen 3.8.0
+
+=== Upgrade notes ===
+
+The fix for https://bugs.launchpad.net/evergreen/+bug/1939338[Launchpad bug 1939338] modifies the `fm_IDL.xml` file.  To ensure that everything is up-to-date, existing Evergreen sites should run `autogen.sh` after restarting OpenSRF services and before restarting Apache.
+
+=== Bug Fixes ===
+
+==== Acquisitions ====
+
+* Protects real copies from deletion by an acqusitions line item cancel 
+(https://bugs.launchpad.net/evergreen/+bug/1928003[Bug 1928003])
+* Fixes an issue where EDIWriter.pm was not correctly applying some attribute types (https://bugs.launchpad.net/evergreen/+bug/1930740[Bug 1930740])
+* Fixes the Providers form to be more friendly to screenreaders (https://bugs.launchpad.net/evergreen/+bug/1950507[Bug 1950507])
+
+
+==== Administration ====
+
+* Adds rdeleted parameter to the pingest.pl script (https://bugs.launchpad.net/evergreen/+bug/1862652[Bug 1862652])
+* Fixes bug where Carousels could only be viewed & edited by their creating user (https://bugs.launchpad.net/evergreen/+bug/1939338[Bug 1939338])
+* Updates Hopeless Holds interface so Title links open in a new tab (https://bugs.launchpad.net/evergreen/+bug/1909681[Bug 1909681])
+* Fixes an issue where specific 'opensrf' user is required in oils_ctl.sh and autogen.sh https://bugs.launchpad.net/evergreen/+bug/1900005[Bug 1900005])
+* Adds MARC_NAMESPACE to Const.pm (https://bugs.launchpad.net/evergreen/+bug/1930747[Bug 1930747])
+* Fixes an issue preventng correct MADS processing of field 755 (https://bugs.launchpad.net/evergreen/+bug/1800871[Bug 1800871])
+* Adds default columns in the Angular staff catalog View Holds tab (https://bugs.launchpad.net/evergreen/+bug/1907123[Bug 1907123])
+* Adds filters to MARC Coded Value Map grid (https://bugs.launchpad.net/evergreen/+bug/1843970[Bug 1843970])
+
+==== API ====
+
+* Makes changes to the eBook API to support Overdrive's updated Checkouts API (https://bugs.launchpad.net/evergreen/+bug/1951021[Bug 1951021])
+* Fixes issue where loading records with located URIs deleted and recreated call_numbers (https://bugs.launchpad.net/evergreen/+bug/1482757[Bug 1482757])
+
+
+==== Architecture ====
+
+* Fixes typo in fm_idl.xml (https://bugs.launchpad.net/evergreen/+bug/1957840[Bug 1957840])
+* Fixes an issue where retrieving a title via SuperCat can crash if the title has a serial unit with statcats (https://bugs.launchpad.net/evergreen/+bug/1970486[Bug 1970486])
+* Upgrades karma in NPM dependencies (https://bugs.launchpad.net/evergreen/+bug/1965432[Bug 1965432])
+* Fixes variable in log_me sub (https://bugs.launchpad.net/evergreen/+bug/1778783[Bug 1778783])
+* Fixes material icons package error in NPM install (https://bugs.launchpad.net/evergreen/+bug/1969232[Bug 1969232])
+
+
+==== Catalog ==== 
+
+* Fixes an issue in the traditional staff catalog where PLACE_UNFILLABLE_HOLD override fails if there are no items available (https://bugs.launchpad.net/evergreen/+bug/1906842[Bug 1906842])
+* Fixes an issue in the Patron Search from Place Holds modal where barcode search was failing (https://bugs.launchpad.net/evergreen/+bug/1955927[Bug 1955927])
+* Restores Hold links in the staff catalog detail page that were broken by a Chrome update (https://bugs.launchpad.net/evergreen/+bug/1964019[Bug 1964019])
+* Fixes an issue in the traditional staff catalog where user settings wouldn't load in the Place Holds interface (https://bugs.launchpad.net/evergreen/+bug/1939426[Bug 1939426])
+* Excludes empty bibs with transcendent=f from location limited staff searches (https://bugs.launchpad.net/evergreen/+bug/1746800[Bug 1746800])
+* Fixes issue in the traditional staff catalog where Patron Barcode Completion didn't populate correctly in the Place Holds interface (https://bugs.launchpad.net/evergreen/+bug/1965317[Bug 1965317])
+* Fixes an issue in the Angular staff catalog where monograph parts were sorting incorrectly in the Place Holds interface (https://bugs.launchpad.net/evergreen/+bug/1965161[Bug 1965161])
+* Adds default columns in the Angular staff catalog View Holds tab (https://bugs.launchpad.net/evergreen/+bug/1907123[Bug 1907123])
+
+==== Cataloging ====
+
+* Fixes a regression where owning libraries were not indicated in the Holdings View dropdown (https://bugs.launchpad.net/evergreen/+bug/1739277[Bug 1739277])
+* Fixes an issue where batch deletes from an item bucket exhausted drones (https://bugs.launchpad.net/evergreen/+bug/1949910[Bug 1949910])
+* Fixes an issue where the Holdings View showed incorrect item counts (https://bugs.launchpad.net/evergreen/+bug/1933275[Bug 1933275])
+* Adds Author field to Item Buckets (https://bugs.launchpad.net/evergreen/+bug/1800474[Bug 1800474])
+* Fixes an issue where batch removal of items from an item bucket exhausted drones (https://bugs.launchpad.net/evergreen/+bug/1968082[Bug 1968082])
+* Splits Active Date and Create Date into separate columns in Angular Holdings View (https://bugs.launchpad.net/evergreen/+bug/1916600[Bug 1916600])
+* Adds Author field to Item Buckets (https://bugs.launchpad.net/evergreen/+bug/1800474[Bug 1800474])
+* Fixes copy templates setting to allow migration of copy templates from AngularJS to Angular (https://bugs.launchpad.net/evergreen/+bug/1951162[Bug 1951162])
+* Angular copy location editor can now pass multiple context org unit IDs (https://bugs.launchpad.net/evergreen/+bug/1956626[Bug 1956626])
+
+
+==== Circulation ====
+
+* Excludes child organizational units when fleshing standing penalties (https://bugs.launchpad.net/evergreen/+bug/1959461[Bug 1959461])
+* Fixes invalidate email regression (https://bugs.launchpad.net/evergreen/+bug/1950826[Bug 1950826])
+* Fixes a bug where Patron Search could cause the browser to become unresponsive (https://bugs.launchpad.net/evergreen/+bug/1959904[Bug 1959904])
+* Fixes issue with slow user merging or deleting (https://bugs.launchpad.net/evergreen/+bug/1960956[Bug 1960956])
+* Fixes display issue in Hold Shelf Record Summary Detail View (https://bugs.launchpad.net/evergreen/+bug/1838580[Bug 1838580])
+* Adds server-side saving for Holds Groups grids (https://bugs.launchpad.net/evergreen/+bug/1956003[Bug 1956003])
+* Fixes download & print issue with Angular Holds Pull List (https://bugs.launchpad.net/evergreen/+bug/1958265[Bug 1958265])
+* Adds duplicate barcode check to Item Status Replace Barcode (https://bugs.launchpad.net/evergreen/+bug/1950468[Bug 1950468])
+
+
+==== Client ====
+
+* Improved filtering on egBasicComboBox typeaheads (https://bugs.launchpad.net/evergreen/+bug/1819233[Bug 1819233])
+* Corrects print template data field names for Items Out template (https://bugs.launchpad.net/evergreen/+bug/1766726[Bug 1766726])
+* Implements batch method for adding users to a bucket (https://bugs.launchpad.net/evergreen/+bug/1946531[Bug 1946531])
+* Fixes untranslatable strings in the Historical Bills print template (https://bugs.launchpad.net/evergreen/+bug/1772631[Bug 1772631])
+
+==== Course Materials ====
+
+* Adds owning library check to Course Terms uniqueness constraint 
+(https://bugs.launchpad.net/evergreen/+bug/1942645[LP1942645])
+* Fixes course search issue (https://bugs.launchpad.net/evergreen/+bug/1913340[Bug 1913340])
+
+==== Documentation ====
+
+* Updates to Print Template Export documentation (https://bugs.launchpad.net/evergreen/+bug/1929592[Bug 1929592])
+* Added Advanced Authorities documentation (https://bugs.launchpad.net/evergreen/+bug/1944205[Bug 1944205])
+* Corrections to Override Actions documentation
+* Updates to Barcode Completion documentation
+* Added Course Materials documentation
+* Updates to Holds documentation
+* Updates to z39.50 documentation
+* Updates to OPAC Lists documentation
+* Added relevant Conference videos to some documentation pages
+* Updates to Using the Public Access Catalog documentation
+* Updates to Billing documentation
+
+==== OPAC ====
+
+* Fixes an issue in the Bootstrap OPAC where changing a branch did not clear the shelving location list (https://bugs.launchpad.net/evergreen/+bug/1946019[Bug 1946019])
+* Restores line breaks in Patron Messages (https://bugs.launchpad.net/evergreen/+bug/1927990[Bug 1927990])
+* Fixes an issue where some electronic resource links would not display in the Bootstrap OPAC (https://bugs.launchpad.net/evergreen/+bug/1950394[Bug 1950394])
+* Fixes an issue in the Bootstrap OPAC where the 'More Details' button was not translatable (https://bugs.launchpad.net/evergreen/+bug/1919494[Bug 1919494])
+* Fixes an issue where a hold in the status "Hold Shelf Delay" displayed blank in the OPAC (https://bugs.launchpad.net/evergreen/+bug/1959405[Bug 1959405])
+* Fixes Bootstrap OPAC 'More Details' button so it toggles to 'Less Details' when clicked (https://bugs.launchpad.net/evergreen/+bug/1920039[Bug 1920039])
+* Fixes circ history CSV export in the Bootstrap OPAC (https://bugs.launchpad.net/evergreen/+bug/1954923[Bug 1954923])
+* Fixes color contrast on Bootstrap OPAC forms (https://bugs.launchpad.net/evergreen/+bug/1942240[Bug 1942240])
+* Fixes formatting in Bootstrap OPAC My Lists (https://bugs.launchpad.net/evergreen/+bug/1907863[Bug 1907863])
+* Fixes a bug in the Bootstrap OPAC where the self-registration library setting wasn't honored (https://bugs.launchpad.net/evergreen/+bug/1958163[Bug 1958163])
+* Adds Matomo support to the Bootstrap OPAC (https://bugs.launchpad.net/evergreen/+bug/1966802[Bug 19668020])
+* Stopgap fix to prevent OPAC payment when zero-dollar or negative bills are present on a patron's account (https://bugs.launchpad.net/evergreen/+bug/1965579[Bug 19965579])
+
+
+==== Serials ====
+
+* Fixes an issue where subscription manager fetched too many parallel requests (https://bugs.launchpad.net/evergreen/+bug/1949389[Bug 1949389])
+
+==== Self Check ====
+
+* Adds Preferred Name to self checkout (https://bugs.launchpad.net/evergreen/+bug/1847827[Bug1847827])
+
+
+=== Acknowledgements ===
+
+We would like to thank the following individuals who contributed code,
+testing and documentation patches to the 3.8.1 point release of Evergreen:
+
+* MaryAnn Alexander
+* John Amundson
+* Jason Boyer
+* Dan Briem
+* Jennifer Bruch
+* Christine Burns
+* Steve Callender
+* Galen Charlton
+* Garry Collum
+* Jeff Davis
+* Bill Erickson
+* Jason Etheridge
+* Lynn Floyd
+* Ruth Frasur
+* Jeff Godin
+* Elaine Hardy
+* Blake Graham Henderson
+* Kyle Huckins
+* Tiffany Little
+* Shula Link
+* Mary Llewellyn
+* Terran McCanna
+* Gina Monti
+* Michele Morgan
+* Andrea Buntz Neiman
+* Jennifer Pringle
+* Mike Risher
+* Mike Rylander
+* Jane Sandberg
+* Chris Sharp
+* Jason Stephenson
+* Josh Stompro
+* Jennifer Weston
+* Beth Willis
+* Jessica Woolford
+
+
 == Evergreen 3.8.0 ==
 
 === Upgrade notes ===

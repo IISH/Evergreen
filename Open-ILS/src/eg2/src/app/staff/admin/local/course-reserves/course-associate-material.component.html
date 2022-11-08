@@ -6,7 +6,18 @@
 </eg-string>
 <eg-string #materialEditSuccessString i18n-text text="Update of Course Material succeeded"></eg-string>
 <eg-string #materialEditFailedString i18n-text text="Update of Course Material failed or was not allowed"></eg-string>
-<eg-string #materialAddDifferentLibraryString i18n-text text="Material exists at a different library"></eg-string>
+
+<eg-alert-dialog #otherLibraryNoPermissionsAlert
+  i18n-dialogTitle i18n-dialogBody
+  dialogTitle="Insufficient permissions"
+  dialogBody="This material has {{itemCircLib}} as its circulation library, where you do not have UPDATE_COPY permissions.  You cannot attach this item without UPDATE_COPY permissions.">
+</eg-alert-dialog>
+
+<eg-confirm-dialog #confirmOtherLibraryDialog
+  i18n-dialogTitle i18n-dialogBody
+  dialogTitle="Material from a different library"
+  dialogBody="This material has {{itemCircLib}} as its circulation library. Are you sure you want to add it to {{currentCourse.course_number()}}?">
+</eg-confirm-dialog>
 
 <ng-template #dialogContent>
   <div class="modal-header bg-info" [ngClass]="isDialog() ? 'modal-header' : 'alert mt-3'">
@@ -32,8 +43,8 @@
                     </div>
                     <input type="text" class="flex-grow-1" id="associate-item-barcode"
                       [(ngModel)]="barcodeInput" (click)="$event.target.select()"
-                      [disabled]="currentCourse && currentCourse.is_archived() == 't'"
-                      (keyup.enter)="associateItem(barcodeInput, relationshipInput)" />
+                      [disabled]="currentCourse && (courseIsArchived || currentCourse.is_archived()) == 't'"
+                      />
                   </div>
                 </div>
                 <div class="d-flex" [ngClass]="isDialog() ? 'col-md-6' : 'col-md-12 mt-3'">
@@ -42,7 +53,7 @@
                       <span class="input-group-text" i18n>Relationship</span>
                     </div>
                     <input type="text" [(ngModel)]="relationshipInput"
-                      [disabled]="currentCourse && currentCourse.is_archived() == 't'" placeholder-i18n
+                      [disabled]="currentCourse && (courseIsArchived || currentCourse.is_archived()) == 't'" placeholder-i18n
                       placeholder="e.g. Required" class="flex-grow-1" />
                   </div>
                 </div>
@@ -63,12 +74,12 @@
                       </div>
                     </div>
                     <input type="text" [(ngModel)]="tempCallNumber" label="associate-item-temp-call-number"
-                      [disabled]="currentCourse && currentCourse.is_archived() == 't'"
+                      [disabled]="currentCourse && (courseIsArchived || currentCourse.is_archived()) == 't'"
                       (input)="isModifyingCallNumber = true" class="flex-grow-1" />
                     <div class="input-group-append">
                       <div class="input-group-text">
                         <input type="checkbox" [(ngModel)]="isModifyingCallNumber"
-                          [disabled]="currentCourse && currentCourse.is_archived() == 't'"
+                          [disabled]="currentCourse && (courseIsArchived || currentCourse.is_archived()) == 't'"
                           aria-label="Checkbox for setting a temporary Call Number" />
                       </div>
                     </div>
@@ -82,14 +93,14 @@
                       </div>
                     </div>
                     <eg-combobox i18n-placeholder placeholder="Circulation Modifier..." idlClass="ccm" idlField="name"
-                      [displayTemplate]="idlClassLabel" [disabled]="currentCourse && currentCourse.is_archived() == 't'"
+                      [displayTemplate]="idlClassLabel" [disabled]="currentCourse && (courseIsArchived || currentCourse.is_archived()) == 't'"
                       [asyncSupportsEmptyTermClick]="true" class="flex-grow-1"
                       (onChange)="tempCircMod = $event.id; isModifyingCircMod = true">
                     </eg-combobox>
                     <div class="input-group-append">
                       <div class="input-group-text">
                         <input type="checkbox" [(ngModel)]="isModifyingCircMod"
-                          [disabled]="currentCourse && currentCourse.is_archived() == 't'"
+                          [disabled]="currentCourse && (courseIsArchived || currentCourse.is_archived()) == 't'"
                           aria-label="Checkbox for setting a temporary Circulation Modifier" />
                       </div>
                     </div>
@@ -105,14 +116,14 @@
                       </div>
                     </div>
                     <eg-combobox i18n-placeholder placeholder="Item Status..." idlClass="ccs" idlField="name"
-                      [displayTemplate]="idlClassLabel" [disabled]="currentCourse && currentCourse.is_archived() == 't'"
+                      [displayTemplate]="idlClassLabel" [disabled]="currentCourse && (courseIsArchived || currentCourse.is_archived()) == 't'"
                       [asyncSupportsEmptyTermClick]="true" class="flex-grow-1"
                       (onChange)="tempStatus = $event.id; isModifyingStatus = true">
                     </eg-combobox>
                     <div class="input-group-append">
                       <div class="input-group-text">
                         <input type="checkbox" [(ngModel)]="isModifyingStatus"
-                          [disabled]="currentCourse && currentCourse.is_archived() == 't'"
+                          [disabled]="currentCourse && (courseIsArchived || currentCourse.is_archived()) == 't'"
                           aria-label="Checkbox for setting a temporary Item Status" />
                       </div>
                     </div>
@@ -126,13 +137,13 @@
                       </div>
                     </div>
                     <eg-item-location-select permFilter="MANAGE_RESERVES" class="flex-grow-1"
-                      [disabled]="currentCourse && currentCourse.is_archived() == 't'" [(ngModel)]="tempLocation"
+                      [disabled]="currentCourse && (courseIsArchived || currentCourse.is_archived()) == 't'" [(ngModel)]="tempLocation"
                       (valueChange)="isModifyingLocation = true">
                     </eg-item-location-select>
                     <div class="input-group-append">
                       <div class="input-group-text">
                         <input type="checkbox" [(ngModel)]="isModifyingLocation"
-                          [disabled]="currentCourse && currentCourse.is_archived() == 't'"
+                          [disabled]="currentCourse && (courseIsArchived || currentCourse.is_archived()) == 't'"
                           aria-label="Checkbox for setting a temporary Shelving Location" />
                       </div>
                     </div>
@@ -141,7 +152,7 @@
               </div>
               <div class="row mt-3">
                 <div class="col-lg-12 text-right">
-                  <button class="btn btn-primary" [disabled]="currentCourse && currentCourse.is_archived() == 't'"
+                  <button class="btn btn-primary" [disabled]="currentCourse && (courseIsArchived || currentCourse.is_archived()) == 't'"
                     (click)="associateItem(barcodeInput, relationshipInput)" i18n [disabled]="!barcodeInput">
                     Add Material
                   </button>
@@ -158,7 +169,7 @@
                     <span class="input-group-text" i18n>Relationship</span>
                   </div>
                   <input type="text" [(ngModel)]="relationshipInput"
-                    [disabled]="currentCourse && currentCourse.is_archived() == 't'" placeholder-i18n
+                    [disabled]="currentCourse && (courseIsArchived || currentCourse.is_archived()) == 't'" placeholder-i18n
                     placeholder="e.g. Required" class="flex-grow-1" />
                 </div>
               </div>
@@ -190,7 +201,7 @@
                       <label for="bib-id" class="input-group-text" i18n>Bibliographic Record ID</label>
                     </div>
                     <input type="text" [(ngModel)]="bibId" id="bib-id"
-                      [disabled]="currentCourse && currentCourse.is_archived() == 't'" class="flex-grow-1" />
+                      [disabled]="currentCourse && (courseIsArchived || currentCourse.is_archived()) == 't'" class="flex-grow-1" />
                   </div>
                 </div>
                 <div class="d-flex" [ngClass]="isDialog() ? 'col-md-6' : 'col-md-12 mt-3'">
@@ -199,14 +210,14 @@
                       <span class="input-group-text" i18n>Relationship</span>
                     </div>
                     <input type="text" [(ngModel)]="relationshipInput"
-                      [disabled]="currentCourse && currentCourse.is_archived() == 't'" class="flex-grow-1" />
+                      [disabled]="currentCourse && (courseIsArchived || currentCourse.is_archived()) == 't'" class="flex-grow-1" />
                   </div>
                 </div>
               </div>
               <div class="row mt-3">
                 <div class="col-lg-12 text-right">
                   <button class="btn btn-primary" i18n (click)="associateElectronicBibRecord()"
-                    [disabled]="currentCourse && currentCourse.is_archived() == 't'">
+                    [disabled]="currentCourse && (courseIsArchived || currentCourse.is_archived()) == 't'">
                     Add Material
                   </button>
                 </div>

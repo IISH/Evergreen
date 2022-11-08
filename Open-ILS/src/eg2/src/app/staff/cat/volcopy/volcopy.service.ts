@@ -149,9 +149,8 @@ export class VolCopyService {
 
 
     saveTemplates(): Promise<any> {
-        this.store.setLocalItem('cat.copy.templates', this.templates);
-        // Re-sort, etc.
-        return this.fetchTemplates();
+        return this.serverStore.setItem('cat.copy.templates', this.templates)
+            .then(() => this.fetchTemplates());
     }
 
     fetchDefaults(): Promise<any> {
@@ -226,6 +225,7 @@ export class VolCopyService {
         copy.parts([]);
         copy.tags([]);
         copy.notes([]);
+        copy.copy_alerts([]);
         copy.stat_cat_entries([]);
 
         return copy;
@@ -435,6 +435,28 @@ export class VolCopyService {
     restrictCopyDelete(statId: number): boolean {
         return this.copyStatuses[statId] &&
                this.copyStatuses[statId].restrict_copy_delete() === 't';
+    }
+
+    // Returns true if any items are missing values for a required stat cat.
+    missingRequiredStatCat(): boolean {
+        let missing = false;
+
+        this.currentContext.copyList().forEach(copy => {
+            if (!copy.barcode()) { return; }
+
+            this.commonData.acp_stat_cat.forEach(cat => {
+                if (cat.required() !== 't') { return; }
+
+                const matches = copy.stat_cat_entries()
+                    .filter(e => e.stat_cat() === cat.id());
+
+                if (matches.length === 0) {
+                    missing = true;
+                }
+            });
+        });
+
+        return missing;
     }
 }
 

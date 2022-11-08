@@ -5,8 +5,6 @@ INSERT INTO config.upgrade_log (version, applied_to) VALUES ('3.9.0', :eg_versio
 
 SELECT evergreen.upgrade_deps_block_check('1307', :eg_version);
 
-DROP SCHEMA oai CASCADE;
-
 DROP FUNCTION search.query_parser_fts (
     INT,
     INT,
@@ -16,23 +14,10 @@ DROP FUNCTION search.query_parser_fts (
     INT,
     INT,
     INT,
+    BOOL,
     BOOL,
     BOOL,
     INT 
-);
-DROP FUNCTION search.query_parser_fts (
-    INT,
-    INT,
-    TEXT,
-    INT[],
-    INT[],
-    INT,
-    INT,
-    INT,
-    BOOL,
-    BOOL,
-    BOOL,
-    INT
 );
 
 DROP TABLE asset.opac_visible_copies;
@@ -3127,4 +3112,3 @@ COMMIT;
 -- Update auditor tables to catch changes to source tables.
 --   Can be removed/skipped if there were no schema changes.
 SELECT auditor.update_auditors();
-

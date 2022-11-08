@@ -1,17 +1,16 @@
-import {Component, Input, ViewChild, OnInit, TemplateRef} from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
-import {from, merge, Observable} from 'rxjs';
+import { PermService } from '@eg/core/perm.service';
+import {Component, Input, ViewChild, OnInit} from '@angular/core';
+import { Observable, merge, of, EMPTY, throwError, from } from 'rxjs';
+import { switchMap, concatMap } from 'rxjs/operators';
 import {DialogComponent} from '@eg/share/dialog/dialog.component';
 import {AuthService} from '@eg/core/auth.service';
 import {NetService} from '@eg/core/net.service';
-import {EventService} from '@eg/core/event.service';
-import {OrgService} from '@eg/core/org.service';
 import {PcrudService} from '@eg/core/pcrud.service';
 import {Pager} from '@eg/share/util/pager';
-import {NgbModal, NgbModalOptions} from '@ng-bootstrap/ng-bootstrap';
+import {NgbModal} from '@ng-bootstrap/ng-bootstrap';
 import {GridDataSource} from '@eg/share/grid/grid';
 import {GridComponent} from '@eg/share/grid/grid.component';
-import {IdlObject, IdlService} from '@eg/core/idl.service';
+import {IdlObject} from '@eg/core/idl.service';
 import {StringComponent} from '@eg/share/string/string.component';
 import {FmRecordEditorComponent} from '@eg/share/fm-editor/fm-editor.component';
 import {ToastService} from '@eg/share/toast/toast.service';
@@ -25,7 +24,8 @@ import {CourseService} from '@eg/staff/share/course.service';
 export class CourseAssociateMaterialComponent extends DialogComponent implements OnInit {
     @Input() currentCourse: IdlObject;
     @Input() courseId: any;
-    @Input() displayMode: String;
+    @Input() courseIsArchived: string;
+    @Input() displayMode: string;
     materials: any[] = [];
     @ViewChild('editDialog', { static: true }) editDialog: FmRecordEditorComponent;
     @ViewChild('materialsGrid', {static: false}) materialsGrid: GridComponent;
@@ -43,18 +43,22 @@ export class CourseAssociateMaterialComponent extends DialogComponent implements
         materialEditFailedString: StringComponent;
     @ViewChild('materialAddDifferentLibraryString', { static: true })
         materialAddDifferentLibraryString: StringComponent;
+    @ViewChild('confirmOtherLibraryDialog') confirmOtherLibraryDialog: DialogComponent;
+    @ViewChild('otherLibraryNoPermissionsAlert') otherLibraryNoPermissionsAlert: DialogComponent;
     materialsDataSource: GridDataSource;
-    @Input() barcodeInput: String;
-    @Input() relationshipInput: String;
-    @Input() tempCallNumber: String;
-    @Input() tempStatus: Number;
-    @Input() tempLocation: Number;
-    @Input() tempCircMod: String;
-    @Input() isModifyingStatus: Boolean;
-    @Input() isModifyingCircMod: Boolean;
-    @Input() isModifyingCallNumber: Boolean;
-    @Input() isModifyingLocation: Boolean;
+    @Input() barcodeInput: string;
+    @Input() relationshipInput: string;
+    @Input() tempCallNumber: string;
+    @Input() tempStatus: number;
+    @Input() tempLocation: number;
+    @Input() tempCircMod: string;
+    @Input() isModifyingStatus: boolean;
+    @Input() isModifyingCircMod: boolean;
+    @Input() isModifyingCallNumber: boolean;
+    @Input() isModifyingLocation: boolean;
+    isModifyingLibrary: boolean;
     bibId: number;
+    itemCircLib: string;
 
     associateBriefRecord: (newRecord: string) => void;
     associateElectronicBibRecord: () => void;
@@ -62,13 +66,10 @@ export class CourseAssociateMaterialComponent extends DialogComponent implements
     constructor(
         private auth: AuthService,
         private course: CourseService,
-        private event: EventService,
-        private idl: IdlService,
         private net: NetService,
-        private org: OrgService,
         private pcrud: PcrudService,
-        private route: ActivatedRoute,
         private toast: ToastService,
+        private perm: PermService,
         private modal: NgbModal
     ) {
         super(modal);
@@ -159,7 +160,16 @@ export class CourseAssociateMaterialComponent extends DialogComponent implements
     }
 
     associateItem(barcode, relationship) {
-        if (barcode) {
+        if (!barcode || barcode.length === 0) { return; }
+        this.barcodeInput = null;
+
+        this.pcrud.search('acp', {barcode: barcode.trim()}, {
+            flesh: 3, flesh_fields: {acp: ['call_number', 'circ_lib']}
+        }).pipe(switchMap(item => {
+            this.isModifyingLibrary = item.circ_lib().id() !== this.currentCourse.owning_lib().id();
+            return this.isModifyingLibrary ? this.handleItemAtDifferentLibrary$(item) : of(item);
+        }))
+        .subscribe((originalItem) => {
             const args = {
                 barcode: barcode.trim(),
                 relationship: relationship,
@@ -167,48 +177,36 @@ export class CourseAssociateMaterialComponent extends DialogComponent implements
                 isModifyingCircMod: this.isModifyingCircMod,
                 isModifyingLocation: this.isModifyingLocation,
                 isModifyingStatus: this.isModifyingStatus,
+                isModifyingLibrary: this.isModifyingLibrary,
                 tempCircMod: this.tempCircMod,
                 tempLocation: this.tempLocation,
+                tempLibrary: this.currentCourse.owning_lib().id(),
                 tempStatus: this.tempStatus,
                 currentCourse: this.currentCourse
             };
-            this.barcodeInput = null;
 
-            this.pcrud.search('acp', {barcode: args.barcode}, {
-                flesh: 3, flesh_fields: {acp: ['call_number']}
-            }).subscribe(item => {
-                const associatedMaterial = this.course.associateMaterials(item, args);
-                associatedMaterial.material.then(res => {
-                    item = associatedMaterial.item;
-                    let new_cn = item.call_number().label();
-                    if (this.tempCallNumber) { new_cn = this.tempCallNumber; }
-                    this.course.updateItem(item, this.currentCourse.owning_lib(),
-                        new_cn, args.isModifyingCallNumber
-                    ).then(resp => {
-                        this.materialsGrid.reload();
-                        if (item.circ_lib() !== this.currentCourse.owning_lib()) {
-                            this.materialAddDifferentLibraryString.current()
-                            .then(str => this.toast.warning(str));
-                        } else {
-                            this.materialAddSuccessString.current()
-                            .then(str => this.toast.success(str));
-                        }
-                    });
-                }, err => {
-                    this.materialAddFailedString.current()
-                    .then(str => this.toast.danger(str));
+            const associatedMaterial = this.course.associateMaterials(originalItem, args);
+
+            associatedMaterial.material.then(res => {
+                const item = associatedMaterial.item;
+                let new_cn = item.call_number().label();
+                if (this.tempCallNumber) { new_cn = this.tempCallNumber; }
+                this.course.updateItem(item, this.currentCourse.owning_lib(),
+                    new_cn, args.isModifyingCallNumber
+                ).then(resp => {
+                    this.materialsGrid.reload();
+                    this.materialAddSuccessString.current()
+                    .then(str => this.toast.success(str));
                 });
+            }, err => {
+                this.materialAddFailedString.current()
+                .then(str => this.toast.danger(str));
             });
-        }
+        });
     }
 
     deleteSelectedMaterials(items) {
-        const deleteRequest$ = [];
-        items.forEach(item => {
-            deleteRequest$.push(this.net.request(
-                'open-ils.courses', 'open-ils.courses.detach_material',
-                this.auth.token(), item.id()));
-        });
+        let deleteRequest$ = this.course.detachMaterials(items);
         merge(...deleteRequest$).subscribe(
             val => {
                 this.materialDeleteSuccessString.current().then(str => this.toast.success(str));
@@ -220,5 +218,26 @@ export class CourseAssociateMaterialComponent extends DialogComponent implements
         ).add(() => {
             this.materialsGrid.reload();
         });
+    }
+
+    private handleItemAtDifferentLibrary$(item: IdlObject): Observable<any> {
+        this.itemCircLib = item.circ_lib().shortname();
+        const promise = this.perm.hasWorkPermAt(['UPDATE_COPY'], true).then(result => {
+            return result.UPDATE_COPY as number[];
+        });
+        return from(promise).pipe(concatMap((editableItemLibs) => {
+            if (editableItemLibs.indexOf(item.circ_lib().id()) !== -1) {
+                return this.confirmOtherLibraryDialog.open()
+                .pipe(switchMap(confirmed => {
+                    // If the user clicked "no", return an empty observable,
+                    // so the subsequent code has nothing to do.
+                    if (!confirmed) { return EMPTY; }
+                    return of(item);
+                }));
+            } else {
+                return this.otherLibraryNoPermissionsAlert.open()
+                .pipe(switchMap(() => EMPTY));
+            }
+        }));
     }
 }

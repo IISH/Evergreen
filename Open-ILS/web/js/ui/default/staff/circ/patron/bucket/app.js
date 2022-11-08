@@ -55,9 +55,9 @@ angular.module('egCatUserBuckets',
  */
 .controller('UserBucketCtrl',
        ['$scope','$location','$q','$timeout','$uibModal',
-        '$window','egCore','bucketSvc','ngToast',
+        '$window','egCore','bucketSvc','ngToast','egProgressDialog',
 function($scope,  $location,  $q,  $timeout,  $uibModal,  
-         $window,  egCore,  bucketSvc , ngToast) {
+         $window,  egCore,  bucketSvc , ngToast , egProgressDialog) {
 
     $scope.bucketSvc = bucketSvc;
     $scope.bucket = function() { return bucketSvc.currentBucket }
@@ -84,25 +84,29 @@ function($scope,  $location,  $q,  $timeout,  $uibModal,
         if (recs.length == 0) return;
         bucketSvc.bucketNeedsRefresh = true;
 
-        angular.forEach(recs,
-            function(rec) {
-                var item = new egCore.idl.cubi();
-                item.bucket(bucketSvc.currentBucket.id());
-                item.target_user(rec.id);
-                $scope.removeFromPendingList(rec.id);
-                egCore.net.request(
-                    'open-ils.actor',
-                    'open-ils.actor.container.item.create', 
-                    egCore.auth.token(), 'user', item, 1
-                ).then(function(resp) {
+        egProgressDialog.open();
+        var ids = recs.map(function(rec) {
+            $scope.removeFromPendingList(rec.id);
+            return rec.id;
+        });
 
-                    // HACK: add the IDs of the added items so that the size
-                    // of the view list will grow (and update any UI looking at
-                    // the list size).  The data stored is inconsistent, but since
-                    // we are forcing a bucket refresh on the next rendering of 
-                    // the view pane, the list will be repaired.
-                    bucketSvc.currentBucket.items().push(resp);
-                });
+        egCore.net.request(
+            'open-ils.actor',
+            'open-ils.actor.container.item.create.batch',
+            egCore.auth.token(), 'user',
+            bucketSvc.currentBucket.id(), ids
+        ).then(
+            function() {
+                egProgressDialog.close();
+            }, // complete
+            null, // error
+            function(resp) {
+                // HACK: add the IDs of the added items so that the size
+                // of the view list will grow (and update any UI looking at
+                // the list size).  The data stored is inconsistent, but since
+                // we are forcing a bucket refresh on the next rendering of
+                // the view pane, the list will be repaired.
+                bucketSvc.currentBucket.items().push(resp);
             }
         );
         //re-draw the pending list

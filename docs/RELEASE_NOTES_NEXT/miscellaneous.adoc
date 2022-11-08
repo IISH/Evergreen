@@ -1,4 +1,3 @@
-* The patron record juvenile flag is now available to the checkout and
-  items out print templates.
-* The Notices / Action Triggers administration interface (under Local
-  Administration) is ported to Angular.
+* Patron Interface Gets a New Penalty Refresh Action
+* A new workstation setting optionally allows the full library name to be
+  added to the Angular Org Unit selector. (LP#1771636)
