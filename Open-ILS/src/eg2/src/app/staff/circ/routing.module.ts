@@ -4,7 +4,7 @@ import {RouterModule, Routes} from '@angular/router';
 const routes: Routes = [{
   path: 'patron',
   loadChildren: () =>
-    import('./patron/routing.module').then(m => m.CircPatronRoutingModule)
+    import('./patron/patron.module').then(m => m.PatronManagerModule)
 }, {
   path: 'item',
   loadChildren: () =>
@@ -13,6 +13,14 @@ const routes: Routes = [{
   path: 'holds',
   loadChildren: () =>
     import('./holds/holds.module').then(m => m.HoldsUiModule)
+}, {
+  path: 'checkin',
+  loadChildren: () =>
+    import('./checkin/checkin.module').then(m => m.CheckinModule)
+}, {
+  path: 'renew',
+  loadChildren: () =>
+    import('./renew/renew.module').then(m => m.RenewModule)
 }];
 
 @NgModule({

@@ -4,15 +4,16 @@ import {Router, ActivatedRoute} from '@angular/router';
 import {AuthService, AuthWsState} from '@eg/core/auth.service';
 import {StoreService} from '@eg/core/store.service';
 import {OrgService} from '@eg/core/org.service';
+import {OfflineService} from '@eg/staff/share/offline.service';
 
 @Component({
   templateUrl : './login.component.html'
 })
-
 export class StaffLoginComponent implements OnInit {
 
     workstations: any[];
     loginFailed: boolean;
+    routeTo: string;
 
     args = {
       username : '',
@@ -28,10 +29,21 @@ export class StaffLoginComponent implements OnInit {
       private renderer: Renderer2,
       private auth: AuthService,
       private org: OrgService,
-      private store: StoreService
+      private store: StoreService,
+      private offline: OfflineService
     ) {}
 
     ngOnInit() {
+        this.routeTo = this.route.snapshot.queryParamMap.get('routeTo');
+
+        if (this.routeTo) {
+            if (this.routeTo.match(/^[a-z]+:\/\//i)) {
+                console.warn(
+                    'routeTo must contain only path information: ', this.routeTo);
+                this.routeTo = null;
+            }
+        }
+
         // clear out any stale auth data
         this.auth.logout();
 
@@ -63,19 +75,16 @@ export class StaffLoginComponent implements OnInit {
     handleSubmit() {
 
         // post-login URL
-        let url: string = this.auth.redirectUrl || '/staff/splash';
+        let url: string = this.routeTo || '/staff/splash';
 
         // prevent sending the user back to the login page
-        if (url.startsWith('/staff/login')) {
-            url = '/staff/splash';
-        }
+        if (url.match('/staff/login')) { url = '/staff/splash'; }
 
         const workstation: string = this.args.workstation;
 
         this.loginFailed = false;
         this.auth.login(this.args).then(
             ok => {
-                this.auth.redirectUrl = null;
 
                 if (this.auth.workstationState === AuthWsState.NOT_FOUND_SERVER) {
                     // User attempted to login with a workstation that is
@@ -88,16 +97,16 @@ export class StaffLoginComponent implements OnInit {
 
                 } else {
 
-                    // Initial login clears cached org unit setting values
-                    // and user/workstation setting values
-                    this.org.clearCachedSettings().then(_ => {
+                    this.offline.refreshOfflineData()
+                    // Initial login clears cached org unit settings.
+                    .then(_ => this.org.clearCachedSettings())
+                    .then(_ => {
 
                         // Force reload of the app after a successful login.
                         // This allows the route resolver to re-run with a
                         // valid auth token and workstation.
                         window.location.href =
                             this.ngLocation.prepareExternalUrl(url);
-
                     });
                 }
             },

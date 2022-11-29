@@ -120,12 +120,22 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
 
     @Input() cellTextGenerator: GridCellTextGenerator;
 
+    // If set, appears along the top left side of the grid.
+    @Input() toolbarLabel: string;
+
+    // If true, showing/hiding columns will force the data source to
+    // refresh the current page of data.
+    @Input() reloadOnColumnChange = false;
+
     context: GridContext;
 
     // These events are emitted from our grid-body component.
     // They are defined here for ease of access to the caller.
     @Output() onRowActivate: EventEmitter<any>;
     @Output() onRowClick: EventEmitter<any>;
+
+    // Emits an array of grid row indexes on any row selection change.
+    @Output() rowSelectionChange: EventEmitter<string[]>;
 
     @ViewChild('toolbar', { static: true }) toolbar: GridToolbarComponent;
 
@@ -139,6 +149,7 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
             new GridContext(this.idl, this.org, this.store, this.format);
         this.onRowActivate = new EventEmitter<any>();
         this.onRowClick = new EventEmitter<any>();
+        this.rowSelectionChange = new EventEmitter<string[]>();
     }
 
     ngOnInit() {
@@ -161,17 +172,24 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
         this.context.rowFlairIsEnabled = this.rowFlairIsEnabled  === true;
         this.context.showDeclaredFieldsOnly = this.showDeclaredFieldsOnly;
         this.context.rowFlairCallback = this.rowFlairCallback;
+        this.context.toolbarLabel = this.toolbarLabel;
         this.context.disablePaging = this.disablePaging === true;
         this.context.cellTextGenerator = this.cellTextGenerator;
         this.context.ignoredFields = [];
+        this.context.reloadOnColumnChange = this.reloadOnColumnChange;
 
         if (this.showFields) {
+            // Stripping spaces allows users to add newlines to
+            // long lists of field names without consequence.
+            this.showFields = this.showFields.replace(/\s+/g, '');
             this.context.defaultVisibleFields = this.showFields.split(',');
         }
         if (this.hideFields) {
+            this.hideFields = this.hideFields.replace(/\s+/g, '');
             this.context.defaultHiddenFields = this.hideFields.split(',');
         }
         if (this.ignoreFields) {
+            this.ignoreFields = this.ignoreFields.replace(/\s+/g, '');
             this.context.ignoredFields = this.ignoreFields.split(',');
         }
 
@@ -204,6 +222,10 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
                 return '';
             };
 
+        this.context.rowSelector.selectionChange.subscribe(
+            keys => this.rowSelectionChange.emit(keys)
+        );
+
         if (this.showLinkSelectors) {
             console.debug(
                 'showLinkSelectors is deprecated and no longer has any effect');
@@ -217,6 +239,7 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     ngOnDestroy() {
+        this.context.rowSelector.selectionChange.unsubscribe();
         this.context.destroy();
     }
 

@@ -186,6 +186,33 @@ sub update_privacy_waiver {
     return 1;
 }
 
+__PACKAGE__->register_method(
+    method    => "get_ou_setting_history",
+    api_name  => "open-ils.actor.org_unit.settings.history.retrieve",
+    signature => {
+        desc => "Retrieves the history of an Org Unit Setting.  The permission to retrieve "          .
+                "an org unit setting's history is dependant on a specific permission specified "       .
+                "in the view_perm column of the config.org_unit_setting_type " .
+                "table's row corresponding to the setting being changed." ,
+        params => [
+            {desc => 'Authentication token',        type => 'string'},
+            {desc => 'Org Unit ID',                 type => 'number'},
+            {desc => 'Setting Type Name',           type => 'string'}
+        ],
+        return => {desc => 'History IDL Object'}
+    }
+);
+
+sub get_ou_setting_history {
+    my( $self, $client, $auth, $setting, $orgid ) = @_;
+    my $e = new_editor(authtoken => $auth, xact => 1);
+    return $e->die_event unless $e->checkauth;
+
+    return $U->ou_ancestor_setting_log(
+        $orgid, $setting, $e, $auth
+    );
+
+}
 
 __PACKAGE__->register_method(
     method    => "set_ou_settings",
@@ -3490,12 +3517,13 @@ __PACKAGE__->register_method (
     api_name    => 'open-ils.actor.verify_user_password',
     signature   => q/
         Given a barcode or username and the MD5 encoded password,
+        The password can also be passed without the MD5 hashing.
         returns 1 if the password is correct.  Returns 0 otherwise.
     /
 );
 
 sub verify_user_password {
-    my($self, $conn, $auth, $barcode, $username, $password) = @_;
+    my($self, $conn, $auth, $barcode, $username, $password, $pass_nohash) = @_;
     my $e = new_editor(authtoken => $auth);
     return $e->die_event unless $e->checkauth;
     my $user;
@@ -3515,7 +3543,12 @@ sub verify_user_password {
     return 0 if (!$user || $U->is_true($user->deleted));
     return 0 if ($user_by_username && $user_by_barcode && $user_by_username->id != $user_by_barcode->id);
     return $e->event unless $e->allowed('VIEW_USER', $user->home_ou);
-    return $U->verify_migrated_user_password($e, $user->id, $password, 1);
+
+    if ($pass_nohash) {
+        return $U->verify_migrated_user_password($e, $user->id, $pass_nohash);
+    } else {
+        return $U->verify_migrated_user_password($e, $user->id, $password, 1);
+    }
 }
 
 __PACKAGE__->register_method (
@@ -4182,7 +4215,11 @@ __PACKAGE__->register_method (
 );
 
 sub negative_balance_users {
-    my($self, $conn, $auth, $org_id) = @_;
+    my($self, $conn, $auth, $org_id, $options) = @_;
+
+    $options ||= {};
+    $options->{limit} = 1000 unless $options->{limit};
+    $options->{offset} = 0 unless $options->{offset};
 
     my $e = new_editor(authtoken => $auth);
     return $e->die_event unless $e->checkauth;
@@ -4211,8 +4248,13 @@ sub negative_balance_users {
                 }
             }
         },
-        where => {'+mous' => {balance_owed => {'<' => 0}}}
+        where => {'+mous' => {balance_owed => {'<' => 0}}},
+        offset => $options->{offset},
+        limit => $options->{limit},
+        order_by => [{class => 'mous', field => 'usr'}]
     };
+
+    $org_id = $U->get_org_descendants($org_id) if $options->{org_descendants};
 
     $query->{from}->{mous}->{au}->{filter}->{home_ou} = $org_id if $org_id;
 

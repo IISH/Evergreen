@@ -1,0 +1,16 @@
+
+
+.payment-form input[type="text"], .payment-form input[type="number"] {
+  width: 8em;
+}
+
+.striped {
+  background-color: rgba(0,0,0,.03);
+  border-top: 1px solid rgba(0,0,0,.125);
+  border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
+.num-receipts {
+  width: 4em;
+}
+

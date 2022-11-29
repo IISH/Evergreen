@@ -1,5 +1,7 @@
-import {Component, OnInit, Input, ViewChild} from '@angular/core';
-import {Observable, Observer, of} from 'rxjs';
+import {Component, OnInit, Input, Output, EventEmitter, ViewChild} from '@angular/core';
+import {Location} from '@angular/common';
+import {Observable, Observer, of, from} from 'rxjs';
+import {concatMap} from 'rxjs/operators';
 import {IdlObject} from '@eg/core/idl.service';
 import {NetService} from '@eg/core/net.service';
 import {OrgService} from '@eg/core/org.service';
@@ -9,6 +11,7 @@ import {ServerStoreService} from '@eg/core/server-store.service';
 import {GridDataSource, GridColumn, GridCellTextGenerator} from '@eg/share/grid/grid';
 import {GridComponent} from '@eg/share/grid/grid.component';
 import {ProgressDialogComponent} from '@eg/share/dialog/progress.component';
+import {ConfirmDialogComponent} from '@eg/share/dialog/confirm.component';
 import {MarkDamagedDialogComponent
     } from '@eg/staff/share/holdings/mark-damaged-dialog.component';
 import {MarkMissingDialogComponent
@@ -31,6 +34,9 @@ import {HoldingsService} from '@eg/staff/share/holdings/holdings.service';
 })
 export class HoldsGridComponent implements OnInit {
 
+    // Hide the "Holds Count" header
+    @Input() hideHoldsCount = false;
+
     // If either are set/true, the pickup lib selector will display
     @Input() initialPickupLib: number | IdlObject;
     @Input() hidePickupLibFilter: boolean;
@@ -49,6 +55,10 @@ export class HoldsGridComponent implements OnInit {
 
     @Input() printTemplate: string;
 
+    // Adds a Place Hold grid toolbar button that emits
+    // placeHoldRequested on click.
+    @Input() showPlaceHoldButton = false;
+
     // If set, all holds are fetched on grid load and sorting/paging all
     // happens in the client.  If false, sorting and paging occur on
     // the server.
@@ -65,6 +75,14 @@ export class HoldsGridComponent implements OnInit {
     // Display bib record summary along the top of the detail page.
     @Input() showRecordSummary = false;
 
+    // If true, avoid popping up the progress dialog.  Note the grid
+    // has it's own generic embedded 'loading' progress indicator.
+    @Input() noLoadProgress = false;
+
+    // Some default columns and actions do or don't make sense when
+    // displaying holds for a specific patron vs. e.g. a specific title.
+    @Input() patronFocused = false;
+
     mode: 'list' | 'detail' | 'manage' = 'list';
     initDone = false;
     holdsCount: number;
@@ -74,6 +92,7 @@ export class HoldsGridComponent implements OnInit {
     detailHold: any;
     editHolds: number[];
     transferTarget: number;
+    uncancelHoldCount: number;
 
     @ViewChild('holdsGrid', { static: false }) private holdsGrid: GridComponent;
     @ViewChild('progressDialog', { static: true })
@@ -92,6 +111,7 @@ export class HoldsGridComponent implements OnInit {
         private cancelDialog: HoldCancelDialogComponent;
     @ViewChild('manageDialog', { static: true })
         private manageDialog: HoldManageDialogComponent;
+    @ViewChild('uncancelDialog') private uncancelDialog: ConfirmDialogComponent;
 
     // Bib record ID.
     _recordId: number;
@@ -102,23 +122,23 @@ export class HoldsGridComponent implements OnInit {
         }
     }
 
-    _userId: number;
-    @Input() set userId(id: number) {
-        this._userId = id;
+    get recordId(): number {
+        return this._recordId;
+    }
+
+    _patronId: number;
+    @Input() set patronId(id: number) {
+        this._patronId = id;
         if (this.initDone) {
             this.holdsGrid.reload();
         }
     }
-
-    // Include holds canceled on or after the provided date.
-    // If no value is passed, canceled holds are not displayed.
-    _showCanceledSince: Date;
-    @Input() set showCanceledSince(show: Date) {
-        this._showCanceledSince = show;
-        if (this.initDone) { // reload on update
-            this.holdsGrid.reload();
-        }
+    get patronId(): number {
+        return this._patronId;
     }
+
+    // If true, show recently canceled holds only.
+    @Input() showRecentlyCanceled = false;
 
     // Include holds fulfilled on or after hte provided date.
     // If no value is passed, fulfilled holds are not displayed.
@@ -128,6 +148,9 @@ export class HoldsGridComponent implements OnInit {
         if (this.initDone) { // reload on update
             this.holdsGrid.reload();
         }
+    }
+    get showFulfilledSince(): Date {
+        return this._showFulfilledSince;
     }
 
 
@@ -151,7 +174,11 @@ export class HoldsGridComponent implements OnInit {
         }
     }
 
+    // Notify the caller the place hold button was clicked.
+    @Output() placeHoldRequested: EventEmitter<void> = new EventEmitter<void>();
+
     constructor(
+        private ngLocation: Location,
         private net: NetService,
         private org: OrgService,
         private store: ServerStoreService,
@@ -171,6 +198,8 @@ export class HoldsGridComponent implements OnInit {
             this.store.getItem(this.preFetchSetting).then(
                 applied => this.enablePreFetch = Boolean(applied)
             );
+        } else {
+            this.enablePreFetch = false;
         }
 
         if (!this.defaultSort) {
@@ -209,7 +238,8 @@ export class HoldsGridComponent implements OnInit {
             cp_barcode: row => (row.cp_barcode == null) ? '' : row.cp_barcode,
             current_item: row => row.current_copy ? row.cp_barcode : '',
             requested_item: row => this.isCopyHold(row) ? row.cp_barcode : '',
-            ucard_barcode: row => row.ucard_barcode
+            ucard_barcode: row => row.ucard_barcode,
+            hold_status: row => row.hold_status // TODO labels
         };
     }
 
@@ -269,11 +299,6 @@ export class HoldsGridComponent implements OnInit {
             filters.fulfillment_time = null;
         }
 
-        if (this._showCanceledSince) {
-            filters.cancel_time = this._showCanceledSince.toISOString();
-        } else {
-            filters.cancel_time = null;
-        }
 
         if (this.hopeless) {
           filters['hopeless_holds'] = {
@@ -301,12 +326,12 @@ export class HoldsGridComponent implements OnInit {
                 this.org.descendants(this.pickupLib, true);
         }
 
-        if (this._recordId) {
-            filters.record_id = this._recordId;
+        if (this.recordId) {
+            filters.record_id = this.recordId;
         }
 
-        if (this._userId) {
-            filters.usr_id = this._userId;
+        if (this.patronId) {
+            filters.usr_id = this.patronId;
         }
 
         return filters;
@@ -315,7 +340,7 @@ export class HoldsGridComponent implements OnInit {
     fetchHolds(pager: Pager, sort: any[]): Observable<any> {
 
         // We need at least one filter.
-        if (!this._recordId && !this.pickupLib && !this._userId && !this.pullListOrg) {
+        if (!this.recordId && !this.pickupLib && !this.patronId && !this.pullListOrg) {
             return of([]);
         }
 
@@ -332,18 +357,29 @@ export class HoldsGridComponent implements OnInit {
 
         const limit = this.enablePreFetch ? null : pager.limit;
         const offset = this.enablePreFetch ? 0 : pager.offset;
+        const options: any = {};
+        if (this.showRecentlyCanceled) {
+            options.recently_canceled = true;
+        } else {
+            filters.cancel_time = null;
+        }
 
         let observer: Observer<any>;
         const observable = new Observable(obs => observer = obs);
 
-        this.progressDialog.open();
+        if (!this.noLoadProgress) {
+            // Note remaining dialog actions have no impact
+            this.progressDialog.open();
+        }
+
         this.progressDialog.update({value: 0, max: 1});
+
         let first = true;
         let loadCount = 0;
         this.net.request(
             'open-ils.circ',
             'open-ils.circ.hold.wide_hash.stream',
-            this.auth.token(), filters, orderBy, limit, offset
+            this.auth.token(), filters, orderBy, limit, offset, options
         ).subscribe(
             holdData => {
 
@@ -394,6 +430,15 @@ export class HoldsGridComponent implements OnInit {
 
     showDetails(rows: any[]) {
         this.showDetail(rows[0]);
+    }
+
+    showHoldsForTitle(rows: any[]) {
+        if (rows.length === 0) { return; }
+
+        const url = this.ngLocation.prepareExternalUrl(
+            `/staff/catalog/record/${rows[0].record_id}/holds`);
+
+        window.open(url, '_blank');
     }
 
     showDetail(row: any) {
@@ -578,6 +623,36 @@ export class HoldsGridComponent implements OnInit {
                 }
             );
         }
+    }
+
+    showUncancelDialog(rows: any[]) {
+        const holdIds = rows.map(r => r.id).filter(id => Boolean(id));
+        if (holdIds.length === 0) { return; }
+        this.uncancelHoldCount = holdIds.length;
+
+        this.uncancelDialog.open().subscribe(confirmed => {
+            if (!confirmed) { return; }
+            this.progressDialog.open();
+
+            from(holdIds).pipe(concatMap(holdId => {
+                return this.net.request(
+                    'open-ils.circ',
+                    'open-ils.circ.hold.uncancel',
+                    this.auth.token(), holdId
+                );
+            })).subscribe(
+                resp => {
+                    if (Number(resp) !== 1) {
+                        console.error('Failed uncanceling hold', resp);
+                    }
+                },
+                null,
+                () => {
+                    this.progressDialog.close();
+                    this.holdsGrid.reload();
+                }
+            );
+        });
     }
 
     printHolds() {

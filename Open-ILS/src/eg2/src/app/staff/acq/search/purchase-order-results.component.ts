@@ -14,7 +14,6 @@ import {AcqSearchFormComponent} from './acq-search-form.component';
 @Component({
   selector: 'eg-purchase-order-results',
   templateUrl: 'purchase-order-results.component.html',
-  providers: [AcqSearchService]
 })
 export class PurchaseOrderResultsComponent implements OnInit {
 
@@ -56,7 +55,7 @@ export class PurchaseOrderResultsComponent implements OnInit {
     }
 
     showRow(row: any) {
-        window.open('/eg/staff/acq/legacy/po/view/' + row.id(), '_blank');
+        window.open('/eg2/staff/acq/po/' + row.id(), '_blank');
     }
 
     doSearch(search: AcqSearch) {

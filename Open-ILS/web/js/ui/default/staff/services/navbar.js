@@ -11,6 +11,7 @@ angular.module('egCoreMod')
                      egCore , $uibModal , ngToast , egOpChange , $element , egLovefield) {
 
                 $scope.rs = $rootScope;
+                $scope.showAngularCirc = false;
 
                 $scope.reprintLast = function (e) {
                     egCore.print.reprintLast();
@@ -63,7 +64,7 @@ angular.module('egCoreMod')
                 $scope.retrieveLastRecord = function() {
                     var last_record = egCore.hatch.getLocalItem("eg.cat.last_record_retrieved");
                     if (last_record) {
-                        $window.location.href =
+                        $window.location.href = 
                             '/eg2/staff/catalog/record/' + last_record;
                     }
                 }
@@ -122,17 +123,25 @@ angular.module('egCoreMod')
 
                             egCore.org.settings([
                                 'ui.staff.max_recent_patrons',
-                                'ui.staff.angular_catalog.enabled',
+                                'ui.staff.traditional_catalog.enabled',
+                                'ui.staff.angular_circ.enabled',
+                                'ui.staff.angular_acq_selection.enabled',
                                 'circ.curbside'
                             ]).then(function(s) {
                                 var val = s['ui.staff.max_recent_patrons'];
                                 $scope.showRecentPatron = val > 0;
                                 $scope.showRecentPatrons = val > 1;
 
-                                $scope.showAngularCatalog = 
-                                    s['ui.staff.angular_catalog.enabled'];
-                                $scope.enableCurbside =
-                                    s['circ.curbside'];
+                                val = s['ui.staff.traditional_catalog.enabled'];
+                                $scope.showTraditionalCatalog = (val !== false);
+                                $scope.showAngularAcq =
+                                    s['ui.staff.angular_acq_selection.enabled'];
+                                $scope.enableCurbside = s['circ.curbside'];
+
+                                if (s['ui.staff.angular_circ.enabled']) {
+                                    egCore.perm.hasPermHere('ACCESS_ANGULAR_CIRC')
+                                    .then(function(yes) { $scope.showAngularCirc = yes; });
+                                }
                             }).then(function() {
                                 // need to defer initialization of hotkeys to this point
                                 // as it depends on various settings.

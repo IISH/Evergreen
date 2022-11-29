@@ -14,6 +14,14 @@ import {HatchService} from '@eg/core/hatch.service';
 const LOGIN_PATH = '/staff/login';
 const WS_MANAGE_PATH = '/staff/admin/workstation/workstations/manage';
 
+// Define these at the staff application level so they will be honored
+// regardless of which interface is loaded / reloaded / etc.
+const STAFF_LOGIN_SESSION_KEYS = [
+    'eg.circ.patron_hold_target',
+    'eg.catalog.recent_searches',
+    'eg.circ.recent_patrons'
+];
+
 /**
  * Load data used by all staff modules.
  */
@@ -41,6 +49,9 @@ export class StaffResolver implements Resolve<Observable<any>> {
         state: RouterStateSnapshot): Observable<any> {
 
         this.hatch.connect();
+
+        STAFF_LOGIN_SESSION_KEYS.forEach(
+            key => this.store.addLoginSessionKey(key));
 
         // Staff cookies stay in /$base/staff/
         // NOTE: storing session data at '/' so it can be shared by
@@ -110,8 +121,8 @@ export class StaffResolver implements Resolve<Observable<any>> {
     // valid auth token.  Send the caller back to the login page.
     handleInvalidToken(state: RouterStateSnapshot): void {
         console.debug('StaffResolver: authtoken is not valid');
-        this.auth.redirectUrl = state.url;
-        this.router.navigate([LOGIN_PATH]);
+        const url = this.ngLocation.prepareExternalUrl(state.url);
+        this.router.navigate([LOGIN_PATH], {queryParams: {routeTo: url}});
         this.observer.error('invalid or no auth token');
     }
 
@@ -132,7 +143,7 @@ export class StaffResolver implements Resolve<Observable<any>> {
     /**
      * Fetches data common to all staff interfaces.
      */
-    loadStartupData(): Promise<void> {
+    loadStartupData(): Promise<any> {
 
         // Fetch settings needed globally.  This will cache the values
         // in the org service.
@@ -141,6 +152,8 @@ export class StaffResolver implements Resolve<Observable<any>> {
             'webstaff.format.dates',
             'webstaff.format.date_and_time',
             'ui.staff.max_recent_patrons',
+            'circ.curbside', // navbar
+            'ui.staff.angular_circ.enabled',
             'ui.staff.angular_catalog.enabled' // navbar
         ]).then(settings => {
             // Avoid clobbering defaults
@@ -153,6 +166,10 @@ export class StaffResolver implements Resolve<Observable<any>> {
             if (settings['webstaff.format.date_and_time']) {
                 this.format.dateTimeFormat =
                     settings['webstaff.format.date_and_time'];
+            }
+            // TODO remove these once Angular Circ takes over.
+            if (settings['ui.staff.angular_circ.enabled']) {
+                return this.perm.hasWorkPermHere(['ACCESS_ANGULAR_CIRC']);
             }
         });
     }

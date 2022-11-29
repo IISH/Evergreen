@@ -3,12 +3,17 @@
 <!-- our on-demand dialogs-->
 <eg-progress-dialog #progressDialog></eg-progress-dialog>
 <eg-hold-transfer-dialog #transferDialog></eg-hold-transfer-dialog>
-<eg-mark-damaged-dialog #markDamagedDialog></eg-mark-damaged-dialog>
+<eg-mark-damaged-dialog #markDamagedDialog [handleCheckin]="true"></eg-mark-damaged-dialog>
 <eg-mark-missing-dialog #markMissingDialog></eg-mark-missing-dialog>
 <eg-mark-discard-dialog #markDiscardDialog></eg-mark-discard-dialog>
 <eg-hold-retarget-dialog #retargetDialog></eg-hold-retarget-dialog>
 <eg-hold-cancel-dialog #cancelDialog></eg-hold-cancel-dialog>
 <eg-hold-manage-dialog #manageDialog></eg-hold-manage-dialog>
+<eg-confirm-dialog #uncancelDialog
+  i18n-dialogTitle i18n-dialogBody
+  i18n-dialogTitle="Un-Cancel Holds"
+  dialogBody="Un-Cancel {{uncancelHoldCount}} hold(s)?"
+></eg-confirm-dialog>
 
 <ng-template #statusTemplate let-hold="row">
   <ng-container [ngSwitch]="hold.hold_status">
@@ -27,17 +32,17 @@
 
 <div class='eg-holds w-100 mt-3'>
 
-  <ng-container *ngIf="mode == 'detail'">
+  <ng-container *ngIf="mode === 'detail'">
     <eg-hold-detail [wideHold]="detailHold" (onShowList)="mode='list'" 
       [showRecordSummary]="showRecordSummary"></eg-hold-detail>
   </ng-container>
 
-  <ng-container *ngIf="mode == 'list' && initComplete()">
+  <ng-container *ngIf="mode === 'list' && initComplete()">
 
-    <h3 i18n>Holds Count: {{holdsCount}}</h3>
+    <h3 *ngIf="!hideHoldsCount" i18n>Holds Count: {{holdsCount}}</h3>
 
     <div class="row" *ngIf="!hidePickupLibFilter">
-      <div class="col-lg-4">
+      <div class="col-lg-5">
         <div class="input-group">
           <div class="input-group-prepend">
             <div class="input-group-text" i18n>Pickup Library</div>
@@ -77,6 +82,18 @@
         [initialValue]="enablePreFetch" i18n-label label="Pre-Fetch All Holds">
       </eg-grid-toolbar-checkbox>
 
+      <ng-container *ngIf="preFetchSetting && !hopeless">
+        <eg-grid-toolbar-checkbox (onChange)="preFetchHolds($event)"
+          [initialValue]="enablePreFetch" i18n-label label="Pre-Fetch All Holds">
+        </eg-grid-toolbar-checkbox>
+      </ng-container>
+
+      <ng-container *ngIf="showPlaceHoldButton">
+        <eg-grid-toolbar-button
+          i18n-label label="Place Hold" (onClick)="placeHoldRequested.emit()">
+        </eg-grid-toolbar-button>
+      </ng-container>
+
       <eg-grid-toolbar-action
         i18n-label label="Show Hold Details" i18n-group group="Hold"
         (onClick)="showDetails($event)"></eg-grid-toolbar-action>
@@ -90,7 +107,7 @@
         i18n-label label="Show Last Few Circulations" group="Item" i18n-group
         (onClick)="showRecentCircs($event)"></eg-grid-toolbar-action>
 
-      <eg-grid-toolbar-action
+      <eg-grid-toolbar-action *ngIf="!patronFocused"
         i18n-label label="Retrieve Patron" group="Patron" i18n-group
         (onClick)="showPatron($event)">
       </eg-grid-toolbar-action>
@@ -119,9 +136,14 @@
         i18n-group group="Hold" i18n-label label="Find Another Target"
         (onClick)="showRetargetDialog($event)"></eg-grid-toolbar-action>
 
-      <eg-grid-toolbar-action
+      <eg-grid-toolbar-action *ngIf="!showRecentlyCanceled"
         i18-group group="Hold" i18n-label label="Cancel Hold"
         (onClick)="showCancelDialog($event)"></eg-grid-toolbar-action>
+
+      <eg-grid-toolbar-action *ngIf="showRecentlyCanceled"
+        i18n-label label="Un-Cancel Hold(s)" group="Hold" i18n-group
+        (onClick)="showUncancelDialog($event)">
+      </eg-grid-toolbar-action>
 
       <eg-grid-toolbar-action
         i18-group group="Hold" i18n-label label="Print Holds"
@@ -141,6 +163,10 @@
         i18-group group="Item" i18n-label label="Show in Catalog"
         (onClick)="showTitle($event)"></eg-grid-toolbar-action>
 
+      <eg-grid-toolbar-action
+        i18n-label label="Show Holds For Title" i18n-group group="Show"
+        (onClick)="showHoldsForTitle($event)"></eg-grid-toolbar-action>
+
       <eg-grid-column i18n-label label="Hold ID" path='id' [index]="true" datatype="id">
       </eg-grid-column>
 
@@ -159,10 +185,10 @@
 
       <ng-template #barcodeTmpl let-hold="row" let-col="col">
         <a href="/eg/staff/cat/item/{{hold.cp_id}}/summary" target="_blank">
-          <ng-container *ngIf="col.name == 'current_item' && hold.current_copy">
+          <ng-container *ngIf="col.name === 'current_item' && hold.current_copy">
             {{hold.cp_barcode}}
           </ng-container>
-          <ng-container *ngIf="col.name == 'requested_item' && isCopyHold(hold)">
+          <ng-container *ngIf="col.name === 'requested_item' && isCopyHold(hold)">
             {{hold.cp_barcode}}
           </ng-container>
         </a>

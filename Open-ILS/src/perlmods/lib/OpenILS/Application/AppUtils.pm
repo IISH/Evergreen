@@ -1318,19 +1318,63 @@ sub ou_ancestor_setting {
         my $coust = $e->retrieve_config_org_unit_setting_type([
             $name, {flesh => 1, flesh_fields => {coust => ['view_perm']}}
         ]);
-        if ($coust && $coust->view_perm) {
-            # And you can't have permission if you don't have a valid session.
-            return undef if not $e->checkauth;
-            # And now that we know you MIGHT have permission, we check it.
-            return undef if not $e->allowed($coust->view_perm->code, $orgid);
-        }
+        return undef unless ou_ancestor_setting_perm_check($orgid, $coust, $auth)
     }
 
     my $query = {from => ['actor.org_unit_ancestor_setting', $name, $orgid]};
     my $setting = $e->json_query($query)->[0];
     return undef unless $setting;
     return {org => $setting->{org_unit}, value => OpenSRF::Utils::JSON->JSON2perl($setting->{value})};
-}   
+}
+
+# Returns the org id if the requestor has the permissions required
+# to view the ou setting.
+sub ou_ancestor_setting_perm_check {
+    my( $self, $orgid, $view_perm, $e, $auth ) = @_;
+    $e = $e || OpenILS::Utils::CStoreEditor->new(
+        (defined $auth) ? (authtoken => $auth) : ()
+    );
+
+    # And you can't have permission if you don't have a valid session.
+    return undef if not $e->checkauth;
+    # And now that we know you MIGHT have permission, we check it.
+    if ($view_perm) {
+        return undef unless $e->allowed($view_perm, $orgid);
+    }
+
+    return $orgid;
+}
+
+sub ou_ancestor_setting_log {
+    my ( $self, $orgid, $name, $e, $auth ) = @_;
+    $e = $e || OpenILS::Utils::CStoreEditor->new(
+        (defined $auth) ? (authtoken => $auth, xact => 1) : ()
+    );
+    my $coust;
+
+    if ($auth) {
+        $coust = $e->retrieve_config_org_unit_setting_type([
+            $name, {flesh => 1, flesh_fields => {coust => ['view_perm']}}
+        ]);
+        my $orgs = $self->get_org_ancestors($orgid);
+
+        my $qorg = $self->ou_ancestor_setting_perm_check(
+            $orgs,
+            $coust,
+            $e,
+            $auth
+        );
+        my $sort = { order_by => { coustl => 'date_applied DESC' } };
+        return $e->json_query({
+            from => 'coustl',
+            where => {
+                field_name => $name,
+                org => $qorg
+            },
+            $sort
+        });
+    };
+}
 
 # This fetches a set of OU settings in one fell swoop,
 # which can be significantly faster than invoking
@@ -1572,6 +1616,21 @@ sub org_unit_ancestor_at_depth {
     my $resp = OpenILS::Utils::CStoreEditor->new->json_query(
         {from => ['actor.org_unit_ancestor_at_depth', $org_id, $depth]})->[0];
     return ($resp) ? $resp->{id} : undef;
+}
+
+# returns the ID of the org unit ancestor at the specified distance
+sub get_org_unit_ancestor_at_distance {
+    my ($class, $org_id, $distance) = @_;
+    my $ancestors = OpenILS::Utils::CStoreEditor->new->json_query(
+        { from => ['actor.org_unit_ancestors_distance', $org_id] });
+    my @match = grep { $_->{distance} == $distance } @{$ancestors};
+    return (@match) ? $match[0]->{id} : undef;
+}
+
+# returns the ID of the org unit parent
+sub get_org_unit_parent {
+    my ($class, $org_id) = @_;
+    return $class->get_org_unit_ancestor_at_distance($org_id, 1);
 }
 
 # Returns the proximity value between two org units.

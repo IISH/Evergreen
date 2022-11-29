@@ -1,0 +1,13 @@
+<eg-staff-banner i18n-bannerText bannerText="Register New Patron">
+</eg-staff-banner>
+
+<eg-worklog-strings-components></eg-worklog-strings-components>                
+
+<div class="sticky-top-with-nav bg-white">
+  <eg-patron-edit-toolbar #editorToolbar></eg-patron-edit-toolbar>
+</div>
+
+<eg-patron-edit [stageUsername]="stageUsername" 
+  [cloneId]="cloneId" [toolbar]="editorToolbar">
+</eg-patron-edit>
+

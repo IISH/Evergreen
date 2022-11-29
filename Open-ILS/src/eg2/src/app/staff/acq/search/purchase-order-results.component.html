@@ -4,10 +4,11 @@
   defaultSearchSetting="eg.acq.search.default.purchaseorders"></eg-acq-search-form>
 
 <ng-template #nameTmpl let-purchaseorder="row">
-  <a href="/eg/staff/acq/legacy/po/view/{{purchaseorder.id()}}"
-     target="_blank">
-    {{purchaseorder.name()}}
-  </a>
+  <ng-container>
+    <a routerLink="/staff/acq/po/{{purchaseorder.id()}}" target="_blank">
+      {{purchaseorder.name()}}
+    </a>
+  </ng-container>
 </ng-template>
 
 <ng-template #providerTmpl let-purchaseorder="row">

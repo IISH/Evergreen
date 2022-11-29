@@ -1,0 +1,58 @@
+
+<eg-patron-penalty-dialog [patronId]="patronId" #penaltyDialog>
+</eg-patron-penalty-dialog>
+
+<div class="row mb-2">
+  <div class="col-lg-12">
+    <h3 i18n>Penalties and Messages</h3>
+  </div>
+</div>
+
+<eg-grid #mainGrid idlClass="ausp" [dataSource]="mainDataSource"
+  [showDeclaredFieldsOnly]="true" persistKey="circ.patron.staff_messages">
+  <eg-grid-toolbar-button i18n-label label="Apply Penalty / Message"
+    (onClick)="applyPenalty()">
+  <eg-grid-toolbar-action (onClick)="archive($event)"
+    label="Archive Selected" i18n-label></eg-grid-toolbar-action>
+  <eg-grid-toolbar-action (onClick)="remove($event)"
+    label="Delete Selected" i18n-label></eg-grid-toolbar-action>
+  <eg-grid-toolbar-action (onClick)="modify($event)"
+    label="Modify Selected" i18n-label></eg-grid-toolbar-action>
+  </eg-grid-toolbar-button>
+
+  <eg-grid-column path="set_date"
+    i18n-label label="Applied On" [datePlusTime]="true"></eg-grid-column>
+  <eg-grid-column i18n-label label="Label" path="standing_penalty.label">
+  </eg-grid-column>
+  <eg-grid-column i18n-label label="Note" path="note"></eg-grid-column>
+</eg-grid>
+
+<div class="row mt-5 mb-2">
+  <div class="col-lg-4">
+    <h3 i18n>Archived Penalties / Messages</h3>
+  </div>
+  <div class="col-lg-4 form-inline">
+    <label class="mr-2" i18n>Start Date:</label>
+    <eg-date-select [initialIso]="startDateYmd"
+      (onChangeAsIso)="dateChange($event, true)"></eg-date-select>
+  </div>
+  <div class="col-lg-4 form-inline">
+    <label class="mr-2" i18n>End Date:</label>
+    <eg-date-select [initialIso]="endDateYmd" 
+      (onChangeAsIso)="dateChange($event, false)"></eg-date-select>
+  </div>
+</div>
+
+<eg-grid #archiveGrid idlClass="ausp" [dataSource]="archiveDataSource"
+  [showDeclaredFieldsOnly]="true" persistKey="circ.patron.archived_messages">
+  <eg-grid-toolbar-action (onClick)="remove($event)"
+    label="Delete Selected" i18n-label></eg-grid-toolbar-action>
+  <eg-grid-toolbar-action (onClick)="unArchive($event)"
+    label="Un-Archive Selected" i18n-label></eg-grid-toolbar-action>
+  <eg-grid-column path="set_date"
+    i18n-label label="Applied On" [datePlusTime]="true"></eg-grid-column>
+  <eg-grid-column i18n-label label="Label" path="standing_penalty.label">
+  </eg-grid-column>
+  <eg-grid-column i18n-label label="Note" path="note"></eg-grid-column>
+</eg-grid>
+

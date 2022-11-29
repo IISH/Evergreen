@@ -2345,6 +2345,8 @@ sub apply_modified_due_date {
       # if the due_date lands on a day when the location is closed
       return unless $copy and $circ->due_date;
 
+        $self->extend_renewal_due_date if $self->is_renewal;
+
         #my $org = (ref $copy->circ_lib) ? $copy->circ_lib->id : $copy->circ_lib;
 
         # due-date overlap should be determined by the location the item
@@ -2373,6 +2375,66 @@ sub apply_modified_due_date {
    }
 }
 
+sub extend_renewal_due_date {
+    my $self = shift;
+    my $circ = $self->circ;
+    my $matchpoint = $self->circ_matrix_matchpoint;
+
+    return unless $U->is_true($matchpoint->renew_extends_due_date);
+
+    my $prev_circ = $self->editor->retrieve_action_circulation($self->parent_circ);
+
+    my $start_time = DateTime::Format::ISO8601->new
+        ->parse_datetime(clean_ISO8601($prev_circ->xact_start))->epoch;
+
+    my $prev_due_date = DateTime::Format::ISO8601->new
+        ->parse_datetime(clean_ISO8601($prev_circ->due_date));
+
+    my $due_date = DateTime::Format::ISO8601->new
+        ->parse_datetime(clean_ISO8601($circ->due_date));
+
+    my $prev_due_time = $prev_due_date->epoch;
+
+    my $now_time = DateTime->now->epoch;
+
+    return if $prev_due_time < $now_time; # Renewed circ was overdue.
+
+    if (my $interval = $matchpoint->renew_extend_min_interval) {
+
+        my $min_duration = OpenILS::Utils::DateTime->interval_to_seconds($interval);
+        my $checkout_duration = $now_time - $start_time;
+
+        if ($checkout_duration < $min_duration) {
+            # Renewal occurred too early in the cycle to result in an
+            # extension of the due date on the renewal.
+
+            # If the new due date falls before the due date of
+            # the previous circulation, use the due date of the prev.
+            # circ so the patron does not lose time.
+            my $due = $due_date < $prev_due_date ? $prev_due_date : $due_date;
+            $circ->due_date($due->strftime('%FT%T%z'));
+
+            return;
+        }
+    }
+
+    # Item was checked out long enough during the previous circulation
+    # to consider extending the due date of the renewal to cover the gap.
+
+    # Amount of the previous duration that was left unused.
+    my $remaining_duration = $prev_due_time - $now_time;
+
+    $due_date->add(seconds => $remaining_duration);
+
+    # If the calculated due date falls before the due date of the previous 
+    # circulation, use the due date of the prev. circ so the patron does
+    # not lose time.
+    my $due = $due_date < $prev_due_date ? $prev_due_date : $due_date;
+
+    $logger->info("circulator: renewal due date extension landed on due date: $due");
+
+    $circ->due_date($due->strftime('%FT%T%z'));
+}
 
 
 sub create_due_date {
@@ -2669,6 +2731,9 @@ sub do_checkin {
     return $self->bail_on_events(
         OpenILS::Event->new('ASSET_COPY_NOT_FOUND')) 
         unless $self->copy;
+
+    # Never capture a deleted copy for a hold.
+    $self->capture('nocapture') if $U->is_true($self->copy->deleted);
 
     $self->fix_broken_transit_status; # if applicable
     $self->check_transit_checkin_interval;

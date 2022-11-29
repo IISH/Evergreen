@@ -20,7 +20,7 @@
 
 export PATH=${PATH}:/usr/sbin
 AC_PREREQ(2.61)
-AC_INIT(Open-ILS, 3.9.1, open-ils-dev@list.georgialibraries.org)
+AC_INIT(Open-ILS, 3.10.0, open-ils-dev@list.georgialibraries.org)
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE
@@ -33,7 +33,7 @@ AC_SUBST([abs_top_builddir])
 #-----------------------------------
 
 
-AC_PROG_LIBTOOL
+LT_INIT
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LN_S
@@ -187,28 +187,13 @@ AC_ARG_WITH([libxml2],
 [LIBXML2_HEADERS=/usr/include/libxml2/])
 AC_SUBST([LIBXML2_HEADERS])
 
-AC_ARG_WITH([dbi],
-[  --with-dbi=path             location of the libdbi driver libraries (default is /usr/lib/x86_64-linux-gnu/dbd/)],
-[DBI_LIBS=${withval}],
-[DBI_LIBS=/usr/lib/x86_64-linux-gnu/dbd/])
+PKG_CHECK_MODULES([DBI], [dbi])
 
 AC_ARG_WITH([perlbase],
 [  --with-perlbase=path        base location to install Perl modules (default based on Config.pm)],
 [PERL_BASE=${withval}],
 [PERL_BASE=x])
 AC_SUBST([PERL_BASE])
-
-# If the passed in value doesn't work, fall back to reasonable defaults
-# Distributions are starting to package a good version of libdbi / libdbd
-if ! test -d "$DBI_LIBS"; then
-    for i in /usr/lib/dbd/ /usr/lib64/dbd /usr/local/lib/dbd/ ; do
-        if test -d "$i"; then
-            DBI_LIBS="$i"
-            break
-        fi
-    done
-fi
-AC_SUBST([DBI_LIBS])
 
 AM_CONDITIONAL(CHECK_TESTS, test x$enable_tests = xyes)
 
@@ -234,10 +219,10 @@ if test "x$openils_core" = "xtrue"; then
     [OPENSRF_LIBS=`$OSRF_CONFIG --libdir`])
     AC_SUBST([OPENSRF_LIBS])
 
-    #AC_CHECK_PROG([MEMCACHED],memcached,yes,no)
-    #if test $MEMCACHED = "no"; then
-    #    AC_MSG_ERROR([*** memcached not found, aborting])
-    #fi
+    AC_CHECK_PROG([MEMCACHED],memcached,yes,no)
+    if test $MEMCACHED = "no"; then
+        AC_MSG_ERROR([*** memcached not found, aborting])
+    fi
 
     AC_CHECK_PROG([ASPELL],aspell,yes,no)
     if test $ASPELL = "no"; then
@@ -300,7 +285,6 @@ if test "x$openils_core" = "xtrue"; then
     # Checks for header files.
     #------------------------------------
 
-    AC_HEADER_STDC
     AC_CHECK_HEADERS([fcntl.h langinfo.h locale.h stdlib.h string.h unistd.h])
 
     #-------------------------------------------------------------------

@@ -1,0 +1,387 @@
+<eg-staff-banner *ngIf="!isHoldCapture" i18n-bannerText bannerText="Checkin Items">
+</eg-staff-banner>
+
+<eg-staff-banner *ngIf="isHoldCapture" i18n-bannerText bannerText="Capture Holds">
+</eg-staff-banner>
+
+<eg-mark-damaged-dialog #markDamagedDialog [handleCheckin]="true"></eg-mark-damaged-dialog>
+<eg-circ-components></eg-circ-components>
+<eg-progress-dialog #progressDialog></eg-progress-dialog>
+<eg-barcode-select #barcodeSelect></eg-barcode-select>
+<eg-copy-alerts-dialog #copyAlertsDialog></eg-copy-alerts-dialog>
+<eg-bucket-dialog #bucketDialog></eg-bucket-dialog>
+<eg-string #itemNeverCircedStr i18n-text 
+  text="Item CONC40000598 has never circulated."></eg-string>
+<eg-backdate-dialog #backdateDialog></eg-backdate-dialog>
+<eg-cancel-transit-dialog #cancelTransitDialog></eg-cancel-transit-dialog>
+<eg-worklog-strings-components></eg-worklog-strings-components>
+
+<div class="row" *ngIf="hasAlerts()">
+  <div class="col-lg-12">
+    <div class="alert alert-danger p-1 text-dark">
+
+      <span *ngIf="backdate" 
+        class="mr-3 pr-3 border-right border-info label-with-material-icon">
+        <span class="material-icons">history</span>
+        <span class="pl-2" i18n>Backdated Check In {{backdate | date:'shortDate'}}</span>
+      </span>
+
+      <span *ngIf="backdate && backdateUntilLogout"
+        class="mr-3 pr-3 border-right border-info label-with-material-icon">
+        <span class="material-icons">timeline</span>
+        <span class="pl-2" i18n>Use Effective Date Until Logout</span>
+      </span>
+
+      <span *ngIf="modifiers.no_precat_alert"
+        class="mr-3 pr-3 border-right border-info label-with-material-icon">
+        <span class="material-icons">edit</span>
+        <span class="pl-2" i18n>Ignore Pre-Cataloged Items</span>
+      </span>
+
+      <span *ngIf="modifiers.noop"
+        class="mr-3 pr-3 border-right border-info label-with-material-icon"> 
+        <span class="material-icons">block</span>
+        <span class="pl-2" i18n>Suppress Holds and Transits</span>
+      </span>
+
+      <span *ngIf="modifiers.void_overdues"
+        class="mr-3 pr-3 border-right border-info label-with-material-icon">
+        <span class="material-icons">monetization_on</span>
+        <span class="pl-2" i18n>Amnesty Mode</span>
+      </span>
+
+      <span *ngIf="modifiers.auto_print_holds_transits"
+        class="mr-3 pr-3 border-right border-info label-with-material-icon">
+        <span class="material-icons">print</span>
+        <span class="pl-2" i18n>Auto-Print Hold and Transit Slips</span>
+      </span>
+
+      <span class="mr-3 pr-3 border-right border-info" 
+        *ngIf="modifiers.clear_expired" i18n>Clear Holds Shelf</span>
+
+      <ng-container *ngIf="modifiers.retarget_holds">
+        <span class="mr-3 pr-3 border-right border-info" 
+          *ngIf="modifiers.retarget_holds_all" i18n>Always Retarget Local Holds</span>
+        <span class="mr-3 pr-3 border-right border-info" 
+          *ngIf="!modifiers.retarget_holds_all" i18n>Retarget Local Holds</span>
+      </ng-container>
+
+      <span *ngIf="modifiers.hold_as_transit"
+        class="mr-3 pr-3 border-right border-info label-with-material-icon">
+        <span class="material-icons">directions_transit</span>
+        <span class="pl-2" i18n>Capture Local Holds As Transits</span>
+      </span>
+
+      <span class="mr-3 pr-3 border-right border-info" 
+        *ngIf="modifiers.manual_float" i18n>Manual Floating Active</span>
+
+      <span class="mr-3 pr-3 border-right border-info" 
+        *ngIf="modifiers.do_inventory_update" i18n>Update Inventory</span>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-3 pb-3 border-bottom">
+  <div class="col-lg-12 d-flex">
+    <div class="form-inline">
+      <div class="input-group">
+        <div class="input-group-prepend">
+          <span class="input-group-text" i18n>Barcode</span>
+        </div>
+        <input type="text" class="form-control" id="barcode-input"
+          placeholder="Barcode..." i18n-placeholder [(ngModel)]="barcode"
+          i18n-aria-label aria-label="Barcode Input" (keydown.enter)="checkin()" />
+        <div class="input-group-append">
+          <button class="btn btn-outline-dark" (keydown.enter)="checkin()" 
+            (click)="checkin()" i18n>Submit</button>
+        </div>
+      </div>
+    </div>
+    <div class="flex-1"></div>
+    <div class="mr-2">
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" 
+          id="use-date-cbox" [(ngModel)]="backdateUntilLogout"/>
+        <label class="form-check-label" 
+          for="use-date-cbox" i18n>Use effective date until logout</label>
+      </div>
+    </div>
+    <div class="mr-2" i18n>Effective Date:</div>
+    <eg-date-select [initialIso]="backdate" [(ngModel)]="backdateDate"
+      (onChangeAsIso)="backdate = $event"></eg-date-select>
+    <button class="btn btn-sm btn-outline-dark ml-1" 
+      (click)="backdateDate=null; backdate=null" i18n>Clear</button>
+  </div>
+</div>
+
+<div *ngIf="fineTally > 0">
+  <span class="mr-2" i18n>Fine Tally: </span>
+  <span class="badge badge-danger">{{fineTally | currency}}</span>
+</div>
+
+<!-- doc_id below because checkin returns an MVR -->
+<ng-template #titleTemplate let-r="row">
+  <ng-container *ngIf="r.record">
+    <a routerLink="/staff/catalog/record/{{r.record.doc_id()}}">{{r.title}}</a>
+  </ng-container>
+  <ng-container *ngIf="!r.record">{{r.title}}</ng-container>
+</ng-template>
+
+<ng-template #barcodeTemplate let-r="row">
+  <ng-container *ngIf="r.copy">
+    <a href="/eg/staff/cat/item/{{r.copy.id()}}">{{r.copy.barcode()}}</a>
+  </ng-container>
+</ng-template>
+
+<div class="row">
+  <div class="col-lg-12">
+    <eg-grid #grid [dataSource]="gridDataSource" [sortable]="true"
+      [useLocalSort]="true" [cellTextGenerator]="cellTextGenerator"
+      [disablePaging]="true" [persistKey]="persistKey">
+
+      <eg-grid-toolbar-action
+        group="Mark" i18n-group i18n-label label="Mark Item Damaged"
+        (onClick)="markDamaged($event)"></eg-grid-toolbar-action>
+
+      <eg-grid-toolbar-action
+        group="Mark" i18n-group i18n-label label="Mark Missing Pieces"
+        (onClick)="markMissingPieces($event)"></eg-grid-toolbar-action>
+
+      <eg-grid-toolbar-action
+        i18n-group group="Edit" i18n-label label="Manage Item Alerts"
+        [disabled]="grid.context.rowSelector.selected().length !== 1"
+        (onClick)="manageItemAlerts($event)">
+      </eg-grid-toolbar-action>
+
+      <eg-grid-toolbar-action
+        i18n-group group="Edit" i18n-label label="Edit Holdings"
+        (onClick)="editHoldings($event)">
+      </eg-grid-toolbar-action>
+
+      <eg-grid-toolbar-action
+        i18n-group group="Edit" i18n-label label="Edit Items"
+        (onClick)="editItems($event)">
+      </eg-grid-toolbar-action>
+
+      <eg-grid-toolbar-action
+        i18n-group group="Print" i18n-label label="Print Labels"
+        (onClick)="openItemPrintLabels($event)">
+      </eg-grid-toolbar-action>
+
+      <eg-grid-toolbar-action
+        i18n-group group="Add" i18n-label label="Add Item Alerts"
+        (onClick)="addItemAlerts($event)">
+      </eg-grid-toolbar-action>
+
+      <eg-grid-toolbar-action
+        i18n-group group="Add" i18n-label label="Add Items To Bucket"
+        (onClick)="openBucketDialog($event)">
+      </eg-grid-toolbar-action>
+
+      <eg-grid-toolbar-action
+        i18n-group group="Circulation" i18n-label label="Backdate Post-Checkin"
+        (onClick)="backdatePostCheckin($event)">
+      </eg-grid-toolbar-action>
+
+      <eg-grid-toolbar-action
+        i18n-group group="Circulation" i18n-label label="Cancel Transits"
+        (onClick)="cancelTransits($event)">
+      </eg-grid-toolbar-action>
+
+      <eg-grid-toolbar-action
+        i18n-group group="Show" i18n-label 
+        label="Retrieve Last Patron Who Circulated Item"
+        [disabled]="grid.context.rowSelector.selected().length !== 1"
+        (onClick)="retrieveLastPatron($event)">
+      </eg-grid-toolbar-action>
+
+      <eg-grid-toolbar-action
+        i18n-group group="Show" i18n-label 
+        label="Show Record Holds"
+        [disabled]="grid.context.rowSelector.selected().length !== 1"
+        (onClick)="showRecordHolds($event)">
+      </eg-grid-toolbar-action>
+
+      <eg-grid-toolbar-action
+        i18n-group group="Show" i18n-label 
+        label="Show Last Few Circs"
+        [disabled]="grid.context.rowSelector.selected().length !== 1"
+        (onClick)="showRecentCircs($event)">
+      </eg-grid-toolbar-action>
+
+      <!-- COLUMNS -->
+
+      <eg-grid-column path="index" [index]="true" 
+        label="Row Index" i18n-label [hidden]="true"></eg-grid-column>
+
+      <eg-grid-column path="copy.alert_message" label="Alert Message"
+        i18n-label></eg-grid-column>
+
+      <eg-grid-column path="mbts.balance_owed" label="Balance Owed" 
+        datatype="money" i18n-label></eg-grid-column>
+
+      <eg-grid-column path="copy.barcode" label="Barcode" 
+        i18n-label [cellTemplate]="barcodeTemplate"></eg-grid-column>
+
+      <eg-grid-column i18n-label label="Call Number" path="volume.label">
+      </eg-grid-column>
+
+      <eg-grid-column path="copy.circ_lib.shortname"
+        label="Circulation Library" i18n-label></eg-grid-column>
+
+      <eg-grid-column path="title" label="Title" i18n-label 
+        [cellTemplate]="titleTemplate"></eg-grid-column>
+
+      <eg-grid-column path="patron.family_name" label="Last Name" i18n-label>
+      </eg-grid-column>
+
+      <eg-grid-column path="patron.first_given_name" label="First Name" i18n-label>
+      </eg-grid-column>
+
+      <eg-grid-column path="copy.location.name" label="Location" i18n-label [hidden]="true">
+      </eg-grid-column>
+
+      <eg-grid-column path="circ.id" label="Bill #" i18n-label [hidden]="true">
+      </eg-grid-column>
+
+      <eg-grid-column path="circ.checkin_time" label="Checkin Date" i18n-label
+        datatype="timestamp" [datePlusTime]="true" [hidden]="true"></eg-grid-column>
+
+      <eg-grid-column name="routeTo" label="Route To" i18n-label>
+      </eg-grid-column>
+
+      <eg-grid-column path="circ.xact_finish" label="Finish" i18n-label
+        [hidden]="true" datatype="timestamp" [datePlusTime]="true"></eg-grid-column>
+
+      <eg-grid-column path="circ.xact_start" label="Start" i18n-label [hidden]="true" 
+        datatype="timestamp" [datePlusTime]="true"></eg-grid-column>
+
+      <eg-grid-column path="copy.circ_modifier" [hidden]="true" 
+        label="Circulation Modifier" i18n-label></eg-grid-column>
+
+      <eg-grid-column path="copy.status.name" [hidden]="true"
+        label="Item Status" i18n-label></eg-grid-column>
+
+      <eg-grid-column path="circ.due_date" label="Due Date" i18n-label
+        timezoneContextOrg="circ.circ_lib" dateOnlyIntervalField="circ.duration"
+        [hidden]="true" datatype="timestamp"></eg-grid-column>
+
+      <eg-grid-column path="copy.*" idlClass="acp" [hidden]="true"></eg-grid-column>
+      <eg-grid-column path="volume.*" idlClass="acn" [hidden]="true"></eg-grid-column>
+      <eg-grid-column path="circ.*" idlClass="circ" [hidden]="true"></eg-grid-column>
+      <eg-grid-column path="mbts.*" idlClass="mbts" [hidden]="true"></eg-grid-column>
+      <eg-grid-column path="patron.*" idlClass="au" [hidden]="true"></eg-grid-column>
+      <eg-grid-column path="record.*" idlClass="mvr" [hidden]="true"></eg-grid-column>
+      <eg-grid-column path="hold.*" idlClass="ahr" [hidden]="true"></eg-grid-column>
+      <eg-grid-column path="transit.*" idlClass="atc" [hidden]="true"></eg-grid-column>
+
+    </eg-grid>
+  </div>
+</div>
+
+<div class="row mt-3 pt-3">
+  <div class="col-lg-12 d-flex">
+    <div class="flex-1"></div>
+    <div class="mr-3">
+      <button class="btn btn-outline-dark" 
+        (click)="printReceipt()" i18n>Print Receipt</button>
+    </div>
+    <div class="mr-3">
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" 
+          id="trim-list-cbox" [(ngModel)]="trimList"/>
+        <label class="form-check-label" 
+          for="trim-list-cbox" i18n>Trim List (20)</label>
+      </div>
+    </div>
+    <div class="mr-3">
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" 
+          (ngModelChange)="toggleStrictBarcode($event)"
+          id="strict-barcode-cbox" [(ngModel)]="strictBarcode"/>
+        <label class="form-check-label" 
+          for="strict-barcode-cbox" i18n>Strict Barcode</label>
+      </div>
+    </div>
+    <div>
+      <div ngbDropdown>
+        <button class="btn btn-outline-dark" 
+          ngbDropdownToggle i18n>Checkin Modifiers</button>
+        <div ngbDropdownMenu>
+          <a ngbDropdownItem (click)="toggleMod('no_precat_alert')">
+            <span *ngIf="modifiers.no_precat_alert" 
+              class="badge badge-success mr-2">&#x2713;</span>
+            <span *ngIf="!modifiers.no_precat_alert" 
+              class="badge badge-warning mr-2">&#x2717;</span>
+            <span i18n>Ignore Pre-cataloged Items</span>
+          </a>
+          <a ngbDropdownItem (click)="toggleMod('noop')">
+            <span *ngIf="modifiers.noop" 
+              class="badge badge-success mr-2">&#x2713;</span>
+            <span *ngIf="!modifiers.noop" 
+              class="badge badge-warning mr-2">&#x2717;</span>
+            <span i18n>Suppress Holds and Transits</span>
+          </a>
+          <a ngbDropdownItem (click)="toggleMod('void_overdues')">
+            <span *ngIf="modifiers.void_overdues" 
+              class="badge badge-success mr-2">&#x2713;</span>
+            <span *ngIf="!modifiers.void_overdues"
+              class="badge badge-warning mr-2">&#x2717;</span>
+            <span i18n>Amnesty Mode</span>
+          </a>
+          <a ngbDropdownItem (click)="toggleMod('auto_print_holds_transits')">
+            <span *ngIf="modifiers.auto_print_holds_transits" 
+              class="badge badge-success mr-2">&#x2713;</span>
+            <span *ngIf="!modifiers.auto_print_holds_transits"
+              class="badge badge-warning mr-2">&#x2717;</span>
+            <span>Auto-Print Hold and Transit Slips</span>
+          </a>
+          <a ngbDropdownItem (click)="toggleMod('clear_expired')">
+            <span *ngIf="modifiers.clear_expired" 
+              class="badge badge-success mr-2">&#x2713;</span>
+            <span *ngIf="!modifiers.clear_expired"
+              class="badge badge-warning mr-2">&#x2717;</span>
+            <span i18n>Clear Holds Shelf</span>
+          </a>
+          <a ngbDropdownItem (click)="toggleMod('retarget_holds')">
+            <span *ngIf="modifiers.retarget_holds" 
+              class="badge badge-success mr-2">&#x2713;</span>
+            <span *ngIf="!modifiers.retarget_holds"
+              class="badge badge-warning mr-2">&#x2717;</span>
+            <span i18n>Retarget Local Holds</span>
+          </a>
+          <a ngbDropdownItem (click)="toggleMod('retarget_holds_all')">
+            <span *ngIf="modifiers.retarget_holds_all" 
+              class="badge badge-success mr-2">&#x2713;</span>
+            <span *ngIf="!modifiers.retarget_holds_all"
+              class="badge badge-warning mr-2">&#x2717;</span>
+            <span i18n>Retarget All Statuses</span>
+          </a>
+          <a ngbDropdownItem (click)="toggleMod('hold_as_transit')">
+            <span *ngIf="modifiers.hold_as_transit" 
+              class="badge badge-success mr-2">&#x2713;</span>
+            <span *ngIf="!modifiers.hold_as_transit"
+              class="badge badge-warning mr-2">&#x2717;</span>
+            <span i18n>Capture Local Holds As Transits</span>
+          </a>
+          <a ngbDropdownItem (click)="toggleMod('manual_float')">
+            <span *ngIf="modifiers.manual_float"
+              class="badge badge-success mr-2">&#x2713;</span>
+            <span *ngIf="!modifiers.manual_float"
+              class="badge badge-warning mr-2">&#x2717;</span>
+            <span i18n>Manual Floating Active</span>
+          </a>
+          <a ngbDropdownItem (click)="toggleMod('do_inventory_update')">
+            <span *ngIf="modifiers.do_inventory_update"
+              class="badge badge-success mr-2">&#x2713;</span>
+            <span *ngIf="!modifiers.do_inventory_update"
+              class="badge badge-warning mr-2">&#x2717;</span>
+            <span i18n>Update Inventory</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+

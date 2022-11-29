@@ -1,7 +1,8 @@
 import {Component, Input, Output, OnInit, AfterViewInit,
-    EventEmitter, ViewChild, Renderer2} from '@angular/core';
-import {Observable, of} from 'rxjs';
-import {map} from 'rxjs/operators';
+    EventEmitter, ViewChild} from '@angular/core';
+import {ActivatedRoute, ParamMap} from '@angular/router';
+import {Observable, of, from} from 'rxjs';
+import {map, concatMap} from 'rxjs/operators';
 import {IdlObject} from '@eg/core/idl.service';
 import {NetService} from '@eg/core/net.service';
 import {AuthService} from '@eg/core/auth.service';
@@ -10,6 +11,8 @@ import {ServerStoreService} from '@eg/core/server-store.service';
 import {GridComponent} from '@eg/share/grid/grid.component';
 import {GridDataSource} from '@eg/share/grid/grid';
 import {Pager} from '@eg/share/util/pager';
+import {BucketDialogComponent} from '@eg/staff/share/buckets/bucket-dialog.component';
+import {PatronMergeDialogComponent} from './merge-dialog.component';
 
 const DEFAULT_SORT = [
    'family_name ASC',
@@ -27,6 +30,20 @@ const DEFAULT_FLESH = [
 const EXPAND_FORM = 'eg.circ.patron.search.show_extras';
 const INCLUDE_INACTIVE = 'eg.circ.patron.search.include_inactive';
 
+export interface PatronSearchField {
+    value: any;
+    group?: number;
+}
+
+export interface PatronSearchFieldSet {
+    [field: string]: PatronSearchField;
+}
+
+export interface PatronSearch {
+    search: PatronSearchFieldSet;
+    orgId?: number;
+}
+
 @Component({
   selector: 'eg-patron-search',
   templateUrl: './search.component.html'
@@ -34,10 +51,30 @@ const INCLUDE_INACTIVE = 'eg.circ.patron.search.include_inactive';
 
 export class PatronSearchComponent implements OnInit, AfterViewInit {
 
-    @ViewChild('searchGrid', {static: false}) searchGrid: GridComponent;
+    @ViewChild('searchGrid') searchGrid: GridComponent;
+    @ViewChild('addToBucket') addToBucket: BucketDialogComponent;
+    @ViewChild('mergeDialog') mergeDialog: PatronMergeDialogComponent;
 
-    // Fired on dbl-click of a search result row.
-    @Output() patronsSelected: EventEmitter<any>;
+    startWithFired = false;
+    @Input() startWithSearch: PatronSearch;
+
+    // If set, load a batch of patrons by ID.
+    @Input() patronIds: number[];
+
+    // Fires on dbl-click or Enter while one or more search result
+    // rows are selected.
+    @Output() patronsActivated: EventEmitter<any>;
+
+    // Fires when the selection of search result rows changes.
+    // Emits an array of patron IDs
+    @Output() selectionChange: EventEmitter<number[]>;
+
+    // Fired with each search that is run, except for
+    // any searches run as a result of @Input() startWithSearch.
+    @Output() searchFired: EventEmitter<PatronSearch>;
+
+    // Fired when the search form is cleared via the Clear Form button.
+    @Output() formCleared: EventEmitter<void> = new EventEmitter<void>();
 
     search: any = {};
     searchOrg: IdlObject;
@@ -46,13 +83,17 @@ export class PatronSearchComponent implements OnInit, AfterViewInit {
     profileGroups: IdlObject[] = [];
 
     constructor(
-        private renderer: Renderer2,
+        private route: ActivatedRoute,
         private net: NetService,
         public org: OrgService,
         private auth: AuthService,
         private store: ServerStoreService
     ) {
-        this.patronsSelected = new EventEmitter<any>();
+        this.patronsActivated = new EventEmitter<any>();
+        this.selectionChange = new EventEmitter<number[]>();
+        this.selectionChange = new EventEmitter<number[]>();
+        this.searchFired = new EventEmitter<PatronSearch>();
+
         this.dataSource = new GridDataSource();
         this.dataSource.getRows = (pager: Pager, sort: any[]) => {
             return this.getRows(pager, sort);
@@ -60,6 +101,18 @@ export class PatronSearchComponent implements OnInit, AfterViewInit {
     }
 
     ngOnInit() {
+
+        this.route.queryParamMap.subscribe((params: ParamMap) => {
+            const search = params.get('search');
+            if (search) {
+                try {
+                    this.startWithSearch = {search: JSON.parse(search)};
+                } catch (E) {
+                    console.error('Invalid JSON search value', search, E);
+                }
+            }
+        });
+
         this.searchOrg = this.org.root();
         this.store.getItemBatch([EXPAND_FORM, INCLUDE_INACTIVE])
             .then(settings => {
@@ -69,7 +122,8 @@ export class PatronSearchComponent implements OnInit, AfterViewInit {
     }
 
     ngAfterViewInit() {
-        this.renderer.selectRootElement('#focus-this-input').focus();
+        const node = document.getElementById('focus-this-input');
+        if (node) { node.focus(); }
     }
 
     toggleExpandForm() {
@@ -89,8 +143,12 @@ export class PatronSearchComponent implements OnInit, AfterViewInit {
         }
     }
 
-    rowsSelected(rows: IdlObject | IdlObject[]) {
-        this.patronsSelected.emit([].concat(rows));
+    gridSelectionChange(keys: string[]) {
+        this.selectionChange.emit(keys.map(k => Number(k)));
+    }
+
+    rowsActivated(rows: IdlObject | IdlObject[]) {
+        this.patronsActivated.emit([].concat(rows));
     }
 
     getSelected(): IdlObject[] {
@@ -104,14 +162,19 @@ export class PatronSearchComponent implements OnInit, AfterViewInit {
 
     clear() {
         this.search = {profile: null};
+        this.searchGrid.reload();
+        this.formCleared.emit();
     }
 
     getRows(pager: Pager, sort: any[]): Observable<any> {
 
         let observable: Observable<IdlObject>;
 
-        if (this.search.id) {
-            observable = this.searchById();
+        if (this.patronIds && !this.startWithFired) {
+            observable = this.searchById(this.patronIds);
+            this.startWithFired = true;
+        } else if (this.search.id) {
+            observable = this.searchById([this.search.id]);
         } else {
             observable = this.searchByForm(pager, sort);
         }
@@ -124,33 +187,61 @@ export class PatronSearchComponent implements OnInit, AfterViewInit {
         return user;
     }
 
+    // Absorb a patron search object into the search form.
+    absorbPatronSearch(pSearch: PatronSearch) {
+
+        if (pSearch.orgId) {
+            this.searchOrg = this.org.get(pSearch.orgId);
+        }
+
+        Object.keys(pSearch.search).forEach(field => {
+            this.search[field] = pSearch.search[field].value;
+        });
+    }
+
     searchByForm(pager: Pager, sort: any[]): Observable<IdlObject> {
+
+        if (this.startWithSearch && !this.startWithFired) {
+            this.absorbPatronSearch(this.startWithSearch);
+        }
+
+        // Never fire a "start with" search after any search has fired
+        this.startWithFired = true;
 
         const search = this.compileSearch();
         if (!search) { return of(); }
 
         const sorter = this.compileSort(sort);
 
+        const pSearch: PatronSearch = {
+            search: search,
+            orgId: this.searchOrg.id()
+        };
+
+        this.searchFired.emit(pSearch);
+
         return this.net.request(
             'open-ils.actor',
             'open-ils.actor.patron.search.advanced.fleshed',
             this.auth.token(),
-            this.compileSearch(),
+            pSearch.search,
             pager.limit,
             sorter,
-            null, // ?
-            this.searchOrg.id(),
+            this.search.inactive,
+            pSearch.orgId,
             DEFAULT_FLESH,
             pager.offset
         );
     }
 
-    searchById(): Observable<IdlObject> {
-        return this.net.request(
-            'open-ils.actor',
-            'open-ils.actor.user.fleshed.retrieve',
-            this.auth.token(), this.search.id, DEFAULT_FLESH
-        );
+    searchById(patronIds: number[]): Observable<IdlObject> {
+        return from(patronIds).pipe(concatMap(id => {
+            return this.net.request(
+                'open-ils.actor',
+                'open-ils.actor.user.fleshed.retrieve',
+                this.auth.token(), id, DEFAULT_FLESH
+            );
+        }));
     }
 
     compileSort(sort: any[]): string[] {
@@ -158,14 +249,19 @@ export class PatronSearchComponent implements OnInit, AfterViewInit {
         return sort.map(def => `${def.name} ${def.dir}`);
     }
 
-    compileSearch(): any {
+    compileSearch(): PatronSearchFieldSet {
 
         let hasSearch = false;
-        const search: Object = {};
+        const search: PatronSearchFieldSet = {};
 
         Object.keys(this.search).forEach(field => {
+            if (field === 'inactive') { return; }
             search[field] = this.mapSearchField(field);
-            if (search[field]) { hasSearch = true; }
+            if (search[field] !== null) {
+                hasSearch = true;
+            } else {
+                delete search[field];
+            }
         });
 
         return hasSearch ? search : null;
@@ -175,17 +271,16 @@ export class PatronSearchComponent implements OnInit, AfterViewInit {
         return (val !== null && val !== undefined && val !== '');
     }
 
-    mapSearchField(field: string): any {
+    mapSearchField(field: string): PatronSearchField {
 
         const value = this.search[field];
         if (!this.isValue(value)) { return null; }
 
-        const chunk = {value: value, group: 0};
+        const chunk: PatronSearchField = {value: value, group: 0};
 
         switch (field) {
 
             case 'name': // name keywords
-            case 'inactive':
                 delete chunk.group;
                 break;
 
@@ -219,7 +314,7 @@ export class PatronSearchComponent implements OnInit, AfterViewInit {
 
                 if (!field.match(/year/)) {
                     // force day/month to be 2 digits
-                    chunk[field].value = ('0' + value).slice(-2);
+                    chunk.value = ('0' + value).slice(-2);
                 }
                 break;
         }
@@ -228,6 +323,18 @@ export class PatronSearchComponent implements OnInit, AfterViewInit {
         if (!this.isValue(chunk.value)) { return null; }
 
         return chunk;
+    }
+
+    addSelectedToBucket(rows: IdlObject[]) {
+        this.addToBucket.itemIds = rows.map(r => r.id());
+        this.addToBucket.open().subscribe();
+    }
+
+    mergePatrons(rows: IdlObject[]) {
+        this.mergeDialog.patronIds = [rows[0].id(), rows[1].id()];
+        this.mergeDialog.open({size: 'lg'}).subscribe(changes => {
+            if (changes) { this.searchGrid.reload(); }
+        });
     }
 }
 

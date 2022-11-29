@@ -13,7 +13,9 @@ use OpenILS::Application::Acq::Financials;
 use OpenILS::Application::Cat::BibCommon;
 use OpenILS::Application::Cat::AssetCommon;
 use OpenILS::Application::Acq::Lineitem::BatchUpdate;
+use OpenILS::Application::Acq::Common;
 my $U = 'OpenILS::Application::AppUtils';
+my $AC = 'OpenILS::Application::Acq::Common';
 
 
 __PACKAGE__->register_method(
@@ -73,10 +75,12 @@ sub create_lineitem {
 
     if ($po) {
         # apply the default number of copies for this provider
+        my $owning_lib = $AC->get_default_lid_owning_library($e);
+        $logger->warn("GMC: owning_lib => $owning_lib");
         for (1 .. $po->provider->default_copy_count) {
             my $lid = Fieldmapper::acq::lineitem_detail->new;
             $lid->lineitem($li->id);
-            $lid->owning_lib($e->requestor->ws_ou);
+            $lid->owning_lib($owning_lib);
             $e->create_acq_lineitem_detail($lid) or return $e->die_event;
         }
     }
@@ -173,11 +177,25 @@ sub retrieve_lineitem_impl {
     push(@{$fields->{jub}   },        'editor') if $$options{flesh_editor};
     push(@{$fields->{jub}   },      'selector') if $$options{flesh_selector};
 
+    if ($$options{flesh_formulas}) {
+        push(@{$fields->{jub}},    'distribution_formulas');
+        push(@{$fields->{acqdfa}}, 'formula');
+        push(@{$fields->{acqdfa}}, 'creator');
+    }
+
     if($$options{flesh_li_details}) {
         push(@{$fields->{jub}   }, 'lineitem_details');
         push(@{$fields->{acqlid}}, 'fund'         ) if $$options{flesh_fund};
         push(@{$fields->{acqlid}}, 'fund_debit'   ) if $$options{flesh_fund_debit};
         push(@{$fields->{acqlid}}, 'cancel_reason') if $$options{flesh_cancel_reason};
+        push(@{$fields->{acqlid}}, 'circ_modifier') if $$options{flesh_circ_modifier};
+        push(@{$fields->{acqlid}}, 'location')      if $$options{flesh_location};
+        if ($$options{flesh_copies}) {
+            push(@{$fields->{acqlid}}, 'eg_copy_id');
+            push(@{$fields->{acp}},    'call_number') if $$options{flesh_call_number};
+            push(@{$fields->{acp}},    'location')    if $$options{flesh_copy_location};
+        }
+        push(@{$fields->{acqlid}}, 'receiver')      if $$options{flesh_li_details_receiver};
     }
 
     if($$options{clear_marc}) { # avoid fetching marc blob
@@ -227,6 +245,67 @@ sub retrieve_lineitem_impl {
         $li->picklist($li->picklist ? $li->picklist->id : undef);
     }
     return $li;
+}
+
+__PACKAGE__->register_method(
+    method    => 'retrieve_lineitem_batch',
+    api_name  => 'open-ils.acq.lineitem.retrieve.batch',
+    stream => 1,
+    max_bundle_count => 1,
+    signature => {
+        desc   => q/
+            Retrieves a set of lineitems.  
+            See open-ils.acq.lineitem.retrieve/,
+        params => [
+            {desc => 'Authentication token',    type => 'string'},
+            {desc => 'Array of lineitem IDs to retrieve', type => 'array'},
+            {options => q/See open-ils.acq.lineitem.retrieve/}
+        ],
+        return => {desc => 'Stream of lineitems, Event on error'}
+    }
+);
+
+
+sub retrieve_lineitem_batch {
+    my($self, $client, $auth, $li_ids, $options) = @_;
+    my $e = new_editor(authtoken => $auth, xact => 1);
+    return $e->die_event unless $e->checkauth;
+
+    for my $li_id (@$li_ids) {
+        my $li = retrieve_lineitem_impl($e, $li_id, $options);
+
+        set_default_order_ident($self, $e, $options, $li);
+
+        $client->respond({
+            id => $li_id,
+            lineitem => $li,
+            existing_copies => $AC->li_existing_copies($e, $li_id)
+        });
+    }
+
+    $e->rollback;
+
+    return undef;
+}
+
+sub set_default_order_ident {
+	my ($self, $e, $options, $li) = @_;
+
+    if (!$$options{flesh_attrs}) { return; }
+    if (!$$options{apply_order_identifiers}) { return; }
+    if (grep {$_->order_ident eq 't'} @{$li->attributes}) { return ; }
+
+    # Caller wants us to apply a default order identifier
+    # Use the first ISBN as the default.
+
+    my ($attr) = grep {$_->attr_name eq 'isbn'} @{$li->attributes};
+
+    if (!$attr) { return; }
+
+    my $method = $self->method_lookup('open-ils.acq.lineitem.order_identifier.set');
+    my ($ident_attr) = $method->run($e->authtoken, {source_attr_id => $attr->id});
+
+    push(@{$li->attributes}, $ident_attr);
 }
 
 
@@ -478,11 +557,21 @@ sub lineitems_related_by_bib {
         return scalar(@$results);
     } else {
         for my $result (@$results) {
-            # retrieve_lineitem takes care of POs and PLs and also handles
-            # options like flesh_notes and permissions checking.
-            $conn->respond(
-                retrieve_lineitem($self, $conn, $auth, $result->{"id"}, $options)
-            );
+
+            # Let retrieve_lineitem_impl handle the permission checks
+            # and fleshing where needed.
+            my $li = retrieve_lineitem_impl($e, $result->{id}, $options) 
+                or return $e->die_event;
+
+            if ($options->{idlist}) {
+                $conn->respond($li->id);
+
+            } else {
+                
+                # retrieve_lineitem takes care of POs and PLs and also handles
+                # options like flesh_notes and permissions checking.
+                $conn->respond($li);
+            }
         }
     }
 

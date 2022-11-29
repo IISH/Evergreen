@@ -181,6 +181,8 @@ use MARC::Batch;
 use MARC::File::XML (BinaryEncoding => 'UTF-8');
 use Digest::MD5 qw(md5_hex);
 use Data::Dumper;
+use OpenILS::Application::Acq::Common;
+my $AC = 'OpenILS::Application::Acq::Common';
 $Data::Dumper::Indent = 0;
 my $U = 'OpenILS::Application::AppUtils';
 
@@ -621,6 +623,7 @@ sub check_lineitem_received {
 
     my $li = $mgr->editor->retrieve_acq_lineitem($li_id);
     $li->state('received');
+    $li->clear_cancel_reason; # un-cancel on receive
     return update_lineitem($mgr, $li);
 }
 
@@ -659,6 +662,8 @@ sub receive_lineitem {
 sub rollback_receive_lineitem {
     my($mgr, $li_id) = @_;
     my $li = $mgr->editor->retrieve_acq_lineitem($li_id) or return 0;
+
+    return 0 unless ($li->state eq 'received' || $li->state eq 'on-order');
 
     my $lid_ids = $mgr->editor->search_acq_lineitem_detail(
         {lineitem => $li_id, recv_time => {'!=' => undef}}, {idlist => 1});
@@ -906,6 +911,14 @@ sub create_lineitem_debits {
                 flesh_fields => {acqlid => ['fund']}
             }
         ]);
+
+        if (!$lid->owning_lib) {
+            # It's OK to create copies with no owning lib, but activating
+            # an order with such copies creates problems.
+            $mgr->editor->event(OpenILS::Event->new('ACQ_COPY_NO_OWNING_LIB', payload => $li->id));
+            $mgr->editor->rollback;
+            return 0;
+        }
 
         create_lineitem_detail_debit($mgr, $li, $lid, $dry_run) or return 0;
     }
@@ -1951,7 +1964,8 @@ sub apply_default_copies {
         }, 
         {idlist => 1}
     );
-    
+
+    my $owning_lib = $AC->get_default_lid_owning_library($e);
     for my $li_id (@$li_ids) {
 
         my $lid_ids = $e->search_acq_lineitem_detail(
@@ -1963,7 +1977,7 @@ sub apply_default_copies {
         for (1 .. $copy_count) {
             create_lineitem_detail($mgr, 
                 lineitem => $li_id,
-                owning_lib => $e->requestor->ws_ou
+                owning_lib => $owning_lib
             ) or return 0;
         }
     }
@@ -2072,11 +2086,11 @@ sub lineitem_detail_CUD_batch {
                 create_lineitem_detail_debit($mgr, $li, $lid, 0, 1) or return $e->die_event;
             }
 
-        } elsif($lid->ischanged) {
-            return $evt if $evt = handle_changed_lid($e, $lid, $dry_run, $fund_cache);
-
         } elsif($lid->isdeleted) {
             delete_lineitem_detail($mgr, $lid) or return $e->die_event;
+
+        } elsif($lid->ischanged) {
+            return $evt if $evt = handle_changed_lid($e, $lid, $dry_run, $fund_cache);
         }
 
         $mgr->respond(li => $li);
@@ -2302,7 +2316,10 @@ sub receive_lineitem_batch_api {
             'RECEIVE_PURCHASE_ORDER', $li->purchase_order->ordering_agency
         );
 
-        receive_lineitem($mgr, $li_id) or return $e->die_event;
+        # Editor may have no die_event to return
+        receive_lineitem($mgr, $li_id) or return 
+            $e->die_event || OpenILS::Event->new('ACQ_LI_RECEIVE_FAILED');
+
         $mgr->respond;
     }
 
@@ -2490,7 +2507,12 @@ sub rollback_receive_lineitem_batch_api {
         return $e->die_event unless
             $e->allowed('RECEIVE_PURCHASE_ORDER', $po->ordering_agency);
 
-        $li = rollback_receive_lineitem($mgr, $li_id) or return $e->die_event;
+        unless ($li = rollback_receive_lineitem($mgr, $li_id)) {
+            return (
+                $e->die_event || # may not be an event here
+                OpenILS::Event->new('ACQ_LI_ROLLBACK_RECEIVE_FAILED')
+            );
+        }
 
         my $result = {"li" => {$li->id => {"state" => $li->state}}};
         if ($po->state eq "received") { # should happen first time, not after
@@ -2692,12 +2714,14 @@ sub delete_picklist_api {
 
 __PACKAGE__->register_method(
     method   => 'activate_purchase_order',
-    api_name => 'open-ils.acq.purchase_order.activate.dry_run'
+    api_name => 'open-ils.acq.purchase_order.activate.dry_run',
+    max_bundle_count => 1
 );
 
 __PACKAGE__->register_method(
     method    => 'activate_purchase_order',
     api_name  => 'open-ils.acq.purchase_order.activate',
+    max_bundle_count => 1,
     signature => {
         desc => q/Activates a purchase order.  This updates the status of the PO / .
                 q/and Lineitems to 'on-order'.  Activated PO's are ready for EDI delivery if appropriate./,
@@ -3461,6 +3485,47 @@ sub delete_po_item_api {
     return 1;
 }
 
+__PACKAGE__->register_method(
+    method => "disencumber_po_item_api",
+    api_name    => "open-ils.acq.po_item.disencumber",
+    signature => {
+        desc => q/Zeroes out a po_item's encumbrance/,
+        params => [
+            {desc => "Authentication token", type => "string"},
+            {desc => "po_item ID disencumber", type => "number"},
+        ],
+        return => {desc => q/1 on success, Event on error/}
+    }
+);
+
+sub disencumber_po_item_api {
+    my($self, $client, $auth, $po_item_id) = @_;
+    my $e = new_editor(authtoken => $auth, xact => 1);
+    return $e->die_event unless $e->checkauth;
+
+    my $po_item = $e->retrieve_acq_po_item([
+        $po_item_id, {
+            flesh => 1,
+            flesh_fields => {acqpoi => ['purchase_order', 'fund_debit']}
+        }
+    ]) or return $e->die_event;
+
+    return $e->die_event unless 
+        $e->allowed('CREATE_PURCHASE_ORDER', 
+            $po_item->purchase_order->ordering_agency);
+
+    # reduce encumbered amount to zero
+    my $result = disencumber_po_item($e, $po_item);
+
+    if ($result) {
+        $e->rollback;
+        return $result;
+    }
+
+    $e->commit;
+    return 1;
+}
+
 
 # 1. Removes linked fund debit from a PO item if present and still encumbered.
 # 2. Optionally also deletes the po_item object
@@ -3492,6 +3557,29 @@ sub clear_po_item {
     return undef;
 }
 
+# Zeroes the amount of a fund debit for a PO item if present and still
+# encumbered. Note that we're intentionally still keeping the fund_debit
+# around to signify that the encumbrance was manually zeroed.
+# po_item is fleshed with purchase_order and fund_debit
+sub disencumber_po_item {
+    my ($e, $po_item, $delete_item) = @_;
+
+    if ($po_item->fund_debit) {
+
+        if (!$U->is_true($po_item->fund_debit->encumbrance)) {
+            # debit has been paid.  We cannot delete it.
+            return OpenILS::Event->new('ACQ_NOT_CANCELABLE', 
+               note => "Debit is marked as paid: ".$po_item->fund_debit->id);
+        }
+
+        # fund_debit is OK to zero out.
+        $po_item->fund_debit->amount(0);
+        $e->update_acq_fund_debit($po_item->fund_debit)
+            or return $e->die_event;
+    }
+
+    return undef;
+}
 
 __PACKAGE__->register_method(
     method    => 'user_requests',
@@ -3939,30 +4027,8 @@ sub po_note_CUD_batch {
 # retrieves a lineitem, fleshes its PO and PL, checks perms
 # returns ($li, $evt, $org)
 sub fetch_and_check_li {
-    my $e = shift;
-    my $li_id = shift;
-    my $perm_mode = shift || 'read';
-
-    my $li = $e->retrieve_acq_lineitem([
-        $li_id,
-        {   flesh => 1,
-            flesh_fields => {jub => ['purchase_order', 'picklist']}
-        }
-    ]) or return (undef, $e->die_event);
-
-    my $org;
-    if(my $po = $li->purchase_order) {
-        $org = $po->ordering_agency;
-        my $perms = ($perm_mode eq 'read') ? 'VIEW_PURCHASE_ORDER' : 'CREATE_PURCHASE_ORDER';
-        return ($li, $e->die_event) unless $e->allowed($perms, $org);
-
-    } elsif(my $pl = $li->picklist) {
-        $org = $pl->org_unit;
-        my $perms = ($perm_mode eq 'read') ? 'VIEW_PICKLIST' : 'CREATE_PICKLIST';
-        return ($li, $e->die_event) unless $e->allowed($perms, $org);
-    }
-
-    return ($li, undef, $org);
+    my ($e, $li_id, $perm_mode) = @_;
+    return $AC->fetch_and_check_li($e, $li_id, $perm_mode);
 }
 
 
@@ -4248,8 +4314,9 @@ sub apply_new_li_ident_attr {
         upc  => '024'
     );
 
+    my $ind1 = $attr_name eq 'upc' ? '1' : ' ';
     my $marc_field = MARC::Field->new(
-        $tags{$attr_name}, '', '','a' => $attr_value);
+        $tags{$attr_name}, $ind1, '','a' => $attr_value);
 
     my $li_rec = MARC::Record->new_from_xml($li->marc, 'UTF-8', 'USMARC');
     $li_rec->insert_fields_ordered($marc_field);
@@ -4317,47 +4384,136 @@ sub li_existing_copies {
     my ($self, $client, $auth, $li_id) = @_;
     my $e = new_editor("authtoken" => $auth);
     return $e->die_event unless $e->checkauth;
+    return $AC->li_existing_copies($e, $li_id);
+}
 
-    my ($li, $evt, $org) = fetch_and_check_li($e, $li_id);
-    return 0 if $evt;
 
-    # No fuzzy matching here (e.g. on ISBN).  Only exact matches are supported.
-    return 0 unless $li->eg_bib_id;
+__PACKAGE__->register_method(
+    method => 'asn_receive_items',
+    api_name => 'open-ils.acq.shipment_notification.receive_items',
+    max_bundle_count => 1,
+    signature => {
+        desc => q/
+            Mark items from a shipment notification as received.
+        /,
+        params => [
+            {desc => 'Authentication token', type => 'string'},
+            {desc => 'Shipment Notification ID', type => 'number'}
+        ],
+        return => {desc => q/Stream of status updates, event on error/}
+    }
+);
 
-    my $counts = $e->json_query({
-        select => {acp => [{
-            column => 'id', 
-            transform => 'count', 
-            aggregate => 1
-        }]},
-        from => {
-            acp => {
-                acqlid => {
-                    fkey => 'id',
-                    field => 'eg_copy_id',
-                    type => 'left'
-                },
-                acn => {join => {bre => {}}}
-            }
-        },
-        where => {
-            '+bre' => {id => $li->eg_bib_id},
-            # don't count copies linked to the lineitem in question
-            '+acqlid' => {
-                '-or' => [
-                    {lineitem => undef},
-                    {lineitem => {'<>' => $li_id}}
-                ]
-            },
-            '+acn' => {
-                owning_lib => $U->get_org_descendants($org)
-            },
-            # NOTE: should the excluded copy statuses be an AOUS?
-            '+acp' => {status => {'not in' => [3, 4, 13, 17]}}
+__PACKAGE__->register_method(
+    method => 'asn_receive_items',
+    api_name => 'open-ils.acq.shipment_notification.receive_items.dry_run',
+    max_bundle_count => 1,
+    signature => q/dry_run variant of open-ils.acq.shipment_notification.receive_items/
+);
+
+sub asn_receive_items {
+    my ($self, $client, $auth, $asn_id) = @_;
+
+    my $e = new_editor(xact => 1, authtoken => $auth);
+    return $e->die_event unless $e->checkauth;
+
+    my $mgr = OpenILS::Application::Acq::BatchManager->new(
+        editor => $e, conn => $client, throttle => 1);
+
+    my $asn = $e->retrieve_acq_shipment_notification([$asn_id, 
+        {flesh => 1, flesh_fields => {acqsn => ['provider', 'entries']}}
+    ]) || return $e->die_event;
+
+    return $e->die_event unless 
+        $e->allowed('MANAGE_SHIPMENT_NOTIFICATION', $asn->provider->owner);
+
+    my $resp = {
+        lineitems => [],
+        progress => 0,
+    };
+
+    my @entries = sort {$a->lineitem cmp $b->lineitem} @{$asn->entries};
+
+    for my $entry (@entries) {
+
+        my $li = $e->retrieve_acq_lineitem($entry->lineitem)
+            or return $e->die_event;
+
+        my $li_resp = {
+            id => $entry->lineitem, 
+            po => $li->purchase_order, 
+            lids => []
+        };
+
+        push(@{$resp->{lineitems}}, $li_resp);
+            
+        # Include canceled items.
+        my $lids = $e->search_acq_lineitem_detail([{  
+            lineitem => $entry->lineitem, 
+            recv_time => undef
+        }, {   
+            flesh => 1,
+            flesh_fields => {acqlid => ['cancel_reason']}
+        }]);
+            
+        # Start by receiving un-canceled items.  
+        # Then try "delayed" items if it comes to that.
+        # Apply sorting for consistency with dry-run.
+
+        my @active_lids = sort {$a->id cmp $b->id} 
+            grep {!$_->cancel_reason} @$lids;
+
+        my @canceled_lids = sort {$a->id cmp $b->id} 
+            grep { $_->cancel_reason && $U->is_true($_->cancel_reason->keep_debits)
+        } @$lids;
+
+        my @potential_lids = (@active_lids, @canceled_lids);
+
+        if (scalar(@potential_lids) < $entry->item_count) {
+            $logger->warn(sprintf(
+                "ASN $asn_id entry %d found %d receivable items for lineitem %d, but wanted %d",
+                $entry->id, scalar(@potential_lids), $entry->lineitem, $entry->item_count
+            ));
         }
-    });
 
-    return $counts->[0]->{id};
+        my $recv_count = 0;
+
+        for my $lid (@potential_lids) {
+
+            return $e->die_event unless receive_lineitem_detail($mgr, $lid->id);
+
+            # Get an updated copy to pick up the recv_time
+            $lid = $e->retrieve_acq_lineitem_detail($lid->id);
+
+            my $note = $lid->note ? $lid->note . "\n" : '';
+            $note .= "Received via shipment notification #$asn_id";
+            $lid->note($note);
+
+            $e->update_acq_lineitem_detail($lid) or return $e->die_event;
+
+            push(@{$li_resp->{lids}}, $lid->id);
+            $resp->{progress}++;
+            $client->respond($resp);
+
+            last if ++$recv_count >= $entry->item_count;
+        }
+    }
+
+    $asn->process_date('now');
+    $asn->processed_by($e->requestor->id);
+
+    return $e->die_event unless $e->update_acq_shipment_notification($asn);
+
+    if ($self->api_name =~ /dry_run/) {
+        $e->rollback;
+    } else {
+        $e->commit;
+    }
+
+    $resp->{complete} = 1;
+    $client->respond_complete($resp);
+
+    undef;
 }
 
 

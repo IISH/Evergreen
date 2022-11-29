@@ -19,6 +19,9 @@ import {PatronService} from '@eg/staff/share/patron/patron.service';
 import {PatronSearchDialogComponent
   } from '@eg/staff/share/patron/search-dialog.component';
 import {AlertDialogComponent} from '@eg/share/dialog/alert.component';
+import {BarcodeSelectComponent
+    } from '@eg/staff/share/barcodes/barcode-select.component';
+import {WorkLogService} from '@eg/staff/share/worklog/worklog.service';
 
 class HoldContext {
     holdMeta: HoldRequestTarget;
@@ -98,6 +101,7 @@ export class HoldComponent implements OnInit {
       patronSearch: PatronSearchDialogComponent;
 
     @ViewChild('smsCbox', {static: false}) smsCbox: ComboboxComponent;
+    @ViewChild('barcodeSelect') private barcodeSelect: BarcodeSelectComponent;
 
     @ViewChild('activeDateAlert') private activeDateAlert: AlertDialogComponent;
 
@@ -115,7 +119,8 @@ export class HoldComponent implements OnInit {
         private staffCat: StaffCatalogService,
         private holds: HoldsService,
         private patron: PatronService,
-        private perm: PermService
+        private perm: PermService,
+        private worklog: WorkLogService
     ) {
         this.holdContexts = [];
         this.smsCarriers = [];
@@ -147,7 +152,7 @@ export class HoldComponent implements OnInit {
                 settings['circ.staff_placed_holds_fallback_to_ws_ou'] === true;
             this.puLibWsDefault =
                 settings['circ.staff_placed_holds_default_to_ws_ou'] === true;
-        });
+        }).then(_ => this.worklog.loadSettings());
 
         this.org.list().forEach(org => {
             if (org.ou_type().can_have_vols() === 'f') {
@@ -209,14 +214,14 @@ export class HoldComponent implements OnInit {
 
             if (this.smsEnabled) {
 
-                return this.pcrud.search(
-                    'csc', {active: 't'}, {order_by: {csc: 'name'}})
-                .pipe(tap(carrier => {
-                    this.smsCarriers.push({
-                        id: carrier.id(),
-                        label: carrier.name()
+                return this.patron.getSmsCarriers().then(carriers => {
+                    carriers.forEach(carrier => {
+                        this.smsCarriers.push({
+                            id: carrier.id(),
+                            label: carrier.name()
+                        });
                     });
-                })).toPromise();
+                });
             }
 
         }).then(_ => {
@@ -393,9 +398,18 @@ export class HoldComponent implements OnInit {
         const flesh = {flesh: 1, flesh_fields: {au: ['settings']}};
 
         promise = promise.then(_ => {
-            return id ?
-                this.patron.getById(id, flesh) :
-                this.patron.getByBarcode(this.userBarcode, flesh);
+            if (id) { return id; }
+            // Find the patron ID from the provided barcode.
+            return this.barcodeSelect.getBarcode('actor', this.userBarcode)
+                .then(selection => selection ? selection.id : null);
+        });
+
+        promise = promise.then(matchId => {
+            if (matchId) {
+                return this.patron.getById(matchId, flesh);
+            } else {
+                return null;
+            }
         });
 
         this.badBarcode = null;
@@ -532,10 +546,10 @@ export class HoldComponent implements OnInit {
     }
 
     // Attempt hold placement on all targets
-    placeHolds(idx?: number) {
+    placeHolds(idx?: number, override?: boolean) {
         if (!idx) {
             idx = 0;
-            if (this.multiHoldCount > 1) {
+            if (this.multiHoldCount > 1 && !override) {
                 this.addMultHoldContexts();
             }
         }
@@ -547,7 +561,9 @@ export class HoldComponent implements OnInit {
         this.placeHoldsClicked = true;
 
         const ctx = this.holdContexts[idx];
-        this.placeOneHold(ctx).then(() => this.placeHolds(idx + 1));
+        this.placeOneHold(ctx, override).then(() =>
+            this.placeHolds(idx + 1, override)
+        );
     }
 
     afterPlaceHolds(somePlaced: boolean) {
@@ -587,6 +603,10 @@ export class HoldComponent implements OnInit {
 
     placeOneHold(ctx: HoldContext, override?: boolean): Promise<any> {
 
+        if (override && !this.canOverride(ctx)) {
+            return Promise.resolve();
+        }
+
         ctx.processing = true;
         const selectedFormats = this.mrSelectorsToFilters(ctx);
 
@@ -625,13 +645,12 @@ export class HoldComponent implements OnInit {
                 if (request.result.success) {
                     ctx.success = true;
 
-                    // Overrides are processed one hold at a time, so
-                    // we have to invoke the post-holds logic here
-                    // instead of the batch placeHolds() method.  If
-                    // there is ever a batch override option, this
-                    // logic will have to be adjusted avoid callling
-                    // afterPlaceHolds in batch mode.
-                    if (override) { this.afterPlaceHolds(true); }
+                    this.worklog.record({
+                        action: 'requested_hold',
+                        hold_id: request.result.holdId,
+                        patron_id: this.user.id(),
+                        user: this.user.family_name()
+                    });
 
                 } else {
                     console.debug('hold failed with: ', request);
@@ -656,12 +675,24 @@ export class HoldComponent implements OnInit {
     }
 
     override(ctx: HoldContext) {
-        this.placeOneHold(ctx, true);
+        this.placeOneHold(ctx, true).then(() => {
+            this.afterPlaceHolds(ctx.success);
+        });
     }
 
     canOverride(ctx: HoldContext): boolean {
         return ctx.lastRequest &&
                 !ctx.lastRequest.result.success && ctx.canOverride;
+    }
+
+    showOverrideAll(): boolean {
+        return this.holdContexts.filter(ctx =>
+            this.canOverride(ctx)
+        ).length > 1;
+    }
+
+    overrideAll(): void {
+        this.placeHolds(0, true);
     }
 
     iconFormatLabel(code: string): string {

@@ -1,0 +1,203 @@
+
+<eg-progress-dialog #progressDialog></eg-progress-dialog>
+<eg-barcode-select #barcodeSelect></eg-barcode-select>
+<eg-copy-alerts-dialog #copyAlertsDialog></eg-copy-alerts-dialog>
+<eg-string #receiptEmailed i18n-text text="Receipt Successfully Emailed">
+</eg-string>
+
+<eg-prompt-dialog #nonCatCount
+  promptType="number"
+  i18n-dialogTitle dialogTitle="Non-Cat Checkout"
+  promptMin="1" promptValue="1" [promptMax]="maxNoncats"
+  i18n-dialogBody
+  dialogBody="Enter the number of {{checkoutNoncat ? checkoutNoncat.name() : ''}} circulating">
+</eg-prompt-dialog>
+
+<div class="row mb-3 pb-3 border-bottom">
+  <div class="col-lg-12 d-flex">
+    <div class="form-inline">
+      <div class="input-group">
+        <div class="input-group-prepend">
+          <div ngbDropdown>
+            <button ngbDropdownToggle class="btn btn-outline-dark" id="checkout-button">
+              <ng-container *ngIf="!checkoutNoncat" i18n>Barcode</ng-container>
+              <ng-container *ngIf="checkoutNoncat">{{checkoutNoncat.name()}}</ng-container>
+            </button>
+            <div ngbDropdownMenu aria-labelledby="dropdownBasic1">
+              <button ngbDropdownItem (click)="checkoutNoncat=null" i18n>Barcode</button>
+              <div role="separator" class="dropdown-divider"></div>
+              <ng-container *ngIf="circ.nonCatTypes">
+                <button *ngFor="let nct of circ.nonCatTypes" 
+                  (click)="checkoutNoncat=nct" ngbDropdownItem>{{nct.name()}}</button>
+              </ng-container>
+            </div>
+          </div>
+        </div>
+        <input type="text" class="form-control" id="barcode-input"
+          [placeholder]="checkoutNoncat ? '' : 'Barcode...'" i18n-placeholder
+          [(ngModel)]="checkoutBarcode" [disabled]="checkoutNoncat !== null"
+          i18n-aria-label aria-label="Barcode Input" (keydown.enter)="checkout()" />
+        <div class="input-group-append">
+          <button class="btn btn-outline-dark" (keydown.enter)="checkout()" 
+            (click)="checkout()" i18n>Submit</button>
+        </div>
+      </div>
+    </div>
+    <div class="flex-1"></div>
+    <div ngbDropdown>
+      <button ngbDropdownToggle class="btn mr-2" [ngClass]="{
+          'btn-outline-dark': dueDateOptions === 0,
+          'btn-outline-success': dueDateOptions > 0
+        }"
+        i18n>Date Options</button>
+      <div ngbDropdownMenu>
+        <button ngbDropdownItem (click)="toggleDateOptions(1)">
+          <span *ngIf="dueDateOptions > 0" 
+            class="badge badge-success">&#x2713;</span>  
+          <span *ngIf="dueDateOptions === 0" 
+            class="badge badge-warning">&#x2717;</span> 
+          <span class="pl-2" i18n>Specific Due Date</span>
+        </button>
+        <button ngbDropdownItem (click)="toggleDateOptions(2)">
+          <span *ngIf="dueDateOptions === 2" 
+            class="badge badge-success">&#x2713;</span>  
+          <span *ngIf="dueDateOptions < 2" 
+            class="badge badge-warning">&#x2717;</span> 
+          <span class="pl-2" i18n>Specific Due Date Until Logout</span>
+        </button>
+      </div>
+    </div>
+    <eg-datetime-select [initialIso]="dueDate" 
+      [readOnly]="dueDateOptions === 0" (onChangeAsIso)="setDueDate($event)">
+    </eg-datetime-select>
+  </div>
+</div>
+
+<ng-template #copyBarcodeTemplate let-r="row">
+  <ng-container *ngIf="r.copy">
+    <a href="/eg/staff/cat/item/{{r.copy.id()}}">{{r.copy.barcode()}}</a>
+  </ng-container>
+</ng-template>
+
+<ng-template #titleTemplate let-r="row">
+  <ng-container *ngIf="r.record">
+    <a routerLink="/staff/catalog/record/{{r.record.doc_id()}}">{{r.title}}</a>
+  </ng-container>
+  <ng-container *ngIf="!r.record">{{r.title}}</ng-container>
+</ng-template>
+
+<ng-template #copyAlertsTemplate let-r="row">
+  <button class="btn btn-outline-dark btn-sm p-1" 
+    (click)="openItemAlerts([r], 'manage')" i18n>
+    Manage ({{r.copyAlertCount}})
+  </button>
+</ng-template>
+
+<div class="row">
+  <div class="col-lg-12">
+    <eg-grid #checkoutsGrid [dataSource]="gridDataSource" [sortable]="true"
+      persistKey="circ.patron.checkout"
+      [useLocalSort]="true" [cellTextGenerator]="cellTextGenerator"
+      [disablePaging]="true" persistKey="circ.patron.checkout">
+
+			<eg-grid-toolbar-action
+				i18n-group group="Add" i18n-label label="Add Item Alerts"
+				(onClick)="openItemAlerts($event, 'create')">
+			</eg-grid-toolbar-action>
+
+			<eg-grid-toolbar-action
+				i18n-group group="Add" i18n-label label="Manage Item Alerts"
+        [disabled]="checkoutsGrid.context.rowSelector.selected().length !== 1"
+				(onClick)="openItemAlerts($event, 'manage')">
+			</eg-grid-toolbar-action>
+
+      <eg-grid-column path="index" [index]="true" 
+        label="Row Index" i18n-label [hidden]="true"></eg-grid-column>
+      <eg-grid-column path="circ.id" label="Circ ID" i18n-label></eg-grid-column>
+
+      <eg-grid-column path="dueDate" label="Due Date" i18n-label
+        timezoneContextOrg="circ.circ_lib" dateOnlyIntervalField="circ.duration"
+        datatype="timestamp"></eg-grid-column>
+
+      <eg-grid-column name="copy_barcode" label="Barcode" i18n-label
+        [cellTemplate]="copyBarcodeTemplate"></eg-grid-column>
+
+      <eg-grid-column path="title" label="Title" i18n-label 
+        [cellTemplate]="titleTemplate"></eg-grid-column>
+
+      <eg-grid-column path="nonCatCount" label="Non-Cataloged Count"
+        i18n-label></eg-grid-column>
+
+      <eg-grid-column name="copyAlerts" label="Alerts" i18n-label
+        [cellTemplate]="copyAlertsTemplate"></eg-grid-column>
+
+      <eg-grid-column path="copy.*" idlClass="acp" [hidden]="true"></eg-grid-column>
+      <eg-grid-column path="circ.*" idlClass="circ" [hidden]="true"></eg-grid-column>
+      <eg-grid-column path="mbts.*" idlClass="mbts" [hidden]="true"></eg-grid-column>
+      <eg-grid-column path="patron.*" idlClass="au" [hidden]="true"></eg-grid-column>
+      <eg-grid-column path="record.*" idlClass="mvr" [hidden]="true"></eg-grid-column>
+      <eg-grid-column path="hold.*" idlClass="ahr" [hidden]="true"></eg-grid-column>
+      <eg-grid-column path="transit.*" idlClass="atc" [hidden]="true"></eg-grid-column>
+
+    </eg-grid>
+  </div>
+</div>
+
+<div class="row mt-3 pt-3">
+  <div class="col-lg-12 d-flex">
+    <div class="flex-1"></div>
+    <div class="mr-3">
+      <div class="form-check form-check-inline pt-1">
+        <input class="form-check-input" type="checkbox" 
+          (ngModelChange)="toggleStrictBarcode($event)"
+          id="strict-barcode-cbox" [(ngModel)]="strictBarcode"/>
+        <label class="form-check-label" 
+          for="strict-barcode-cbox" i18n>Strict Barcode</label>
+      </div>
+    </div>
+    <div class="mr-3">
+      <div class="input-group">
+        <span class="material-icons pt-2 pr-2">
+          <ng-container *ngIf="!mayEmailReceipt()">print</ng-container>
+          <ng-container *ngIf="mayEmailReceipt()">email</ng-container>
+        </span>
+        <button class="btn btn-outline-dark" (click)="quickReceipt()" i18n>
+          Quick Receipt
+        </button>
+        <div class="input-group-append">
+          <div ngbDropdown>
+            <button ngbDropdownToggle class="btn btn-outline-dark">
+            </button>
+            <div ngbDropdownMenu>
+              <button ngbDropdownItem (click)="emailReceipt()" 
+                [disabled]="!mayEmailReceipt()" i18n>Email Receipt</button>
+              <button ngbDropdownItem (click)="printReceipt()" i18n>Print Receipt</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mr-3">
+      <div class="input-group">
+        <button class="btn btn-outline-dark" (click)="doneAutoReceipt()" i18n>
+          Done
+        </button>
+        <div class="input-group-append">
+          <div ngbDropdown>
+            <button ngbDropdownToggle class="btn btn-outline-dark">
+            </button>
+            <div ngbDropdownMenu>
+              <button ngbDropdownItem (click)="doneRedirect()" i18n>No Receipt</button>
+              <button ngbDropdownItem (click)="emailReceipt(true)" 
+                [disabled]="!mayEmailReceipt()" i18n>Email Receipt</button>
+              <button ngbDropdownItem 
+                (click)="printReceipt(true)" i18n>Print Receipt</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+

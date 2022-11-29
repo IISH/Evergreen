@@ -52,8 +52,28 @@ const routes: Routes = [{
     loadChildren: () =>
       import('./circ_limit_set/circ_limit_set.module').then(m => m.CircLimitSetModule)
 }, {
+    path: 'config/openathens_identity',
+    component: BasicAdminPageComponent,
+    data: [{
+        schema: 'config',
+        table: 'openathens_identity',
+        fieldOrder: 'id,org_unit,active,api_key,connection_id,connection_uri,auto_signon_enabled,auto_signout_enabled,' +
+                    'unique_identifier,display_name,release_prefix,release_first_given_name,release_second_given_name,' +
+                    'release_family_name,release_suffix,release_email,release_home_ou,release_barcode',
+        defaultNewRecord: {
+            active: true,
+            auto_signon_enabled: true,
+            unique_identifier: 1,
+            display_name: 1
+        }
+    }]
+}, {
     path: 'config/standing_penalty',
-    component: StandingPenaltyComponent
+    component: StandingPenaltyComponent,
+}, {
+    path: 'asset/org_unit_settings',
+    loadChildren: () =>
+      import('./org-unit-settings/org-unit-settings.module').then(m => m.OrgUnitSettingsModule)
 }, {
     path: 'config/ui_staff_portal_page_entry',
     component: AdminStaffPortalPageComponent
@@ -66,9 +86,23 @@ const routes: Routes = [{
     loadChildren: () =>
       import('./triggers/triggers.module').then(m => m.TriggersModule)
 }, {
+    path: 'config/idl_field_doc',
+    loadChildren: () => import('./field-documentation/field-documentation.module')
+      .then(m => m.FieldDocumentationModule)
+}, {
+    path: 'money/cash_reports',
+    loadChildren: () =>
+      import('./cash-reports/cash-reports.module').then(m => m.CashReportsModule)
+}, {
+    path: 'negative-balances',
+    loadChildren: () =>
+      import('./negative-balances/negative-balances.module').then(m => m.NegativeBalancesModule)
+}, {
     path: ':schema/:table',
     component: BasicAdminPageComponent
-}];
+}
+
+];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],

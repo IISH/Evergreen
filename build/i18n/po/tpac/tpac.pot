@@ -161,6 +161,10 @@ msgstr ""
 msgid "(%1)"
 msgstr ""
 
+#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:117 ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:135 ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:27 ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:45 ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:63 ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:81 ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:99
+msgid "(' _ note _ ')"
+msgstr ""
+
 #. (example)
 #: ../../Open-ILS/src/templates/opac/register.tt2:191
 msgid "(Example: %1)"
@@ -2190,11 +2194,11 @@ msgid "Former owner"
 msgstr ""
 
 #. ("<time property=\"opens\" content=\"' _ date.format(open, { 'format' => '%H:%M:%S' }) _ '\">' _ date.format(open) _ '</time>", "<time property=\"closes\" content=\"' _ date.format(close, { 'format' => '%H:%M:%S' }) _ '\">' _ date.format(close) _ '</time>")
-#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:74
+#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:95
 msgid "Friday: %1 - %2"
 msgstr ""
 
-#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:71
+#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:92
 msgid "Friday: closed"
 msgstr ""
 
@@ -3020,11 +3024,11 @@ msgid "Moderator"
 msgstr ""
 
 #. ("<time property=\"opens\" content=\"' _ date.format(open, { 'format' => '%H:%M:%S' }) _ '\">' _ date.format(open) _ '</time>", "<time property=\"closes\" content=\"' _ date.format(close, { 'format' => '%H:%M:%S' }) _ '\">' _ date.format(close) _ '</time>")
-#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:22
+#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:23
 msgid "Monday: %1 - %2"
 msgstr ""
 
-#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:19
+#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:20
 msgid "Monday: closed"
 msgstr ""
 
@@ -4253,11 +4257,11 @@ msgid "SMS not enabled for this site."
 msgstr ""
 
 #. ("<time property=\"opens\" content=\"' _ date.format(open, { 'format' => '%H:%M:%S' }) _ '\">' _ date.format(open) _ '</time>", "<time property=\"closes\" content=\"' _ date.format(close, { 'format' => '%H:%M:%S' }) _ '\">' _ date.format(close) _ '</time>")
-#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:87
+#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:113
 msgid "Saturday: %1 - %2"
 msgstr ""
 
-#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:84
+#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:110
 msgid "Saturday: closed"
 msgstr ""
 
@@ -4945,11 +4949,11 @@ msgid "Summary: "
 msgstr ""
 
 #. ("<time property=\"opens\" content=\"' _ date.format(open, { 'format' => '%H:%M:%S' }) _ '\">' _ date.format(open) _ '</time>", "<time property=\"closes\" content=\"' _ date.format(close, { 'format' => '%H:%M:%S' }) _ '\">' _ date.format(close) _ '</time>")
-#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:100
+#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:131
 msgid "Sunday: %1 - %2"
 msgstr ""
 
-#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:97
+#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:128
 msgid "Sunday: closed"
 msgstr ""
 
@@ -5193,11 +5197,11 @@ msgid "This was not an active password reset request. Your password has not been
 msgstr ""
 
 #. ("<time property=\"opens\" content=\"' _ date.format(open, { 'format' => '%H:%M:%S' }) _ '\">' _ date.format(open) _ '</time>", "<time property=\"closes\" content=\"' _ date.format(close, { 'format' => '%H:%M:%S' }) _ '\">' _ date.format(close) _ '</time>")
-#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:61
+#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:77
 msgid "Thursday: %1 - %2"
 msgstr ""
 
-#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:58
+#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:74
 msgid "Thursday: closed"
 msgstr ""
 
@@ -5267,11 +5271,11 @@ msgid "Try changing to %1."
 msgstr ""
 
 #. ("<time property=\"opens\" content=\"' _ date.format(open, { 'format' => '%H:%M:%S' }) _ '\">' _ date.format(open) _ '</time>", "<time property=\"closes\" content=\"' _ date.format(close, { 'format' => '%H:%M:%S' }) _ '\">' _ date.format(close) _ '</time>")
-#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:35
+#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:41
 msgid "Tuesday: %1 - %2"
 msgstr ""
 
-#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:32
+#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:38
 msgid "Tuesday: closed"
 msgstr ""
 
@@ -5437,11 +5441,11 @@ msgid "We are unable to process credit card payments at this time. We apologize 
 msgstr ""
 
 #. ("<time property=\"opens\" content=\"' _ date.format(open, { 'format' => '%H:%M:%S' }) _ '\">' _ date.format(open) _ '</time>", "<time property=\"closes\" content=\"' _ date.format(close, { 'format' => '%H:%M:%S' }) _ '\">' _ date.format(close) _ '</time>")
-#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:48
+#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:59
 msgid "Wednesday: %1 - %2"
 msgstr ""
 
-#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:45
+#: ../../Open-ILS/src/templates/opac/parts/library/hours.tt2:56
 msgid "Wednesday: closed"
 msgstr ""
 

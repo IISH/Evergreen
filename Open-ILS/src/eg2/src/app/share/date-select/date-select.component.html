@@ -2,7 +2,8 @@
   {{initialDate | formatValue:'timestamp'}}
 </ng-container>
 <ng-container *ngIf="!readOnly">
-  <div class="input-group eg-date-select form-validated">
+  <div class="input-group eg-date-select form-validated" 
+    [ngClass]="{'date-select-width': !noMaxWidth}">
     <input 
       class="form-control"
       type="text"
@@ -17,13 +18,13 @@
       [required]="required"
       (blur)="propagateTouch(); onDateEnter()"
       [(ngModel)]="current"
+      (ngModelChange)="inputChanged($event)"
       (keyup.enter)="onDateEnter()"
       (dateSelect)="onDateSelect($event)"/>
     <div class="input-group-append">
       <button class="btn btn-outline-secondary" [disabled]="disabled"
         (click)="datePicker.toggle()" type="button">
-        <span title="Select Date" i18n-title
-          class="material-icons mat-icon-in-button">event</span>
+        <span title="Select Date" i18n-title class="material-icons">event</span>
       </button>
     </div>
   </div>

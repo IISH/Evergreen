@@ -432,7 +432,7 @@ BEGIN
 	UPDATE acq.lineitem SET selector = dest_usr WHERE selector = src_usr;
 	UPDATE acq.lineitem_note SET creator = dest_usr WHERE creator = src_usr;
 	UPDATE acq.lineitem_note SET editor = dest_usr WHERE editor = src_usr;
-    UPDATE acq.invoice SET closed_by = dest_usr WHERE closed_by = src_usr;
+	UPDATE acq.invoice SET closed_by = dest_usr WHERE closed_by = src_usr;
 	DELETE FROM acq.lineitem_usr_attr_definition WHERE usr = src_usr;
 
 	-- Update with a rename to avoid collisions
@@ -479,11 +479,13 @@ BEGIN
 	DELETE FROM action.survey_response WHERE usr = src_usr;
 	UPDATE action.fieldset SET owner = dest_usr WHERE owner = src_usr;
 	DELETE FROM action.usr_circ_history WHERE usr = src_usr;
+	UPDATE action.curbside SET notes = NULL WHERE patron = src_usr;
 
 	-- actor.*
 	DELETE FROM actor.card WHERE usr = src_usr;
 	DELETE FROM actor.stat_cat_entry_usr_map WHERE target_usr = src_usr;
 	DELETE FROM actor.usr_privacy_waiver WHERE usr = src_usr;
+	DELETE FROM actor.usr_message WHERE usr = src_usr;
 
 	-- The following update is intended to avoid transient violations of a foreign
 	-- key constraint, whereby actor.usr_address references itself.  It may not be
@@ -1310,6 +1312,16 @@ BEGIN
         SET target_biblio_record_entry = target_record
         WHERE bucket IN (SELECT id FROM container.biblio_record_entry_bucket WHERE btype = 'bookbag')
         AND target_biblio_record_entry = source_record;
+
+    -- move over record notes 
+    UPDATE biblio.record_note 
+        SET record = target_record, value = CONCAT(value,'; note merged from ',source_record::TEXT) 
+        WHERE record = source_record
+        AND NOT deleted;
+
+    -- add note to record merge 
+    INSERT INTO biblio.record_note (record, value) 
+        VALUES (target_record,CONCAT('record ',source_record::TEXT,' merged on ',NOW()::TEXT));
 
     -- Finally, "delete" the source record
     UPDATE biblio.record_entry SET active = FALSE WHERE id = source_record;

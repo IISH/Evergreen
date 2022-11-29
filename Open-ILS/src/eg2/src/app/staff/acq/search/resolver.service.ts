@@ -10,7 +10,7 @@ export class AttrDefsResolver implements Resolve<Promise<any[]>> {
 
     constructor(
         private router: Router,
-        private attrDefs: AttrDefsService,
+        private attrDefs: AttrDefsService
     ) {}
 
     resolve(

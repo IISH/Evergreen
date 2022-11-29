@@ -237,40 +237,58 @@
 <ng-container *ngFor="let orgNode of context.orgNodes(); let orgIdx = index">
   <ng-container *ngFor="let volNode of orgNode.children; let volIdx = index">
     <ng-container *ngFor="let copyNode of volNode.children; let copyIdx = index">
-      <div class="row d-flex mt-1" [ngClass]="{'vol-row': copyIdx == 0}">
+      <div class="row d-flex mt-1" [ngClass]="{'vol-row': copyIdx === 0}">
         <div class="p-1" [ngStyle]="{flex: flexAt(1)}">
           <div class="d-flex">
             <div class="flex-1 pl-1">
-              <ng-container *ngIf="copyIdx == 0 && volIdx == 0">
+              <ng-container *ngIf="copyIdx === 0 && volIdx === 0">
                 <span>{{orgNode.target.shortname()}}</span>
               </ng-container>
             </div>
-            <div class="pr-1">
-              <ng-container *ngIf="copyIdx == 0 && volIdx == 0 && (
-                context.sessionType == 'record' || context.sessionType == 'mixed')">
-                  <ng-template #addOrgTmpl>
-                    <eg-org-select [limitPerms]="['CREATE_VOLUME']" 
-                      placeholder="Select Location..." i18n-placeholder
-                      [hideOrgs]="volcopy.hideVolOrgs"
-                      (onChange)="addVol($event); addOrgPopover.close()">
-                    </eg-org-select>
-                  </ng-template>
+            <ng-container *ngIf="copyIdx === 0 && volIdx === 0 && (
+              context.sessionType === 'record' || context.sessionType === 'mixed')">
+              <div class="pr-1">
+                <ng-template #addOrgTmpl>
+                  <eg-org-select [limitPerms]="['CREATE_VOLUME']" 
+                    placeholder="Select Location..." i18n-placeholder
+                    [hideOrgs]="volcopy.hideVolOrgs"
+                    (onChange)="addVol($event); addOrgPopover.close()">
+                  </eg-org-select>
+                </ng-template>
 
-                  <button class="btn btn-sm material-icon-button p-1"
-                    placement="bottom" [ngbPopover]="addOrgTmpl"
-                    autoClose="outside" #addOrgPopover="ngbPopover"
-                    i18n-popoverTitle="Add Call Number For Location"
-                    i18n-title title="Add Call Number For Location"
-                    (click)="addVolOrg=null">
-                    <span class="material-icons">add_circle_outline</span>
-                  </button>
-              </ng-container>
-            </div>
+                <button class="btn btn-sm material-icon-button p-1"
+                  placement="bottom" [ngbPopover]="addOrgTmpl"
+                  autoClose="outside" #addOrgPopover="ngbPopover"
+                  i18n-popoverTitle="Add Call Number For Location"
+                  i18n-title title="Add Call Number For Location">
+                  <span class="material-icons">add_circle_outline</span>
+                </button>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="copyIdx === 0">
+              <div class="pr-1">
+                <ng-template #editOrgTmpl>
+                  <eg-org-select [limitPerms]="['CREATE_VOLUME']" 
+                    placeholder="Select Location..." i18n-placeholder
+                    [hideOrgs]="volcopy.hideVolOrgs"
+                    (onChange)="editVolOwner(volNode, $event); editOrgPopover.close()">
+                  </eg-org-select>
+                </ng-template>
+
+                <button class="btn btn-sm material-icon-button p-1"
+                  placement="bottom" [ngbPopover]="editOrgTmpl"
+                  autoClose="outside" #editOrgPopover="ngbPopover"
+                  i18n-popoverTitle="Edit Call Number Owning Location"
+                  i18n-title title="Edit Call Number Owning Location">
+                  <span class="material-icons">edit</span>
+                </button>
+              </div>
+            </ng-container>
           </div>
         </div>
         <div class="p-1" [ngStyle]="{flex: flexAt(3)}">
           <ng-container *ngIf="displayColumn('classification')">
-            <ng-container *ngIf="copyIdx == 0">
+            <ng-container *ngIf="copyIdx === 0">
               <eg-combobox
                 [selectedId]="volNode.target.label_class()"
                 [smallFormControl]="true"
@@ -285,7 +303,7 @@
         </div>
         <div class="p-1" [ngStyle]="{flex: flexAt(4)}">
           <ng-container *ngIf="displayColumn('prefix')">
-            <ng-container *ngIf="copyIdx == 0">
+            <ng-container *ngIf="copyIdx === 0">
               <eg-combobox
                 [selectedId]="volNode.target.prefix()"
                 [required]="true"
@@ -302,7 +320,7 @@
           </ng-container>
         </div>
         <div class="p-1" [ngStyle]="{flex: flexAt(5)}">
-          <ng-container *ngIf="copyIdx == 0">
+          <ng-container *ngIf="copyIdx === 0">
             <input class="form-control form-control-sm" type="text"
               spellcheck="false"
               [required]="requireCNL"
@@ -313,7 +331,7 @@
         </div>
         <div class="p-1" [ngStyle]="{flex: flexAt(6)}">
           <ng-container *ngIf="displayColumn('suffix')">
-            <ng-container *ngIf="copyIdx == 0">
+            <ng-container *ngIf="copyIdx === 0">
               <eg-combobox
                 [selectedId]="volNode.target.suffix()"
                 [required]="true"
@@ -330,9 +348,9 @@
           </ng-container>
         </div>
         <div class="p-1" [ngStyle]="{flex: flexAt(7)}">
-          <ng-container *ngIf="copyIdx == 0">
+          <ng-container *ngIf="copyIdx === 0">
             <ng-container 
-              *ngIf="context.sessionType == 'record' || context.sessionType == 'mixed'">
+              *ngIf="context.sessionType === 'record' || context.sessionType === 'mixed'">
               <button class="btn btn-sm material-icon-button p-1"
                 (click)="createVols(orgNode, 1)"
                 i18n-title title="Add Call Number">
@@ -353,7 +371,7 @@
               </ng-template>
 
               <button class="btn btn-sm material-icon-button p-1"
-                [disabled]="context.sessionType == 'copy' || context.sessionType == 'vol'"
+                [disabled]="context.sessionType === 'copy' || context.sessionType === 'vol'"
                 (shown)="focusElement('add-vol-popover')"
                 placement="bottom" [ngbPopover]="addVolCountTmpl"
                 autoClose="outside" #addVolsPopover="ngbPopover"
@@ -421,7 +439,7 @@
           </ng-container>
         </div>
         <div class="p-1" [ngStyle]="{flex: flexAt(11)}">
-          <ng-container *ngIf="context.sessionType != 'copy'">
+          <ng-container *ngIf="context.sessionType !== 'copy'">
 
             <button class="btn btn-sm material-icon-button p-1"
               (click)="createCopies(volNode, 1)" i18n-title title="Add Item">

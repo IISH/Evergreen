@@ -26,10 +26,10 @@
         <!--  leave the icons in place for all node types, but make them
               invisible when they are not needed. -->
         <span *ngIf="row.treeNode.expanded"
-          [ngClass]="{invisible: row.copy || row.treeNode.children.length == 0}"
+          [ngClass]="{invisible: row.copy || row.treeNode.children.length === 0}"
           class="material-icons p-0 m-0">keyboard_arrow_down</span>
         <span *ngIf="!row.treeNode.expanded"
-          [ngClass]="{invisible: row.copy || row.treeNode.children.length == 0}"
+          [ngClass]="{invisible: row.copy || row.treeNode.children.length === 0}"
           class="material-icons p-0 m-0">keyboard_arrow_right</span>
         <span>{{row.locationLabel}}</span>
       </a>
@@ -46,7 +46,7 @@
   </ng-container>
 </ng-template>
 
-<eg-mark-damaged-dialog #markDamagedDialog></eg-mark-damaged-dialog>
+<eg-mark-damaged-dialog #markDamagedDialog [handleCheckin]="true"></eg-mark-damaged-dialog>
 <eg-mark-missing-dialog #markMissingDialog></eg-mark-missing-dialog>
 <eg-copy-alerts-dialog #copyAlertsDialog></eg-copy-alerts-dialog>
 <eg-copy-tags-dialog #copyTagsDialog></eg-copy-tags-dialog>

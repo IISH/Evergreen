@@ -40,12 +40,21 @@ export class GridColumnComponent implements OnInit {
     // Display using a specific OU's timestamp when datatype = timestamp
     @Input() timezoneContextOrg: number;
 
+    @Input() dateOnlyIntervalField: string;
+
     // Used in conjunction with cellTemplate
     @Input() cellContext: any;
     @Input() cellTemplate: TemplateRef<any>;
 
     @Input() disableTooltip: boolean;
     @Input() asyncSupportsEmptyTermClick: boolean;
+
+    // Required columns are those that must be present in any auto-generated
+    // queries regardless of whether they are visible in the display.
+    @Input() required = false;
+
+    // IDL class of the object which contains this field.
+    @Input() idlClass: string;
 
     // get a reference to our container grid.
     constructor(@Host() private grid: GridComponent) {}
@@ -62,6 +71,7 @@ export class GridColumnComponent implements OnInit {
         col.path = this.path;
         col.label = this.label;
         col.flex = this.flex;
+        col.required = this.required;
         col.hidden = this.hidden === true;
         col.asyncSupportsEmptyTermClick = this.asyncSupportsEmptyTermClick === true;
         col.isIndex = this.index === true;
@@ -77,7 +87,11 @@ export class GridColumnComponent implements OnInit {
         col.datePlusTime = this.datePlusTime;
         col.ternaryBool = this.ternaryBool;
         col.timezoneContextOrg = this.timezoneContextOrg;
+        col.dateOnlyIntervalField = this.dateOnlyIntervalField;
+        col.idlClass = this.idlClass;
+        col.dateOnlyIntervalField = this.dateOnlyIntervalField;
         col.isAuto = false;
+
         this.grid.context.columnSet.add(col);
 
         if (this.cellTemplate &&

@@ -1,0 +1,89 @@
+
+<h4 i18n>Direct Charges, Taxes, Fees, etc. 
+  <button class="btn btn-info btn-sm" (click)="newCharge()" *ngIf="canModify">New Charge</button>
+</h4>
+
+<eg-acq-disencumber-charge-dialog #disencumberChargeDialog></eg-acq-disencumber-charge-dialog>
+
+<ng-container *ngIf="showBody">
+  <div class="row d-flex">
+    <div class="flex-2 p-2 font-weight-bold">Charge Type</div>
+    <div class="flex-2 p-2 font-weight-bold">Fund</div>
+    <div class="flex-2 p-2 font-weight-bold">Title/Description</div>
+    <div class="flex-2 p-2 font-weight-bold">Author</div>
+    <div class="flex-2 p-2 font-weight-bold">Note</div>
+    <div class="flex-2 p-2 font-weight-bold">Estimated Cost</div>
+    <div class="flex-2 p-2"> </div>
+  </div>
+  <div class="row mt-2 pt-2 d-flex border-top form-validated" 
+    *ngFor="let charge of po().po_items()">
+    <div class="flex-2 p-2">
+      <eg-combobox idlClass="aiit" [selectedId]="charge.inv_item_type()"
+        [asyncSupportsEmptyTermClick]="true"
+        (onChange)="charge.inv_item_type($event ? $event.id : null)"
+        i18n-placeholder placeholder="Charge Type..."
+        [required]="true" [readOnly]="!charge.isnew() && !charge.ischanged()"></eg-combobox>
+    </div>
+    <div class="flex-2 p-2">
+      <!--  the IDL does not require a fund, but the Perl code assumes
+            one is present -->
+      <eg-combobox idlClass="acqf" [selectedId]="charge.fund()"
+        (onChange)="charge.fund($event ? $event.id : null)"
+        i18n-placeholder placeholder="Fund..."
+        [asyncSupportsEmptyTermClick]="true"
+        [required]="true" [readOnly]="!charge.isnew() && !charge.ischanged()"
+        [idlQuerySort]="{acqf: 'year DESC, code'}"
+        [idlQueryAnd]="{active: 't'}">
+      </eg-combobox>
+      <span *ngIf="charge.fund_debit() && charge.fund_debit().fund() !== charge.fund()">
+        <br>
+        <i>Fund actually debited is 
+        <eg-combobox idlClass="acqf" [selectedId]="charge.fund_debit().fund()"
+          [readOnly]="true"></eg-combobox></i>
+      </span>
+    </div>
+    <div class="flex-2 p-2">
+      <span *ngIf="!charge.isnew() && !charge.ischanged()">{{charge.title()}}</span>
+      <input *ngIf="charge.isnew() || charge.ischanged()" type="text" class="form-control" 
+        i18n-placeholder placeholder="Title..."
+        [ngModel]="charge.title()" (ngModelChange)="charge.title($event)"/>
+    </div>
+    <div class="flex-2 p-2">
+      <span *ngIf="!charge.isnew() && !charge.ischanged()">{{charge.author()}}</span>
+      <input *ngIf="charge.isnew() || charge.ischanged()" type="text" class="form-control" 
+        i18n-placeholder placeholder="Author..."
+        [ngModel]="charge.author()" (ngModelChange)="charge.author($event)"/>
+    </div>
+    <div class="flex-2 p-2">
+      <span *ngIf="!charge.isnew() && !charge.ischanged()">{{charge.note()}}</span>
+      <input *ngIf="charge.isnew() || charge.ischanged()" type="text" class="form-control" 
+        i18n-placeholder placeholder="Note..."
+        [ngModel]="charge.note()" (ngModelChange)="charge.note($event)"/>
+    </div>
+    <div class="flex-2 p-2">
+      <span *ngIf="!charge.isnew() && !charge.ischanged()">{{charge.estimated_cost() | currency}}</span>
+      <input *ngIf="charge.isnew() || charge.ischanged()" type="number" min="0" class="form-control" 
+        i18n-placeholder placeholder="Esimated Cost..." [required]="true"
+        [ngModel]="charge.estimated_cost()" (ngModelChange)="charge.estimated_cost($event)"/>
+      <span *ngIf="charge.fund_debit()">
+        <br>
+        <span *ngIf="charge.fund_debit().encumbrance() === 't'" i18n>
+          <i>Amount encumbered is {{charge.fund_debit().amount() | currency}}</i>
+        </span>
+        <span *ngIf="charge.fund_debit().encumbrance() === 'f'" i18n>
+          <i>Amount expended is {{charge.fund_debit().amount() | currency}}</i>
+        </span>
+      </span>
+    </div>
+    <div class="flex-2 p-1">
+      <button *ngIf="canModify" [disabled]="!(charge.isnew() || charge.ischanged())" class="btn btn-success btn-sm" 
+        (click)="saveCharge(charge)" i18n>Save</button>
+      <button *ngIf="canModify" [disabled]="charge.isnew()" class="btn btn-outline-dark btn-sm ml-1" 
+        (click)="charge.ischanged(true)" i18n>Edit</button>
+      <button class="btn btn-warning btn-sm ml-1" 
+        (click)="disencumberCharge(charge)" *ngIf="canDisencumber(charge)" i18n>Disencumber</button>
+      <button class="btn btn-danger btn-sm ml-1" 
+        (click)="removeCharge(charge)" *ngIf="canDelete(charge)" i18n>Remove</button>
+    </div>
+  </div>
+</ng-container>

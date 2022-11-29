@@ -2,7 +2,7 @@
  * Collection of grid related classses and interfaces.
  */
 import {TemplateRef, EventEmitter, QueryList} from '@angular/core';
-import {Observable, Subscription} from 'rxjs';
+import {Observable, Subscription, empty} from 'rxjs';
 import {IdlService, IdlObject} from '@eg/core/idl.service';
 import {OrgService} from '@eg/core/org.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
@@ -16,6 +16,7 @@ export class GridColumn {
     name: string;
     path: string;
     label: string;
+    headerLabel: string;
     flex: number;
     align: string;
     hidden: boolean;
@@ -30,6 +31,7 @@ export class GridColumn {
     ternaryBool: boolean;
     timezoneContextOrg: number;
     cellTemplate: TemplateRef<any>;
+    dateOnlyIntervalField: string;
 
     cellContext: any;
     isIndex: boolean;
@@ -41,6 +43,7 @@ export class GridColumn {
     disableTooltip: boolean;
     asyncSupportsEmptyTermClick: boolean;
     comparator: (valueA: any, valueB: any) => number;
+    required = false;
 
     // True if the column was automatically generated.
     isAuto: boolean;
@@ -74,6 +77,34 @@ export class GridColumn {
         this.filterIncludeOrgAncestors = false;
         this.filterIncludeOrgDescendants = false;
     }
+
+    clone(): GridColumn {
+        const col = new GridColumn();
+
+        col.name = this.name;
+        col.path = this.path;
+        col.label = this.label;
+        col.flex = this.flex;
+        col.required = this.required;
+        col.hidden = this.hidden;
+        col.asyncSupportsEmptyTermClick = this.asyncSupportsEmptyTermClick;
+        col.isIndex = this.isIndex;
+        col.cellTemplate = this.cellTemplate;
+        col.cellContext = this.cellContext;
+        col.disableTooltip = this.disableTooltip;
+        col.isSortable = this.isSortable;
+        col.isFilterable = this.isFilterable;
+        col.isMultiSortable = this.isMultiSortable;
+        col.datatype = this.datatype;
+        col.datePlusTime = this.datePlusTime;
+        col.ternaryBool = this.ternaryBool;
+        col.timezoneContextOrg = this.timezoneContextOrg;
+        col.idlClass = this.idlClass;
+        col.isAuto = this.isAuto;
+
+        return col;
+    }
+
 }
 
 export class GridColumnSet {
@@ -97,6 +128,10 @@ export class GridColumnSet {
 
     add(col: GridColumn) {
 
+        if (col.path && col.path.match(/\*$/)) {
+            return this.generateWildcardColumns(col);
+        }
+
         this.applyColumnDefaults(col);
 
         if (!this.insertColumn(col)) {
@@ -115,6 +150,73 @@ export class GridColumnSet {
         this.applyColumnFilterability(col);
     }
 
+    generateWildcardColumns(col: GridColumn) {
+
+        const dotpath = col.path.replace(/\.?\*$/, '');
+        let classObj, idlField;
+
+        if (col.idlClass) {
+            classObj = this.idl.classes[col.idlClass];
+        } else {
+            classObj = this.idl.classes[this.idlClass];
+        }
+
+        if (!classObj) { return; }
+
+        const pathParts = dotpath.split(/\./);
+        let oldField;
+
+        // find the IDL class definition for the last element in the
+        // path before the .*
+        // An empty pathParts means expand the root class
+        pathParts.forEach((part, pathIdx) => {
+            oldField = idlField;
+            idlField = classObj.field_map[part];
+
+            // unless we're at the end of the list, this field should
+            // link to another class.
+            if (idlField && idlField['class'] && (
+                idlField.datatype === 'link' || idlField.datatype === 'org_unit')) {
+                classObj = this.idl.classes[idlField['class']];
+
+            } else {
+                if (pathIdx < (pathParts.length - 1)) {
+                    // we ran out of classes to hop through before
+                    // we ran out of path components
+                    console.warn('Grid: invalid IDL path: ' + dotpath);
+                }
+            }
+        });
+
+        if (!classObj) {
+            console.warn(
+                'Grid: wildcard path does not resolve to an object:' + dotpath);
+            return;
+        }
+
+        classObj.fields.forEach(field => {
+
+            // Only show wildcard fields where we have data to show
+            // Virtual and un-fleshed links will not have any data.
+            if (field.virtual ||
+                field.datatype === 'link' || field.datatype === 'org_unit') {
+                return;
+            }
+
+            const newCol = col.clone();
+            newCol.isAuto = true;
+            newCol.path = dotpath ? dotpath + '.' + field.name : field.name;
+            newCol.label = dotpath ? classObj.label + ': ' + field.label : field.label;
+            newCol.datatype = field.datatype;
+
+            // Avoid including the class label prefix in the main grid
+            // header display so it doesn't take up so much horizontal space.
+            newCol.headerLabel = field.label;
+
+            this.add(newCol);
+        });
+    }
+
     // Returns true if the new column was inserted, false otherwise.
     // Declared columns take precedence over auto-generated columns
     // when collisions occur.
@@ -122,7 +224,7 @@ export class GridColumnSet {
     insertColumn(col: GridColumn): boolean {
 
         if (col.isAuto) {
-            if (this.getColByName(col.name)) {
+            if (this.getColByName(col.name) || this.getColByPath(col.path)) {
                 // New auto-generated column conflicts with existing
                 // column.  Skip it.
                 return false;
@@ -171,6 +273,12 @@ export class GridColumnSet {
 
     getColByName(name: string): GridColumn {
         return this.columns.filter(c => c.name === name)[0];
+    }
+
+    getColByPath(path: string): GridColumn {
+        if (path) {
+            return this.columns.filter(c => c.path === path)[0];
+        }
     }
 
     idlInfoFromDotpath(dotpath: string): any {
@@ -245,6 +353,7 @@ export class GridColumnSet {
         if (!col.align) { col.align = 'left'; }
         if (!col.label) { col.label = col.name; }
         if (!col.datatype) { col.datatype = 'text'; }
+        if (!col.isAuto) { col.headerLabel = col.label; }
 
         col.visible = !col.hidden;
     }
@@ -285,6 +394,12 @@ export class GridColumnSet {
         invisible.sort((a, b) => a.label < b.label ? -1 : 1);
 
         return visible.concat(invisible);
+    }
+
+    requiredColumns(): GridColumn[] {
+        const visible = this.displayColumns();
+        return visible.concat(
+            this.columns.filter(c => c.required && !c.visible));
     }
 
     insertBefore(source: GridColumn, target: GridColumn) {
@@ -429,6 +544,13 @@ export interface GridCellTextGenerator {
 export class GridRowSelector {
     indexes: {[string: string]: boolean};
 
+    // Track these so we can emit the selectionChange event
+    // only when the selection actually changes.
+    previousSelection: string[] = [];
+
+    // Emits the selected indexes on selection change
+    selectionChange: EventEmitter<string[]> = new EventEmitter<string[]>();
+
     constructor() {
         this.clear();
     }
@@ -444,25 +566,40 @@ export class GridRowSelector {
         return true;
     }
 
+    emitChange() {
+        const keys = this.selected();
+
+        if (keys.length === this.previousSelection.length &&
+            this.contains(this.previousSelection)) {
+            return; // No change has occurred
+        }
+
+        this.previousSelection = keys;
+        this.selectionChange.emit(keys);
+    }
+
     select(index: string | string[]) {
         const indexes = [].concat(index);
         indexes.forEach(i => this.indexes[i] = true);
+        this.emitChange();
     }
 
     deselect(index: string | string[]) {
         const indexes = [].concat(index);
         indexes.forEach(i => delete this.indexes[i]);
+        this.emitChange();
     }
 
-    // Returns the list of selected index values.
-    // In some contexts (template checkboxes) the value for an index is
-    // set to false to deselect instead of having it removed (via deselect()).
-    // NOTE GridRowSelector has no knowledge of when a row is no longer
-    // present in the grid.  Use GridContext.getSelectedRows() to get
-    // list of selected rows that are still present in the grid.
-    selected() {
-        return Object.keys(this.indexes).filter(
-            ind => Boolean(this.indexes[ind]));
+    toggle(index: string) {
+        if (this.indexes[index]) {
+            this.deselect(index);
+        } else {
+            this.select(index);
+        }
+    }
+
+    selected(): string[] {
+        return Object.keys(this.indexes);
     }
 
     isEmpty(): boolean {
@@ -471,6 +608,7 @@ export class GridRowSelector {
 
     clear() {
         this.indexes = {};
+        this.emitChange();
     }
 }
 
@@ -509,6 +647,7 @@ export class GridContext {
     columnSet: GridColumnSet;
     autoGeneratedColumnOrder: string;
     rowSelector: GridRowSelector;
+    toolbarLabel: string;
     toolbarButtons: GridToolbarButton[];
     toolbarCheckboxes: GridToolbarCheckbox[];
     toolbarActions: GridToolbarAction[];
@@ -525,6 +664,7 @@ export class GridContext {
     disablePaging: boolean;
     showDeclaredFieldsOnly: boolean;
     cellTextGenerator: GridCellTextGenerator;
+    reloadOnColumnChange: boolean;
 
     // Allow calling code to know when the select-all-rows-in-page
     // action has occurred.
@@ -780,19 +920,31 @@ export class GridContext {
         ).length > 0;
     }
 
-    getRowColumnValue(row: any, col: GridColumn): string {
-        let val;
-
-        if (col.path) {
-            val = this.nestedItemFieldValue(row, col);
-        } else if (col.name in row) {
-            val = this.getObjectFieldValue(row, col.name);
+    getRowColumnBareValue(row: any, col: GridColumn): any {
+        if (col.name in row) {
+            return this.getObjectFieldValue(row, col.name);
+        } else if (col.path) {
+            return this.nestedItemFieldValue(row, col);
         }
+    }
+
+    getRowColumnValue(row: any, col: GridColumn): any {
+        const val = this.getRowColumnBareValue(row, col);
 
         if (col.datatype === 'bool') {
             // Avoid string-ifying bools so we can use an <eg-bool/>
             // in the grid template.
             return val;
+        }
+
+        let interval;
+        const intField = col.dateOnlyIntervalField;
+        if (intField) {
+            const intCol =
+                this.columnSet.columns.filter(c => c.path === intField)[0];
+            if (intCol) {
+                interval = this.getRowColumnBareValue(row, intCol);
+            }
         }
 
         return this.format.transform({
@@ -801,7 +953,8 @@ export class GridContext {
             idlField: col.idlFieldDef ? col.idlFieldDef.name : col.name,
             datatype: col.datatype,
             datePlusTime: Boolean(col.datePlusTime),
-            timezoneContextOrg: Number(col.timezoneContextOrg)
+            timezoneContextOrg: Number(col.timezoneContextOrg),
+            dateOnlyInterval: interval
         });
     }
 
@@ -1160,6 +1313,7 @@ export class GridContext {
                 col.datatype = field.datatype;
                 col.isIndex = (field.name === pkeyField);
                 col.isAuto = true;
+                col.headerLabel = col.label;
 
                 if (this.showDeclaredFieldsOnly) {
                     col.hidden = true;
@@ -1221,6 +1375,7 @@ export class GridToolbarButton {
     onClick: EventEmitter<any []>;
     action: () => any; // DEPRECATED
     disabled: boolean;
+    routerLink: string;
 }
 
 export class GridToolbarCheckbox {
@@ -1229,15 +1384,20 @@ export class GridToolbarCheckbox {
     onChange: EventEmitter<boolean>;
 }
 
+export interface GridColumnSort {
+    name: string;
+    dir: string;
+}
+
 export class GridDataSource {
 
     data: any[];
-    sort: any[];
+    sort: GridColumnSort[];
     filters: Object;
     allRowsRetrieved: boolean;
     requestingData: boolean;
     retrievalError: boolean;
-    getRows: (pager: Pager, sort: any[]) => Observable<any>;
+    getRows: (pager: Pager, sort: GridColumnSort[]) => Observable<any>;
 
     constructor() {
         this.sort = [];
@@ -1316,5 +1476,4 @@ export class GridDataSource {
         }
     }
 }
-
 

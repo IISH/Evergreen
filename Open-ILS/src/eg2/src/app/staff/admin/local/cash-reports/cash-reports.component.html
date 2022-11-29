@@ -1,0 +1,116 @@
+<eg-staff-banner bannerText="Cash Reports" i18n-bannerText>
+</eg-staff-banner>
+
+<div class="mb-5">
+  <div>
+    <div class="row">
+      <div class="input-group col-lg-3">
+        <div class="input-group-prepend">
+          <div class="input-group-text" i18n>Start Date</div> 
+          <eg-date-select [initialDate]="today" (onChangeAsYmd)="onStartDateChange($event)"></eg-date-select>
+        </div>
+      </div>
+      <div class="input-group col-lg-3">
+        <div class="input-group-prepend">
+          <div class="input-group-text" i18n>End Date</div> 
+          <eg-date-select [initialDate]="today" (onChangeAsYmd)="onEndDateChange($event)"></eg-date-select>
+        </div>
+      </div>
+      <div class="input-group col-lg-4">
+        <div class="input-group-prepend">
+          <div class="input-group-text" i18n>View reports for</div>
+        </div>
+        <eg-org-select [applyDefault]="true" [disableOrgs]="disabledOrgs" (onChange)="onOrgChange($event)"></eg-org-select>
+      </div>
+      <div class="col-lg-2">
+        <button class="btn btn-primary" (click)="searchForData(startDate, endDate)">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ul ngbNav #cashReportsNav="ngbNav" class="nav-tabs"
+  [destroyOnHide]="false" activeId="deskPayments" (navChange)="eraseUserGrid()">
+  <li ngbNavItem="deskPayments">
+    <a ngbNavLink i18n>Desk Payments</a>
+    <ng-template ngbNavContent>
+      <div class="mt-3">
+        <div class="row">
+          <div class="col-sm-2" i18n>Total Cash Payments</div>
+          <div class="col-sm-10">{{deskTotals.cash_payment | currency}}</div>
+        </div>
+        <div class="row">
+          <div class="col-sm-2" i18n>Total Check Payments</div>
+          <div class="col-sm-10">{{deskTotals.check_payment | currency}}</div>
+        </div>
+        <div class="row">
+          <div class="col-sm-2" i18n>Total Credit Card Payments</div>
+          <div class="col-sm-10">{{deskTotals.credit_card_payment | currency}}</div>
+        </div>
+        <div class="row">
+          <div class="col-sm-2" i18n>Total Debit Card Payments</div>
+          <div class="col-sm-10">{{deskTotals.debit_card_payment | currency}}</div>
+        </div>
+        <eg-grid #deskPaymentGrid
+          persistKey="admin.local.cash_reports.desk_payments"
+          [disableSelect]="true"
+          [disablePaging]="true"
+          [dataSource]="deskPaymentDataSource"
+          [sortable]="false">
+          <eg-grid-column label="Workstation" name="workstation" [index]="true" i18n-label></eg-grid-column>
+          <eg-grid-column label="Cash Payment" name="cash_payment" i18n-label datatype="money"></eg-grid-column>
+          <eg-grid-column label="Check Payment" name="check_payment" i18n-label datatype="money"></eg-grid-column>
+          <eg-grid-column label="Credit Card Payment" name="credit_card_payment" i18n-label datatype="money"></eg-grid-column>
+          <eg-grid-column label="Debit Card Payment" name="debit_card_payment" i18n-label datatype="money"></eg-grid-column>
+        </eg-grid>
+      </div>
+    </ng-template>
+  </li>
+  <li ngbNavItem="userPayments">
+    <a ngbNavLink i18n>Staff User Payments</a>
+    <ng-template ngbNavContent>
+      <div class="mt-3">
+        <div class="row">
+          <div class="col-sm-2" i18n>Total Patron Credit Payments</div>
+          <div class="col-sm-10">{{userTotals.credit_payment | currency}}</div>
+        </div>
+        <div class="row">
+          <div class="col-sm-2" i18n>Total Forgive Payments</div>
+          <div class="col-sm-10">{{userTotals.forgive_payment | currency}}</div>
+        </div>
+        <div class="row">
+          <div class="col-sm-2" i18n>Total Work Payments</div>
+          <div class="col-sm-10">{{userTotals.work_payment | currency}}</div>
+        </div>
+        <div class="row">
+          <div class="col-sm-2" i18n>Total Goods Payments</div>
+          <div class="col-sm-10">{{userTotals.goods_payment | currency}}</div>
+        </div>
+        <ng-template #cardTmpl let-row="row">
+          <a target="_blank" href="/eg/staff/circ/patron/{{row.user.id()}}/checkout">
+            {{row.user.card()}}
+          </a>
+        </ng-template>
+        <eg-grid #userPaymentGrid
+          persistKey="admin.local.cash_reports.user_payments"
+          [disableSelect]="true"
+          [disablePaging]="true"
+          [dataSource]="userPaymentDataSource"
+          [sortable]="false">
+          <eg-grid-column label="User" name="usr" [index]="true" i18n-label></eg-grid-column>
+          <eg-grid-column label="Credit Payment" name="credit_payment" i18n-label datatype="money"></eg-grid-column>
+          <eg-grid-column label="Debit Payment" name="debit_payment" i18n-label datatype="money"></eg-grid-column>
+          <eg-grid-column label="Forgive Payment" name="forgive_payment" i18n-label datatype="money"></eg-grid-column>
+          <eg-grid-column label="Work Payment" name="work_payment" i18n-label datatype="money"></eg-grid-column>
+          <eg-grid-column label="Goods Payment" name="goods_payment" i18n-label datatype="money"></eg-grid-column>
+          <eg-grid-column label="Staff Card" name="card" i18n-label [cellTemplate]="cardTmpl"></eg-grid-column>
+          <eg-grid-column label="Staff Email" path="user.email" i18n-label></eg-grid-column>
+          <eg-grid-column label="Staff First Name" path="user.first_given_name" i18n-label></eg-grid-column>
+          <eg-grid-column label="Staff Family Name" path="user.family_name" i18n-label></eg-grid-column>
+          <eg-grid-column label="Staff Home OU" path="user.home_ou" i18n-label></eg-grid-column>
+        </eg-grid>
+      </div>
+    </ng-template>
+  </li>
+</ul>
+<div [ngbNavOutlet]="cashReportsNav"></div>

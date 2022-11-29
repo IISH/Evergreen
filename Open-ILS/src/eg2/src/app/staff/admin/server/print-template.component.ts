@@ -49,7 +49,10 @@ export class PrintTemplateComponent implements OnInit {
     // Keys map to print template names
     sampleData: any = {
         patron_address: {},
-        holds_for_bib: {}
+        holds_for_bib: {},
+        bills_current: {},
+        bills_payment: {},
+        hold_shelf_slip: {}
     };
 
     constructor(
@@ -83,7 +86,7 @@ export class PrintTemplateComponent implements OnInit {
         // vanilla hashes are easier to work with in the admin UI.
 
         // Classes for which sample data exists
-        const classes = ['au', 'ac', 'aua', 'ahr', 'acp', 'mwde'];
+        const classes = ['au', 'ac', 'aua', 'ahr', 'acp', 'mwde', 'mbt', 'mbts'];
         const samples: any = {};
         classes.forEach(class_ => samples[class_] =
             this.idl.toHash(this.samples.listOfThings(class_, 10)));
@@ -91,13 +94,13 @@ export class PrintTemplateComponent implements OnInit {
         // Wide holds are hashes instead of IDL objects.
         // Add fields as needed.
         const wide_holds = [{
-            request_time: this.samples.randomDate().toISOString(),
+            request_time: this.samples.randomDateIso(),
             ucard_barcode: samples.ac[0].barcode,
             usr_family_name: samples.au[0].family_name,
             usr_alias: samples.au[0].alias,
             cp_barcode: samples.acp[0].barcode
         }, {
-            request_time: this.samples.randomDate().toISOString(),
+            request_time: this.samples.randomDateIso(),
             ucard_barcode: samples.ac[1].barcode,
             usr_family_name: samples.au[1].family_name,
             usr_alias: samples.au[1].alias,
@@ -109,7 +112,62 @@ export class PrintTemplateComponent implements OnInit {
             address: samples.aua[0]
         };
 
+        const patron = this.idl.clone(samples.au[0]);
+        patron.addresses = [samples.aua[0]];
+        patron.stat_cat_entries = [{
+            stat_cat: {name: 'A Stat Cat'},
+            stat_cat_entry: 'A Value'
+        }];
+
+        this.sampleData.patron_data = {patron: patron};
+
         this.sampleData.holds_for_bib = wide_holds;
+
+        // Bills
+        samples.mbt[0].summary = samples.mbts[0];
+        samples.mbt[1].summary = samples.mbts[1];
+        samples.mbt[2].summary = samples.mbts[2];
+
+        this.sampleData.bills_current.xacts = [
+            samples.mbt[0],
+            samples.mbt[1],
+            samples.mbt[2]
+        ];
+
+        // Payments
+        this.sampleData.bills_payment = {
+            previous_balance: 10,
+            payment_type: 'cash_payment',
+            payment_total: 5,
+            payment_applied: 3,
+            amount_voided: 0,
+            change_given: 2,
+            payment_note: 'Test Note',
+            payments: [{
+                amount: 1,
+                xact: samples.mbt[0],
+                title: 'A Title',
+                copy_barcode: '3423482302393'
+            }, {
+                amount: 4,
+                xact: samples.mbt[1],
+                title: 'Another Title',
+                copy_barcode: '3423482302394'
+            }]
+        };
+
+        this.sampleData.hold_shelf_slip = {
+            checkin: {
+                copy: samples.acp[0],
+                patron: samples.au[0],
+                hold: samples.ahr[0]
+            }
+        };
+
+        this.sampleData.hold_transit_slip =
+            Object.assign({}, this.sampleData.hold_shelf_slip);
+        this.sampleData.hold_transit_slip.checkin.destOrg =
+            this.org.list()[0];
     }
 
     onTabChange(evt: NgbTabChangeEvent) {

@@ -3,6 +3,7 @@ import {merge, from, Observable} from 'rxjs';
 import {tap, take, switchMap} from 'rxjs/operators';
 import {IdlService, IdlObject} from '@eg/core/idl.service';
 import {OrgService} from '@eg/core/org.service';
+import {ServerStoreService} from '@eg/core/server-store.service';
 import {AuthService} from '@eg/core/auth.service';
 import {NetService} from '@eg/core/net.service';
 import {EventService} from '@eg/core/event.service';
@@ -35,10 +36,10 @@ export class PatronPenaltyDialogComponent
     SILENT_NOTE = 21;
     STAFF_CHR = 25;
 
-    staffInitials: string;
+    penalty: IdlObject; // modifying an existing penalty
     penaltyTypes: IdlObject[];
     penaltyTypeFromSelect = '';
-    penaltyTypeFromButton;
+    penaltyTypeFromButton: number;
     patron: IdlObject;
     dataLoaded = false;
     requireInitials = false;
@@ -54,6 +55,7 @@ export class PatronPenaltyDialogComponent
         private idl: IdlService,
         private org: OrgService,
         private net: NetService,
+        private store: ServerStoreService,
         private evt: EventService,
         private toast: ToastService,
         private auth: AuthService,
@@ -69,11 +71,29 @@ export class PatronPenaltyDialogComponent
     init(): Observable<any> {
         this.dataLoaded = false;
 
-        this.penaltyTypeFromButton = this.SILENT_NOTE;
+        this.penaltyTypeFromButton = 0;
+        this.penaltyTypeFromSelect = '';
+        this.initials = '';
+        this.noteText = '';
 
-        this.org.settings(['ui.staff.require_initials.patron_standing_penalty'])
-        .then(sets => this.requireInitials =
-            sets['ui.staff.require_initials.patron_standing_penalty']);
+        if (this.penalty) { // Modifying an existing penalty
+            const pen = this.penalty;
+            const sp = pen.standing_penalty().id();
+            if (sp === this.ALERT_NOTE ||
+                sp === this.SILENT_NOTE || sp === this.STAFF_CHR) {
+                this.penaltyTypeFromButton = sp;
+            } else {
+                this.penaltyTypeFromSelect = sp;
+            }
+
+            this.noteText = pen.note();
+
+        } else {
+            this.penaltyTypeFromButton = this.SILENT_NOTE;
+        }
+
+        this.store.getItem('ui.staff.require_initials.patron_standing_penalty')
+        .then(require => this.requireInitials = require);
 
         const obs1 = this.pcrud.retrieve('au', this.patronId)
             .pipe(tap(usr => this.patron = usr));
@@ -90,7 +110,32 @@ export class PatronPenaltyDialogComponent
         }));
     }
 
+    modifyPenalty() {
+        this.penalty.note(this.initials ?
+            `${this.noteText} [${this.initials}]` : this.noteText);
+
+        this.penalty.standing_penalty(
+            this.penaltyTypeFromSelect || this.penaltyTypeFromButton);
+
+        this.pcrud.update(this.penalty).toPromise()
+        .then(ok => {
+            if (!ok) {
+                this.errorMsg.current().then(msg => this.toast.danger(msg));
+                this.error('Update failed', true);
+            } else {
+                this.successMsg.current().then(msg => this.toast.success(msg));
+                this.penalty = null;
+                this.close(ok);
+            }
+        });
+    }
+
     apply() {
+
+        if (this.penalty) {
+            this.modifyPenalty();
+            return;
+        }
 
         const pen = this.idl.create('ausp');
         const msg = {

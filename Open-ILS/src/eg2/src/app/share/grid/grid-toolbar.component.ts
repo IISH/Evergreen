@@ -1,8 +1,10 @@
 import {Component, Input, OnInit} from '@angular/core';
+import {Router} from '@angular/router';
 import {DomSanitizer, SafeUrl} from '@angular/platform-browser';
 import {GridToolbarButton, GridToolbarAction, GridContext} from '@eg/share/grid/grid';
 import {GridColumnWidthComponent} from './grid-column-width.component';
 import {GridPrintComponent} from './grid-print.component';
+import {GridColumn} from './grid';
 
 @Component({
   selector: 'eg-grid-toolbar',
@@ -16,15 +18,16 @@ export class GridToolbarComponent implements OnInit {
     @Input() gridPrinter: GridPrintComponent;
     @Input() disableSaveSettings = false;
 
-    renderedGroups: {[group: string]: boolean};
+    renderedGroups: {[group: string]: boolean} = {};
 
     csvExportInProgress: boolean;
     csvExportUrl: SafeUrl;
     csvExportFileName: string;
 
-    constructor(private sanitizer: DomSanitizer) {
-        this.renderedGroups = {};
-    }
+    constructor(
+        private router: Router,
+        private sanitizer: DomSanitizer
+    ) {}
 
     ngOnInit() {
         this.sortActions();
@@ -78,8 +81,12 @@ export class GridToolbarComponent implements OnInit {
 
     performButtonAction(button: GridToolbarButton) {
         const rows = this.gridContext.getSelectedRows();
-        button.onClick.emit(rows);
-        if (button.action) { button.action(); }
+        if (button.routerLink) {
+            this.router.navigate([button.routerLink]);
+        } else {
+            button.onClick.emit(rows);
+            if (button.action) { button.action(); }
+        }
     }
 
     printHtml() {
@@ -121,6 +128,13 @@ export class GridToolbarComponent implements OnInit {
         });
 
         $event.preventDefault();
+    }
+
+    toggleVisibility(col: GridColumn) {
+        col.visible = !col.visible;
+        if (this.gridContext.reloadOnColumnChange) {
+            this.gridContext.reloadWithoutPagerReset();
+        }
     }
 }
 

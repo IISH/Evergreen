@@ -20,8 +20,7 @@ import {AcqSearchFormComponent} from './acq-search-form.component';
 
 @Component({
   selector: 'eg-picklist-results',
-  templateUrl: 'picklist-results.component.html',
-  providers: [AcqSearchService]
+  templateUrl: 'picklist-results.component.html'
 })
 export class PicklistResultsComponent implements OnInit {
 
@@ -131,7 +130,7 @@ export class PicklistResultsComponent implements OnInit {
     }
 
     showRow(row: any) {
-        window.open('/eg/staff/acq/legacy/picklist/view/' + row.id(), '_blank');
+        window.open('/eg2/staff/acq/picklist/' + row.id(), '_blank');
     }
 
     doSearch(search: AcqSearch) {

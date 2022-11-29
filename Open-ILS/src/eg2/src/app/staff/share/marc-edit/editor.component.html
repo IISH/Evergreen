@@ -10,7 +10,7 @@
 </eg-confirm-dialog>
 
 <eg-alert-dialog #cannotDelete
-  i18n-dialogBody
+  i18n-dialogBody 
   dialogBody="Records with holdings attached cannot be deleted.">
 </eg-alert-dialog>
 
@@ -31,9 +31,9 @@
 
   <ng-container *ngIf="showFastAdd">
     <div class="form-inline">
-      <input type="text" class="form-control ml-2"
+      <input type="text" class="form-control ml-2" 
         [(ngModel)]="fastItemLabel" placeholder="Call Number" i18n-placeholder/>
-      <input type="text" class="form-control ml-2"
+      <input type="text" class="form-control ml-2" 
         [(ngModel)]="fastItemBarcode" placeholder="Barcode" i18n-placeholder/>
     </div>
   </ng-container>
@@ -45,7 +45,7 @@
       Record Type {{record ? record.recordType() : ''}}
     </span>
   </h3>
-
+    
   <ng-container *ngIf="recordType === 'biblio'">
     <div class="mr-2">
       <eg-combobox #sourceSelector
@@ -58,13 +58,13 @@
 
   <div class="pr-3 mr-3 border-right">
     <button class="btn btn-success" (click)="saveRecord()"
-      [disabled]="(record && record.deleted) || record.id == -1" i18n>Save Changes</button>
+      [disabled]="(record && record.deleted) || record.id === -1" i18n>Save Changes</button>
   </div>
 
   <ng-container *ngIf="record && record.id">
-    <button *ngIf="!record.deleted && record.id != -1" class="btn btn-warning"
+    <button *ngIf="!record.deleted && record.id !== -1" class="btn btn-warning"
       [disabled]="inPlaceMode" (click)="deleteRecord()" i18n>Delete Record</button>
-    <button *ngIf="record.deleted" class="btn btn-info"
+    <button *ngIf="record.deleted" class="btn btn-info" 
       [disabled]="inPlaceMode" (click)="undeleteRecord()" i18n>Undelete Record</button>
   </ng-container>
 </div>
@@ -104,28 +104,7 @@
 
 <div class="row d-flex p-2 m-2 flex-row-reverse">
   <button class="btn btn-success" (click)="saveRecord()"
-    [disabled]="(record && record.deleted) || record.id == -1" i18n>Save Changes</button>
+    [disabled]="(record && record.deleted) || record.id === -1" i18n>Save Changes</button>
 </div>
 
-<table class="symbolTable">
-  <tr>
-    <th>West-European</th>
-    <td>AÀàÁáÄäÂâÃãÅåEÈèÉéËëÊêIÌìÍíÏïÎîOÒòÓóÖöÔôÕõØøUÙùÚúÜüÛûCÇçNÑñ</td>
-  </tr>
-  <tr>
-    <th>Turkish</th>
-    <td>AÂâGĞğIİıOÖöUÜüCÇçSŞş</td>
-  </tr>
-  <tr>
-    <th>Cyrillic</th>
-    <td>AĂăIÏïĪīCČčSŠšZŽž</td>
-  </tr>
-  <tr>
-    <th>Slavic</th>
-    <td>AÁáĄąEÉéĔĕĘęIÍíOÓóðUŮůYÝýLŁłCĆćČčDÐNŃńRŘřSŚśZŽžŹźŻż</td>
-  </tr>
-  <tr>
-    <th>Hungarian</th>
-    <td>AÁáEÉéIÍíOÓóÖöŐőUÚúÜüŰű</td>
-  </tr>
-</table>
+

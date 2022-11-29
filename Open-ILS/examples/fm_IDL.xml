@@ -2287,6 +2287,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 			<field name="total_copy_hold_ratio" reporter:datatype="float" reporter:label="Minimum Total Copy/Hold Ratio"/>
 			<field name="available_copy_hold_ratio" reporter:datatype="float" reporter:label="Minimum Available Copy/Hold Ratio"/>
 			<field name="description" reporter:datatype="text" reporter:label="Description"/>
+			<field name="renew_extends_due_date" reporter:datatype="bool" reporter:label="Early Renewal Extends Due Date"/>
+			<field name="renew_extend_min_interval" reporter:datatype="interval" reporter:label="Early Renewal Minimum Duration Interval"/>
 		</fields>
 		<links>
 			<link field="org_unit" reltype="has_a" key="id" map="" class="aou"/>
@@ -3839,18 +3841,25 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 		<fields oils_persist:primary="id">
 			<field name="dow_0_close" />
 			<field name="dow_0_open" />
+			<field name="dow_0_note"  reporter:datatype="text" />
 			<field name="dow_1_close" />
 			<field name="dow_1_open" />
+			<field name="dow_1_note"  reporter:datatype="text" />
 			<field name="dow_2_close" />
 			<field name="dow_2_open" />
+			<field name="dow_2_note"  reporter:datatype="text" />
 			<field name="dow_3_close" />
 			<field name="dow_3_open" />
+			<field name="dow_3_note"  reporter:datatype="text" />
 			<field name="dow_4_close" />
 			<field name="dow_4_open" />
+			<field name="dow_4_note"  reporter:datatype="text" />
 			<field name="dow_5_close" />
 			<field name="dow_5_open" />
+			<field name="dow_5_note"  reporter:datatype="text" />
 			<field name="dow_6_close" />
 			<field name="dow_6_open" />
+			<field name="dow_6_note"  reporter:datatype="text" />
 			<field name="id" reporter:datatype="id" />
 			<field name="org_unit" oils_persist:virtual="true" reporter:datatype="org_unit"/>
 		</fields>
@@ -4521,7 +4530,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
         <permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
             <actions>
                 <create permission="CREATE_PERM" global_required="true"/>
-                <retrieve permission="CREATE_PERM UPDATE_PERM DELETE_PERM" global_required="true"/>
+                <retrieve permission="VIEW_PERMISSION CREATE_PERM UPDATE_PERM DELETE_PERM" global_required="true"/>
                 <update permission="UPDATE_PERM" global_required="true"/>
                 <delete permission="DELETE_PERM" global_required="true"/>
             </actions>
@@ -7921,7 +7930,7 @@ SELECT  usr,
 			<link field="item" reltype="has_a" key="id" map="" class="cubi"/>
 		</links>
 	</class>
-	<class id="mus" controller="open-ils.cstore" oils_obj:fieldmapper="money::user_summary" oils_persist:tablename="money.usr_summary" reporter:label="User Summary">
+	<class id="mus" controller="open-ils.cstore open-ils.pcrud" oils_obj:fieldmapper="money::user_summary" oils_persist:tablename="money.usr_summary" reporter:label="User Summary">
 		<fields oils_persist:primary="usr" oils_persist:sequence="">
 			<field name="balance_owed" reporter:datatype="money" />
 			<field name="total_owed" reporter:datatype="money" />
@@ -7931,6 +7940,13 @@ SELECT  usr,
 		<links>
 			<link field="usr" reltype="has_a" key="id" map="" class="au"/>
 		</links>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<retrieve permission="VIEW_USER">
+					<context link="usr" field="home_ou"/>
+				</retrieve>
+			</actions>
+		</permacrud>
 	</class>
 	<class id="clfm" controller="open-ils.cstore open-ils.pcrud" oils_obj:fieldmapper="config::lit_form_map" oils_persist:tablename="config.lit_form_map" reporter:label="Literary Form" oils_persist:field_safe="true">
 		<fields oils_persist:primary="code" oils_persist:sequence="">
@@ -9178,11 +9194,11 @@ SELECT  usr,
 	</class>
 	<class id="fdoc" controller="open-ils.cstore open-ils.pcrud" oils_obj:fieldmapper="config::idl_field_doc" oils_persist:tablename="config.idl_field_doc" oils_persist:field_safe="true" reporter:label="IDL Field Doc">
 		<fields oils_persist:primary="id" oils_persist:sequence="config.idl_field_doc_id_seq">
-			<field name="id" reporter:datatype="id" />
-			<field name="fm_class" reporter:datatype="text"/>
-			<field name="field" reporter:datatype="text"/>
-			<field name="owner" reporter:datatype="org_unit"/>
-			<field name="string" reporter:datatype="text" oils_persist:i18n="true"/>
+			<field name="id"       reporter:label="ID" reporter:datatype="id" />
+			<field name="fm_class" reporter:label="Class" reporter:datatype="text" oils_obj:required="true"/>
+			<field name="field"    reporter:label="Field" reporter:datatype="text" oils_obj:required="true"/>
+			<field name="owner"    reporter:label="Field Documentation Owner" reporter:datatype="org_unit" oils_obj:required="true"/>
+			<field name="string"   reporter:label="Field Documentation" reporter:datatype="text" oils_persist:i18n="true" oils_obj:required="true"/>
 		</fields>
 		<links>
 			<link field="owner" reltype="has_a" key="id" map="" class="aou"/>
@@ -9622,6 +9638,73 @@ SELECT  usr,
 				</delete>
             </actions>
         </permacrud>
+	</class>
+
+	<class id="acqsn" 
+		controller="open-ils.cstore open-ils.pcrud" 
+		oils_obj:fieldmapper="acq::shipment_notification" 
+		oils_persist:tablename="acq.shipment_notification" reporter:label="Shipment Notification">
+		<fields oils_persist:primary="id" oils_persist:sequence="acq.shipment_notification_id_seq">
+			<field reporter:label="Shipment Notification ID" name="id" reporter:datatype="id"/>
+			<field reporter:label="Receiver" name="receiver" reporter:datatype="org_unit" />
+			<field reporter:label="Provider" name="provider" reporter:datatype="link"/>
+			<field reporter:label="Shipper" name="shipper" reporter:datatype="link"/>
+			<field reporter:label="Receive Date" name="recv_date" reporter:datatype="timestamp" />
+			<field reporter:label="Receive Method" name="recv_method" reporter:datatype="link" />
+			<field reporter:label="Process Date" name="process_date" reporter:datatype="timestamp" />
+			<field reporter:label="Processed By" name="processed_by" reporter:datatype="link" />
+			<field reporter:label="Container Barcode" name="container_code" reporter:datatype="text" />
+			<field reporter:label="Lading Number" name="lading_number" reporter:datatype="text" />
+			<field reporter:label="Note" name="note" reporter:datatype="text" />
+			<field reporter:label="Shipment Notification Entries" name="entries" 
+				reporter:datatype="link" oils_persist:virtual="true"/>
+		</fields>
+		<links>
+			<link field="processed_by" reltype="has_a" key="id" map="" class="au"/>
+			<link field="receiver" reltype="has_a" key="id" map="" class="aou"/>
+			<link field="provider" reltype="has_a" key="id" map="" class="acqpro"/>
+			<link field="shipper" reltype="has_a" key="id" map="" class="acqpro"/>
+			<link field="recv_method" reltype="has_a" key="code" map="" class="acqim"/>
+			<link field="entries" reltype="has_many" key="shipment_notification" map="" class="acqsne"/>
+		</links>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<retrieve permission="MANAGE_SHIPMENT_NOTIFICATION VIEW_SHIPMENT_NOTIFICATION" context_field="receiver"/>
+				<update   permission="MANAGE_SHIPMENT_NOTIFICATION" context_field="receiver"/>
+				<delete   permission="MANAGE_SHIPMENT_NOTIFICATION" context_field="receiver"/>
+			</actions>
+		</permacrud>
+	</class>
+
+	<class id="acqsne" 
+		controller="open-ils.cstore open-ils.pcrud" 
+		oils_obj:fieldmapper="acq::shipment_notification_entry" 
+		oils_persist:tablename="acq.shipment_notification_entry" 
+		reporter:label="Shipment Notification Entry">
+		<fields oils_persist:primary="id" 
+			oils_persist:sequence="acq.shipment_notification_entry_id_seq">
+			<field reporter:label="ID" name="id" reporter:datatype="id"/>
+			<field reporter:label="Shipment Notification" name="shipment_notification" reporter:datatype="link" />
+			<field reporter:label="Line Item" name="lineitem" reporter:datatype="link"/>
+			<field reporter:label="Item Count" name="item_count" reporter:datatype="int" />
+		</fields>
+		<links>
+			<link field="shipment_notification" reltype="has_a" key="id" map="" class="acqsn"/>
+			<link field="lineitem" reltype="has_a" key="id" map="" class="jub"/>
+		</links>
+			<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+				<actions>
+					<retrieve permission="MANAGE_SHIPMENT_NOTIFICATION VIEW_SHIPMENT_NOTIFICATION">
+						<context link="shipment_notification" field="receiver"/>
+					</retrieve>
+					<update permission="MANAGE_SHIPMENT_NOTIFICATION">
+						<context link="shipment_notification" field="receiver"/>
+					</update>
+					<delete permission="MANAGE_SHIPMENT_NOTIFICATION">
+						<context link="shipment_notification" field="receiver"/>
+					</delete>
+				</actions>
+			</permacrud>
 	</class>
 
 	<class id="acqpa" controller="open-ils.cstore open-ils.pcrud" oils_obj:fieldmapper="acq::provider_address" oils_persist:tablename="acq.provider_address" reporter:label="Provider Address">
@@ -10557,7 +10640,7 @@ SELECT  usr,
 
 	<class id="acqliat" controller="open-ils.cstore open-ils.pcrud" oils_obj:fieldmapper="acq::lineitem_alert_text" oils_persist:tablename="acq.lineitem_alert_text" reporter:label="Line Item Alert Text">
 		<fields oils_persist:primary="id" oils_persist:sequence="acq.lineitem_alert_text_id_seq">
-			<field reporter:label="Alert Text ID" name="id" reporter:datatype="id"/>
+			<field reporter:label="Alert Text ID" name="id" reporter:datatype="id" reporter:selector="code"/>
 			<field reporter:label="Code" name="code" reporter:datatype="text"/>
 			<field reporter:label="Description" name="description" reporter:datatype="text"/>
 			<field reporter:label="Owning Library" name="owning_lib" reporter:datatype="link"/>
@@ -15520,6 +15603,78 @@ SELECT  usr,
              <field reporter:label="Transaction Closed?" name="xact_closed" sr:suggest_filter="true" reporter:datatype="bool"/>
         </fields>
     </class>
+
+	<class id="coauf" 
+		controller="open-ils.cstore open-ils.pcrud"
+		oils_obj:fieldmapper="config::openathens_uid_field" 
+		oils_persist:tablename="config.openathens_uid_field" 
+		reporter:label="OpenAthens unique identifiers">
+		<fields oils_persist:primary="id" oils_persist:sequence="config.openathens_uid_field_id_seq">
+			<field reporter:label="ID" name="id" reporter:selector="name" reporter:datatype="id" />
+			<field reporter:label="Name" name="name" reporter:datatype="text" oils_obj:required="true"/>
+		</fields>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<retrieve/>
+			</actions>
+		</permacrud>
+	</class>
+
+	<class id="coanf" 
+		controller="open-ils.cstore open-ils.pcrud"
+		oils_obj:fieldmapper="config::openathens_name_field" 
+		oils_persist:tablename="config.openathens_name_field" 
+		reporter:label="OpenAthens name fields">
+		<fields oils_persist:primary="id" oils_persist:sequence="config.openathens_name_field_id_seq">
+			<field reporter:label="ID" name="id" reporter:selector="name" reporter:datatype="id" />
+			<field reporter:label="Name" name="name" reporter:datatype="text" oils_obj:required="true"/>
+		</fields>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<retrieve/>
+			</actions>
+		</permacrud>
+	</class>
+
+	<class id="coai" 
+		controller="open-ils.cstore open-ils.pcrud"
+		oils_obj:fieldmapper="config::openathens_identity" 
+		oils_persist:tablename="config.openathens_identity" 
+		reporter:label="Sign-on to OpenAthens">
+		<fields oils_persist:primary="id" oils_persist:sequence="config.openathens_identity_id_seq">
+			<field reporter:label="ID" name="id" reporter:datatype="id" reporter:selector="name"/>
+			<field reporter:label="Owner" name="org_unit" reporter:datatype="org_unit" oils_obj:required="true"/>
+			<field reporter:label="Active" name="active" reporter:datatype="bool"/>
+			<field reporter:label="API key" name="api_key" reporter:datatype="text" oils_obj:required="true"/>
+			<field reporter:label="Connection ID" name="connection_id" reporter:datatype="text" oils_obj:required="true"/>
+			<field reporter:label="Connection URI" name="connection_uri" reporter:datatype="text" oils_obj:required="true"/>
+			<field reporter:label="Auto sign-on" name="auto_signon_enabled" reporter:datatype="bool"/>
+			<field reporter:label="Auto sign-out" name="auto_signout_enabled" reporter:datatype="bool"/>
+			<field reporter:label="Unique identifier field" name="unique_identifier" reporter:datatype="link" oils_obj:required="true"/>
+			<field reporter:label="Display name field" name="display_name" reporter:datatype="link" oils_obj:required="true"/>
+			<field reporter:label="Release prefix" name="release_prefix" reporter:datatype="bool"/>
+			<field reporter:label="Release first name" name="release_first_given_name" reporter:datatype="bool"/>
+			<field reporter:label="Release middle name" name="release_second_given_name" reporter:datatype="bool"/>
+			<field reporter:label="Release surname" name="release_family_name" reporter:datatype="bool"/>
+			<field reporter:label="Release suffix" name="release_suffix" reporter:datatype="bool"/>
+			<field reporter:label="Release email" name="release_email" reporter:datatype="bool"/>
+			<field reporter:label="Release home library" name="release_home_ou" reporter:datatype="bool"/>
+			<field reporter:label="Release barcode" name="release_barcode" reporter:datatype="bool"/>
+		</fields>
+		<links>
+			<link field="org_unit" reltype="has_a" key="id" map="" class="aou"/>
+			<link field="unique_identifier" reltype="has_a" key="id" map="" class="coauf"/>
+			<link field="display_name" reltype="has_a" key="id" map="" class="coanf"/>
+		</links>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<create permission="ADMIN_OPENATHENS" global_required="true"/>
+				<retrieve/>
+				<update permission="ADMIN_OPENATHENS" global_required="true"/>
+				<delete permission="ADMIN_OPENATHENS" global_required="true"/>
+			</actions>
+		</permacrud>
+	</class>
 
 	<!-- ********************************************************************************************************************* -->
 </IDL>

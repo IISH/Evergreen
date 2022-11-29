@@ -1968,7 +1968,13 @@ INSERT INTO permission.perm_list ( id, code, description ) VALUES
  ( 637, 'UPLOAD_COVER_IMAGE', oils_i18n_gettext(637,
     'Upload local cover images for added content.', 'ppl', 'description')),
  ( 638, 'RUN_SIMPLE_REPORTS', oils_i18n_gettext(638,
-    'Build and run simple reports', 'ppl', 'description'))
+    'Build and run simple reports', 'ppl', 'description')),
+ ( 639, 'ADMIN_OPENATHENS', oils_i18n_gettext(639,
+    'Allow a user to administer OpenAthens authentication service', 'ppl', 'description')),
+ ( 640, 'ACCESS_ANGULAR_CIRC', oils_i18n_gettext(640,
+    'Allow a user to access the experimental Angular circulation interfaces', 'ppl', 'description')),
+ ( 641, 'ADMIN_FUND_ROLLOVER', oils_i18n_gettext(641,
+    'Allow the user to perform fund propagation and rollover', 'ppl', 'description'))    
 ;
 
 SELECT SETVAL('permission.perm_list_id_seq'::TEXT, 1000);
@@ -2763,6 +2769,7 @@ INSERT INTO permission.grp_perm_map (grp, perm, depth, grantable)
 			'ADMIN_CLAIM_POLICY',
 			'ADMIN_CURRENCY_TYPE',
 			'ADMIN_FUND',
+			'ADMIN_FUND_ROLLOVER',
 			'ADMIN_FUNDING_SOURCE',
 			'ADMIN_INVOICE',
 			'ADMIN_INVOICE_METHOD',
@@ -3142,7 +3149,23 @@ SELECT SETVAL('acq.user_request_type_id_seq'::TEXT, 7);
 INSERT into config.org_unit_setting_type
 ( name, grp, label, description, datatype, fm_class ) VALUES
 
-( 'acq.copy_creator_uses_receiver', 'acq',
+( 'acq.default_owning_lib_for_auto_lids_strategy', 'acq',
+    oils_i18n_gettext('acq.default_owning_lib_for_auto_lids_strategy',
+        'How to set default owning library for auto-created line item items',
+        'coust', 'label'),
+    oils_i18n_gettext('acq.default_owning_lib_for_auto_lids_strategy',
+        'Stategy to use to set default owning library to set when line item items are auto-created because the provider''s default copy count has been set. Valid values are "workstation" to use the workstation library, "blank" to leave it blank, and "use_setting" to use the "Default owning library for auto-created line item items" setting. If not set, the workstation library will be used.',
+        'coust', 'description'),
+    'string', null)
+,( 'acq.default_owning_lib_for_auto_lids', 'acq',
+    oils_i18n_gettext('acq.default_owning_lib_for_auto_lids',
+        'Default owning library for auto-created line item items',
+        'coust', 'label'),
+    oils_i18n_gettext('acq.default_owning_lib_for_auto_lids',
+        'The default owning library to set when line item items are auto-created because the provider''s default copy count has been set. This applies if the "How to set default owning library for auto-created line item items" setting is set to "use_setting".',
+        'coust', 'description'),
+    'link', 'aou')
+,( 'acq.copy_creator_uses_receiver', 'acq',
     oils_i18n_gettext('acq.copy_creator_uses_receiver',
         'Set copy creator as receiver',
         'coust', 'label'),
@@ -3280,7 +3303,7 @@ INSERT into config.org_unit_setting_type
         'Default Classification Scheme',
         'coust', 'label'),
     oils_i18n_gettext('cat.default_classification_scheme',
-        'Defines the default classification scheme for new call numbers: 1 = Generic; 2 = Dewey; 3 = LC',
+        'Defines the default classification scheme for new call numbers.',
         'coust', 'description'),
     'link', 'acnc')
 
@@ -10959,6 +10982,15 @@ INSERT INTO config.metabib_field_index_norm_map (field,norm,pos)
       WHERE i.func = 'metabib.trim_trailing_punctuation'
             AND m.id IN (7,8,9,10);
 
+INSERT INTO config.metabib_field_index_norm_map (field,norm,pos)
+    SELECT  m.id,
+            i.id,
+            -1
+      FROM  config.metabib_field m,
+            config.index_normalizer i
+      WHERE i.func = 'metabib.trim_trailing_punctuation'
+            AND m.field_class='title' AND (m.browse_field OR m.facet_field OR m.display_field)
+            AND NOT EXISTS (SELECT 1 FROM config.metabib_field_index_norm_map WHERE field = m.id AND norm = i.id);
 
 INSERT INTO config.record_attr_index_norm_map (attr,norm,pos)
     SELECT  m.name, i.id, 0
@@ -15789,13 +15821,13 @@ INSERT into config.org_unit_setting_type
         'acq',
         oils_i18n_gettext(
             'acq.fund.allow_rollover_without_money',
-            'Allow funds to be rolled over without bringing the money along',
+            'Rollover encumbrances only',
             'coust',
             'label'
         ),
         oils_i18n_gettext(
             'acq.fund.allow_rollover_without_money',
-            'Allow funds to be rolled over without bringing the money along.  This makes money left in the old fund disappear, modeling its return to some outside entity.',
+            'Rollover encumbrances only when doing fiscal year end.  This makes money left in the old fund disappear, modeling its return to some outside entity.',
             'coust',
             'description'
         ),
@@ -17228,6 +17260,28 @@ INSERT INTO config.global_flag (name, value, label, enabled)
         ),
         TRUE
     );
+
+INSERT INTO config.org_unit_setting_type
+    (name, label, datatype, description, grp, update_perm, view_perm)
+VALUES (
+    'circ.permit_renew_when_exceeds_fines',
+    oils_i18n_gettext(
+        'circ.permit_renew_when_exceeds_fines',
+        'Permit renewals when patron exceeds max fine threshold',
+        'coust',
+        'label'
+    ),
+    'bool',
+    oils_i18n_gettext(
+        'circ.permit_renew_when_exceeds_fines',
+        'Permit renewals even when the patron exceeds the maximum fine threshold',
+        'coust',
+        'description'
+    ),
+    'opac',
+    93,
+    NULL
+);
 
 INSERT INTO config.org_unit_setting_type
     (name, grp, label, description, datatype)
@@ -19524,6 +19578,13 @@ VALUES (
         'cwst', 'label'
     )
 ), (
+    'eg.grid.admin.actor.org_unit_settings', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.admin.actor.org_unit_settings',
+        'Grid Config: admin.actor.org_unit_settings',
+        'cwst', 'label'
+    )
+), (
     'eg.cat.record.summary.collapse', 'gui', 'bool',
     oils_i18n_gettext(
         'eg.cat.record.summary.collapse',
@@ -19955,6 +20016,13 @@ VALUES (
   oils_i18n_gettext(
     'eg.grid.reporter.simple.outputs',
     'Grid Config: eg.grid.reporter.simple.outputs',
+    'cwst', 'label'
+  )
+), (
+  'eg.grid.admin.config.idl_field_doc', 'gui', 'object',
+  oils_i18n_gettext(
+    'eg.grid.admin.config.idl_field_doc',
+    'Grid Config: admin.config.idl_field_doc',
     'cwst', 'label'
   )
 );
@@ -21915,10 +21983,68 @@ VALUES (
 
 INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
 VALUES (
+    'eg.grid.acq.lineitem.history', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.acq.lineitem.history',
+        'Grid Config: Acq Lineitem History',
+        'cwst', 'label'
+    )
+), (
+    'eg.grid.acq.po.history', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.acq.po.history',
+        'Grid Config: Acq PO History',
+        'cwst', 'label'
+    )
+), (
+    'eg.grid.acq.po.edi_messages', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.acq.po.edi_messages',
+        'Grid Config: Acq PO EDI Messages',
+        'cwst', 'label'
+    )
+), (
+    'acq.lineitem.page_size', 'gui', 'integer',
+    oils_i18n_gettext(
+        'acq.lineitem.page_size',
+        'ACQ Lineitem List Page Size',
+        'cwst', 'label'
+    )
+), (
+    'ui.staff.angular_acq_search.enabled', 'gui', 'bool',
+    oils_i18n_gettext(
+        'ui.staff.angular_acq_search.enabled',
+        'Enable Experimental ACQ Selection/Purchase Search Interface Links',
+        'cwst', 'label'
+    )
+);
+
+INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
     'eg.cat.volcopy.defaults', 'cat', 'object',
     oils_i18n_gettext(
         'eg.cat.volcopy.defaults',
         'Holdings Editor Default Values and Visibility',
+        'cwst', 'label'
+    )
+);
+
+INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'acq.lineitem.sort_order', 'gui', 'integer',
+    oils_i18n_gettext(
+        'acq.lineitem.sort_order',
+        'ACQ Lineitem List Sort Order',
+        'cwst', 'label'
+    )
+);
+
+INSERT INTO config.org_unit_setting_type (name, grp, datatype, label)
+VALUES (
+    'ui.staff.acq.show_deprecated_links', 'gui', 'bool',
+    oils_i18n_gettext(
+        'ui.staff.acq.show_deprecated_links',
+        'Display Links to Deprecated Acquisitions Interfaces',
         'cwst', 'label'
     )
 );
@@ -22190,6 +22316,910 @@ VALUES (
     oils_i18n_gettext(
         'eg.orgselect.show_combined_names',
         'Library Selector Show Combined Names',
+        'cwst', 'label'
+    )
+), (
+    'eg.grid.admin.local.negative_balances', 'gui', 'object', 
+    oils_i18n_gettext(
+        'eg.grid.admin.local.negative_balances',
+        'Patrons With Negative Balances Grid Settings',
+        'cwst', 'label'
+    )
+), (
+    'eg.orgselect.admin.local.negative_balances', 'gui', 'integer',
+    oils_i18n_gettext(
+        'eg.orgselect.admin.local.negative_balances',
+        'Default org unit for patron negative balances interface',
+        'cwst', 'label'
+    )
+);
+
+INSERT into config.org_unit_setting_type
+    (name, datatype, grp, label, description)
+VALUES (
+    'ui.staff.traditional_catalog.enabled', 'bool', 'gui',
+    oils_i18n_gettext(
+        'ui.staff.traditional_catalog.enabled',
+        'GUI: Enable Traditional Staff Catalog',
+        'coust', 'label'
+    ),
+    oils_i18n_gettext(
+        'ui.staff.traditional_catalog.enabled',
+        'Display an entry point in the browser client for the ' ||
+        'traditional staff catalog.',
+        'coust', 'description'
+    )
+), (
+    'ui.staff.angular_circ.enabled', 'bool', 'gui',
+    oils_i18n_gettext(
+        'ui.staff.angular_circ.enabled',
+        'Enable Angular Circulation Menu',
+        'coust', 'label'
+    ),
+    oils_i18n_gettext(
+        'ui.staff.angular_circ.enabled',
+        'Enable Angular Circulation Menu',
+        'coust', 'description'
+    )
+);
+
+INSERT INTO config.print_template
+    (id, name, label, owner, active, locale, template)
+VALUES (
+    5, 'lineitem_worksheet', 'Lineitem Worksheet', 1, TRUE, 'en-US',
+$TEMPLATE$
+[%- 
+  USE money=format('%.2f');
+  USE date;
+  SET li = template_data.lineitem;
+  SET title = '';
+  SET author = '';
+  FOREACH attr IN li.attributes;
+    IF attr.attr_type == 'lineitem_marc_attr_definition';
+      IF attr.attr_name == 'title';
+        title = attr.attr_value;
+      ELSIF attr.attr_name == 'author';
+        author = attr.attr_value;
+      END;
+    END;
+  END;
+-%]
+
+<div class="wrapper">
+    <div class="summary" style='font-size:110%; font-weight:bold;'>
+        <div>Title: [% title.substr(0, 80) %][% IF title.length > 80 %]...[% END %]</div>
+        <div>Author: [% author %]</div>
+        <div>Item Count: [% li.lineitem_details.size %]</div>
+        <div>Lineitem ID: [% li.id %]</div>
+        <div>PO # : [% li.purchase_order %]</div>
+        <div>Est. Price: [% money(li.estimated_unit_price) %]</div>
+        <div>Open Holds: [% template_data.hold_count %]</div>
+        [% IF li.cancel_reason.label %]
+        <div>[% li.cancel_reason.label %]</div>
+        [% END %]
+
+        [% IF li.distribution_formulas.size > 0 %]
+            [% SET forms = [] %]
+            [% FOREACH form IN li.distribution_formulas; forms.push(form.formula.name); END %]
+            <div>Distribution Formulas: [% forms.join(',') %]</div>
+        [% END %]
+
+        [% IF li.lineitem_notes.size > 0 %]
+            Lineitem Notes:
+            <ul>
+                [%- FOR note IN li.lineitem_notes -%]
+                    <li>
+                    [% IF note.alert_text %]
+                        [% note.alert_text.code -%] 
+                        [% IF note.value -%]
+                            : [% note.value %]
+                        [% END %]
+                    [% ELSE %]
+                        [% note.value -%] 
+                    [% END %]
+                    </li>
+                [% END %]
+            </ul>
+        [% END %]
+    </div>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Branch</th>
+                <th>Barcode</th>
+                <th>Call Number</th>
+                <th>Fund</th>
+                <th>Shelving Location</th>
+                <th>Recd.</th>
+                <th>Notes</th>
+                <th>Delayed / Canceled</th>
+            </tr>
+        </thead>
+        <tbody>
+        <!-- set detail.owning_lib from fm object to org name -->
+        [% FOREACH detail IN li.lineitem_details %]
+            [% detail.owning_lib = detail.owning_lib.shortname %]
+        [% END %]
+
+        [% FOREACH detail IN li.lineitem_details.sort('owning_lib') %]
+            [% 
+                IF detail.eg_copy_id;
+                    SET copy = detail.eg_copy_id;
+                    SET cn_label = copy.call_number.label;
+                ELSE; 
+                    SET copy = detail; 
+                    SET cn_label = detail.cn_label;
+                END 
+            %]
+            <tr>
+                <!-- acq.lineitem_detail.id = [%- detail.id -%] -->
+                <td style='padding:5px;'>[% detail.owning_lib %]</td>
+                <td style='padding:5px;'>[% IF copy.barcode   %]<span class="barcode"  >[% detail.barcode   %]</span>[% END %]</td>
+                <td style='padding:5px;'>[% IF cn_label %]<span class="cn_label" >[% cn_label  %]</span>[% END %]</td>
+                <td style='padding:5px;'>[% IF detail.fund %]<span class="fund">[% detail.fund.code %] ([% detail.fund.year %])</span>[% END %]</td>
+                <td style='padding:5px;'>[% copy.location.name %]</td>
+                <td style='padding:5px;'>[% IF detail.recv_time %]<span class="recv_time">[% date.format(helpers.format_date(detail.recv_time, staff_org_timezone), '%x %r', locale) %]</span>[% END %]</td>
+                <td style='padding:5px;'>[% detail.note %]</td>
+                <td style='padding:5px;'>[% detail.cancel_reason.label %]</td>
+            </tr>
+        [% END %]
+        </tbody>
+    </table>
+</div>
+$TEMPLATE$
+);
+
+INSERT INTO config.print_template
+    (id, name, label, owner, active, locale, template)
+VALUES (6, 'purchase_order', 'Purchase Order', 1, TRUE, 'en-US', 
+$TEMPLATE$
+
+[%- 
+  USE date;
+  USE String;
+  USE money=format('%.2f');
+  SET po = template_data.po;
+
+  # find a lineitem attribute by name and optional type
+  BLOCK get_li_attr;
+    FOR attr IN li.attributes;
+      IF attr.attr_name == attr_name;
+        IF !attr_type OR attr_type == attr.attr_type;
+          attr.attr_value;
+          LAST;
+        END;
+      END;
+    END;
+  END;
+
+  BLOCK get_li_order_attr_value;
+    FOR attr IN li.attributes;
+      IF attr.order_ident == 't';
+        attr.attr_value;
+        LAST;
+      END;
+    END;
+  END;
+-%]
+
+<table style="width:100%">
+  <thead>
+    <tr>
+      <th>PO#</th>
+      <th>Line#</th>
+      <th>ISBN / Item # / Charge Type</th>
+      <th>Title</th>
+      <th>Author</th>
+      <th>Pub Info</th>
+      <th>Quantity</th>
+      <th>Unit Price</th>
+      <th>Line Total</th>
+    </tr>
+  </thead>
+  <tbody>
+[% 
+  SET subtotal = 0;
+  FOR li IN po.lineitems;
+
+    SET idval = '';
+    IF vendnum != '';
+      idval = PROCESS get_li_attr attr_name = 'vendor_num';
+    END;
+    IF !idval;
+      idval = PROCESS get_li_order_attr_value;
+    END;
+-%]
+    <tr>
+      <td>[% po.id %]</td>
+      <td>[% li.id %]</td>
+      <td>[% idval %]</td>
+      <td>[% PROCESS get_li_attr attr_name = 'title' %]</td>
+      <td>[% PROCESS get_li_attr attr_name = 'author' %]</td>
+      <td>
+        <div>
+          [% PROCESS get_li_attr attr_name = 'publisher' %], 
+          [% PROCESS get_li_attr attr_name = 'pubdate' %]
+        </div>
+        <div>Edition: [% PROCESS get_li_attr attr_name = 'edition' %]</div>
+      </td>
+      [%- 
+        SET count = li.lineitem_details.size;
+        SET price = li.estimated_unit_price;
+        SET itotal = (price * count);
+      %]
+      <td>[% count %]</td>
+      <td>[% money(price) %]</td>
+      <td>[% money(litotal) %]</td>
+    </tr>
+  [% END %]
+
+  </tbody>
+</table>
+
+$TEMPLATE$
+);
+
+INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.acq.picklist.upload.templates', 'acq', 'object',
+    oils_i18n_gettext(
+        'eg.acq.picklist.upload.templates',
+        'Picklist Upload Form Templates',
+        'cwst', 'label'
+    )
+);
+
+INSERT INTO config.print_template 
+    (name, label, owner, active, locale, content_type, template)
+VALUES ('items_out', 'Patron Items Out', 1, TRUE, 'en-US', 'text/html', '');
+
+UPDATE config.print_template SET template = $TEMPLATE$
+[% 
+  USE date;
+  circulations = template_data.circulations;
+%]
+<div>
+  <div>Welcome to [% staff_org.name %]</div>
+  <div>You have the following items:</div>
+  <hr/>
+  <ol>
+  [% FOR checkout IN circulations %]
+    <li>
+      <div>[% checkout.title %]</div>
+      <div>
+      [% IF checkout.copy %]Barcode: [% checkout.copy.barcode %][% END %]
+    Due: [% date.format(helpers.format_date(checkout.dueDate, staff_org_timezone), '%x %r') %]
+      </div>
+    </li>
+  [% END %]
+  </ol>
+  <hr/>
+  <div>[% staff_org.name %] [% date.format(date.now, '%x %r') %]</div>
+  <div>You were helped by [% staff.first_given_name %]</div>
+  <br/>
+</div>
+$TEMPLATE$ WHERE name = 'items_out';
+
+UPDATE config.print_template SET active = TRUE WHERE name = 'patron_address';
+
+-- insert then update for easier iterative development tweaks
+INSERT INTO config.print_template 
+    (name, label, owner, active, locale, content_type, template)
+VALUES ('bills_current', 'Bills, Current', 1, TRUE, 'en-US', 'text/html', '');
+
+
+UPDATE config.print_template SET template = $TEMPLATE$
+[% 
+  USE date;
+  USE money = format('$%.2f');
+  SET xacts = template_data.xacts;
+%]
+<div>
+  <style>td { padding: 1px 3px 1px 3px; }</style>
+  <div>Welcome to [% staff_org.name %]</div>
+  <div>You have the following bills:</div>
+  <hr/>
+  <ol>
+  [% FOR xact IN xacts %]
+    <li>
+      <table>
+        <tr>
+          <td>Bill #:</td>
+          <td>[% xact.id %]</td>
+        </tr>
+        <tr>
+          <td>Date:</td>
+          <td>[% date.format(helpers.format_date(
+            xact.xact_start, staff_org_timezone), '%x %r') %]
+          </td>
+        </tr>
+        <tr>
+          <td>Last Billing:</td>
+          <td>[% xact.last_billing_type %]</td>
+        </tr>
+        <tr>
+          <td>Total Billed:</td>
+          <td>[% money(xact.total_owed) %]</td>
+        </tr>
+        <tr>
+          <td>Last Payment:</td>
+          <td>
+            [% xact.last_payment_type %]
+            [% IF xact.last_payment_ts %]
+              at [% date.format(
+                    helpers.format_date(
+                        xact.last_payment_ts, staff_org_timezone), '%x %r') %]
+            [% END %]
+          </td>
+        </tr>
+        <tr>
+          <td>Total Paid:</td>
+          <td>[% money(xact.total_paid) %]</td>
+        </tr>
+        <tr>
+          <td>Balance:</td>
+          <td>[% money(xact.balance_owed) %]</td>
+        </tr>
+      </table>
+    </li>
+  [% END %]
+  </ol>
+  <hr/>
+  <div>[% staff_org.name %] [% date.format(date.now, '%x %r') %]</div>
+  <div>You were helped by [% staff.first_given_name %]</div>
+  <br/>
+</div>
+$TEMPLATE$ WHERE name = 'bills_current';
+
+
+INSERT INTO config.print_template 
+    (name, label, owner, active, locale, content_type, template)
+VALUES ('bills_payment', 'Bills, Payment', 1, TRUE, 'en-US', 'text/html', '');
+
+UPDATE config.print_template SET template = $TEMPLATE$
+[% 
+  USE date;
+  USE money = format('$%.2f');
+  SET payments = template_data.payments;
+  SET previous_balance = template_data.previous_balance;
+  SET new_balance = template_data.new_balance;
+  SET payment_type = template_data.payment_type;
+  SET payment_total = template_data.payment_total;
+  SET payment_applied = template_data.payment_applied;
+  SET amount_voided = template_data.amount_voided;
+  SET change_given = template_data.change_given;
+  SET payment_note = template_data.payment_note;
+  SET copy_barcode = template_data.copy_barcode;
+  SET title = template_data.title;
+%]
+<div>
+  <style>td { padding: 1px 3px 1px 3px; }</style>
+  <div>Welcome to [% staff_org.name %]</div>
+  <div>A receipt of your transaction:</div>
+  <hr/>
+
+  <table style="width:100%"> 
+    <tr> 
+      <td>Original Balance:</td> 
+      <td align="right">[% money(previous_balance) %]</td> 
+    </tr> 
+    <tr> 
+      <td>Payment Method:</td> 
+      <td align="right">
+        [% SWITCH payment_type %]
+          [% CASE "cash_payment" %]Cash
+          [% CASE "check_payment" %]Check
+          [% CASE "credit_card_payment" %]Credit Card
+          [% CASE "debit_card_payment" %]Debit Card
+          [% CASE "credit_payment" %]Patron Credit
+          [% CASE "work_payment" %]Work
+          [% CASE "forgive_payment" %]Forgive
+          [% CASE "goods_payment" %]Goods
+        [% END %]
+      </td>
+    </tr> 
+    <tr> 
+      <td>Payment Received:</td> 
+      <td align="right">[% money(payment_total) %]</td> 
+    </tr> 
+    <tr> 
+      <td>Payment Applied:</td> 
+      <td align="right">[% money(payment_applied) %]</td> 
+    </tr> 
+    <tr> 
+      <td>Billings Voided:</td> 
+      <td align="right">[% money(amount_voided) %]</td> 
+    </tr> 
+    <tr> 
+      <td>Change Given:</td> 
+      <td align="right">[% money(change_given) %]</td> 
+    </tr> 
+    <tr> 
+      <td>New Balance:</td> 
+      <td align="right">[% money(new_balance) %]</td> 
+    </tr> 
+  </table> 
+  <p>Note: [% payment_note %]</p>
+  <p>
+    Specific Bills
+    <blockquote>
+      [% FOR payment IN payments %]
+        <table style="width:100%">
+          <tr>
+            <td>Bill # [% payment.xact.id %]</td>
+            <td>[% payment.xact.summary.last_billing_type %]</td>
+            <td>Received: [% money(payment.amount) %]</td>
+          </tr>
+          [% IF payment.copy_barcode %]
+          <tr>
+            <td colspan="5">[% payment.copy_barcode %] [% payment.title %]</td>
+          </tr>
+          [% END %]
+        </table>
+        <br/>
+      [% END %]
+    </blockquote>
+  </p> 
+  <hr/>
+  <br/><br/> 
+  <div>[% staff_org.name %] [% date.format(date.now, '%x %r') %]</div>
+  <div>You were helped by [% staff.first_given_name %]</div>
+</div>
+$TEMPLATE$ WHERE name = 'bills_payment';
+
+
+INSERT INTO config.print_template 
+    (name, label, owner, active, locale, content_type, template)
+VALUES ('patron_data', 'Patron Data', 1, TRUE, 'en-US', 'text/html', '');
+
+UPDATE config.print_template SET template = $TEMPLATE$
+[% 
+  USE date;
+  USE money = format('$%.2f');
+  SET patron = template_data.patron;
+%]
+<table>
+  <tr><td>Barcode:</td><td>[% patron.card.barcode %]</td></tr>
+  <tr><td>Patron's Username:</td><td>[% patron.usrname %]</td></tr>
+  <tr><td>Prefix/Title:</td><td>[% patron.prefix %]</td></tr>
+  <tr><td>First Name:</td><td>[% patron.first_given_name %]</td></tr>
+  <tr><td>Middle Name:</td><td>[% patron.second_given_name %]</td></tr>
+  <tr><td>Last Name:</td><td>[% patron.family_name %]</td></tr>
+  <tr><td>Suffix:</td><td>[% patron.suffix %]</td></tr>
+  <tr><td>Holds Alias:</td><td>[% patron.alias %]</td></tr>
+  <tr><td>Date of Birth:</td><td>[% patron.dob %]</td></tr>
+  <tr><td>Juvenile:</td><td>[% patron.juvenile %]</td></tr>
+  <tr><td>Primary Identification Type:</td><td>[% patron.ident_type.name %]</td></tr>
+  <tr><td>Primary Identification:</td><td>[% patron.ident_value %]</td></tr>
+  <tr><td>Secondary Identification Type:</td><td>[% patron.ident_type2.name %]</td></tr>
+  <tr><td>Secondary Identification:</td><td>[% patron.ident_value2 %]</td></tr>
+  <tr><td>Email Address:</td><td>[% patron.email %]</td></tr>
+  <tr><td>Daytime Phone:</td><td>[% patron.day_phone %]</td></tr>
+  <tr><td>Evening Phone:</td><td>[% patron.evening_phone %]</td></tr>
+  <tr><td>Other Phone:</td><td>[% patron.other_phone %]</td></tr>
+  <tr><td>Home Library:</td><td>[% patron.home_ou.name %]</td></tr>
+  <tr><td>Main (Profile) Permission Group:</td><td>[% patron.profile.name %]</td></tr>
+  <tr><td>Privilege Expiration Date:</td><td>[% patron.expire_date %]</td></tr>
+  <tr><td>Internet Access Level:</td><td>[% patron.net_access_level.name %]</td></tr>
+  <tr><td>Active:</td><td>[% patron.active %]</td></tr>
+  <tr><td>Barred:</td><td>[% patron.barred %]</td></tr>
+  <tr><td>Is Group Lead Account:</td><td>[% patron.master_account %]</td></tr>
+  <tr><td>Claims-Returned Count:</td><td>[% patron.claims_returned_count %]</td></tr>
+  <tr><td>Claims-Never-Checked-Out Count:</td><td>[% patron.claims_never_checked_out_count %]</td></tr>
+  <tr><td>Alert Message:</td><td>[% patron.alert_message %]</td></tr>
+
+  [% FOR addr IN patron.addresses %]
+    <tr><td colspan="2">----------</td></tr>
+    <tr><td>Type:</td><td>[% addr.address_type %]</td></tr>
+    <tr><td>Street (1):</td><td>[% addr.street1 %]</td></tr>
+    <tr><td>Street (2):</td><td>[% addr.street2 %]</td></tr>
+    <tr><td>City:</td><td>[% addr.city %]</td></tr>
+    <tr><td>County:</td><td>[% addr.county %]</td></tr>
+    <tr><td>State:</td><td>[% addr.state %]</td></tr>
+    <tr><td>Postal Code:</td><td>[% addr.post_code %]</td></tr>
+    <tr><td>Country:</td><td>[% addr.country %]</td></tr>
+    <tr><td>Valid Address?:</td><td>[% addr.valid %]</td></tr>
+    <tr><td>Within City Limits?:</td><td>[% addr.within_city_limits %]</td></tr>
+  [% END %]
+
+  [% FOR entry IN patron.stat_cat_entries %]
+    <tr><td>-----------</td></tr>
+    <tr><td>[% entry.stat_cat.name %]</td><td>[% entry.stat_cat_entry %]</td></tr>
+  [% END %]
+
+</table>
+
+$TEMPLATE$ WHERE name = 'patron_data';
+
+
+INSERT INTO config.print_template 
+    (name, label, owner, active, locale, content_type, template)
+VALUES ('hold_shelf_slip', 'Hold Shelf Slip', 1, TRUE, 'en-US', 'text/html', '');
+
+
+UPDATE config.print_template SET template = $TEMPLATE$
+[% 
+  USE date;
+  USE money = format('$%.2f');
+  SET copy = template_data.checkin.copy;
+  SET hold = template_data.checkin.hold;
+  SET volume = template_data.checkin.volume;
+  SET hold = template_data.checkin.hold;
+  SET record = template_data.checkin.record;
+  SET patron = template_data.checkin.patron;
+%] 
+
+<div>
+  [% IF hold.behind_desk == 't' %]
+    This item needs to be routed to the <strong>Private Holds Shelf</strong>.
+  [% ELSE %]
+    This item needs to be routed to the <strong>Public Holds Shelf</strong>.
+  [% END %]
+</div>
+<br/>
+
+<div>Barcode: [% copy.barcode %]</div>
+<div>Title: [% checkin.title %]</div>
+<div>Call Number: [% volume.prefix.label %] [% volume.label %] [% volume.suffix.label %]</div>
+
+<br/>
+
+<div>Hold for patron: [% patron.family_name %], 
+  [% patron.first_given_name %] [% patron.second_given_name %]</div>
+<div>Barcode: [% patron.card.barcode %]</div>
+
+[% IF hold.phone_notify %]
+  <div>Notify by phone: [% hold.phone_notify %]</div>
+[% END %]
+[% IF hold.sms_notify %]
+  <div>Notify by text: [% hold.sms_notify %]</div>
+[% END %]
+[% IF hold.email_notify %]
+  <div>Notify by email: [% patron.email %]</div>
+[% END %]
+
+[% FOR note IN hold.notes %]
+  <ul>
+  [% IF note.slip == 't' %]
+    <li><strong>[% note.title %]</strong> - [% note.body %]</li>
+  [% END %]
+  </ul>
+[% END %]
+<br/>
+
+<div>Request Date: [% 
+  date.format(helpers.format_date(hold.request_time, staff_org_timezone), '%x %r') %]</div>
+<div>Slip Date: [% date.format(date.now, '%x %r') %]</div>
+<div>Printed by [% staff.first_given_name %] at [% staff_org.shortname %]</div>
+
+</div>
+
+$TEMPLATE$ WHERE name = 'hold_shelf_slip';
+
+
+INSERT INTO config.print_template 
+    (name, label, owner, active, locale, content_type, template)
+VALUES ('transit_slip', 'Transit Slip', 1, TRUE, 'en-US', 'text/html', '');
+
+
+UPDATE config.print_template SET template = $TEMPLATE$
+[% 
+  USE date;
+  USE money = format('$%.2f');
+  SET checkin = template_data.checkin;
+  SET copy = checkin.copy;
+  SET destOrg = checkin.destOrg;
+  SET destAddress = checkin.destAddress;
+  SET destCourierCode = checkin.destCourierCode;
+%] 
+<div>
+  <div>This item needs to be routed to <b>[% destOrg.shortname %]</b></div>
+  <div>[% destOrg.name %]</div>
+  [% IF destCourierCode %]Courier Code: [% destCourierCode %][% END %]
+
+  [% IF destAddress %]
+    <div>[% destAddress.street1 %]</div>
+    <div>[% destAddress.street2 %]</div>
+    <div>[% destAddress.city %],
+    [% destAddress.state %]
+    [% destAddress.post_code %]</div>
+  [% ELSE %]
+    <div>We do not have a holds address for this library.</div>
+  [% END %]
+  
+  <br/>
+  <div>Barcode: [% copy.barcode %]</div>
+  <div>Title: [% checkin.title %]</div>
+  <div>Author: [% checkin.author %]</div>
+  
+  <br/>
+  <div>Slip Date: [% date.format(date.now, '%x %r') %]</div>
+  <div>Printed by [% staff.first_given_name %] at [% staff_org.shortname %]</div>
+</div>
+
+$TEMPLATE$ WHERE name = 'transit_slip';
+
+ 
+INSERT INTO config.print_template 
+    (name, label, owner, active, locale, content_type, template)
+VALUES ('hold_transit_slip', 'Hold Transit Slip', 1, TRUE, 'en-US', 'text/html', '');
+
+UPDATE config.print_template SET template = $TEMPLATE$
+[% 
+  USE date;
+  USE money = format('$%.2f');
+  SET checkin = template_data.checkin;
+  SET copy = checkin.copy;
+  SET hold = checkin.hold;
+  SET patron = checkin.patron;
+  SET destOrg = checkin.destOrg;
+  SET destAddress = checkin.destAddress;
+  SET destCourierCode = checkin.destCourierCode;
+%] 
+<div>
+  <div>This item needs to be routed to <b>[% destOrg.shortname %]</b></div>
+  <div>[% destOrg.name %]</div>
+  [% IF destCourierCode %]Courier Code: [% destCourierCode %][% END %]
+
+  [% IF destAddress %]
+    <div>[% destAddress.street1 %]</div>
+    <div>[% destAddress.street2 %]</div>
+    <div>[% destAddress.city %],
+    [% destAddress.state %]
+    [% destAddress.post_code %]</div>
+  [% ELSE %]
+    <div>We do not have a holds address for this library.</div>
+  [% END %]
+  
+  <br/>
+  <div>Barcode: [% copy.barcode %]</div>
+  <div>Title: [% checkin.title %]</div>
+  <div>Author: [% checkin.author %]</div>
+
+  <br/>
+  <div>Hold for patron [% patron.card.barcode %]</div>
+  
+  <br/>
+  <div>Request Date: [% 
+    date.format(helpers.format_date(hold.request_time, staff_org_timezone), '%x %r') %]
+  </div>
+  <div>Slip Date: [% date.format(date.now, '%x %r') %]</div>
+  <div>Printed by [% staff.first_given_name %] at [% staff_org.shortname %]</div>
+</div>
+
+$TEMPLATE$ WHERE name = 'transit_slip';
+
+INSERT INTO config.print_template 
+    (name, label, owner, active, locale, content_type, template)
+VALUES ('checkin', 'Checkin', 1, TRUE, 'en-US', 'text/html', '');
+
+UPDATE config.print_template SET template = $TEMPLATE$
+[% 
+  USE date;
+  USE money = format('$%.2f');
+  SET checkins = template_data.checkins;
+%] 
+
+<div>
+  <div>Welcome to [% staff_org.name %]</div>
+  <div>You checked in the following items:</div>
+  <hr/>
+  <ol>
+	[% FOR checkin IN checkins %]
+    <li>
+      <div>[% checkin.title %]</div>
+      <span>Barcode: </span>
+      <span>[% checkin.copy.barcode %]</span>
+      <span>Call Number: </span>
+      <span>
+      [% IF checkin.volume %]
+	    [% volume.prefix.label %] [% volume.label %] [% volume.suffix.label %]
+      [% ELSE %]
+        Not Cataloged
+      [% END %]
+      </span>
+    </li>
+  [% END %]
+  </ol>
+  <hr/>
+  <div>Slip Date: [% date.format(date.now, '%x %r') %]</div>
+  <div>Printed by [% staff.first_given_name %] at [% staff_org.shortname %]</div>
+</div>
+
+$TEMPLATE$ WHERE name = 'checkin';
+
+
+INSERT INTO config.print_template 
+    (name, label, owner, active, locale, content_type, template)
+VALUES ('holds_for_patron', 'Holds For Patron', 1, TRUE, 'en-US', 'text/html', '');
+
+
+UPDATE config.print_template SET template = $TEMPLATE$
+[% 
+  USE date;
+  USE money = format('$%.2f');
+  SET holds = template_data;
+%] 
+
+<div>
+  <div>Welcome to [% staff_org.name %]</div>
+  <div>You have the following items on hold:</div>
+  <hr/>
+  <ol>
+	[% FOR hold IN holds %]
+    <li>
+      <div>[% hold.title %]</div>
+    </li>
+  [% END %]
+  </ol>
+  <hr/>
+  <div>Slip Date: [% date.format(date.now, '%x %r') %]</div>
+  <div>Printed by [% staff.first_given_name %] at [% staff_org.shortname %]</div>
+</div>
+
+$TEMPLATE$ WHERE name = 'holds_for_patron';
+
+
+INSERT INTO config.print_template 
+    (name, label, owner, active, locale, content_type, template)
+VALUES ('bills_historical', 'Bills, Historical', 1, TRUE, 'en-US', 'text/html', '');
+
+
+UPDATE config.print_template SET template = $TEMPLATE$
+[% 
+  USE date;
+  USE money = format('$%.2f');
+  SET xacts = template_data.xacts;
+%]
+<div>
+  <style>td { padding: 1px 3px 1px 3px; }</style>
+  <div>Welcome to [% staff_org.name %]</div>
+  <div>You have the following bills:</div>
+  <hr/>
+  <ol>
+  [% FOR xact IN xacts %]
+    <li>
+      <table>
+        <tr>
+          <td>Bill #:</td>
+          <td>[% xact.id %]</td>
+        </tr>
+        <tr>
+          <td>Date:</td>
+          <td>[% date.format(helpers.format_date(
+            xact.xact_start, staff_org_timezone), '%x %r') %]
+          </td>
+        </tr>
+        <tr>
+          <td>Last Billing:</td>
+          <td>[% xact.last_billing_type %]</td>
+        </tr>
+        <tr>
+          <td>Total Billed:</td>
+          <td>[% money(xact.total_owed) %]</td>
+        </tr>
+        <tr>
+          <td>Last Payment:</td>
+          <td>
+            [% xact.last_payment_type %]
+            [% IF xact.last_payment_ts %]
+              at [% date.format(
+                    helpers.format_date(
+                        xact.last_payment_ts, staff_org_timezone), '%x %r') %]
+            [% END %]
+          </td>
+        </tr>
+        <tr>
+          <td>Total Paid:</td>
+          <td>[% money(xact.total_paid) %]</td>
+        </tr>
+        <tr>
+          <td>Balance:</td>
+          <td>[% money(xact.balance_owed) %]</td>
+        </tr>
+      </table>
+    </li>
+  [% END %]
+  </ol>
+  <hr/>
+  <div>[% staff_org.name %] [% date.format(date.now, '%x %r') %]</div>
+  <div>You were helped by [% staff.first_given_name %]</div>
+  <br/>
+</div>
+$TEMPLATE$ WHERE name = 'bills_historical';
+
+INSERT INTO config.print_template 
+    (name, label, owner, active, locale, content_type, template)
+VALUES ('checkout', 'Checkout', 1, TRUE, 'en-US', 'text/html', '');
+
+UPDATE config.print_template SET template = $TEMPLATE$
+[% 
+  USE date;
+  USE money = format('$%.2f');
+  SET checkouts = template_data.checkouts;
+%] 
+
+<div>
+  <div>Welcome to [% staff_org.name %]</div>
+  <div>You checked out the following items:</div>
+  <hr/>
+  <ol>
+	[% FOR checkout IN checkouts %]
+    <li>
+      <div>[% checkout.title %]</div>
+      <span>Barcode: </span>
+      <span>[% checkout.copy.barcode %]</span>
+      <span>Call Number: </span>
+      <span>
+      [% IF checkout.volume %]
+	    [% volume.prefix.label %] [% volume.label %] [% volume.suffix.label %]
+      [% ELSE %]
+        Not Cataloged
+      [% END %]
+      </span>
+    </li>
+  [% END %]
+  </ol>
+  <hr/>
+  <div>Slip Date: [% date.format(date.now, '%x %r') %]</div>
+  <div>Printed by [% staff.first_given_name %] at [% staff_org.shortname %]</div>
+</div>
+
+$TEMPLATE$ WHERE name = 'checkout';
+
+INSERT INTO config.print_template 
+    (name, label, owner, active, locale, content_type, template)
+VALUES ('renew', 'renew', 1, TRUE, 'en-US', 'text/html', '');
+
+UPDATE config.print_template SET template = $TEMPLATE$
+[% 
+  USE date;
+  USE money = format('$%.2f');
+  SET renewals = template_data.renewals;
+%] 
+
+<div>
+  <div>Welcome to [% staff_org.name %]</div>
+  <div>You renewed the following items:</div>
+  <hr/>
+  <ol>
+	[% FOR renewal IN renewals %]
+    <li>
+      <div>[% renewal.title %]</div>
+      <span>Barcode: </span>
+      <span>[% renewal.copy.barcode %]</span>
+      <span>Call Number: </span>
+      <span>
+      [% IF renewal.volume %]
+	    [% volume.prefix.label %] [% volume.label %] [% volume.suffix.label %]
+      [% ELSE %]
+        Not Cataloged
+      [% END %]
+      </span>
+    </li>
+  [% END %]
+  </ol>
+  <hr/>
+  <div>Slip Date: [% date.format(date.now, '%x %r') %]</div>
+  <div>Printed by [% staff.first_given_name %] at [% staff_org.shortname %]</div>
+</div>
+
+$TEMPLATE$ WHERE name = 'renew';
+
+INSERT into config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.grid.admin.local.cash_reports.desk_payments', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.admin.local.cash_reports.desk_payments',
+        'Grid Config: admin.local.cash_reports.desk_payments',
+        'cwst', 'label'
+    )
+), (
+    'eg.grid.admin.local.cash_reports.user_payments', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.admin.local.cash_reports.user_payments',
+        'Grid Config: admin.local.cash_reports.user_payments',
         'cwst', 'label'
     )
 );

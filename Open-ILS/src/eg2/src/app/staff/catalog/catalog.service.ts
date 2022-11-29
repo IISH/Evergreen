@@ -7,6 +7,9 @@ import {CatalogUrlService} from '@eg/share/catalog/catalog-url.service';
 import {CatalogSearchContext} from '@eg/share/catalog/search-context';
 import {BibRecordSummary} from '@eg/share/catalog/bib-record.service';
 import {PatronService} from '@eg/staff/share/patron/patron.service';
+import {StoreService} from '@eg/core/store.service';
+
+const HOLD_FOR_PATRON_KEY = 'eg.circ.patron_hold_target';
 
 /**
  * Shared bits needed by the staff version of the catalog.
@@ -63,6 +66,7 @@ export class StaffCatalogService {
     constructor(
         private router: Router,
         private route: ActivatedRoute,
+        private store: StoreService,
         private org: OrgService,
         private cat: CatalogService,
         private patron: PatronService,
@@ -77,7 +81,7 @@ export class StaffCatalogService {
         this.searchContext =
             this.catUrl.fromUrlParams(this.route.snapshot.queryParamMap);
 
-        this.holdForBarcode = this.route.snapshot.queryParams['holdForBarcode'];
+        this.holdForBarcode = this.store.getLoginSessionItem(HOLD_FOR_PATRON_KEY);
 
         if (this.holdForBarcode) {
             this.patron.getByBarcode(this.holdForBarcode)
@@ -85,6 +89,9 @@ export class StaffCatalogService {
                 this.holdForUser = user;
                 this.holdForChange.emit();
             });
+        } else {
+            // In case the session item was cleared from another component.
+            this.clearHoldPatron();
         }
 
         this.searchContext.org = this.org; // service, not searchOrg
@@ -95,6 +102,7 @@ export class StaffCatalogService {
     clearHoldPatron() {
         this.holdForUser = null;
         this.holdForBarcode = null;
+        this.store.removeLoginSessionItem(HOLD_FOR_PATRON_KEY);
         this.holdForChange.emit();
     }
 
