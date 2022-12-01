@@ -13,13 +13,14 @@ TRUNCATE search.symspell_dictionary;
 CLUSTER search.symspell_dictionary USING symspell_dictionary_pkey;
 REINDEX TABLE search.symspell_dictionary;
 ALTER TABLE search.symspell_dictionary SET LOGGED;
-VACUUM ANALYZE search.symspell_dictionary;
 
 COMMIT;
 
-DROP TABLE search.symspell_dictionary_partial_title;
-DROP TABLE search.symspell_dictionary_partial_author;
-DROP TABLE search.symspell_dictionary_partial_subject;
-DROP TABLE search.symspell_dictionary_partial_series;
-DROP TABLE search.symspell_dictionary_partial_identifier;
-DROP TABLE search.symspell_dictionary_partial_keyword;
+VACUUM ANALYZE search.symspell_dictionary;
+
+DROP TABLE IF EXISTS search.symspell_dictionary_partial_title;
+DROP TABLE IF EXISTS search.symspell_dictionary_partial_author;
+DROP TABLE IF EXISTS search.symspell_dictionary_partial_subject;
+DROP TABLE IF EXISTS search.symspell_dictionary_partial_series;
+DROP TABLE IF EXISTS search.symspell_dictionary_partial_identifier;
+DROP TABLE IF EXISTS search.symspell_dictionary_partial_keyword;
