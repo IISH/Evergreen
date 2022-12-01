@@ -293,13 +293,13 @@
           </li>
           <li class="divider"></li>
           <li>
-            <a href="/opac/extras/schedule/" target="_self">
+            <a href="/opac/extras/schedule/?ses={{currentToken()}}" target="_self">
               <span class="glyphicon glyphicon-object-align-bottom"></span>
               [% l('Batch schedule') %]
             </a>
           </li>
           <li>
-            <a href="/opac/extras/enrich/" target="_self">
+            <a href="/opac/extras/enrich/?ses={{currentToken()}}" target="_self">
               <span class="glyphicon glyphicon-object-align-bottom"></span>
               [% l('Enrich reports') %]
             </a>

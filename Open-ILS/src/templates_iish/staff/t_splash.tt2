@@ -69,13 +69,13 @@
                       </a>
                     </div>
           <div>
-            <a target="_self" href="/opac/extras/schedule/">
+            <a target="_self" href="/opac/extras/schedule/?ses={{currentToken()}}">
               <img src="[% ctx.media_prefix %]/images/portal/bucket.png" alt="" role="presentation"/>
               [% l('Batch schedule') %]
             </a>
           </div>
            <div>
-            <a target="_self" href="/opac/extras/enrich/">
+            <a target="_self" href="/opac/extras/enrich/?ses={{currentToken()}}">
               <img src="[% ctx.media_prefix %]/images/portal/bucket.png" alt="" role="presentation"/>
               [% l('Enrich reports') %]
             </a>
