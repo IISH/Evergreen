@@ -1,4 +1,4 @@
-BEGIN
+BEGIN;
 
 ALTER TABLE search.symspell_dictionary SET UNLOGGED;
 TRUNCATE search.symspell_dictionary;
@@ -15,7 +15,7 @@ REINDEX TABLE search.symspell_dictionary;
 ALTER TABLE search.symspell_dictionary SET LOGGED;
 VACUUM ANALYZE search.symspell_dictionary;
 
-COMMIT
+COMMIT;
 
 DROP TABLE search.symspell_dictionary_partial_title;
 DROP TABLE search.symspell_dictionary_partial_author;
