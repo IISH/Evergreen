@@ -63,11 +63,12 @@
             </a>
           </div>
           <div>
-                      <a target="_self" href="./cat/bucket/copy/">
-                        <img src="[% ctx.media_prefix %]/images/portal/bucket.png" alt="" role="presentation"/>
-                        [% l('Item Buckets') %]
-                      </a>
-                    </div>
+            <a target="_self" href="./cat/bucket/copy/">
+              <img src="[% ctx.media_prefix %]/images/portal/bucket.png" alt="" role="presentation"/>
+              [% l('Item Buckets') %]
+            </a>
+          </div>
+
           <div>
             <a target="_self" href="/opac/extras/schedule/?ses={{currentToken()}}">
               <img src="[% ctx.media_prefix %]/images/portal/bucket.png" alt="" role="presentation"/>
@@ -80,6 +81,7 @@
               [% l('Enrich reports') %]
             </a>
           </div>
+
         </div>
       </div>
     </div>
