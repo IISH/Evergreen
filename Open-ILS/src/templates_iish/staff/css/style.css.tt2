@@ -102,7 +102,7 @@ body {
 /* change default link color to provide adequate contrast */
 
 a {
-   color: #286090;
+   color: #255a88;
 }
 
 
@@ -239,7 +239,7 @@ table.list tr.selected td { /* deprecated? */
  */
 .tight-vert-form .form-group {
   margin-bottom: 5px;
-} 
+}
 
 
 /* ----------------------------------------------------------------------
@@ -274,15 +274,15 @@ table.list tr.selected td { /* deprecated? */
   margin-bottom: 12px;
 }
 
-.eg-grid-header-row { 
-  font-weight: bold; 
+.eg-grid-header-row {
+  font-weight: bold;
 }
 
 .eg-grid-header-row > .eg-grid-cell {
   border-right: 1px solid #CCC;
   text-align: center;
 
-  /* vertically align header cell text by treating 
+  /* vertically align header cell text by treating
      each header cell as a vertical flex container */
   display:flex;
   flex-direction:column;
@@ -334,8 +334,8 @@ table.list tr.selected td { /* deprecated? */
 }
 
 /* Improve ::selection styling by only allowing selection on text
- * content cells within the main body of the grid.  Otherwise, the browser 
- * styles row background and text (all dark blue?) when shift-click or 
+ * content cells within the main body of the grid.  Otherwise, the browser
+ * styles row background and text (all dark blue?) when shift-click or
  * click-drag is used.
  */
 .eg-grid-content-body .eg-grid-row {
@@ -439,7 +439,7 @@ table.list tr.selected td { /* deprecated? */
   cursor: col-resize;
 }
 
-/* for these to be useful, they would have to be applied 
+/* for these to be useful, they would have to be applied
  * to the dragover targets.  not yet done */
 .eg-grid-column-resize-handle-west {
   cursor: w-resize;
@@ -462,13 +462,13 @@ table.list tr.selected td { /* deprecated? */
    columns. TODO: if this varies enough by browser, we'll need to
    calculate the width instead. */
 /*
-.eg-grid-scroll > .eg-grid-header-row, 
-.eg-grid-scroll > .eg-grid-conf-row { 
+.eg-grid-scroll > .eg-grid-header-row,
+.eg-grid-scroll > .eg-grid-conf-row {
   padding-right: 15px;
 }
 .eg-grid-scroll > .eg-grid-content-body {
-  overflow-y:scroll; 
-  height: 600px; 
+  overflow-y:scroll;
+  height: 600px;
 }
 */
 .eg-grid-column-picker {
@@ -588,7 +588,7 @@ eg-grid-field {
   max-width: 400px;
 }
 
- table.symbolTable {
+table.symbolTable {
             border: 1px solid #1C6EA4;
             background-color: #EEEEEE;
             width: 100%;
