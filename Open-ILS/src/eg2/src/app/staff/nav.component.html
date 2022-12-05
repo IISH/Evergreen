@@ -2,7 +2,7 @@
   <div class="collapse navbar-collapse">
     <div class="navbar-nav">
       <div class="nav-item">
-        <a i18n class="nav-link with-material-icon" 
+        <a i18n class="nav-link with-material-icon"
           routerLink="/staff/"
           egAccessKey keyCtx="navbar" i18n-keySpec i18n-keyDesc
           keySpec="alt+h" keyDesc="Navigate Home">
@@ -217,7 +217,7 @@
     </div>
 
     <!-- CATALOGING -->
-    
+
     <div class="navbar-nav">
       <div ngbDropdown class="nav-item dropdown">
         <a ngbDropdownToggle i18n class="nav-link dropdown-toggle">
@@ -249,6 +249,15 @@
           <a href="/eg/staff/cat/bucket/copy/view" class="dropdown-item">
             <span class="material-icons" aria-hidden="true">list</span>
             <span i18n>Item Buckets</span>
+          </a>
+          <div class="dropdown-divider"></div>
+          <a routerLink="/opac/extras/schedule" class="dropdown-item">
+            <span class="material-icons" aria-hidden="true">list</span>
+            <span i18n>Batch schedule</span>
+          </a>
+          <a routerLink="/opac/extras/enrich" class="dropdown-item">
+            <span class="material-icons" aria-hidden="true">list</span>
+            <span i18n>Enrich reports</span>
           </a>
           <div class="dropdown-divider"></div>
           <a routerLink="/staff/cat/bib-from/id" class="dropdown-item">
@@ -310,13 +319,13 @@
           Acquisitions
         </a>
         <div class="dropdown-menu" ngbDropdownMenu>
-          <a class="dropdown-item" 
+          <a class="dropdown-item"
             routerLink="/staff/acq/search">
             <span class="material-icons" aria-hidden="true">search</span>
             <span i18n>General Search</span>
           </a>
           <div class="dropdown-divider"></div>
-          <a class="dropdown-item" 
+          <a class="dropdown-item"
             routerLink="/staff/acq/provider">
             <span class="material-icons" aria-hidden="true">search</span>
             <span i18n>Provider Search</span>
@@ -327,28 +336,28 @@
             <span class="material-icons" aria-hidden="true">view_list</span>
             <span i18n>Selection Lists</span>
           </a>
-          <a class="dropdown-item" 
+          <a class="dropdown-item"
             href="/eg/staff/acq/legacy/picklist/brief_record">
             <span class="material-icons" aria-hidden="true">edit</span>
             <span i18n>New Brief Record</span>
           </a>
-          <a class="dropdown-item" 
+          <a class="dropdown-item"
             href="/eg/staff/acq/legacy/picklist/user_request">
             <span class="material-icons" aria-hidden="true">thumb_up</span>
             <span i18n>Patron Requests</span>
           </a>
-          <a class="dropdown-item" 
+          <a class="dropdown-item"
             href="/eg/staff/acq/legacy/picklist/bib_search">
             <span class="material-icons" aria-hidden="true">cloud_download</span>
             <span i18n>MARC Federated Search</span>
           </a>
-          <a class="dropdown-item" 
+          <a class="dropdown-item"
             href="/eg/staff/acq/legacy/picklist/from_bib">
             <span class="material-icons" aria-hidden="true">trending_down</span>
             <span i18n>Load Catalog Record IDs</span>
           </a>
           <div class="dropdown-divider"></div>
-          <a class="dropdown-item" 
+          <a class="dropdown-item"
           routerLink="/staff/acq/picklist/upload">
           <span class="material-icons" aria-hidden="true">cloud_upload</span>
           <span i18n>Load MARC Order Records</span>
@@ -363,7 +372,7 @@
             <span i18n>Create Purchase Order</span>
           </a>
           <div class="dropdown-divider"></div>
-          <a class="dropdown-item" 
+          <a class="dropdown-item"
             href="/eg/staff/acq/legacy/financial/claim_eligible">
             <span class="material-icons" aria-hidden="true">contact_phone</span>
             <span i18n>Claim-Ready Items</span>
@@ -378,7 +387,7 @@
             <span class="material-icons" aria-hidden="true">attach_money</span>
             <span i18n>Invoices</span>
           </a>
-          <a class="dropdown-item" 
+          <a class="dropdown-item"
             href="/eg/staff/acq/legacy/invoice/view?create=1">
             <span class="material-icons" aria-hidden="true">monetization_on</span>
             <span i18n>Create Invoice</span>
@@ -492,7 +501,7 @@
           <span>{{currentLocale.name()}}</span>
         </a>
         <div class="dropdown-menu" ngbDropdownMenu>
-          <a class="dropdown-item" (click)="setLocale(locale)" 
+          <a class="dropdown-item" (click)="setLocale(locale)"
             [ngClass]="{disabled: currentLocale.code() === locale.code()}"
             *ngFor="let locale of locales">
             <span class="material-icons" aria-hidden="true">add_location</span>
@@ -503,7 +512,7 @@
     </div>
     <div class="navbar-nav" *ngIf="user()">
       <div ngbDropdown class="nav-item dropdown" placement="bottom-right">
-        <a ngbDropdownToggle i18n 
+        <a ngbDropdownToggle i18n
           i18n-title
           title="Log out and more..."
           class="nav-link dropdown-toggle no-caret with-material-icon">
@@ -516,12 +525,12 @@
             failMessage="Operator Change Failed"
             successMessage="Operator Change Succeeded">
           </eg-op-change>
-          <a class="dropdown-item" *ngIf="!opChangeActive()" 
+          <a class="dropdown-item" *ngIf="!opChangeActive()"
             (click)="navOpChange.open()">
             <span class="material-icons" aria-hidden="true">transform</span>
             <span i18n>Change Operator</span>
           </a>
-          <a *ngIf="opChangeActive()" class="dropdown-item" 
+          <a *ngIf="opChangeActive()" class="dropdown-item"
             (click)="navOpChange.restore()">
             <span class="material-icons" aria-hidden="true">transform</span>
             <span i18n>Restore Operator</span>
