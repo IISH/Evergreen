@@ -102,10 +102,10 @@ export class StaffNavComponent implements OnInit, OnDestroy {
     }
 
     outputPathBatchSchedule() {
-        return this.auth.user() ? `/opac/extras/schedule?ses=${this.auth.token()}` : '';
+        return this.auth.user() ? `/opac/extras/schedule/?ses=${this.auth.token()}` : '';
     }
     outputPathEnrichReport() {
-        return this.auth.user() ? `/opac/extras/enrich?ses=${this.auth.token()}` : '';
+        return this.auth.user() ? `/opac/extras/enrich/?ses=${this.auth.token()}` : '';
     }
 
     user() {
