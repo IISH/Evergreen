@@ -85,8 +85,6 @@ sub biblio_record_replace_marc  {
     $rec->marc($marc);
     $e->update_biblio_record_entry($rec) or return $e->die_event;
 
-    __upsert_pid($rec->id, $pid, 0) if $pid;
-
     return $rec;
 }
 
@@ -158,9 +156,6 @@ sub biblio_record_xml_import {
     }
 
     $logger->info("marc create/import created new record ".$record->id);
-
-    __upsert_pid($record->id, $pid, 0) if $pid;
-
     return $record;
 }
 
@@ -181,17 +176,6 @@ sub __get_902a {
     my $xml = shift ;
 
     return ( $xml =~ /tag\=\"902\".+?><subfield\s+?code\=\"a\">(.+?)</sxi ) ? $1 : undef;
-}
-
-sub __upsert_pid{
-    my $tcn = shift ;
-    my $pid = shift ;
-    my $delete = shift ;
-
-            my $handle_call = OpenSRF::AppSession->create('open-ils.handle') ;
-            $handlesystem_naming_authority = OpenSRF::Utils::SettingsClient->new->config_value('handlesystem_naming_authority') if ( ! $handlesystem_naming_authority ) ;
-            $handle_call->request('open-ils.handle.upsert_pid', $tcn, $handlesystem_naming_authority, $pid, $delete);
-            $handle_call->disconnect ;
 }
 
 sub __make_marc_doc {
@@ -425,8 +409,6 @@ sub delete_rec {
             'hold_request.cancel.expire_no_target', 
             $hold, $hold->pickup_lib);
     }
-
-    __upsert_pid($rec_id, __get_902a($marc), 1);
 
    return undef;
 }
