@@ -1,6 +1,6 @@
 <record xmlns="http://www.loc.gov/MARC21/slim">
     <leader>00620nas a22     7i 4500</leader>
-<controlfield tag="008">110701k                                d</controlfield>               
+<controlfield tag="008">110701c                                d</controlfield>               
    <datafield tag="022" ind1=" " ind2=" ">
     <subfield code="a"></subfield>
   </datafield>
@@ -36,7 +36,7 @@
     <subfield code="b">nc</subfield>
     <subfield code="2">rdacarrier</subfield>
       </datafield> 
-  <datafield tag="362" ind1="0" ind2="1">
+  <datafield tag="362" ind1="0" ind2=" ">
     <subfield code="a"></subfield>
       </datafield>
    <datafield tag="740" ind1="0" ind2=" ">

@@ -54,8 +54,6 @@
     </datafield>
     <datafield tag="506" ind1="1" ind2=" ">
         <subfield code="a">Alleen online preview -- volledige toegang tot materiaal op locatie.</subfield>
-    </datafield>
-    <datafield tag="506" ind1="1" ind2=" ">
         <subfield code="f">Preview only.</subfield>
         <subfield code="2">star</subfield>
     </datafield>
@@ -65,8 +63,6 @@
     <datafield tag="540" ind1=" " ind2=" ">
         <subfield code="a">Auteursrechtelijke status niet geёvalueerd.</subfield>
         <subfield code="u">https://rightsstatements.org/page/CNE/1.0/?language=nl</subfield>
-    </datafield>
-    <datafield tag="540" ind1=" " ind2=" ">
         <subfield code="f">Auteursrechtelijke status niet geёvalueerd.</subfield>
         <subfield code="2">rs</subfield>
     </datafield>
