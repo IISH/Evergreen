@@ -1,8 +1,8 @@
 <record xmlns="http://www.loc.gov/MARC21/slim">
-    <leader>00620nkm a22 7i 4500</leader>
-    <controlfield tag="006">m o c</controlfield>
-    <controlfield tag="007">cr</controlfield>
-    <controlfield tag="008">110701s o d</controlfield>
+    <leader>00620nkm a22     7i 4500</leader>
+    <controlfield tag="006">m     o  c        </controlfield>
+    <controlfield tag="007">cr            </controlfield>
+    <controlfield tag="008">110701s                o               d</controlfield>
 
     <datafield tag="040" ind1=" " ind2=" ">
         <subfield code="a">NL-AmISG</subfield>
