@@ -1,3 +1,5 @@
+.idea/
+
 # Hide built objects
 *.[oa]
 *.la
