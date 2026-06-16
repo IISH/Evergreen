@@ -212,10 +212,10 @@ sub message {
 #
 # Create fork if needed
 if ($daemon) {
+	daemonize(message());
 	open(F, ">$lockfile") or die "Cannot write lockfile '$lockfile'";
 	print F $$;
 	close F;
-	daemonize(message());
 }
 
 
