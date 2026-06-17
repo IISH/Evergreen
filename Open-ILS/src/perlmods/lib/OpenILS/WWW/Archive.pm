@@ -56,7 +56,7 @@ sub handler {
         '<h2>Overzicht archievenplaatsnummers</h2>' .
         '<table border=0 bgcolor="#efefef">' .
         '<td><table bgcolor="#efefef" width="100%" border="0">' .
-        '<tr><td width="40%" align="center">&nbsp;Name of Archive</td><td width="10%">Socialhistory.ORG</td><td width="40%" align=center>Holdings</td><td width="10%" align="right">Evergreen</td></tr>' .
+        '<tr><td width="40%" align="center">&nbsp;Name of Archive</td><td width="10%">iisg.amsterdam</td><td width="40%" align=center>Holdings</td><td width="10%" align="right">Evergreen</td></tr>' .
         '</table></td></tr>');
 
     my $count = 0;
@@ -66,10 +66,10 @@ sub handler {
        $archoldings=~s/\|$//g;
 
        $archoldings=~s/\|/<br \/>/g;
-       my $url = "http://evergreen.iisg.nl/opac/en-US/skin/default/xml/rdetail.xml?r=$id";
-       my $searchurl = "http://search.socialhistory.org/Record/$id";
+       my $url = "/eg/opac/record/${id}";
+       my $searchurl = "http://search.iisg.amsterdam/Record/${id}";
        $searchurl = $url;
-       my $socialurl = "<a href=\"http://hdl.handle.net/10622/$callnumber\" target=_blank>$callnumber</a>";
+       my $socialurl = "<a href=\"https://hdl.handle.net/10622/${callnumber}\" target=_blank>${callnumber}</a>";
        my $color = "#ffffff";
        $color = "#95B9C7" if ($count % 2 == 0);
        $cgi->print("<tr><td>\n");
