@@ -123,7 +123,7 @@ sub handler {
 
 	my $cgi = new CGI;
 
-	my $auth_token = $cgi->cookie('ses') || $cgi->param('ses');
+	my $auth_token = $cgi->cookie('ses') || $cgi->param('ses') || $cgi->cookie('eg.auth.token');
 	my $auth = verify_login($auth_token);
 
 	return Apache2::Const::DECLINED unless ($auth);
