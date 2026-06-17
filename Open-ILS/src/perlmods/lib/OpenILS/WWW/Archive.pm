@@ -38,7 +38,7 @@ sub import {
 
 sub handler {
     my $cgi = new CGI;
-    my $content = `/openils/bin/support-scripts/archive/arcreport.pl`;
+    my $content = `/openils/bin/archive/arcreport.pl`;
 
     # ANMB.;;906378;;ARCH00218;;$931$a 3214 3|$931$b 0 07|$931$e p|
     my @items = split(/\n/, $content);
