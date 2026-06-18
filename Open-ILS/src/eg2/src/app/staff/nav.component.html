@@ -44,6 +44,22 @@
               <span i18n>Search for Items by Barcode</span>
               <kbd i18n>F5</kbd>
             </a>
+
+            <a class="dropdown-item" ngbDropdownItem href="{{outputPathBatchSchedule()}}"
+               (click)="isMenuCollapsed = true"
+               (keydown.space)="isMenuCollapsed = true"
+               (keydown.enter)="isMenuCollapsed = true">
+              <span class="material-icons" aria-hidden="true"> </span>
+              <span i18n>Batch schedule</span>
+            </a>
+            <a class="dropdown-item" ngbDropdownItem href="{{outputPathEnrichReport()}}"
+               (click)="isMenuCollapsed = true"
+               (keydown.space)="isMenuCollapsed = true"
+               (keydown.enter)="isMenuCollapsed = true">
+              <span class="material-icons" aria-hidden="true"> </span>
+              <span i18n>Enrich reports</span>
+            </a>
+
             <a class="dropdown-item" ngbDropdownItem
               routerLinkActive="active"
               ariaCurrentWhenActive="page" routerLink="/staff/catalog"
