@@ -123,7 +123,7 @@ sub handler {
 
 	my $cgi = new CGI;
 
-	my $auth_token = $cgi->cookie('ses') || $cgi->param('ses') || $cgi->cookie('eg.auth.token');
+	my $auth_token = $cgi->cookie('ses') || $cgi->param('ses') || $cgi->cookie('eg.auth.token') || $cgi->param('eg.auth.token');
 	my $auth = verify_login($auth_token);
 
 	return Apache2::Const::DECLINED unless ($auth);
@@ -167,7 +167,7 @@ sub handler {
 			dojo.require('dojo.cookie');
 
 			var cgi = new openils.CGI();
-			var authtoken = dojo.cookie('ses') || cgi.param('ses');
+			var authtoken = dojo.cookie('ses') || cgi.param('ses') || dojo.cookie('eg.auth.token') || cgi.param('eg.auth.token') ;
 			if (!authtoken && openils.XUL.isXUL()) {
 				var stash = openils.XUL.getStash();
 				authtoken = stash.session.key;
