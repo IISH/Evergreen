@@ -68,6 +68,26 @@
               [% l('Item Buckets') %]
             </a>
           </div>
+
+          <div>
+            <a target="_self" href="/opac/extras/schedule">
+              <img src="[% ctx.media_prefix %]/images/portal/bucket.png" alt="" role="presentation"/>
+                [% l('Batch schedule') %]
+            </a>
+          </div>
+          <div>
+            <a target="_self" href="/opac/extras/enrich">
+              <img src="[% ctx.media_prefix %]/images/portal/bucket.png" alt="" role="presentation"/>
+                [% l('Enrich reports') %]
+            </a>
+          </div>
+          <div>
+            <a target="_self" href="/opac/extras/archive">
+              <img src="[% ctx.media_prefix %]/images/portal/bucket.png" alt="" role="presentation"/>
+                [% l('Archievenplaatsnummers') %]
+            </a>
+          </div>
+
         </div>
       </div>
     </div>
