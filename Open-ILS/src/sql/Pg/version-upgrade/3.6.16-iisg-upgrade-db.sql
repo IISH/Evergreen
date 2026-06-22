@@ -42,6 +42,23 @@ RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
+-- create and attach add_902_uuid trigger to biblio.record_entry
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE tgname = 'd_add_902_uuid'
+          AND tgrelid = 'biblio.record_entry'::regclass
+    ) THEN
+CREATE TRIGGER d_add_902_uuid
+    BEFORE INSERT OR UPDATE ON biblio.record_entry
+                         FOR EACH ROW
+                         EXECUTE FUNCTION biblio.add_902_uuid_trigger();
+END IF;
+END;
+$$;
+
 
 -- authority.override_perl_leader_trigger()
 -- Wijzig de hardcodes leader Open-ILS/src/perlmods/lib/OpenILS/Application/Cat/Authority.pm
@@ -103,3 +120,20 @@ END IF;
 RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+-- create and attach override_perl_leader trigger to authority.record_entry
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE tgname = 'd_override_perl_leader'
+        AND tgrelid = 'authority.record_entry'::regclass
+    ) THEN
+CREATE TRIGGER d_override_perl_leader
+    BEFORE INSERT OR UPDATE ON authority.record_entry
+    FOR EACH ROW
+    EXECUTE FUNCTION authority.override_perl_leader_trigger();
+END IF;
+END;
+$$;
