@@ -1,11 +1,11 @@
--- biblio.add_901_uuid_trigger()
--- Voeg een 901a veld met een UUID toe aan de marc record.
-CREATE OR REPLACE FUNCTION biblio.add_901_uuid_trigger()
+-- biblio.add_902_uuid_trigger()
+-- Voeg een 902a veld met een UUID toe aan de marc record.
+CREATE OR REPLACE FUNCTION biblio.add_902_uuid_trigger()
 RETURNS TRIGGER AS $$
 DECLARE
     xml_record XML;
     upper_uuid TEXT;
-    new_901_field XML;
+    new_902_field XML;
     xml_string TEXT;
 BEGIN
     -- Ensure we have a MARC XML record to manipulate. If not return here.
@@ -15,24 +15,24 @@ END IF;
 
     xml_record := NEW.marc::XML;
 
-    -- Check if a 901 datafield already exists to prevent duplicate injections
-    IF NOT xpath_exists('//*[local-name()="datafield" and @tag="901"]', xml_record) THEN
+    -- Check if a 902 datafield already exists to prevent duplicate injections
+    IF NOT xpath_exists('//*[local-name()="datafield" and @tag="902"]', xml_record) THEN
 
         -- Generate an uppercase UUID v4
-        upper_uuid := '10622' . '/' . UPPER(gen_random_uuid()::TEXT);
+        upper_uuid := '10622' || '/' || UPPER(gen_random_uuid()::TEXT);
 
-        -- Construct the 901 datafield XML node (using standard MARC21 blank indicators)
-        new_901_field := XMLPARSE(DOCUMENT xmlelement(
+        -- Construct the 902 datafield XML node (using standard MARC21 blank indicators)
+        new_902_field := XMLPARSE(DOCUMENT xmlelement(
             name "datafield",
-            xmlattributes('901' as "tag", ' ' as "ind1", ' ' as "ind2"),
+            xmlattributes('902' as "tag", ' ' as "ind1", ' ' as "ind2"),
             xmlelement(name "subfield", xmlattributes('a' as "code"), upper_uuid)
         )::text);
 
         -- Cast XML to text to safely inject the node before the closing </record> tag
         xml_string := xml_record::TEXT;
 
-        -- Append the new 901 datafield just prior to the end of the root record element
-        xml_string := REGEXP_REPLACE(xml_string, '(</(?:[^:]+:)?record>)', new_901_field::TEXT || '\1', 'i');
+        -- Append the new 902 datafield just prior to the end of the root record element
+        xml_string := REGEXP_REPLACE(xml_string, '(</(?:[^:]+:)?record>)', new_902_field::TEXT || '\1', 'i');
 
         -- Assign the updated MARC XML document back to the incoming row
         NEW.marc := xml_string;
