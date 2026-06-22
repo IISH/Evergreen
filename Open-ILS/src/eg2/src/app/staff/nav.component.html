@@ -49,15 +49,19 @@
                (click)="isMenuCollapsed = true"
                (keydown.space)="isMenuCollapsed = true"
                (keydown.enter)="isMenuCollapsed = true">
-              <span class="material-icons" aria-hidden="true"> </span>
               <span i18n>Batch schedule</span>
             </a>
             <a class="dropdown-item" ngbDropdownItem href="{{outputPathEnrichReport()}}"
                (click)="isMenuCollapsed = true"
                (keydown.space)="isMenuCollapsed = true"
                (keydown.enter)="isMenuCollapsed = true">
-              <span class="material-icons" aria-hidden="true"> </span>
               <span i18n>Enrich reports</span>
+            </a>
+            <a class="dropdown-item" ngbDropdownItem href="/opac/extras/archive"
+               (click)="isMenuCollapsed = true"
+               (keydown.space)="isMenuCollapsed = true"
+               (keydown.enter)="isMenuCollapsed = true">
+              <span i18n>Archievenplaatsnummers</span>
             </a>
 
             <a class="dropdown-item" ngbDropdownItem
