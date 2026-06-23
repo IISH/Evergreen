@@ -29,6 +29,7 @@ use OpenSRF::System;
 use OpenSRF::AppSession;
 use Encode;
 use OpenSRF::Utils::Logger qw/$logger/;
+my $U = 'OpenILS::Application::AppUtils';
 use HTML::Entities;
 use XML::LibXML;
 
@@ -135,31 +136,13 @@ sub handler {
 	child_init() unless ($_session_batch);
 
 	my $cgi = new CGI;
-    my $raw_cookies = $ENV{'HTTP_COOKIE'} || '';
-    my ($cookie_token) = $raw_cookies =~ /(?:ses|eg\.auth\.token)=([^;]+)/;
-    my $param_token = $cgi->param('ses')
-                   || $cgi->param('eg.auth.token')
-                   || $cgi->param('eg_auth_token');
-
-    my $auth_token = $cookie_token || $param_token;
-    my $auth = verify_login($auth_token);
-
-    if (!$auth) {
-        $r->content_type('text/html');
-   	    $r->no_cache(1); # disable caching
-   	    $r->print('<html><body>');
-        for my $key ($q->param) {
-            # Get all values associated with this key (handles multi-value fields safely)
-            my @values = $q->param($key);
-
-            # Print the key and its comma-separated values
-            $r->print("<p>$key: " . join(", ", @values) . "</p>");
-        }
-        $r->print('</body></html>');
-        return Apache2::Const::OK;
+    my $auth_token = $cgi->cookie('ses') || $cgi->param('ses') || $cgi->cookie('eg.auth.token');
+    if ($auth_token =~ /^"(.+)"$/) {
+        $auth_token = $1;
     }
 
-	return Apache2::Const::DECLINED unless ($auth);
+    my $user = verify_login($auth_token);
+	return Apache2::Const::DECLINED unless ($user);
 
 	# Assume we receive a simple GET with url patterns: /list or /edit/123 or /delete/123 or /update/123 ( with a POST something )
 	my @parts = split('/', $cgi->path_info, 3 );
@@ -376,22 +359,16 @@ HTML
 
 #
 sub verify_login {
-	#
-	my ($auth_token) = @_;
 
+	my ($auth_token) = @_;
 	return undef unless $auth_token;
 
-	my $auth = OpenSRF::AppSession
-			->create("open-ils.auth")
-			->request( "open-ils.auth.session.retrieve", $auth_token )
-			->gather(1);
+	my $user = $U->simplereq('open-ils.auth', 'open-ils.auth.session.retrieve', $auth_token);
+    if (!$user || (ref($user) eq 'HASH' && $user->{ilsevent} == 1001)) {
+         return undef;
+    }
 
-	if (ref($auth) eq 'HASH' && $auth->{ilsevent} == 1001) {
-			return undef;
-	}
-
-	return $auth if ref($auth);
-	return undef;
+    return $user ;
 }
 
 #
