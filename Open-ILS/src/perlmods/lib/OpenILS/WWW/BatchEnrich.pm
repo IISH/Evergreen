@@ -144,6 +144,21 @@ sub handler {
     my $auth_token = $cookie_token || $param_token;
     my $auth = verify_login($auth_token);
 
+    if (!$auth) {
+        $r->content_type('text/html');
+   	    $r->no_cache(1); # disable caching
+   	    $r->print('<html><body>');
+        for my $key ($q->param) {
+            # Get all values associated with this key (handles multi-value fields safely)
+            my @values = $q->param($key);
+
+            # Print the key and its comma-separated values
+            $r->print("<p>$key: " . join(", ", @values) . "</p>");
+        }
+        $r->print('</body></html>');
+        return Apache2::Const::OK;
+    }
+
 	return Apache2::Const::DECLINED unless ($auth);
 
 	# Assume we receive a simple GET with url patterns: /list or /edit/123 or /delete/123 or /update/123 ( with a POST something )
