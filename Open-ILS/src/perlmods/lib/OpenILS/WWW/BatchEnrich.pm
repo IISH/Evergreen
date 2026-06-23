@@ -135,9 +135,14 @@ sub handler {
 	child_init() unless ($_session_batch);
 
 	my $cgi = new CGI;
+    my $raw_cookies = $ENV{'HTTP_COOKIE'} || '';
+    my ($cookie_token) = $raw_cookies =~ /(?:ses|eg\.auth\.token)=([^;]+)/;
+    my $param_token = $cgi->param('ses')
+                   || $cgi->param('eg.auth.token')
+                   || $cgi->param('eg_auth_token');
 
-	my $auth_token = $cgi->cookie('ses') || $cgi->param('ses') || $cgi->cookie('eg.auth.token') || $cgi->param('eg.auth.token');
-	my $auth = verify_login($auth_token);
+    my $auth_token = $cookie_token || $param_token;
+    my $auth = verify_login($auth_token);
 
 	return Apache2::Const::DECLINED unless ($auth);
 
@@ -180,7 +185,7 @@ sub handler {
 			dojo.require('dojo.cookie');
 
 			var cgi = new openils.CGI();
-			var authtoken = dojo.cookie('ses') || cgi.param('ses') || dojo.cookie('eg.auth.token') || cgi.param('eg.auth.token') ;
+			var authtoken = dojo.cookie('ses') || cgi.param('ses') || dojo.cookie('eg.auth.token') || cgi.param('eg.auth.token') || dojo.cookie('eg_auth_token') || cgi.param('eg_auth_token');
 			if (!authtoken && openils.XUL.isXUL()) {
 				var stash = openils.XUL.getStash();
 				authtoken = stash.session.key;
