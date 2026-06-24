@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-# Author: Lucien van Wouw <lwo@iisg.nl>
+# Author: Lucien van Wouw <lucien.van.wouw@di.huc.knaw.nl>
 #
 #
 # This script will take all scheduled batch records from a table. For each batch the specified reports is loaded and it's tcns collected.

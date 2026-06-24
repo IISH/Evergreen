@@ -19,7 +19,7 @@ sub user_by_identifier_string {
     my ($c, $ses, $barcode, $username) = @_;
 
     my $uid = $U->simplereq(
-        'open-ils.actor', 'open-ils.actor.user.retrieve_id_by_barcode_or_username',
+        'open-ils.actor', '`open-ils.actor.user.retrieve_id_by_barcode_or_username',
         $ses, $barcode, $username
     );
 

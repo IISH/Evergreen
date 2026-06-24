@@ -17,7 +17,7 @@
 #
 #
 # Author: Gordan Cupac <gcu@iisg.nl>
-# Author: Lucien van Wouw <lwo@iisg.nl>
+# Author: Lucien van Wouw <lucien.van.wouw@di.huc.knaw.nl>
 
 package OpenILS::WWW::BatchUpdate;
 use strict;
