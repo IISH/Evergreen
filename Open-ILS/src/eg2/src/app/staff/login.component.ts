@@ -105,8 +105,9 @@ export class StaffLoginComponent implements OnInit {
     }
 
     redirectToKNAWOpenIdConnect(type = 'login') {
+        let ws = (this.args.workstation) ? this.args.workstation: '';
         let t = new Date().getTime(); // anti cache
-        let url = `/login-knaw?ws=${this.args.workstation}&t=${t}`;
+        let url = `/login-knaw?ws=${ws}&t=${t}`;
         window.location.href = url;
     }
 

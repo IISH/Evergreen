@@ -44,26 +44,6 @@
               <span i18n>Search for Items by Barcode</span>
               <kbd i18n>F5</kbd>
             </a>
-
-            <a class="dropdown-item" ngbDropdownItem href="/opac/extras/schedule"
-               (click)="isMenuCollapsed = true"
-               (keydown.space)="isMenuCollapsed = true"
-               (keydown.enter)="isMenuCollapsed = true">
-              <span i18n>Batch schedule</span>
-            </a>
-            <a class="dropdown-item" ngbDropdownItem href="/opac/extras/enrich"
-               (click)="isMenuCollapsed = true"
-               (keydown.space)="isMenuCollapsed = true"
-               (keydown.enter)="isMenuCollapsed = true">
-              <span i18n>Enrich reports</span>
-            </a>
-            <a class="dropdown-item" ngbDropdownItem href="/opac/extras/archive"
-               (click)="isMenuCollapsed = true"
-               (keydown.space)="isMenuCollapsed = true"
-               (keydown.enter)="isMenuCollapsed = true">
-              <span i18n>Archievenplaatsnummers</span>
-            </a>
-
             <a class="dropdown-item" ngbDropdownItem
               routerLinkActive="active"
               ariaCurrentWhenActive="page" routerLink="/staff/catalog"
@@ -573,6 +553,26 @@
               <span class="material-icons" aria-hidden="true">collections</span>
               <span i18n>Retrieve Authority Record by ID</span>
             </a>
+
+            <a class="dropdown-item" ngbDropdownItem href="/opac/extras/schedule"
+               (click)="isMenuCollapsed = true"
+               (keydown.space)="isMenuCollapsed = true"
+               (keydown.enter)="isMenuCollapsed = true">
+              <span i18n>Batch schedule</span>
+            </a>
+            <a class="dropdown-item" ngbDropdownItem href="/opac/extras/enrich"
+               (click)="isMenuCollapsed = true"
+               (keydown.space)="isMenuCollapsed = true"
+               (keydown.enter)="isMenuCollapsed = true">
+              <span i18n>Enrich reports</span>
+            </a>
+            <a class="dropdown-item" ngbDropdownItem href="/opac/extras/archive"
+               (click)="isMenuCollapsed = true"
+               (keydown.space)="isMenuCollapsed = true"
+               (keydown.enter)="isMenuCollapsed = true">
+              <span i18n>Archievenplaatsnummers</span>
+            </a>
+
           </div>
         </div>
       </div>
