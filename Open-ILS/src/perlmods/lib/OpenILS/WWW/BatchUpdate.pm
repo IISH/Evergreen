@@ -30,6 +30,7 @@ use OpenSRF::System;
 use OpenSRF::AppSession;
 use Encode;
 use OpenSRF::Utils::Logger qw/$logger/;
+my $U = 'OpenILS::Application::AppUtils';
 use HTML::Entities;
 use XML::LibXML;
 
