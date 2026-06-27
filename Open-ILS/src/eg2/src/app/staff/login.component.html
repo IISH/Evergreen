@@ -81,6 +81,13 @@
           </div>
         </div>
 
+        <div class="row row-cols-auto mt-3">
+          <div class="col-8 offset-4">
+            <button type="button" (click)="redirectToKNAWOpenIdConnect()" class="btn" i18n
+            [ngClass]="{'btn-primary': !allowNative, 'btn-normal': allowNative}">KNAW login</button>
+          </div>
+        </div>
+
         @if (pendingXactsDate) {
           <div class="row">
             <div class="col-lg-8 offset-lg-4 alert alert-warning mt-2" i18n>

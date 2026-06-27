@@ -104,6 +104,12 @@ export class StaffLoginComponent implements OnInit {
         window.location.href = url;
     }
 
+    redirectToKNAWOpenIdConnect(type = 'login') {
+        let t = new Date().getTime(); // anti cache
+        let url = `/login-knaw?ws=${this.args.workstation}&t=${t}`;
+        window.location.href = url;
+    }
+
     checkSSO(ws_name:string) {
         return this.auth.SSOSettings(ws_name).then(svc => {
             this.allowSSO = svc.SSOEnabled;

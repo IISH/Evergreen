@@ -234,13 +234,6 @@ export class StaffNavComponent implements OnInit, OnDestroy {
     closeDropdowns() {
         this.dropdowns?.forEach(x => x.close());
     }
-
-    outputPathBatchSchedule() {
-        return this.auth.user() ? `/opac/extras/schedule/?eg.auth.token=${this.auth.token()}` : '';
-    }
-    outputPathEnrichReport() {
-        return this.auth.user() ? `/opac/extras/enrich/?eg.auth.token=${this.auth.token()}` : '';
-    }
 }
 
 
