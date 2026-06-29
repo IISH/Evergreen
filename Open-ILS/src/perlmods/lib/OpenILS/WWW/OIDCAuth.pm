@@ -110,6 +110,27 @@ sub handler {
     my $user_id = $card->usr;
     $logger->info("Found usr_id $user_id");
 
+    # Now get the user details and active status.
+    my $user_details = $session->request("open-ils.cstore.direct.actor.user.retrieve", $user_id)->gather(1);
+    my $user_hash = ($user_details && ref($user_details)) ? $user_details->to_bare_hash() : undef;
+    my $is_active = ($user_hash && $user_hash->{active} && !$user_hash->{deleted});
+    $logger->info("User usr_id $user_id account active: $is_active");
+
+    unless ($is_active) {
+        my $html = '<html xmlns="http://www.w3.org/1999/xhtml">
+                    <head><title>Account not active or expired</title></head>
+                    <body>
+                        <h1>Account not active or expired</h1>
+                        <p>Your account is not enabled or it has expired.
+                        Ask your administrator to enable your account to use the service.
+                        </p>
+                    </body>
+                </html>';
+                $r->print($html);
+
+        return Apache2::Const::HTTP_UNAUTHORIZED;
+    }
+
     my $args = {
         user_id    => $user_id,
         login_type => 'staff'
