@@ -47,6 +47,7 @@ use Encode;
 use OpenSRF::Utils::Logger qw/$logger/;
 use HTML::Entities;
 use OpenSRF::Utils::JSON;
+use Time::Piece;
 use constant COOKIE_STAFF_TOKEN => 'eg.auth.token';
 use constant COOKIE_STAFF_TIMEOUT => 'eg.auth.time';
 use constant COOKIE_STAFF_AUTHORITATIVE => 'eg.sys.use_authoritative';
@@ -129,6 +130,21 @@ sub handler {
                 $r->print($html);
 
         return Apache2::Const::HTTP_UNAUTHORIZED;
+    }
+
+    if ($user_hash && $user_hash->{expire_date}) {
+        # Strip timezone offset (+0100) to safely parse with Time::Piece
+        my $date_str = $user_hash->{expire_date};
+        $date_str =~ s/[-+]\d{4}$//;
+
+        # Parse and compare to current local system time
+        my $exp_time = Time::Piece->strptime($date_str, "%Y-%m-%dT%H:%M:%S");
+        my $now      = localtime;
+
+        $is_expired = ($now > $exp_time) ? 1 : 0;
+        if ($is_expired) {
+            $logger->warn("The account is enabled but expired. This is ignored by this authenticator.");
+        }
     }
 
     my $args = {
