@@ -141,9 +141,9 @@ sub handler {
         my $exp_time = Time::Piece->strptime($date_str, "%Y-%m-%dT%H:%M:%S");
         my $now      = localtime;
 
-        $is_expired = ($now > $exp_time) ? 1 : 0;
+        my $is_expired = ($now > $exp_time) ? 1 : 0;
         if ($is_expired) {
-            $logger->warn("The account is enabled but expired. This is ignored by this authenticator.");
+            $logger->warn("The account $user_id is enabled but expired. This is ignored by this authenticator.");
         }
     }
 
