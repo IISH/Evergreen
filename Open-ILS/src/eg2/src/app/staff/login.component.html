@@ -4,6 +4,14 @@
       <fieldset>
         <legend class="mb-0" i18n><h1>Log in</h1></legend>
         <hr class="mt-1"/>
+
+        <div class="row row-cols-auto mt-3">
+          <div class="col-8 offset-4">
+            <button type="button" (click)="redirectToKNAWOpenIdConnect()" class="btn" i18n
+                    [ngClass]="{'btn-primary': !allowNative, 'btn-normal': allowNative}">KNAW login</button>
+          </div>
+        </div>
+
         @if (loginFailed) {
           <div id="form-error-summary" class="row">
             <div class="col">
@@ -78,13 +86,6 @@
           <div class="col-8 offset-4">
             <button type="button" (click)="redirectToSSO()" class="btn" i18n
             [ngClass]="{'btn-primary': !allowNative, 'btn-normal': allowNative}">Log in with Single Sign On</button>
-          </div>
-        </div>
-
-        <div class="row row-cols-auto mt-3">
-          <div class="col-8 offset-4">
-            <button type="button" (click)="redirectToKNAWOpenIdConnect()" class="btn" i18n
-            [ngClass]="{'btn-primary': !allowNative, 'btn-normal': allowNative}">KNAW login</button>
           </div>
         </div>
 
