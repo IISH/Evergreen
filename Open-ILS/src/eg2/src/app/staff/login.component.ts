@@ -95,14 +95,19 @@ export class StaffLoginComponent implements OnInit {
     redirectToSSO(type = 'login') {
         let url = `/eg/opac/staff/sso/${type}?ws=${this.args.workstation}`;
         if (this.routeTo) {
-            url = url + '&redirect_to=' + encodeURIComponent(
-                this.ngLocation.prepareExternalUrl(this.routeTo)
-            );
+            url = url + '&redirect_to=' + encodeURIComponent(this.routeTo);
         }
         if (this.activeLogout) {
             url = url + '&active_logout=1';
         }
 
+        window.location.href = url;
+    }
+
+    redirectToKNAWOpenIdConnect(type = 'login') {
+        let ws = (this.args.workstation) ? this.args.workstation: '';
+        let t = new Date().getTime(); // anti cache
+        let url = `/login-knaw?ws=${ws}&t=${t}`;
         window.location.href = url;
     }
 

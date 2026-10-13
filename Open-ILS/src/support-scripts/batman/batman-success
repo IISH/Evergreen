@@ -1,0 +1,11 @@
+To: {TO}
+From: {FROM}
+Reply-To: {REPLY_TO}
+Subject: Batch finished: "{BATCH_NAME}"
+
+Time: {COMPLETE_TIME}.
+
+Your batch for {OUTPUT_URL} is complete.
+
+See the report at:
+{OUTPUT_URL}.log

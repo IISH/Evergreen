@@ -2256,8 +2256,8 @@ msgid "Evergreen"
 msgstr "Evergreen"
 
 #: ../../Open-ILS/src/templates-bootstrap/opac/parts/footer.tt2:16 ../../Open-ILS/src/templates-bootstrap/opac/parts/topnav_links.tt2:14
-msgid "Example Link 1"
-msgstr "Exemple lien 1"
+msgid "Staff page"
+msgstr ""
 
 #: ../../Open-ILS/src/templates-bootstrap/opac/parts/footer.tt2:18
 msgid "Example Link 2"
