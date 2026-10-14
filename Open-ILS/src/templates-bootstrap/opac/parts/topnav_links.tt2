@@ -20,14 +20,6 @@
       </li>
         <!--Link 2-->
       <li class="nav-item">
-        <a class="nav-link" href="[% ctx.link_two %]">[% ('Example Link 2') %]</a>
-      </li>
-        <!--Link 3-->
-      <li class="nav-item">
-        <a class="nav-link" href="[% ctx.link_three %]">[% l('Example Link 3') %]</a>
-      </li>
-        <!--Link 4-->
-      <li class="nav-item">
         <a class="nav-link" href="[% ctx.link_four %]">[% l('Example Link 4') %]</a>
       </li>
     </ul>
