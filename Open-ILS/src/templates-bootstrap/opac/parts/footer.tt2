@@ -24,7 +24,7 @@
                     <li class="nav-item"><a class="nav-link" href="[% mkurl(ctx.opac_root _ '/register') %]">[%
                     l('Request Library Card') %]</a></li>
                 [% ELSE %]
-                    <li class="nav-item"><a class="nav-link" href="/eg2/en-US/staff/login">[% l('Staff login') %]</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/eg2/en-US/staff/splash">[% l('Staff page') %]</a></li>
                 [% END %]
             [% END %]
             [% IF ctx.get_org_setting(ctx.physical_loc || ctx.aou_tree.id,
@@ -33,10 +33,8 @@
                     <a class="nav-link" href="[% mkurl(ctx.opac_root _ '/ecard/verify') %]"> [% l('Verify Electronic Card') %]</a>
                 </li>
             [% ELSE %]
-                <li class="nav-item"><a class="nav-link" href="#">[% l('Example Link 2') %]</a></li>
+            <!--No link-->
             [% END %]
-            <li class="nav-item"><a class="nav-link" href="#">[% l('Example Link 3') %]</a></li>
-            <li class="nav-item"><a class="nav-link" href="#">[% l('Example Link 4') %]</a></li>
         </ul>
     </nav>
      [% IF ctx.timing %]

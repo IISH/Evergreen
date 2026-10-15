@@ -16,11 +16,7 @@
       [% END %]
       <!--Link 1-->
       <li class="nav-item">
-        <a class="nav-link" href="/eg2/staff/splash">[% l('Staff page') %]<span class="sr-only">(current)</span></a>
-      </li>
-        <!--Link 2-->
-      <li class="nav-item">
-        <a class="nav-link" href="[% ctx.link_four %]">[% l('Example Link 4') %]</a>
+        <a class="nav-link" href="/eg2/en-US/staff/splash">[% l('Staff page') %]<span class="sr-only">(current)</span></a>
       </li>
     </ul>
     <!--Right Links-->
